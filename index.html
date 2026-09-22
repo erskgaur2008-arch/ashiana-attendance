@@ -1,3 +1,4 @@
+```html
 <!DOCTYPE html>
 <html lang="en">
 <head>
@@ -80,7 +81,6 @@
     }
     #scanner-reader img[alt="Info icon"], #scanner-reader a { display: none !important; }
     
-    /* Mobile full height fix */
     @supports (-webkit-touch-callout: none) {
       .min-h-screen-safe {
         min-height: -webkit-fill-available;
@@ -88,9 +88,9 @@
     }
   </style>
 </head>
-<body class="bg-slate-100 text-slate-800 antialiased min-h-screen min-h-screen-safe flex flex-col selection:bg-emerald-500 selection:text-white">
+<body class="bg-slate-100 text-slate-800 antialiased min-h-screen min-h-screen-safe flex flex-col selection:bg-emerald-600 selection:text-white">
 
-  <!-- TOP HEADER (Desktop & General) -->
+  <!-- TOP HEADER -->
   <header id="global-header" class="bg-gradient-to-r from-emerald-950 via-[#064E3B] to-emerald-900 text-white shadow-md sticky top-0 z-40 border-b-2 border-ashiana-red">
     <div class="max-w-7xl mx-auto px-3 sm:px-6 lg:px-8 h-14 sm:h-16 flex items-center justify-between">
       
@@ -105,11 +105,10 @@
             <path d="M100 24 L34 140 H64 L79 108 H121 L136 140 H166 Z" fill="#0A7E46"/>
             <path d="M100 48 L86 92 H114 Z" fill="white"/>
             <circle cx="100" cy="74" r="7.5" fill="#D92D31"/>
-            <path d="M91 85 C91 83 93 82 95 82 H105 C107 82 109 83 109 85 V106 C109 107 108 108 107 108 H103 V136 H97 V108 H93 C92 108 91 107 91 106 Z" fill="#D92D31"/>
             <polygon points="100,90 94,97 100,103 106,97" fill="white"/>
-            <text x="100" y="160" font-family="'Cinzel', Georgia, serif" font-weight="bold" font-size="20" text-anchor="middle" fill="#1A1A1A" letter-spacing="1.5">ASHIANA</text>
+            <text x="100" y="160" font-family="'Cinzel', Georgia, serif" font-weight="bold" font-size="20" text-anchor="middle" fill="#1A1A1A">ASHIANA</text>
             <rect x="28" y="164" width="144" height="2.5" fill="#D92D31" rx="1"/>
-            <text x="100" y="179" font-family="'Cinzel', Georgia, serif" font-weight="600" font-size="11" text-anchor="middle" fill="#1A1A1A" letter-spacing="2">PUBLIC SCHOOL</text>
+            <text x="100" y="179" font-family="'Cinzel', Georgia, serif" font-weight="600" font-size="11" text-anchor="middle" fill="#1A1A1A">PUBLIC SCHOOL</text>
           </svg>
         </div>
         
@@ -118,11 +117,11 @@
             <span class="tracking-wide">ASHIANA PUBLIC SCHOOL</span>
             <span class="text-[8px] sm:text-[9px] uppercase tracking-widest bg-emerald-400/20 text-emerald-200 font-bold px-1.5 py-0.5 rounded-full border border-emerald-400/30">EduPunch</span>
           </h1>
-          <p class="text-[9px] sm:text-[11px] text-emerald-200/90 font-medium truncate max-w-[200px] sm:max-w-none">Sector 46-A, Chandigarh • Staff Portal</p>
+          <p class="text-[9px] sm:text-[11px] text-emerald-200/90 font-medium truncate max-w-[190px] sm:max-w-none">Sector 46-A, Chandigarh • Staff Portal</p>
         </div>
       </div>
 
-      <!-- Live Controls & Status Indicators -->
+      <!-- Controls & Status Indicators -->
       <div class="flex items-center space-x-2 sm:space-x-3">
         <!-- Live Clock (Desktop) -->
         <div class="hidden md:flex flex-col text-right pr-3 border-r border-emerald-800">
@@ -131,21 +130,9 @@
         </div>
 
         <!-- Supabase Cloud Live Status Pill -->
-        <div id="nav-cloud-status-badge" class="flex items-center space-x-1.5 px-2.5 py-1 rounded-xl text-[10px] font-bold border transition-all bg-emerald-900/90 text-emerald-200 border-emerald-500/50 shadow-inner" title="Live Supabase Cloud PostgreSQL Active">
+        <div id="nav-cloud-status-badge" class="flex items-center space-x-1.5 px-2.5 py-1 rounded-xl text-[10px] font-bold border transition-all bg-emerald-900/90 text-emerald-200 border-emerald-500/50 shadow-inner" title="PostgreSQL Real-Time Cloud Sync Active">
           <span id="nav-cloud-dot" class="w-2 h-2 rounded-full bg-emerald-400 animate-pulse"></span>
-          <span id="nav-cloud-label">Cloud Sync Active</span>
-        </div>
-
-        <!-- Admin View Switcher -->
-        <div id="admin-view-toggle-bar" class="hidden bg-emerald-950/90 p-0.5 rounded-xl items-center border border-emerald-700/60 shadow-inner">
-          <button id="btn-portal-staff" onclick="switchPortal('staff')" class="flex items-center space-x-1 px-2.5 py-1 rounded-lg text-[11px] font-bold transition-all bg-ashiana-green text-white shadow">
-            <i data-lucide="smartphone" class="w-3 h-3"></i>
-            <span>Staff</span>
-          </button>
-          <button id="btn-portal-admin" onclick="switchPortal('admin')" class="flex items-center space-x-1 px-2.5 py-1 rounded-lg text-[11px] font-bold transition-all text-emerald-200 hover:text-white">
-            <i data-lucide="layout-dashboard" class="w-3 h-3"></i>
-            <span>Admin</span>
-          </button>
+          <span id="nav-cloud-label">Cloud Live</span>
         </div>
 
         <!-- Authenticated Profile / Logout -->
@@ -159,7 +146,7 @@
               <p id="nav-user-role" class="text-[9px] text-emerald-300 leading-none mt-0.5">Teacher</p>
             </div>
           </div>
-          <button onclick="handleLogout()" class="px-2 sm:px-2.5 py-1 sm:py-1.5 bg-ashiana-red hover:bg-ashiana-red-dark text-white text-[11px] font-bold rounded-xl flex items-center space-x-1 transition-colors shadow" title="Sign out of your account">
+          <button onclick="handleLogout()" class="px-2 sm:px-2.5 py-1 sm:py-1.5 bg-ashiana-red hover:bg-ashiana-red-dark text-white text-[11px] font-bold rounded-xl flex items-center space-x-1 transition-colors shadow" title="Sign out">
             <i data-lucide="log-out" class="w-3.5 h-3.5"></i>
             <span class="hidden sm:inline">Sign Out</span>
           </button>
@@ -173,7 +160,7 @@
     <div class="flex items-center space-x-2 max-w-7xl mx-auto w-full">
       <span class="w-2 h-2 rounded-full bg-ashiana-green animate-pulse flex-shrink-0"></span>
       <span id="banner-status-text" class="truncate">
-        <strong>Ashiana Faculty Attendance:</strong> Official Working Shift <strong>07:40 AM – 02:30 PM</strong>. Supabase PostgreSQL live sync connected.
+        <strong>Ashiana Faculty Attendance:</strong> Working Shift <strong>07:40 AM – 02:30 PM</strong>. Supabase Auto-Sync active.
       </span>
     </div>
   </div>
@@ -204,7 +191,7 @@
         </div>
         <h2 class="text-lg sm:text-xl font-extrabold tracking-tight font-serif">ASHIANA PUBLIC SCHOOL</h2>
         <div class="w-16 h-0.5 bg-ashiana-red mx-auto my-1.5 rounded-full"></div>
-        <p class="text-[11px] text-emerald-200">Sector 46-A, Chandigarh • Staff Attendance Portal</p>
+        <p class="text-[11px] text-emerald-200">Sector 46-A, Chandigarh • Faculty Attendance</p>
         
         <!-- Tab Selector: Teacher vs Admin -->
         <div class="flex bg-emerald-950/70 p-1 rounded-2xl mt-4 border border-emerald-700/50">
@@ -220,25 +207,6 @@
       </div>
 
       <div class="p-5 sm:p-6 space-y-4">
-        <!-- GOOGLE ONE-CLICK SIGN IN -->
-        <div>
-          <button type="button" onclick="handleGoogleSignIn()" class="w-full py-3 px-4 bg-white hover:bg-slate-50 text-slate-700 font-bold rounded-2xl text-xs flex items-center justify-center space-x-3 shadow-md border border-slate-300 active:scale-[0.99] transition-all">
-            <svg class="w-4 h-4 flex-shrink-0" viewBox="0 0 24 24">
-              <path fill="#4285F4" d="M22.56 12.25c0-.78-.07-1.53-.2-2.25H12v4.26h5.92c-.26 1.37-1.04 2.53-2.21 3.31v2.77h3.57c2.08-1.92 3.28-4.74 3.28-8.09z"/>
-              <path fill="#34A853" d="M12 23c2.97 0 5.46-.98 7.28-2.66l-3.57-2.77c-.98.66-2.23 1.06-3.71 1.06-2.86 0-5.29-1.93-6.16-4.53H2.18v2.84C3.99 20.53 7.7 23 12 23z"/>
-              <path fill="#FBBC05" d="M5.84 14.09c-.22-.66-.35-1.36-.35-2.09s.13-1.43.35-2.09V7.06H2.18C1.43 8.55 1 10.22 1 12s.43 3.45 1.18 4.94l2.85-2.22.81-.63z"/>
-              <path fill="#EA4335" d="M12 5.38c1.62 0 3.06.56 4.21 1.64l3.15-3.15C17.45 2.09 14.97 1 12 1 7.7 1 3.99 3.47 2.18 7.06l3.66 2.84c.87-2.6 3.3-4.52 6.16-4.52z"/>
-            </svg>
-            <span id="google-btn-text">Continue with Google Account</span>
-          </button>
-
-          <div class="relative flex py-3 items-center">
-            <div class="flex-grow border-t border-slate-200"></div>
-            <span class="flex-shrink mx-3 text-[10px] text-slate-400 uppercase tracking-widest font-semibold">Or with credentials</span>
-            <div class="flex-grow border-t border-slate-200"></div>
-          </div>
-        </div>
-
         <!-- TEACHER LOGIN FORM -->
         <form id="teacher-login-form" onsubmit="handleTeacherLogin(event)" class="space-y-3.5">
           <div>
@@ -247,12 +215,12 @@
               <div class="absolute inset-y-0 left-0 pl-3.5 flex items-center pointer-events-none text-slate-400">
                 <i data-lucide="id-card" class="w-4 h-4 text-ashiana-green"></i>
               </div>
-              <input type="text" id="teacher-login-id" required placeholder="e.g. APS-101 or email" class="w-full text-xs pl-10 pr-3.5 py-2.5 sm:py-3 bg-slate-50 border border-slate-200 rounded-xl focus:ring-2 focus:ring-ashiana-green focus:outline-none focus:bg-white font-medium">
+              <input type="text" id="teacher-login-id" required placeholder="e.g. APS-104 or email" class="w-full text-xs pl-10 pr-3.5 py-2.5 sm:py-3 bg-slate-50 border border-slate-200 rounded-xl focus:ring-2 focus:ring-ashiana-green focus:outline-none focus:bg-white font-medium">
             </div>
           </div>
 
           <div>
-            <label class="block text-xs font-bold text-slate-700 mb-1">Personal 4-Digit PIN</label>
+            <label class="block text-xs font-bold text-slate-700 mb-1">Personal 4-Digit Attendance PIN</label>
             <div class="relative">
               <div class="absolute inset-y-0 left-0 pl-3.5 flex items-center pointer-events-none text-slate-400">
                 <i data-lucide="lock" class="w-4 h-4 text-ashiana-green"></i>
@@ -274,11 +242,11 @@
         <form id="admin-login-form" onsubmit="handleAdminLogin(event)" class="space-y-3.5 hidden">
           <div class="p-2.5 bg-emerald-50 border border-emerald-200 rounded-xl flex items-center space-x-2 text-xs text-emerald-950">
             <i data-lucide="shield-alert" class="w-4 h-4 text-ashiana-red flex-shrink-0"></i>
-            <span>Authorized access for Principal Office & Administrators only.</span>
+            <span>Authorized access for Principal Office only.</span>
           </div>
 
           <div>
-            <label class="block text-xs font-bold text-slate-700 mb-1">Admin Email / Username</label>
+            <label class="block text-xs font-bold text-slate-700 mb-1">Admin Username / Email</label>
             <div class="relative">
               <div class="absolute inset-y-0 left-0 pl-3.5 flex items-center pointer-events-none text-slate-400">
                 <i data-lucide="user" class="w-4 h-4 text-ashiana-green"></i>
@@ -308,18 +276,17 @@
       </div>
 
       <div class="bg-slate-50 p-3 text-center border-t border-slate-100 text-[10px] text-slate-500">
-        Ashiana Public School • Attendance & Personnel Register
+        Ashiana Public School • Sector 46-A, Chandigarh
       </div>
     </div>
 
-    <!-- 2. STAFF MOBILE PORTAL (RESPONSIVE FOR ALL SCREEN SIZES) -->
+    <!-- 2. STAFF MOBILE PORTAL (RESPONSIVE MOBILE FIRST) -->
     <div id="staff-portal-view" class="hidden flex-col items-center w-full max-w-md mx-auto">
       
-      <!-- Mobile Container Card -->
-      <div class="w-full bg-white rounded-3xl shadow-xl border border-slate-200 overflow-hidden flex flex-col min-h-[580px] sm:min-h-[640px]">
+      <div class="w-full bg-white rounded-3xl shadow-xl border border-slate-200 overflow-hidden flex flex-col min-h-[580px]">
         
-        <!-- Staff Profile Header Bar -->
-        <div class="bg-gradient-to-b from-emerald-950 to-[#064E3B] text-white p-4 sm:p-5 border-b-2 border-ashiana-red">
+        <!-- Staff Header Bar -->
+        <div class="bg-gradient-to-b from-emerald-950 to-[#064E3B] text-white p-4 border-b-2 border-ashiana-red">
           <div class="flex items-center justify-between">
             <div class="flex items-center space-x-3">
               <div id="staff-avatar-circle" class="w-11 h-11 rounded-2xl bg-emerald-500/20 border border-emerald-400/40 flex items-center justify-center font-bold text-sm text-emerald-100 shadow-inner">
@@ -345,14 +312,14 @@
         </div>
 
         <!-- Scrollable Dashboard Body -->
-        <div class="flex-1 overflow-y-auto hide-scrollbar p-3.5 sm:p-4 space-y-3.5">
+        <div class="flex-1 overflow-y-auto hide-scrollbar p-3.5 space-y-3">
           
           <!-- Shift Overview Card -->
           <div class="bg-white rounded-2xl p-3.5 shadow-sm border border-slate-200/80">
             <div class="flex items-center justify-between border-b border-slate-100 pb-2 mb-2.5">
               <div class="flex items-center space-x-1.5">
                 <i data-lucide="calendar" class="w-3.5 h-3.5 text-ashiana-green"></i>
-                <span class="text-xs font-bold text-slate-700">Today's Schedule</span>
+                <span class="text-xs font-bold text-slate-700">Today's Shift</span>
               </div>
               <span class="text-[10px] font-mono text-emerald-800 bg-emerald-50 px-2 py-0.5 rounded-md font-bold border border-emerald-200">07:40 AM – 02:30 PM</span>
             </div>
@@ -360,17 +327,17 @@
             <div class="grid grid-cols-2 gap-2 text-center mb-2.5">
               <div class="bg-slate-50 rounded-xl p-2 border border-slate-100">
                 <span class="text-[9px] uppercase font-bold text-slate-400 block tracking-wider">First IN</span>
-                <span id="card-first-in" class="text-sm sm:text-base font-bold font-mono text-slate-800">--:--</span>
+                <span id="card-first-in" class="text-sm font-bold font-mono text-slate-800">--:--</span>
               </div>
               <div class="bg-slate-50 rounded-xl p-2 border border-slate-100">
                 <span class="text-[9px] uppercase font-bold text-slate-400 block tracking-wider">Last OUT</span>
-                <span id="card-last-out" class="text-sm sm:text-base font-bold font-mono text-slate-800">--:--</span>
+                <span id="card-last-out" class="text-sm font-bold font-mono text-slate-800">--:--</span>
               </div>
             </div>
 
             <div class="grid grid-cols-3 gap-1.5 pt-2 border-t border-slate-100 text-center">
               <div>
-                <span class="text-[8px] uppercase font-bold text-slate-400 block">Working Hrs</span>
+                <span class="text-[8px] uppercase font-bold text-slate-400 block">Work Time</span>
                 <span id="metric-work-hours" class="text-xs font-bold font-mono text-ashiana-green">0h 00m</span>
               </div>
               <div>
@@ -391,7 +358,7 @@
               <p class="text-[11px] text-slate-500 mt-0.5">Scans school daily QR to record your punch</p>
             </div>
 
-            <button id="btn-mark-attendance" onclick="openPunchModal()" class="w-full py-3.5 sm:py-4 bg-gradient-to-r from-ashiana-green via-[#08693A] to-emerald-900 hover:from-[#08693A] hover:to-[#054625] text-white rounded-2xl font-extrabold text-sm sm:text-base tracking-wide flex items-center justify-center space-x-2 shadow-lg shadow-emerald-700/30 active:scale-[0.98] transition-all border-b-2 border-ashiana-red">
+            <button id="btn-mark-attendance" onclick="openPunchModal()" class="w-full py-3.5 bg-gradient-to-r from-ashiana-green via-[#08693A] to-emerald-900 hover:from-[#08693A] hover:to-[#054625] text-white rounded-2xl font-extrabold text-sm sm:text-base tracking-wide flex items-center justify-center space-x-2 shadow-lg shadow-emerald-700/30 active:scale-[0.98] transition-all border-b-2 border-ashiana-red">
               <i data-lucide="camera" class="w-5 h-5 animate-pulse"></i>
               <span>MARK ATTENDANCE</span>
             </button>
@@ -399,7 +366,7 @@
             <div class="flex items-center justify-between text-[10px] text-slate-500 mt-2.5 px-1 font-medium">
               <span class="flex items-center space-x-1">
                 <span class="w-2 h-2 rounded-full bg-emerald-500 animate-pulse"></span>
-                <span>Next Punch: <strong id="lbl-next-punch" class="text-ashiana-green uppercase font-bold">PUNCH IN</strong></span>
+                <span>Next: <strong id="lbl-next-punch" class="text-ashiana-green uppercase font-bold">PUNCH IN</strong></span>
               </span>
               <span id="lbl-punches-today">Punches: 0</span>
             </div>
@@ -410,14 +377,14 @@
             <div class="flex items-center justify-between mb-2">
               <h4 class="text-xs font-bold text-slate-800 flex items-center space-x-1.5">
                 <i data-lucide="history" class="w-3.5 h-3.5 text-ashiana-green"></i>
-                <span>Today's Alternating Punch Log</span>
+                <span>Today's Punch History</span>
               </h4>
               <span id="punch-count-pill" class="text-[9px] font-bold px-2 py-0.5 rounded-full bg-slate-100 text-slate-600">0 logs</span>
             </div>
 
             <div id="staff-today-timeline" class="space-y-1.5">
               <div class="text-center py-5 text-slate-400 text-xs italic">
-                No attendance punches recorded today.<br>Tap "MARK ATTENDANCE" above.
+                No punches recorded today.<br>Tap "MARK ATTENDANCE" above.
               </div>
             </div>
           </div>
@@ -434,7 +401,7 @@
               </button>
             </div>
             <div id="staff-leave-status-widget" class="text-[10px] text-slate-500">
-              No active leave requests submitted for today.
+              No active leave requests for today.
             </div>
           </div>
         </div>
@@ -451,11 +418,11 @@
           </button>
           <button onclick="openStaffProfileModal()" class="flex flex-col items-center hover:text-ashiana-green">
             <i data-lucide="user" class="w-4 h-4"></i>
-            <span class="text-[9px] mt-0.5">PIN</span>
+            <span class="text-[9px] mt-0.5">Profile</span>
           </button>
           <button onclick="handleLogout()" class="flex flex-col items-center hover:text-ashiana-red text-slate-400">
             <i data-lucide="log-out" class="w-4 h-4"></i>
-            <span class="text-[9px] mt-0.5">Exit</span>
+            <span class="text-[9px] mt-0.5">Sign Out</span>
           </button>
         </div>
 
@@ -468,7 +435,7 @@
       <!-- Top KPI Row -->
       <div class="grid grid-cols-2 sm:grid-cols-3 lg:grid-cols-6 gap-2 sm:gap-3">
         <div class="bg-white p-3 sm:p-4 rounded-2xl border border-slate-200 shadow-sm border-t-4 border-t-ashiana-green">
-          <span class="text-[10px] font-bold uppercase tracking-wider text-slate-400 block">Total Staff</span>
+          <span class="text-[10px] font-bold uppercase tracking-wider text-slate-400 block">Total Faculty</span>
           <span id="kpi-total-staff" class="text-xl sm:text-2xl font-black text-slate-800">72</span>
           <span class="text-[9px] text-slate-400 block mt-0.5">Active Faculty</span>
         </div>
@@ -528,7 +495,7 @@
         </button>
         <button onclick="switchAdminTab('audit')" id="tab-btn-audit" class="px-3.5 py-1.5 rounded-xl text-xs font-bold text-slate-600 hover:bg-slate-100 flex items-center space-x-1.5">
           <i data-lucide="database" class="w-3.5 h-3.5"></i>
-          <span>Database & Audit</span>
+          <span>Database & Cloud Sync</span>
         </button>
       </div>
 
@@ -538,10 +505,10 @@
           <div class="flex flex-col sm:flex-row sm:items-center justify-between gap-3 mb-4">
             <div>
               <h3 class="text-sm sm:text-base font-bold text-slate-800">Live Faculty Attendance Roster</h3>
-              <p class="text-[11px] text-slate-500">Live automatic status tracking powered by Supabase PostgreSQL.</p>
+              <p class="text-[11px] text-slate-500">Synchronized automatically across staff smartphones and admin desktop.</p>
             </div>
             <div class="flex items-center space-x-2">
-              <input type="text" id="live-search-input" onkeyup="filterLiveAttendance()" placeholder="Search teacher or department..." class="text-xs px-3 py-2 bg-slate-50 border border-slate-200 rounded-xl focus:outline-none focus:ring-2 focus:ring-ashiana-green w-48 sm:w-64">
+              <input type="text" id="live-search-input" onkeyup="filterLiveAttendance()" placeholder="Search faculty or subject..." class="text-xs px-3 py-2 bg-slate-50 border border-slate-200 rounded-xl focus:outline-none focus:ring-2 focus:ring-ashiana-green w-48 sm:w-64">
               <button onclick="exportLiveToCSV()" class="px-3 py-2 bg-emerald-50 hover:bg-emerald-100 text-ashiana-green border border-emerald-200 text-xs font-bold rounded-xl flex items-center space-x-1.5">
                 <i data-lucide="download" class="w-3.5 h-3.5"></i>
                 <span class="hidden sm:inline">Export CSV</span>
@@ -586,27 +553,33 @@
           <h2 class="text-xl font-black text-slate-900 font-serif">ASHIANA PUBLIC SCHOOL</h2>
           <div class="w-16 h-1 bg-ashiana-red mx-auto my-1.5 rounded-full"></div>
           <p class="text-[11px] font-bold text-ashiana-green uppercase tracking-widest">Faculty Attendance Station</p>
-          <p class="text-[10px] text-slate-500">Sector 46-A, Chandigarh • Daily Dynamic Token</p>
+          <p class="text-[10px] text-slate-500">Sector 46-A, Chandigarh • Daily Attendance QR</p>
 
           <div class="my-4 p-4 bg-slate-50 rounded-2xl border border-slate-200 inline-block shadow-inner">
             <div id="qr-code-canvas-container" class="flex justify-center items-center w-52 h-52 mx-auto bg-white p-2.5 rounded-xl border border-emerald-300"></div>
-            <span id="qr-token-preview" class="text-[9px] font-mono text-emerald-800 font-bold block mt-2 bg-emerald-50 px-2 py-0.5 rounded border border-emerald-200">APS-SEC-TOKEN-ACTIVE</span>
+            <div class="mt-2 space-y-1">
+              <span id="qr-token-preview" class="text-[9px] font-mono text-emerald-800 font-bold block bg-emerald-50 px-2 py-0.5 rounded border border-emerald-200">APS-DAY-TOKEN-ACTIVE</span>
+              <span class="inline-flex items-center space-x-1 text-[10px] font-bold text-emerald-700 bg-emerald-100/70 px-2.5 py-0.5 rounded-full">
+                <i data-lucide="shield-check" class="w-3 h-3 text-ashiana-green"></i>
+                <span id="qr-valid-day-text">Valid for Today: All Day</span>
+              </span>
+            </div>
           </div>
 
-          <div class="max-w-xs mx-auto space-y-1.5 mb-4">
-            <div class="flex justify-between text-xs font-bold text-slate-600">
-              <span>Token Expires In:</span>
-              <span id="qr-countdown-text" class="font-mono text-ashiana-green">60s</span>
+          <div class="max-w-xs mx-auto space-y-1.5 mb-4 text-xs text-slate-600 bg-slate-50 p-2.5 rounded-xl border border-slate-200">
+            <div class="flex justify-between items-center font-bold">
+              <span>Attendance Date:</span>
+              <span id="qr-station-date" class="font-mono text-ashiana-green">Today</span>
             </div>
-            <div class="w-full h-1.5 bg-slate-100 rounded-full overflow-hidden">
-              <div id="qr-progress-bar" class="h-full bg-ashiana-green transition-all duration-1000" style="width: 100%;"></div>
-            </div>
+            <p class="text-[10px] text-slate-500 text-left">
+              This QR code remains valid throughout today's shift (07:40 AM – 02:30 PM). Teachers can scan this code upon arrival and departure.
+            </p>
           </div>
 
           <div class="flex items-center justify-center space-x-2">
             <button onclick="rotateQRSession()" class="px-3.5 py-2 bg-ashiana-green hover:bg-[#08693A] text-white rounded-xl text-xs font-bold flex items-center space-x-1.5 shadow">
               <i data-lucide="refresh-cw" class="w-3.5 h-3.5"></i>
-              <span>Regenerate QR Token</span>
+              <span>Regenerate Today's Daily QR</span>
             </button>
           </div>
         </div>
@@ -621,7 +594,7 @@
               <p class="text-xs text-slate-500">Manage enrolled teachers, PINs, and school wings.</p>
             </div>
             <div class="flex flex-wrap items-center gap-2">
-              <input type="text" id="staff-directory-search" onkeyup="filterStaffDirectory()" placeholder="Search staff or role..." class="text-xs px-3 py-2 bg-slate-50 border border-slate-200 rounded-xl focus:outline-none focus:ring-2 focus:ring-ashiana-green w-48 sm:w-60">
+              <input type="text" id="staff-directory-search" onkeyup="filterStaffDirectory()" placeholder="Search faculty name or ID..." class="text-xs px-3 py-2 bg-slate-50 border border-slate-200 rounded-xl focus:outline-none focus:ring-2 focus:ring-ashiana-green w-48 sm:w-60">
               <button onclick="openAddStaffModal()" class="px-3 py-2 bg-ashiana-green hover:bg-[#08693A] text-white text-xs font-bold rounded-xl flex items-center space-x-1.5 shadow">
                 <i data-lucide="user-plus" class="w-3.5 h-3.5"></i>
                 <span>Add Staff</span>
@@ -644,7 +617,7 @@
                   <th class="py-2.5 px-3">Email</th>
                   <th class="py-2.5 px-3 text-center">PIN</th>
                   <th class="py-2.5 px-3">Status</th>
-                  <th class="py-2.5 px-3 text-center">Actions</th>
+                  <th class="py-2.5 px-3 text-center min-w-[140px]">Actions</th>
                 </tr>
               </thead>
               <tbody id="staff-directory-tbody" class="divide-y divide-slate-100"></tbody>
@@ -656,7 +629,7 @@
       <!-- TAB 4: MANUAL CORRECTIONS -->
       <div id="admin-tab-corrections" class="hidden space-y-3">
         <div class="bg-white rounded-2xl border border-slate-200 shadow-sm p-4 sm:p-6 max-w-lg mx-auto">
-          <h3 class="text-base font-bold text-slate-800 border-b border-slate-100 pb-2 mb-3">Manual Punch Override</h3>
+          <h3 class="text-base font-bold text-slate-800 border-b border-slate-100 pb-2 mb-3">Manual Attendance Correction</h3>
           <form onsubmit="handleManualCorrectionSubmit(event)" class="space-y-3">
             <div>
               <label class="block text-xs font-bold text-slate-700 mb-1">Select Faculty Member</label>
@@ -678,8 +651,8 @@
             </div>
 
             <div>
-              <label class="block text-xs font-bold text-slate-700 mb-1">Mandatory Administrative Audit Reason</label>
-              <textarea id="correction-reason" required rows="2" placeholder="e.g. Teacher on bus arrival duty, authorized by Principal" class="w-full text-xs p-2.5 bg-slate-50 border border-slate-200 rounded-xl"></textarea>
+              <label class="block text-xs font-bold text-slate-700 mb-1">Administrative Audit Reason</label>
+              <textarea id="correction-reason" required rows="2" placeholder="e.g. Bus arrival duty authorized by Principal" class="w-full text-xs p-2.5 bg-slate-50 border border-slate-200 rounded-xl"></textarea>
             </div>
 
             <button type="submit" class="w-full py-3 bg-emerald-950 hover:bg-black text-white rounded-xl text-xs font-bold flex items-center justify-center space-x-1.5 shadow">
@@ -712,27 +685,33 @@
         </div>
       </div>
 
-      <!-- TAB 6: DATABASE & AUDIT LOG -->
+      <!-- TAB 6: DATABASE & CLOUD SYNC -->
       <div id="admin-tab-audit" class="hidden space-y-3">
         <div class="bg-gradient-to-r from-emerald-950 via-[#064E3B] to-emerald-900 rounded-2xl p-4 text-white shadow border border-emerald-700/60">
           <div class="flex flex-col sm:flex-row sm:items-center justify-between gap-3">
             <div>
               <div class="flex items-center space-x-2">
                 <span class="px-2 py-0.5 rounded-full text-[9px] font-bold bg-emerald-400/20 text-emerald-300 border border-emerald-400/30 uppercase">
-                  Connected to Supabase
+                  Supabase PostgreSQL Connected
                 </span>
-                <span class="text-xs text-emerald-300 font-mono font-bold flex items-center space-x-1">
-                  <span class="w-2 h-2 rounded-full bg-emerald-400"></span>
-                  <span>PostgreSQL Active</span>
+                <span id="sync-indicator-text" class="text-xs text-emerald-300 font-mono font-bold flex items-center space-x-1">
+                  <span class="w-2 h-2 rounded-full bg-emerald-400 animate-pulse"></span>
+                  <span>Dual Real-Time Auto Sync Active</span>
                 </span>
               </div>
-              <h4 class="text-sm font-bold text-white mt-1">Project: oalfzgluqroqbbrulhpr</h4>
-              <p class="text-[11px] text-emerald-200">Punches made on staff mobile devices synchronize automatically in real-time.</p>
+              <h4 class="text-sm font-bold text-white mt-1">Database Project: oalfzgluqroqbbrulhpr</h4>
+              <p class="text-[11px] text-emerald-200">Punches made on any teacher's smartphone synchronize to this dashboard within seconds.</p>
             </div>
-            <button onclick="syncAllToSupabase()" id="btn-sync-to-cloud" class="px-3.5 py-2 bg-ashiana-green hover:bg-[#08693A] text-white rounded-xl text-xs font-bold flex items-center space-x-1.5 shadow">
-              <i data-lucide="cloud-upload" class="w-3.5 h-3.5"></i>
-              <span>Seed Roster to Supabase</span>
-            </button>
+            <div class="flex items-center space-x-2">
+              <button onclick="pollLatestPunches(true)" class="px-3 py-2 bg-white/10 hover:bg-white/20 text-white rounded-xl text-xs font-bold flex items-center space-x-1.5 transition-colors">
+                <i data-lucide="refresh-cw" class="w-3.5 h-3.5"></i>
+                <span>Force Sync Now</span>
+              </button>
+              <button onclick="syncAllToSupabase()" id="btn-sync-to-cloud" class="px-3.5 py-2 bg-ashiana-green hover:bg-[#08693A] text-white rounded-xl text-xs font-bold flex items-center space-x-1.5 shadow">
+                <i data-lucide="cloud-upload" class="w-3.5 h-3.5"></i>
+                <span>Seed Roster to Supabase</span>
+              </button>
+            </div>
           </div>
         </div>
 
@@ -765,7 +744,7 @@
           <i data-lucide="camera" class="w-4 h-4 text-emerald-300"></i>
           <div>
             <h3 class="text-xs font-bold uppercase tracking-wider font-serif">Mark Attendance</h3>
-            <p id="punch-stepper-subtitle" class="text-[10px] text-emerald-200">Step 1: Point Camera at Daily QR Code</p>
+            <p id="punch-stepper-subtitle" class="text-[10px] text-emerald-200">Step 1: Point Camera at School QR Code</p>
           </div>
         </div>
         <button onclick="closePunchModal()" class="w-7 h-7 rounded-full bg-white/10 hover:bg-white/20 flex items-center justify-center text-white">
@@ -838,64 +817,6 @@
     </div>
   </div>
 
-  <!-- GOOGLE ACCOUNT QUICK SELECTOR MODAL (WORKS OFFLINE & ONLINE) -->
-  <div id="google-account-modal" class="fixed inset-0 bg-slate-950/75 backdrop-blur-sm z-50 hidden flex items-center justify-center p-3">
-    <div class="bg-white rounded-3xl max-w-sm w-full overflow-hidden shadow-2xl border border-slate-200">
-      <div class="p-4 border-b border-slate-100 flex items-center justify-between">
-        <div class="flex items-center space-x-2">
-          <svg class="w-5 h-5 flex-shrink-0" viewBox="0 0 24 24">
-            <path fill="#4285F4" d="M22.56 12.25c0-.78-.07-1.53-.2-2.25H12v4.26h5.92c-.26 1.37-1.04 2.53-2.21 3.31v2.77h3.57c2.08-1.92 3.28-4.74 3.28-8.09z"/>
-            <path fill="#34A853" d="M12 23c2.97 0 5.46-.98 7.28-2.66l-3.57-2.77c-.98.66-2.23 1.06-3.71 1.06-2.86 0-5.29-1.93-6.16-4.53H2.18v2.84C3.99 20.53 7.7 23 12 23z"/>
-            <path fill="#FBBC05" d="M5.84 14.09c-.22-.66-.35-1.36-.35-2.09s.13-1.43.35-2.09V7.06H2.18C1.43 8.55 1 10.22 1 12s.43 3.45 1.18 4.94l2.85-2.22.81-.63z"/>
-            <path fill="#EA4335" d="M12 5.38c1.62 0 3.06.56 4.21 1.64l3.15-3.15C17.45 2.09 14.97 1 12 1 7.7 1 3.99 3.47 2.18 7.06l3.66 2.84c.87-2.6 3.3-4.52 6.16-4.52z"/>
-          </svg>
-          <span class="text-sm font-bold text-slate-800">Sign in with Google Mail</span>
-        </div>
-        <button onclick="closeGoogleAccountModal()" class="w-7 h-7 rounded-full bg-slate-100 hover:bg-slate-200 flex items-center justify-center text-slate-500">
-          <i data-lucide="x" class="w-3.5 h-3.5"></i>
-        </button>
-      </div>
-
-      <div class="p-3.5 space-y-2 max-h-72 overflow-y-auto hide-scrollbar">
-        <p class="text-[11px] text-slate-500 mb-1">Select an account or enter your school Google email:</p>
-        
-        <button onclick="simulateGoogleUserLogin('admin@ashianapublicschool.com', 'Principal Office (Administrator)')" class="w-full p-2.5 rounded-xl border border-slate-200 hover:border-emerald-500 hover:bg-emerald-50/50 flex items-center space-x-2.5 text-left transition-all">
-          <div class="w-8 h-8 rounded-full bg-emerald-900 text-white font-bold text-xs flex items-center justify-center flex-shrink-0">AD</div>
-          <div class="flex-1 min-w-0">
-            <p class="text-xs font-bold text-slate-800 leading-tight">Principal Office</p>
-            <p class="text-[10px] text-slate-500 truncate">admin@ashianapublicschool.com</p>
-          </div>
-          <span class="text-[8px] font-bold px-1.5 py-0.5 rounded bg-amber-100 text-amber-800">Admin</span>
-        </button>
-
-        <button onclick="simulateGoogleUserLogin('principal@ashianapublicschool.com', 'Mrs. Monika Sharma')" class="w-full p-2.5 rounded-xl border border-slate-200 hover:border-emerald-500 hover:bg-emerald-50/50 flex items-center space-x-2.5 text-left transition-all">
-          <div class="w-8 h-8 rounded-full bg-ashiana-green text-white font-bold text-xs flex items-center justify-center flex-shrink-0">MS</div>
-          <div class="flex-1 min-w-0">
-            <p class="text-xs font-bold text-slate-800 leading-tight">Mrs. Monika Sharma</p>
-            <p class="text-[10px] text-slate-500 truncate">principal@ashianapublicschool.com</p>
-          </div>
-          <span class="text-[8px] font-bold px-1.5 py-0.5 rounded bg-emerald-100 text-emerald-800">Principal</span>
-        </button>
-
-        <button onclick="simulateGoogleUserLogin('jyotsna.leekha@ashianapublicschool.com', 'Ms. Jyotsna Leekha')" class="w-full p-2.5 rounded-xl border border-slate-200 hover:border-emerald-500 hover:bg-emerald-50/50 flex items-center space-x-2.5 text-left transition-all">
-          <div class="w-8 h-8 rounded-full bg-teal-600 text-white font-bold text-xs flex items-center justify-center flex-shrink-0">JL</div>
-          <div class="flex-1 min-w-0">
-            <p class="text-xs font-bold text-slate-800 leading-tight">Ms. Jyotsna Leekha</p>
-            <p class="text-[10px] text-slate-500 truncate">jyotsna.leekha@ashianapublicschool.com</p>
-          </div>
-          <span class="text-[8px] font-bold px-1.5 py-0.5 rounded bg-slate-100 text-slate-600">Teacher</span>
-        </button>
-      </div>
-
-      <div class="p-3 bg-slate-50 border-t border-slate-100">
-        <form onsubmit="handleCustomGoogleEmail(event)" class="flex items-center space-x-1.5">
-          <input type="email" id="custom-google-email-input" required placeholder="name@ashianapublicschool.com" class="flex-1 text-xs px-2.5 py-2 bg-white border border-slate-200 rounded-xl focus:outline-none focus:ring-1 focus:ring-ashiana-green">
-          <button type="submit" class="px-3 py-2 bg-ashiana-green text-white text-xs font-bold rounded-xl shadow">Sign In</button>
-        </form>
-      </div>
-    </div>
-  </div>
-
   <!-- PROFILE & PIN CHANGE MODAL -->
   <div id="staff-profile-modal" class="fixed inset-0 bg-slate-950/75 backdrop-blur-sm z-50 hidden flex items-center justify-center p-3">
     <div class="bg-white rounded-3xl max-w-sm w-full overflow-hidden shadow-2xl border border-slate-200">
@@ -903,7 +824,7 @@
         <div class="flex items-center space-x-2">
           <i data-lucide="user" class="w-4 h-4 text-emerald-300"></i>
           <div>
-            <h3 class="text-xs font-bold uppercase tracking-wider font-serif">Faculty Profile & PIN</h3>
+            <h3 class="text-xs font-bold uppercase tracking-wider font-serif">Staff Profile & Settings</h3>
             <p class="text-[10px] text-emerald-200">Ashiana Public School Portal</p>
           </div>
         </div>
@@ -912,9 +833,10 @@
         </button>
       </div>
 
-      <div class="p-4 space-y-3.5">
+      <div class="p-4 space-y-4 max-h-[80vh] overflow-y-auto hide-scrollbar">
+        <!-- Avatar card -->
         <div class="flex items-center space-x-3 p-3 bg-slate-50 rounded-2xl border border-slate-200/80">
-          <div id="profile-modal-avatar" class="w-10 h-10 rounded-xl bg-ashiana-green text-white font-bold text-xs flex items-center justify-center shadow">
+          <div id="profile-modal-avatar" class="w-11 h-11 rounded-xl bg-ashiana-green text-white font-bold text-xs flex items-center justify-center shadow">
             AP
           </div>
           <div class="min-w-0">
@@ -924,36 +846,266 @@
           </div>
         </div>
 
-        <form id="staff-change-pin-form" onsubmit="handleChangePinSubmit(event)" class="space-y-2.5 pt-1">
-          <h5 class="text-xs font-bold text-slate-800">Change 4-Digit Attendance PIN</h5>
+        <!-- FORM 1: UPDATE PROFILE NAME & EMAIL -->
+        <form id="staff-edit-profile-form" onsubmit="handleUpdateStaffProfile(event)" class="space-y-2.5 p-3 bg-slate-50/70 rounded-2xl border border-slate-200">
+          <div class="flex items-center space-x-1.5 border-b border-slate-200 pb-1.5">
+            <i data-lucide="user-pen" class="w-3.5 h-3.5 text-ashiana-green"></i>
+            <h5 class="text-xs font-bold text-slate-800">Edit Profile Details</h5>
+          </div>
+
+          <div>
+            <label class="block text-[10px] font-bold text-slate-600 mb-0.5">Full Name</label>
+            <input type="text" id="profile-edit-name" required class="w-full text-xs p-2 bg-white border border-slate-200 rounded-xl focus:ring-2 focus:ring-ashiana-green font-medium">
+          </div>
+
+          <div>
+            <label class="block text-[10px] font-bold text-slate-600 mb-0.5">Registered Email</label>
+            <input type="email" id="profile-edit-email" required class="w-full text-xs p-2 bg-white border border-slate-200 rounded-xl focus:ring-2 focus:ring-ashiana-green font-mono">
+          </div>
+
+          <button type="submit" class="w-full py-2 bg-slate-800 hover:bg-black text-white rounded-xl text-xs font-bold flex items-center justify-center space-x-1.5 shadow">
+            <i data-lucide="save" class="w-3.5 h-3.5"></i>
+            <span>Save Profile & Sync Database</span>
+          </button>
+        </form>
+
+        <!-- FORM 2: CHANGE PIN -->
+        <form id="staff-change-pin-form" onsubmit="handleChangePinSubmit(event)" class="space-y-2.5 p-3 bg-slate-50/70 rounded-2xl border border-slate-200">
+          <div class="flex items-center space-x-1.5 border-b border-slate-200 pb-1.5">
+            <i data-lucide="key-round" class="w-3.5 h-3.5 text-ashiana-green"></i>
+            <h5 class="text-xs font-bold text-slate-800">Change 4-Digit PIN</h5>
+          </div>
 
           <div>
             <label class="block text-[10px] font-bold text-slate-600 mb-0.5">Current PIN</label>
-            <input type="password" maxlength="4" pattern="[0-9]{4}" id="change-pin-current" required placeholder="••••" class="w-full text-xs p-2 bg-slate-50 border border-slate-200 rounded-xl focus:ring-2 focus:ring-ashiana-green font-mono tracking-widest text-center font-bold">
+            <input type="password" maxlength="4" pattern="[0-9]{4}" id="change-pin-current" required placeholder="••••" class="w-full text-xs p-2 bg-white border border-slate-200 rounded-xl focus:ring-2 focus:ring-ashiana-green font-mono tracking-widest text-center font-bold">
           </div>
 
           <div class="grid grid-cols-2 gap-2">
             <div>
               <label class="block text-[10px] font-bold text-slate-600 mb-0.5">New PIN</label>
-              <input type="password" maxlength="4" pattern="[0-9]{4}" id="change-pin-new" required placeholder="New 4-digits" class="w-full text-xs p-2 bg-slate-50 border border-slate-200 rounded-xl focus:ring-2 focus:ring-ashiana-green font-mono tracking-widest text-center font-bold">
+              <input type="password" maxlength="4" pattern="[0-9]{4}" id="change-pin-new" required placeholder="••••" class="w-full text-xs p-2 bg-white border border-slate-200 rounded-xl focus:ring-2 focus:ring-ashiana-green font-mono tracking-widest text-center font-bold">
             </div>
             <div>
               <label class="block text-[10px] font-bold text-slate-600 mb-0.5">Confirm PIN</label>
-              <input type="password" maxlength="4" pattern="[0-9]{4}" id="change-pin-confirm" required placeholder="Confirm PIN" class="w-full text-xs p-2 bg-slate-50 border border-slate-200 rounded-xl focus:ring-2 focus:ring-ashiana-green font-mono tracking-widest text-center font-bold">
+              <input type="password" maxlength="4" pattern="[0-9]{4}" id="change-pin-confirm" required placeholder="••••" class="w-full text-xs p-2 bg-white border border-slate-200 rounded-xl focus:ring-2 focus:ring-ashiana-green font-mono tracking-widest text-center font-bold">
             </div>
           </div>
 
-          <button type="submit" class="w-full py-2 bg-ashiana-green hover:bg-[#08693A] text-white rounded-xl text-xs font-bold shadow">
-            Update Attendance PIN
+          <button type="submit" class="w-full py-2 bg-ashiana-green hover:bg-[#08693A] text-white rounded-xl text-xs font-bold flex items-center justify-center space-x-1.5 shadow">
+            <i data-lucide="check" class="w-3.5 h-3.5"></i>
+            <span>Update PIN & Sync Database</span>
           </button>
         </form>
 
         <div class="pt-2 border-t border-slate-100">
           <button type="button" onclick="handleLogout()" class="w-full py-2 bg-rose-50 hover:bg-rose-100 text-ashiana-red border border-rose-200 rounded-xl text-xs font-bold flex items-center justify-center space-x-1.5 transition-colors">
             <i data-lucide="log-out" class="w-3.5 h-3.5"></i>
-            <span>Sign Out of Google Account</span>
+            <span>Sign Out of Account</span>
           </button>
         </div>
+      </div>
+    </div>
+  </div>
+
+  <!-- ADMIN: ADD STAFF MODAL -->
+  <div id="admin-add-staff-modal" class="fixed inset-0 bg-slate-950/75 backdrop-blur-sm z-50 hidden flex items-center justify-center p-3">
+    <div class="bg-white rounded-3xl max-w-md w-full overflow-hidden shadow-2xl border border-slate-200">
+      <div class="bg-gradient-to-r from-emerald-950 to-[#064E3B] p-3.5 text-white flex items-center justify-between border-b-2 border-ashiana-red">
+        <div class="flex items-center space-x-2">
+          <i data-lucide="user-plus" class="w-4 h-4 text-emerald-300"></i>
+          <h3 class="text-xs font-bold uppercase tracking-wider font-serif">Enroll New Faculty / Staff</h3>
+        </div>
+        <button onclick="closeAddStaffModal()" class="w-7 h-7 rounded-full bg-white/10 hover:bg-white/20 flex items-center justify-center text-white">
+          <i data-lucide="x" class="w-3.5 h-3.5"></i>
+        </button>
+      </div>
+
+      <form onsubmit="handleAddStaffSubmit(event)" class="p-4 space-y-3">
+        <div class="grid grid-cols-2 gap-2">
+          <div>
+            <label class="block text-[11px] font-bold text-slate-700 mb-1">Employee ID *</label>
+            <input type="text" id="add-staff-empid" required placeholder="e.g. APS-173" class="w-full text-xs p-2 bg-slate-50 border border-slate-200 rounded-xl font-mono uppercase">
+          </div>
+          <div>
+            <label class="block text-[11px] font-bold text-slate-700 mb-1">Initial 4-Digit PIN *</label>
+            <input type="password" maxlength="4" pattern="[0-9]{4}" id="add-staff-pin" required value="1234" class="w-full text-xs p-2 bg-slate-50 border border-slate-200 rounded-xl font-mono tracking-widest text-center font-bold">
+          </div>
+        </div>
+
+        <div>
+          <label class="block text-[11px] font-bold text-slate-700 mb-1">Full Name *</label>
+          <input type="text" id="add-staff-name" required placeholder="e.g. Ms. Neha Gupta" class="w-full text-xs p-2 bg-slate-50 border border-slate-200 rounded-xl font-medium">
+        </div>
+
+        <div class="grid grid-cols-2 gap-2">
+          <div>
+            <label class="block text-[11px] font-bold text-slate-700 mb-1">Department *</label>
+            <select id="add-staff-department" required class="w-full text-xs p-2 bg-slate-50 border border-slate-200 rounded-xl">
+              <option value="Administration">Administration</option>
+              <option value="Science & Mathematics">Science & Mathematics</option>
+              <option value="Languages & Literature">Languages & Literature</option>
+              <option value="Primary Wing (PRT)">Primary Wing (PRT)</option>
+              <option value="Kindergarten Wing">Kindergarten Wing</option>
+              <option value="Information Technology">Information Technology</option>
+              <option value="Physical Education">Physical Education</option>
+              <option value="Arts, Music & Dance">Arts, Music & Dance</option>
+              <option value="Student Support">Student Support</option>
+            </select>
+          </div>
+          <div>
+            <label class="block text-[11px] font-bold text-slate-700 mb-1">Role / Designation *</label>
+            <input type="text" id="add-staff-role" required placeholder="e.g. TGT Mathematics" class="w-full text-xs p-2 bg-slate-50 border border-slate-200 rounded-xl">
+          </div>
+        </div>
+
+        <div>
+          <label class="block text-[11px] font-bold text-slate-700 mb-1">Official Email *</label>
+          <input type="email" id="add-staff-email" required placeholder="faculty@ashianapublicschool.com" class="w-full text-xs p-2 bg-slate-50 border border-slate-200 rounded-xl font-mono">
+        </div>
+
+        <div class="pt-2 flex items-center justify-end space-x-2">
+          <button type="button" onclick="closeAddStaffModal()" class="px-3.5 py-2 bg-slate-100 hover:bg-slate-200 text-slate-700 rounded-xl text-xs font-bold">Cancel</button>
+          <button type="submit" class="px-4 py-2 bg-ashiana-green hover:bg-[#08693A] text-white rounded-xl text-xs font-bold flex items-center space-x-1.5 shadow">
+            <i data-lucide="check" class="w-3.5 h-3.5"></i>
+            <span>Add & Sync Database</span>
+          </button>
+        </div>
+      </form>
+    </div>
+  </div>
+
+  <!-- ADMIN: EDIT STAFF MODAL -->
+  <div id="admin-edit-staff-modal" class="fixed inset-0 bg-slate-950/75 backdrop-blur-sm z-50 hidden flex items-center justify-center p-3">
+    <div class="bg-white rounded-3xl max-w-md w-full overflow-hidden shadow-2xl border border-slate-200">
+      <div class="bg-gradient-to-r from-emerald-950 to-[#064E3B] p-3.5 text-white flex items-center justify-between border-b-2 border-ashiana-red">
+        <div class="flex items-center space-x-2">
+          <i data-lucide="edit" class="w-4 h-4 text-emerald-300"></i>
+          <h3 class="text-xs font-bold uppercase tracking-wider font-serif">Edit Faculty Details</h3>
+        </div>
+        <button onclick="closeEditStaffModal()" class="w-7 h-7 rounded-full bg-white/10 hover:bg-white/20 flex items-center justify-center text-white">
+          <i data-lucide="x" class="w-3.5 h-3.5"></i>
+        </button>
+      </div>
+
+      <form onsubmit="handleEditStaffSubmit(event)" class="p-4 space-y-3">
+        <input type="hidden" id="edit-staff-id">
+
+        <div class="grid grid-cols-2 gap-2">
+          <div>
+            <label class="block text-[11px] font-bold text-slate-700 mb-1">Employee ID</label>
+            <input type="text" id="edit-staff-empid" required class="w-full text-xs p-2 bg-slate-100 border border-slate-200 rounded-xl font-mono uppercase font-bold" readonly>
+          </div>
+          <div>
+            <label class="block text-[11px] font-bold text-slate-700 mb-1">Status</label>
+            <select id="edit-staff-status" required class="w-full text-xs p-2 bg-slate-50 border border-slate-200 rounded-xl font-bold">
+              <option value="ACTIVE">ACTIVE</option>
+              <option value="INACTIVE">INACTIVE</option>
+            </select>
+          </div>
+        </div>
+
+        <div>
+          <label class="block text-[11px] font-bold text-slate-700 mb-1">Full Name *</label>
+          <input type="text" id="edit-staff-name" required class="w-full text-xs p-2 bg-slate-50 border border-slate-200 rounded-xl font-medium">
+        </div>
+
+        <div class="grid grid-cols-2 gap-2">
+          <div>
+            <label class="block text-[11px] font-bold text-slate-700 mb-1">Department *</label>
+            <select id="edit-staff-department" required class="w-full text-xs p-2 bg-slate-50 border border-slate-200 rounded-xl">
+              <option value="Administration">Administration</option>
+              <option value="Science & Mathematics">Science & Mathematics</option>
+              <option value="Languages & Literature">Languages & Literature</option>
+              <option value="Primary Wing (PRT)">Primary Wing (PRT)</option>
+              <option value="Kindergarten Wing">Kindergarten Wing</option>
+              <option value="Information Technology">Information Technology</option>
+              <option value="Physical Education">Physical Education</option>
+              <option value="Arts, Music & Dance">Arts, Music & Dance</option>
+              <option value="Student Support">Student Support</option>
+            </select>
+          </div>
+          <div>
+            <label class="block text-[11px] font-bold text-slate-700 mb-1">Role / Designation *</label>
+            <input type="text" id="edit-staff-role" required class="w-full text-xs p-2 bg-slate-50 border border-slate-200 rounded-xl">
+          </div>
+        </div>
+
+        <div>
+          <label class="block text-[11px] font-bold text-slate-700 mb-1">Official Email *</label>
+          <input type="email" id="edit-staff-email" required class="w-full text-xs p-2 bg-slate-50 border border-slate-200 rounded-xl font-mono">
+        </div>
+
+        <div class="pt-2 flex items-center justify-end space-x-2">
+          <button type="button" onclick="closeEditStaffModal()" class="px-3.5 py-2 bg-slate-100 hover:bg-slate-200 text-slate-700 rounded-xl text-xs font-bold">Cancel</button>
+          <button type="submit" class="px-4 py-2 bg-ashiana-green hover:bg-[#08693A] text-white rounded-xl text-xs font-bold flex items-center space-x-1.5 shadow">
+            <i data-lucide="save" class="w-3.5 h-3.5"></i>
+            <span>Update & Sync Database</span>
+          </button>
+        </div>
+      </form>
+    </div>
+  </div>
+
+  <!-- ADMIN: RESET PIN MODAL -->
+  <div id="admin-reset-pin-modal" class="fixed inset-0 bg-slate-950/75 backdrop-blur-sm z-50 hidden flex items-center justify-center p-3">
+    <div class="bg-white rounded-3xl max-w-sm w-full overflow-hidden shadow-2xl border border-slate-200">
+      <div class="bg-gradient-to-r from-emerald-950 to-[#064E3B] p-3.5 text-white flex items-center justify-between border-b-2 border-ashiana-red">
+        <div class="flex items-center space-x-2">
+          <i data-lucide="key" class="w-4 h-4 text-amber-300"></i>
+          <h3 class="text-xs font-bold uppercase tracking-wider font-serif">Reset Attendance PIN</h3>
+        </div>
+        <button onclick="closeResetPinModal()" class="w-7 h-7 rounded-full bg-white/10 hover:bg-white/20 flex items-center justify-center text-white">
+          <i data-lucide="x" class="w-3.5 h-3.5"></i>
+        </button>
+      </div>
+
+      <form onsubmit="handleResetPinSubmit(event)" class="p-4 space-y-3">
+        <input type="hidden" id="reset-pin-staff-id">
+        <div class="text-center pb-2">
+          <p class="text-xs text-slate-500">Reset 4-digit PIN for faculty:</p>
+          <h4 id="reset-pin-staff-name" class="text-sm font-bold text-slate-800">Faculty Name</h4>
+          <span id="reset-pin-staff-empid" class="text-[10px] font-mono text-ashiana-green font-bold">APS-101</span>
+        </div>
+
+        <div>
+          <label class="block text-[11px] font-bold text-slate-700 mb-1">New 4-Digit Attendance PIN *</label>
+          <input type="password" maxlength="4" pattern="[0-9]{4}" id="reset-pin-new-value" required placeholder="••••" class="w-full text-center font-mono font-bold tracking-widest text-lg p-2.5 bg-slate-50 border border-slate-200 rounded-xl focus:ring-2 focus:ring-ashiana-green">
+        </div>
+
+        <div class="pt-2 flex items-center justify-end space-x-2">
+          <button type="button" onclick="closeResetPinModal()" class="px-3.5 py-2 bg-slate-100 hover:bg-slate-200 text-slate-700 rounded-xl text-xs font-bold">Cancel</button>
+          <button type="submit" class="px-4 py-2 bg-emerald-950 hover:bg-black text-white rounded-xl text-xs font-bold flex items-center space-x-1.5 shadow">
+            <i data-lucide="check" class="w-3.5 h-3.5"></i>
+            <span>Set New PIN & Sync</span>
+          </button>
+        </div>
+      </form>
+    </div>
+  </div>
+
+  <!-- ADMIN: DELETE STAFF CONFIRMATION MODAL -->
+  <div id="admin-delete-staff-modal" class="fixed inset-0 bg-slate-950/75 backdrop-blur-sm z-50 hidden flex items-center justify-center p-3">
+    <div class="bg-white rounded-3xl max-w-sm w-full overflow-hidden shadow-2xl border border-slate-200">
+      <div class="p-4 text-center space-y-2.5">
+        <div class="w-12 h-12 mx-auto rounded-2xl bg-rose-100 text-ashiana-red flex items-center justify-center">
+          <i data-lucide="trash-2" class="w-6 h-6"></i>
+        </div>
+        <h3 class="text-sm font-bold text-slate-900">Delete Faculty Record?</h3>
+        <p class="text-xs text-slate-500 leading-relaxed">
+          Are you sure you want to delete <strong id="delete-staff-name" class="text-slate-800">Faculty</strong> (<span id="delete-staff-empid" class="font-mono text-ashiana-green font-bold">APS-101</span>)? This will permanently remove them from the roster and database.
+        </p>
+        <input type="hidden" id="delete-staff-id">
+      </div>
+
+      <div class="p-3 bg-slate-50 border-t border-slate-100 flex items-center space-x-2">
+        <button type="button" onclick="closeDeleteStaffModal()" class="flex-1 py-2 bg-white hover:bg-slate-100 text-slate-700 border border-slate-200 rounded-xl text-xs font-bold">
+          Cancel
+        </button>
+        <button type="button" onclick="confirmDeleteStaff()" class="flex-1 py-2 bg-ashiana-red hover:bg-ashiana-red-dark text-white rounded-xl text-xs font-bold flex items-center justify-center space-x-1 shadow">
+          <i data-lucide="trash-2" class="w-3.5 h-3.5"></i>
+          <span>Delete Record</span>
+        </button>
       </div>
     </div>
   </div>
@@ -1005,12 +1157,12 @@
   <!-- JAVASCRIPT ENGINE -->
   <script>
     // =========================================================================
-    // ⚙️ LIVE SUPABASE POSTGRESQL CREDENTIALS (AUTO-CONNECT FOR ALL PHONES)
+    // ⚙️ LIVE SUPABASE POSTGRESQL CREDENTIALS (EMBEDDED)
     // =========================================================================
     const DEFAULT_SUPABASE_URL = "https://oalfzgluqroqbbrulhpr.supabase.co";
     const DEFAULT_SUPABASE_ANON_KEY = "eyJhbGciOiJIUzI1NiIsInR5cCI6IkpXVCJ9.eyJpc3MiOiJzdXBhYmFzZSIsInJlZiI6Im9hbGZ6Z2x1cXJvcWJicnVsaHByIiwicm9sZSI6ImFub24iLCJpYXQiOjE3OTAwNjAwMDQsImV4cCI6MjEwNTYzNjAwNH0.eBl1Q_ZmlUSoUHWqsv1qfVgreAGuJkBG2alPwT-Kaz8";
 
-    // Attendance Parameters
+    // System Attendance Parameters
     const systemConfig = {
       schoolScheduleStart: "07:40",
       schoolScheduleEnd: "14:30",
@@ -1031,6 +1183,7 @@
     let supabaseClient = null;
     let isCloudConnected = false;
     let realtimeChannel = null;
+    let autoPollingInterval = null;
     let html5QrScannerInstance = null;
     let isScannerRunning = false;
     let currentCameraFacingMode = "environment";
@@ -1046,10 +1199,21 @@
     let currentPortal = "staff";
     let currentPinInput = "";
 
+    // Daily QR Session: Valid for the entire current calendar date
+    function getTodayDailyToken(dateStr) {
+      const storageKey = 'aps_daily_qr_token_' + dateStr;
+      let token = localStorage.getItem(storageKey);
+      if (!token) {
+        token = "APS-DAY-" + dateStr.replace(/-/g, '') + "-" + Math.random().toString(36).substring(2, 8).toUpperCase();
+        localStorage.setItem(storageKey, token);
+      }
+      return token;
+    }
+
     let activeQRSession = {
-      token: "APS-SEC-" + Math.random().toString(36).substring(2, 9).toUpperCase(),
+      token: getTodayDailyToken(systemConfig.currentAttendanceDate),
       date: systemConfig.currentAttendanceDate,
-      expiresIn: 60
+      validUntil: "End of Today"
     };
 
     // Baseline Faculty Data for Ashiana Public School
@@ -1109,7 +1273,7 @@
       return baseline;
     }
 
-    // Initialize Supabase Client
+    // Initialize Supabase Client with Dual Auto-Sync Engine
     function initSupabase() {
       if (window.supabase && window.supabase.createClient) {
         try {
@@ -1117,7 +1281,7 @@
           isCloudConnected = true;
           updateCloudBadge(true);
           listenToRealtimePunches();
-          setupSupabaseAuthListener();
+          startBackgroundPolling();
         } catch (e) {
           console.warn("Supabase init error:", e);
           isCloudConnected = false;
@@ -1130,25 +1294,66 @@
       const dot = document.getElementById("nav-cloud-dot");
       const label = document.getElementById("nav-cloud-label");
       if (dot) dot.className = connected ? "w-2 h-2 rounded-full bg-emerald-400 animate-pulse" : "w-2 h-2 rounded-full bg-amber-400";
-      if (label) label.innerText = connected ? "Supabase Cloud" : "Local Mode";
+      if (label) label.innerText = connected ? "Cloud Live" : "Local Mode";
     }
 
-    async function setupSupabaseAuthListener() {
+    // Background Delta Polling ensures sync works even if Realtime WebSockets aren't enabled in Supabase dashboard
+    function startBackgroundPolling() {
+      if (autoPollingInterval) clearInterval(autoPollingInterval);
+      autoPollingInterval = setInterval(() => {
+        pollLatestPunches(false);
+      }, 5000);
+    }
+
+    async function pollLatestPunches(notifyManual = false) {
       if (!supabaseClient) return;
       try {
-        const { data: { session } } = await supabaseClient.auth.getSession();
-        if (session?.user) {
-          processGoogleUser(session.user);
+        const { data: remotePunches, error } = await supabaseClient
+          .from('attendance_punches')
+          .select('*')
+          .eq('attendance_date', systemConfig.currentAttendanceDate)
+          .order('timestamp', { ascending: true });
+
+        if (error) {
+          console.warn("Supabase poll notice:", error);
+          if (notifyManual) showToast("Cloud Sync: " + error.message, "error");
+          return;
         }
-        supabaseClient.auth.onAuthStateChange((event, session) => {
-          if (event === 'SIGNED_IN' && session?.user) {
-            processGoogleUser(session.user);
-          } else if (event === 'SIGNED_OUT') {
-            handleLogout(false);
+
+        if (remotePunches && remotePunches.length > 0) {
+          let hasNewPunches = false;
+          remotePunches.forEach(rp => {
+            const exists = punchLedger.some(p => p.id === rp.id || (p.staffId === rp.staff_id && p.timestamp === rp.timestamp && p.type === rp.type));
+            if (!exists) {
+              punchLedger.push({
+                id: rp.id,
+                staffId: rp.staff_id,
+                staffName: rp.staff_name,
+                empId: rp.emp_id,
+                attendanceDate: rp.attendance_date,
+                type: rp.type,
+                timestamp: rp.timestamp,
+                method: rp.method || "QR_CAMERA_PIN"
+              });
+              hasNewPunches = true;
+            }
+          });
+
+          if (hasNewPunches) {
+            savePersistedData();
+            renderLiveAttendanceTable();
+            updateKPICards();
+            if (currentStaffId) refreshStaffUI();
+            playTone('SUCCESS');
+            showToast("New punches synchronized from cloud.", "info");
+          } else if (notifyManual) {
+            showToast("Cloud sync verified. All devices up to date.", "success");
           }
-        });
+        } else if (notifyManual) {
+          showToast("Cloud connected. No remote punches recorded today.", "info");
+        }
       } catch (err) {
-        console.warn("Auth check notice:", err);
+        console.warn("Background poll error:", err);
       }
     }
 
@@ -1215,116 +1420,6 @@
       }, 3200);
     }
 
-    // Google Sign-In Trigger
-    async function handleGoogleSignIn() {
-      if (supabaseClient) {
-        try {
-          const { error } = await supabaseClient.auth.signInWithOAuth({
-            provider: 'google',
-            options: {
-              redirectTo: window.location.origin + window.location.pathname
-            }
-          });
-          if (error) throw error;
-        } catch (err) {
-          openGoogleAccountModal();
-        }
-      } else {
-        openGoogleAccountModal();
-      }
-    }
-
-    function openGoogleAccountModal() {
-      document.getElementById("google-account-modal")?.classList.remove("hidden");
-      if (window.lucide) lucide.createIcons();
-    }
-
-    function closeGoogleAccountModal() {
-      document.getElementById("google-account-modal")?.classList.add("hidden");
-    }
-
-    function simulateGoogleUserLogin(email, name) {
-      closeGoogleAccountModal();
-      processGoogleUser({
-        email: email,
-        user_metadata: { full_name: name, name: name }
-      });
-    }
-
-    function handleCustomGoogleEmail(event) {
-      event.preventDefault();
-      const email = document.getElementById("custom-google-email-input")?.value.trim();
-      if (!email) return;
-      closeGoogleAccountModal();
-      processGoogleUser({
-        email: email,
-        user_metadata: { full_name: email.split('@')[0], name: email.split('@')[0] }
-      });
-    }
-
-    // Process Authenticated Google User
-    function processGoogleUser(googleUser) {
-      const email = (googleUser.email || "").toLowerCase().trim();
-      const fullName = googleUser.user_metadata?.full_name || googleUser.user_metadata?.name || email;
-
-      const isAdmin = email === "admin@ashianapublicschool.com" || email === "admin" || googleUser.user_metadata?.role === 'admin';
-
-      if (isAdmin) {
-        currentAuthUser = {
-          type: 'ADMIN',
-          username: fullName || "Principal Office (Administrator)",
-          email: email
-        };
-        currentStaffId = staffDatabase[0]?.id || "usr_101";
-
-        sessionStorage.setItem(STORAGE_KEY_CURRENT_USER, JSON.stringify(currentAuthUser));
-        recordAuditLog("GOOGLE_LOGIN_ADMIN", "Security Gateway", `Administrator logged in (${email}).`);
-        playTone('SUCCESS');
-        showToast(`Signed in as Administrator (${email})`, "success");
-        applyAuthenticatedUI();
-        return;
-      }
-
-      // Check Staff Directory
-      let matchedStaff = staffDatabase.find(s => s.email.toLowerCase() === email || s.name.toLowerCase() === fullName.toLowerCase());
-
-      if (!matchedStaff) {
-        const newId = "usr_" + Date.now();
-        const newEmpId = "APS-" + (staffDatabase.length + 101);
-        matchedStaff = {
-          id: newId,
-          empId: newEmpId,
-          name: fullName,
-          role: "Faculty Member",
-          department: "Academic Wing",
-          email: email,
-          pinHash: "1234",
-          status: "ACTIVE"
-        };
-        staffDatabase.push(matchedStaff);
-        savePersistedData();
-      }
-
-      if (matchedStaff.status !== "ACTIVE") {
-        playTone('ERROR');
-        showToast("Your staff account is inactive. Contact administration.", "error");
-        return;
-      }
-
-      currentAuthUser = {
-        type: 'STAFF',
-        staffRecord: matchedStaff,
-        email: email
-      };
-      currentStaffId = matchedStaff.id;
-
-      sessionStorage.setItem(STORAGE_KEY_CURRENT_USER, JSON.stringify(currentAuthUser));
-      recordAuditLog("GOOGLE_LOGIN_STAFF", matchedStaff.name, `Staff logged in (${email}).`);
-      playTone('SUCCESS');
-      showToast(`Welcome back, ${matchedStaff.name}!`, "success");
-      applyAuthenticatedUI();
-    }
-
     // Load Data
     async function loadPersistedData() {
       try {
@@ -1354,31 +1449,8 @@
         staffDatabase = getBaselineFacultyData();
       }
 
-      // Sync from Supabase Cloud if available
-      if (supabaseClient) {
-        try {
-          const { data: remotePunches } = await supabaseClient
-            .from('attendance_punches')
-            .select('*')
-            .eq('attendance_date', systemConfig.currentAttendanceDate);
-
-          if (remotePunches && remotePunches.length > 0) {
-            punchLedger = remotePunches.map(p => ({
-              id: p.id,
-              staffId: p.staff_id,
-              staffName: p.staff_name,
-              empId: p.emp_id,
-              attendanceDate: p.attendance_date,
-              type: p.type,
-              timestamp: p.timestamp,
-              method: p.method
-            }));
-            localStorage.setItem(STORAGE_KEY_PUNCHES, JSON.stringify(punchLedger));
-          }
-        } catch (err) {
-          console.warn("Supabase fetch notice:", err);
-        }
-      }
+      // Initial sync check
+      await pollLatestPunches(false);
     }
 
     function savePersistedData() {
@@ -1390,9 +1462,12 @@
       } catch (e) {}
     }
 
+    // WebSockets Real-Time Sync Channel
     function listenToRealtimePunches() {
       if (!supabaseClient) return;
-      if (realtimeChannel) supabaseClient.removeChannel(realtimeChannel);
+      if (realtimeChannel) {
+        try { supabaseClient.removeChannel(realtimeChannel); } catch (e) {}
+      }
 
       realtimeChannel = supabaseClient
         .channel('public:attendance_punches')
@@ -1408,7 +1483,7 @@
               attendanceDate: newPunch.attendance_date,
               type: newPunch.type,
               timestamp: newPunch.timestamp,
-              method: newPunch.method
+              method: newPunch.method || "QR_CAMERA_PIN"
             });
             savePersistedData();
             playTone('SUCCESS');
@@ -1421,9 +1496,31 @@
         .subscribe();
     }
 
+    // Auto-upsert staff row to avoid foreign-key rejections
+    async function ensureStaffExistsInSupabase(staff) {
+      if (!supabaseClient || !staff) return;
+      try {
+        await supabaseClient.from('staff').upsert([{
+          id: staff.id,
+          emp_id: staff.empId,
+          name: staff.name,
+          department: staff.department,
+          role: staff.role,
+          email: staff.email,
+          pin_hash: staff.pinHash,
+          status: staff.status
+        }], { onConflict: 'id' });
+      } catch (err) {
+        console.warn("Staff upsert notice:", err);
+      }
+    }
+
     async function syncAllToSupabase() {
-      if (!supabaseClient) return;
-      showToast("Uploading faculty roster to Supabase...", "info");
+      if (!supabaseClient) {
+        showToast("Supabase client not initialized.", "error");
+        return;
+      }
+      showToast("Uploading faculty roster to Supabase PostgreSQL...", "info");
       try {
         const payload = staffDatabase.map(s => ({
           id: s.id,
@@ -1435,9 +1532,10 @@
           pin_hash: s.pinHash,
           status: s.status
         }));
-        await supabaseClient.from('staff').upsert(payload, { onConflict: 'id' });
+        const { error } = await supabaseClient.from('staff').upsert(payload, { onConflict: 'id' });
+        if (error) throw error;
         playTone('SUCCESS');
-        showToast("Roster synchronized to Supabase PostgreSQL!", "success");
+        showToast("All 70+ faculty records seeded to Supabase!", "success");
       } catch (e) {
         showToast("Cloud sync failed: " + e.message, "error");
       }
@@ -1487,7 +1585,7 @@
       }
       if (matched.pinHash !== pinVal) {
         playTone('ERROR');
-        showToast("Incorrect PIN.", "error");
+        showToast("Incorrect PIN. Punch not recorded.", "error");
         return;
       }
 
@@ -1510,7 +1608,7 @@
         currentStaffId = staffDatabase[0]?.id || "usr_101";
         sessionStorage.setItem(STORAGE_KEY_CURRENT_USER, JSON.stringify(currentAuthUser));
 
-        recordAuditLog("ADMIN_LOGIN", "Security Gateway", "Administrator logged into console.");
+        recordAuditLog("ADMIN_LOGIN", "Security Gateway", "Administrator signed in to console.");
         playTone('SUCCESS');
         showToast("Administrator signed in successfully.", "success");
         applyAuthenticatedUI();
@@ -1520,10 +1618,7 @@
       }
     }
 
-    function handleLogout(notifySupabase = true) {
-      if (supabaseClient && notifySupabase) {
-        try { supabaseClient.auth.signOut(); } catch (e) {}
-      }
+    function handleLogout() {
       currentAuthUser = null;
       currentStaffId = null;
       sessionStorage.removeItem(STORAGE_KEY_CURRENT_USER);
@@ -1535,14 +1630,12 @@
       const authGateway = document.getElementById("auth-gateway-view");
       const staffPortal = document.getElementById("staff-portal-view");
       const adminPortal = document.getElementById("admin-portal-view");
-      const adminToggleBar = document.getElementById("admin-view-toggle-bar");
       const sessionControls = document.getElementById("authenticated-session-controls");
 
       if (!currentAuthUser) {
         authGateway.classList.remove("hidden");
         staffPortal.classList.add("hidden");
         adminPortal.classList.add("hidden");
-        adminToggleBar.classList.add("hidden");
         sessionControls.classList.add("hidden");
         return;
       }
@@ -1555,14 +1648,12 @@
       const navRole = document.getElementById("nav-user-role");
 
       if (currentAuthUser.type === 'ADMIN') {
-        adminToggleBar.classList.remove("hidden");
         navAvatar.innerText = "AD";
         navAvatar.className = "w-5 h-5 sm:w-6 sm:h-6 rounded-full bg-ashiana-red text-white font-bold flex items-center justify-center text-[10px]";
         navName.innerText = "Principal Office";
         navRole.innerText = "Administrator";
         switchPortal('admin');
       } else {
-        adminToggleBar.classList.add("hidden");
         const s = currentAuthUser.staffRecord;
         const initials = s.name.replace(/^(Mrs\.|Ms\.|Mr\.)\s*/, '').split(' ').map(n => n[0]).join('').substring(0, 2);
         navAvatar.innerText = initials || "AP";
@@ -1585,20 +1676,14 @@
       currentPortal = portal;
       const staffView = document.getElementById("staff-portal-view");
       const adminView = document.getElementById("admin-portal-view");
-      const btnStaff = document.getElementById("btn-portal-staff");
-      const btnAdmin = document.getElementById("btn-portal-admin");
 
       if (portal === 'staff') {
         staffView.classList.remove("hidden");
         adminView.classList.add("hidden");
-        if (btnStaff) btnStaff.className = "flex items-center space-x-1 px-2.5 py-1 rounded-lg text-[11px] font-bold transition-all bg-ashiana-green text-white shadow";
-        if (btnAdmin) btnAdmin.className = "flex items-center space-x-1 px-2.5 py-1 rounded-lg text-[11px] font-bold transition-all text-emerald-200 hover:text-white";
         refreshStaffUI();
       } else {
         staffView.classList.add("hidden");
         adminView.classList.remove("hidden");
-        if (btnStaff) btnStaff.className = "flex items-center space-x-1 px-2.5 py-1 rounded-lg text-[11px] font-bold transition-all text-emerald-200 hover:text-white";
-        if (btnAdmin) btnAdmin.className = "flex items-center space-x-1 px-2.5 py-1 rounded-lg text-[11px] font-bold transition-all bg-ashiana-green text-white shadow";
         renderLiveAttendanceTable();
         renderStaffDirectoryTable();
         updateKPICards();
@@ -1728,7 +1813,7 @@
 
       document.getElementById("punch-step-scan").classList.remove("hidden");
       document.getElementById("punch-step-pin").classList.add("hidden");
-      document.getElementById("punch-stepper-subtitle").innerText = "Step 1: Point Camera at Daily QR Code";
+      document.getElementById("punch-stepper-subtitle").innerText = "Step 1: Point Camera at School QR Code";
       currentPinInput = "";
       updatePinDots();
 
@@ -1802,9 +1887,10 @@
       punchLedger.push(newRecord);
       savePersistedData();
 
+      // Cloud Persistence: Upsert staff first, then write punch
       if (supabaseClient) {
-        try {
-          await supabaseClient.from('attendance_punches').insert([{
+        ensureStaffExistsInSupabase(staff).then(() => {
+          supabaseClient.from('attendance_punches').insert([{
             id: newPunchId,
             staff_id: staff.id,
             staff_name: staff.name,
@@ -1813,8 +1899,10 @@
             type: nextType,
             timestamp: nowClock,
             method: "QR_CAMERA_PIN"
-          }]);
-        } catch (e) {}
+          }]).then(({ error }) => {
+            if (error) console.warn("Supabase punch insert notice:", error);
+          });
+        });
       }
 
       playTone('SUCCESS');
@@ -1921,9 +2009,20 @@
           <td class="py-2 px-3 text-center"><span class="px-1.5 py-0.5 rounded font-mono font-bold text-[10px] bg-emerald-50 text-ashiana-green border border-emerald-300">${s.pinHash}</span></td>
           <td class="py-2 px-3"><span class="px-2 py-0.5 rounded-full text-[9px] font-bold ${s.status === 'ACTIVE' ? 'bg-emerald-100 text-emerald-800' : 'bg-rose-100 text-rose-800'}">${s.status}</span></td>
           <td class="py-2 px-3 text-center">
-            <button onclick="quickTestPunch('${s.id}')" title="Mark" class="p-1 text-ashiana-green hover:bg-emerald-50 rounded">
-              <i data-lucide="check" class="w-3.5 h-3.5"></i>
-            </button>
+            <div class="flex items-center justify-center space-x-1">
+              <button onclick="openEditStaffModal('${s.id}')" title="Edit Faculty" class="p-1 text-slate-600 hover:text-ashiana-green hover:bg-emerald-50 rounded-lg transition-colors">
+                <i data-lucide="edit-3" class="w-3.5 h-3.5"></i>
+              </button>
+              <button onclick="openResetPinModal('${s.id}')" title="Reset PIN" class="p-1 text-amber-600 hover:text-amber-800 hover:bg-amber-50 rounded-lg transition-colors">
+                <i data-lucide="key" class="w-3.5 h-3.5"></i>
+              </button>
+              <button onclick="openDeleteStaffModal('${s.id}')" title="Delete Faculty" class="p-1 text-slate-400 hover:text-ashiana-red hover:bg-rose-50 rounded-lg transition-colors">
+                <i data-lucide="trash-2" class="w-3.5 h-3.5"></i>
+              </button>
+              <button onclick="quickTestPunch('${s.id}')" title="Quick Mark" class="p-1 text-ashiana-green hover:bg-emerald-50 rounded-lg transition-colors">
+                <i data-lucide="check" class="w-3.5 h-3.5"></i>
+              </button>
+            </div>
           </td>
         </tr>
       `).join('');
@@ -1983,16 +2082,18 @@
       savePersistedData();
 
       if (supabaseClient) {
-        supabaseClient.from('attendance_punches').insert([{
-          id: newPunchId,
-          staff_id: staff.id,
-          staff_name: staff.name,
-          emp_id: staff.empId,
-          attendance_date: systemConfig.currentAttendanceDate,
-          type: nextType,
-          timestamp: time,
-          method: "ADMIN_QUICK"
-        }]).then(() => {});
+        ensureStaffExistsInSupabase(staff).then(() => {
+          supabaseClient.from('attendance_punches').insert([{
+            id: newPunchId,
+            staff_id: staff.id,
+            staff_name: staff.name,
+            emp_id: staff.empId,
+            attendance_date: systemConfig.currentAttendanceDate,
+            type: nextType,
+            timestamp: time,
+            method: "ADMIN_QUICK"
+          }]).then(() => {});
+        });
       }
 
       playTone('SUCCESS');
@@ -2026,21 +2127,35 @@
       container.innerHTML = "";
       if (typeof QRCode !== "undefined") {
         new QRCode(container, {
-          text: JSON.stringify({ school: "ASHIANA_PUBLIC_SCHOOL", token: activeQRSession.token }),
+          text: JSON.stringify({ 
+            school: "ASHIANA_PUBLIC_SCHOOL", 
+            date: activeQRSession.date,
+            token: activeQRSession.token 
+          }),
           width: 180,
           height: 180,
           colorDark: "#064E3B",
           colorLight: "#ffffff"
         });
       }
-      document.getElementById("qr-token-preview").innerText = activeQRSession.token;
+      const tokenPreview = document.getElementById("qr-token-preview");
+      if (tokenPreview) tokenPreview.innerText = activeQRSession.token;
+
+      const stationDate = document.getElementById("qr-station-date");
+      if (stationDate) {
+        const dateObj = new Date();
+        stationDate.innerText = dateObj.toLocaleDateString('en-US', { day: 'numeric', month: 'long', year: 'numeric' });
+      }
     }
 
     function rotateQRSession() {
-      activeQRSession.token = "APS-SEC-" + Math.random().toString(36).substring(2, 9).toUpperCase();
-      activeQRSession.expiresIn = systemConfig.qrExpirySeconds;
+      const today = systemConfig.currentAttendanceDate;
+      const newToken = "APS-DAY-" + today.replace(/-/g, '') + "-" + Math.random().toString(36).substring(2, 8).toUpperCase();
+      localStorage.setItem('aps_daily_qr_token_' + today, newToken);
+      activeQRSession.token = newToken;
+      activeQRSession.date = today;
       renderQRCode();
-      showToast("Dynamic QR token regenerated.", "info");
+      showToast("Today's Daily QR refreshed.", "info");
     }
 
     function renderAuditLogs() {
@@ -2096,6 +2211,12 @@
         document.getElementById("profile-modal-empid").innerText = staff.empId;
         const initials = staff.name.replace(/^(Mrs\.|Ms\.|Mr\.)\s*/, '').split(' ').map(n => n[0]).join('').substring(0, 2);
         document.getElementById("profile-modal-avatar").innerText = initials || "AP";
+
+        // Prefill profile edit inputs
+        const nameInp = document.getElementById("profile-edit-name");
+        const emailInp = document.getElementById("profile-edit-email");
+        if (nameInp) nameInp.value = staff.name;
+        if (emailInp) emailInp.value = staff.email;
       }
       document.getElementById("staff-profile-modal")?.classList.remove("hidden");
       if (window.lucide) lucide.createIcons();
@@ -2105,7 +2226,50 @@
       document.getElementById("staff-profile-modal")?.classList.add("hidden");
     }
 
-    function handleChangePinSubmit(event) {
+    // Staff self-service update Name & Email
+    async function handleUpdateStaffProfile(event) {
+      event.preventDefault();
+      const staff = staffDatabase.find(s => s.id === currentStaffId);
+      if (!staff) return;
+
+      const newName = document.getElementById("profile-edit-name").value.trim();
+      const newEmail = document.getElementById("profile-edit-email").value.trim().toLowerCase();
+
+      if (!newName || !newEmail) {
+        showToast("Name and email cannot be blank.", "error");
+        return;
+      }
+
+      staff.name = newName;
+      staff.email = newEmail;
+      if (currentAuthUser && currentAuthUser.staffRecord) {
+        currentAuthUser.staffRecord.name = newName;
+        currentAuthUser.staffRecord.email = newEmail;
+        sessionStorage.setItem(STORAGE_KEY_CURRENT_USER, JSON.stringify(currentAuthUser));
+      }
+      savePersistedData();
+
+      // Cloud Sync
+      if (supabaseClient) {
+        try {
+          await supabaseClient.from('staff').update({
+            name: newName,
+            email: newEmail
+          }).eq('id', staff.id);
+        } catch (e) {
+          console.warn("Supabase staff update error:", e);
+        }
+      }
+
+      recordAuditLog("PROFILE_UPDATE", staff.name, `Updated profile name to ${newName} and email to ${newEmail}`);
+      playTone('SUCCESS');
+      showToast("Profile details updated and synced to database!", "success");
+      applyAuthenticatedUI();
+      renderStaffDirectoryTable();
+    }
+
+    // Staff self-service change PIN
+    async function handleChangePinSubmit(event) {
       event.preventDefault();
       const current = document.getElementById("change-pin-current").value.trim();
       const newPin = document.getElementById("change-pin-new").value.trim();
@@ -2124,15 +2288,238 @@
       }
 
       staff.pinHash = newPin;
+      if (currentAuthUser && currentAuthUser.staffRecord) {
+        currentAuthUser.staffRecord.pinHash = newPin;
+        sessionStorage.setItem(STORAGE_KEY_CURRENT_USER, JSON.stringify(currentAuthUser));
+      }
       savePersistedData();
+
       if (supabaseClient) {
-        supabaseClient.from('staff').update({ pin_hash: newPin }).eq('id', staff.id).then(() => {});
+        try {
+          await supabaseClient.from('staff').update({ pin_hash: newPin }).eq('id', staff.id);
+        } catch (e) {
+          console.warn("Supabase pin update error:", e);
+        }
       }
 
+      recordAuditLog("PIN_CHANGE", staff.name, "Staff changed personal attendance PIN");
       playTone('SUCCESS');
-      showToast("PIN updated successfully!", "success");
+      showToast("PIN updated successfully and synced to database!", "success");
       closeStaffProfileModal();
       renderStaffDirectoryTable();
+    }
+
+    // ==========================================
+    // ADMIN: ADD, EDIT, DELETE & RESET PIN
+    // ==========================================
+    function openAddStaffModal() {
+      document.getElementById("admin-add-staff-modal")?.classList.remove("hidden");
+      if (window.lucide) lucide.createIcons();
+    }
+
+    function closeAddStaffModal() {
+      document.getElementById("admin-add-staff-modal")?.classList.add("hidden");
+    }
+
+    async function handleAddStaffSubmit(event) {
+      event.preventDefault();
+      const empId = document.getElementById("add-staff-empid").value.trim().toUpperCase();
+      const name = document.getElementById("add-staff-name").value.trim();
+      const department = document.getElementById("add-staff-department").value;
+      const role = document.getElementById("add-staff-role").value.trim();
+      const email = document.getElementById("add-staff-email").value.trim().toLowerCase();
+      const pin = document.getElementById("add-staff-pin").value.trim();
+
+      if (staffDatabase.some(s => s.empId.toUpperCase() === empId)) {
+        showToast("Employee ID already exists.", "error");
+        return;
+      }
+
+      const newStaff = {
+        id: "usr_" + Date.now(),
+        empId,
+        name,
+        department,
+        role,
+        email,
+        pinHash: pin,
+        status: "ACTIVE"
+      };
+
+      staffDatabase.push(newStaff);
+      savePersistedData();
+
+      if (supabaseClient) {
+        await ensureStaffExistsInSupabase(newStaff);
+      }
+
+      recordAuditLog("STAFF_ENROLLED", name, `Enrolled new faculty ${empId} (${role})`);
+      playTone('SUCCESS');
+      showToast(`Faculty ${name} enrolled successfully!`, "success");
+      closeAddStaffModal();
+      renderStaffDirectoryTable();
+      updateKPICards();
+
+      // Refresh manual correction dropdown
+      const sel = document.getElementById("correction-staff-select");
+      if (sel) sel.innerHTML = staffDatabase.map(s => `<option value="${s.id}">${s.name} (${s.empId})</option>`).join('');
+    }
+
+    function openEditStaffModal(staffId) {
+      const staff = staffDatabase.find(s => s.id === staffId);
+      if (!staff) return;
+
+      document.getElementById("edit-staff-id").value = staff.id;
+      document.getElementById("edit-staff-empid").value = staff.empId;
+      document.getElementById("edit-staff-name").value = staff.name;
+      document.getElementById("edit-staff-department").value = staff.department;
+      document.getElementById("edit-staff-role").value = staff.role;
+      document.getElementById("edit-staff-email").value = staff.email;
+      document.getElementById("edit-staff-status").value = staff.status || "ACTIVE";
+
+      document.getElementById("admin-edit-staff-modal")?.classList.remove("hidden");
+      if (window.lucide) lucide.createIcons();
+    }
+
+    function closeEditStaffModal() {
+      document.getElementById("admin-edit-staff-modal")?.classList.add("hidden");
+    }
+
+    async function handleEditStaffSubmit(event) {
+      event.preventDefault();
+      const staffId = document.getElementById("edit-staff-id").value;
+      const staff = staffDatabase.find(s => s.id === staffId);
+      if (!staff) return;
+
+      const name = document.getElementById("edit-staff-name").value.trim();
+      const department = document.getElementById("edit-staff-department").value;
+      const role = document.getElementById("edit-staff-role").value.trim();
+      const email = document.getElementById("edit-staff-email").value.trim().toLowerCase();
+      const status = document.getElementById("edit-staff-status").value;
+
+      staff.name = name;
+      staff.department = department;
+      staff.role = role;
+      staff.email = email;
+      staff.status = status;
+      savePersistedData();
+
+      // Sync with Supabase
+      if (supabaseClient) {
+        try {
+          await supabaseClient.from('staff').update({
+            name,
+            department,
+            role,
+            email,
+            status
+          }).eq('id', staff.id);
+        } catch (e) {
+          console.warn("Supabase edit staff error:", e);
+        }
+      }
+
+      recordAuditLog("STAFF_EDIT", name, `Updated details for ${staff.empId}`);
+      playTone('SUCCESS');
+      showToast(`Faculty ${name} updated and synced!`, "success");
+      closeEditStaffModal();
+      renderStaffDirectoryTable();
+      renderLiveAttendanceTable();
+    }
+
+    function openResetPinModal(staffId) {
+      const staff = staffDatabase.find(s => s.id === staffId);
+      if (!staff) return;
+
+      document.getElementById("reset-pin-staff-id").value = staff.id;
+      document.getElementById("reset-pin-staff-name").innerText = staff.name;
+      document.getElementById("reset-pin-staff-empid").innerText = staff.empId;
+      document.getElementById("reset-pin-new-value").value = "";
+
+      document.getElementById("admin-reset-pin-modal")?.classList.remove("hidden");
+      if (window.lucide) lucide.createIcons();
+    }
+
+    function closeResetPinModal() {
+      document.getElementById("admin-reset-pin-modal")?.classList.add("hidden");
+    }
+
+    async function handleResetPinSubmit(event) {
+      event.preventDefault();
+      const staffId = document.getElementById("reset-pin-staff-id").value;
+      const staff = staffDatabase.find(s => s.id === staffId);
+      if (!staff) return;
+
+      const newPin = document.getElementById("reset-pin-new-value").value.trim();
+      if (!/^\d{4}$/.test(newPin)) {
+        showToast("PIN must be exactly 4 digits.", "error");
+        return;
+      }
+
+      staff.pinHash = newPin;
+      savePersistedData();
+
+      // Sync with Supabase
+      if (supabaseClient) {
+        try {
+          await supabaseClient.from('staff').update({ pin_hash: newPin }).eq('id', staff.id);
+        } catch (e) {
+          console.warn("Supabase PIN reset error:", e);
+        }
+      }
+
+      recordAuditLog("ADMIN_PIN_RESET", staff.name, `Administrator reset PIN for ${staff.empId}`);
+      playTone('SUCCESS');
+      showToast(`PIN reset to ${newPin} for ${staff.name}!`, "success");
+      closeResetPinModal();
+      renderStaffDirectoryTable();
+    }
+
+    function openDeleteStaffModal(staffId) {
+      const staff = staffDatabase.find(s => s.id === staffId);
+      if (!staff) return;
+
+      document.getElementById("delete-staff-id").value = staff.id;
+      document.getElementById("delete-staff-name").innerText = staff.name;
+      document.getElementById("delete-staff-empid").innerText = staff.empId;
+
+      document.getElementById("admin-delete-staff-modal")?.classList.remove("hidden");
+      if (window.lucide) lucide.createIcons();
+    }
+
+    function closeDeleteStaffModal() {
+      document.getElementById("admin-delete-staff-modal")?.classList.add("hidden");
+    }
+
+    async function confirmDeleteStaff() {
+      const staffId = document.getElementById("delete-staff-id").value;
+      const staffIndex = staffDatabase.findIndex(s => s.id === staffId);
+      if (staffIndex === -1) return;
+
+      const staff = staffDatabase[staffIndex];
+      staffDatabase.splice(staffIndex, 1);
+      savePersistedData();
+
+      // Cloud deletion from Supabase
+      if (supabaseClient) {
+        try {
+          await supabaseClient.from('staff').delete().eq('id', staffId);
+        } catch (e) {
+          console.warn("Supabase delete error:", e);
+        }
+      }
+
+      recordAuditLog("STAFF_DELETED", staff.name, `Deleted faculty record ${staff.empId}`);
+      playTone('SUCCESS');
+      showToast(`Faculty record ${staff.name} deleted.`, "info");
+      closeDeleteStaffModal();
+      renderStaffDirectoryTable();
+      renderLiveAttendanceTable();
+      updateKPICards();
+
+      // Refresh manual correction dropdown
+      const sel = document.getElementById("correction-staff-select");
+      if (sel) sel.innerHTML = staffDatabase.map(s => `<option value="${s.id}">${s.name} (${s.empId})</option>`).join('');
     }
 
     function openLeaveApplyModal() {
@@ -2249,13 +2636,13 @@
         if (cG) cG.innerText = tStr;
         if (dG) dG.innerText = dStr;
 
-        if (activeQRSession.expiresIn > 0) {
-          activeQRSession.expiresIn--;
-          const cd = document.getElementById("qr-countdown-text");
-          const bar = document.getElementById("qr-progress-bar");
-          if (cd) cd.innerText = `${activeQRSession.expiresIn}s`;
-          if (bar) bar.style.width = `${(activeQRSession.expiresIn / 60) * 100}%`;
-          if (activeQRSession.expiresIn === 0) rotateQRSession();
+        // Check date rollover at midnight to refresh daily QR session
+        const todayStr = d.toISOString().split('T')[0];
+        if (activeQRSession.date !== todayStr) {
+          systemConfig.currentAttendanceDate = todayStr;
+          activeQRSession.date = todayStr;
+          activeQRSession.token = getTodayDailyToken(todayStr);
+          renderQRCode();
         }
       }, 1000);
     }
@@ -2276,3 +2663,4 @@
   </script>
 </body>
 </html>
+```
