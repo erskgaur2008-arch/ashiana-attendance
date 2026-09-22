@@ -5,7 +5,7 @@
   <meta name="viewport" content="width=device-width, initial-scale=1.0">
   <title>Ashiana Public School • Staff Attendance System</title>
   
-  <!-- Inter & Mono Fonts -->
+  <!-- Inter, Cinzel & Mono Fonts -->
   <link rel="preconnect" href="https://fonts.googleapis.com">
   <link rel="preconnect" href="https://fonts.gstatic.com">
   <link href="https://fonts.googleapis.com/css2?family=Cinzel:wght@600;700;800&family=Inter:wght@300;400;500;600;700;800&family=JetBrains+Mono:wght@400;600;700&display=swap" rel="stylesheet">
@@ -21,6 +21,12 @@
 
   <!-- QRCode.js for client-side QR generation -->
   <script src="https://cdnjs.cloudflare.com/ajax/libs/qrcodejs/1.0.0/qrcode.min.js"></script>
+
+  <!-- HTML5 QR Code Scanner Library for real camera scanning -->
+  <script src="https://unpkg.com/html5-qrcode@2.3.8/html5-qrcode.min.js"></script>
+
+  <!-- Supabase JS Client (v2) for PostgreSQL Cloud Sync -->
+  <script src="https://cdn.jsdelivr.net/npm/@supabase/supabase-js@2"></script>
 
   <script>
     tailwind.config = {
@@ -64,6 +70,18 @@
       height: 3px;
       background: linear-gradient(90deg, #D92D31 0%, #EF4444 50%, #D92D31 100%);
     }
+    /* HTML5 QR Scanner Video Viewport styling */
+    #scanner-reader video {
+      width: 100% !important;
+      height: 100% !important;
+      object-fit: cover !important;
+      border-radius: 1.25rem !important;
+    }
+    #scanner-reader {
+      border: none !important;
+    }
+    #scanner-reader img[alt="Info icon"] { display: none !important; }
+    #scanner-reader a { display: none !important; }
   </style>
 </head>
 <body class="bg-slate-100 text-slate-800 antialiased min-h-screen flex flex-col">
@@ -74,7 +92,6 @@
       
       <!-- Brand & Official Logo -->
       <div class="flex items-center space-x-3">
-        <!-- Logo Image with inline vector fallback -->
         <div class="relative w-11 h-11 rounded-full bg-white p-0.5 shadow-md flex items-center justify-center overflow-hidden border border-emerald-400/40 flex-shrink-0">
           <img src="logo 2.jpg" alt="Ashiana Public School Logo" 
                onerror="this.style.display='none'; this.nextElementSibling.classList.remove('hidden');" 
@@ -107,6 +124,12 @@
         <div class="hidden md:flex flex-col text-right pr-3 border-r border-emerald-800">
           <span id="global-live-time" class="text-sm font-semibold tracking-wider font-mono text-emerald-100">07:40:00 AM</span>
           <span id="global-live-date" class="text-[11px] text-emerald-300">22 September 2026</span>
+        </div>
+
+        <!-- Cloud Database Status Pill -->
+        <div id="nav-cloud-status-badge" onclick="openCloudConfigModal()" class="cursor-pointer flex items-center space-x-1.5 px-2.5 py-1 rounded-xl text-[10px] font-bold border transition-all bg-emerald-950/80 text-emerald-300 border-emerald-700 hover:bg-emerald-900" title="Click to configure Supabase cloud database">
+          <span id="nav-cloud-dot" class="w-2 h-2 rounded-full bg-amber-400 animate-pulse"></span>
+          <span id="nav-cloud-label" class="hidden sm:inline">Local Mode</span>
         </div>
 
         <!-- Portal Switcher (Visible only when logged in as Admin) -->
@@ -154,7 +177,7 @@
   <div id="global-status-banner" class="bg-emerald-50 border-b border-emerald-200 px-4 py-2 text-xs text-emerald-950 flex items-center justify-between">
     <div class="flex items-center space-x-2 max-w-7xl mx-auto w-full">
       <span class="w-2 h-2 rounded-full bg-ashiana-green animate-pulse flex-shrink-0"></span>
-      <span class="truncate"><strong>Ashiana Faculty Attendance Active:</strong> Shift <strong>07:40 AM – 02:30 PM</strong>. Local persistent storage enabled.</span>
+      <span id="banner-status-text" class="truncate"><strong>Ashiana Faculty Attendance Active:</strong> Shift <strong>07:40 AM – 02:30 PM</strong>. Realtime camera scanning active.</span>
     </div>
   </div>
 
@@ -170,7 +193,6 @@
       <div class="bg-gradient-to-br from-emerald-950 via-[#064E3B] to-emerald-900 p-6 text-white text-center relative overflow-hidden">
         <div class="absolute -right-8 -top-8 w-28 h-28 bg-emerald-400/10 rounded-full blur-xl pointer-events-none"></div>
         
-        <!-- Center Logo Display -->
         <div class="w-20 h-20 mx-auto mb-3 rounded-full bg-white p-1 shadow-xl border-2 border-emerald-400/50 flex items-center justify-center overflow-hidden">
           <img src="logo 2.jpg" alt="Ashiana Public School" 
                onerror="this.style.display='none'; this.nextElementSibling.classList.remove('hidden');" 
@@ -370,11 +392,11 @@
             <div class="bg-gradient-to-br from-emerald-50 to-green-50/80 rounded-2xl p-4 border border-emerald-200 shadow-sm text-center">
               <div class="mb-3">
                 <span class="text-[11px] font-bold text-ashiana-green uppercase tracking-wider block">Unified Attendance Punch</span>
-                <p class="text-[11px] text-slate-500 mt-0.5">System automatically alternates IN and OUT sequence.</p>
+                <p class="text-[11px] text-slate-500 mt-0.5">Opens camera scanner to read today's QR code.</p>
               </div>
 
               <button id="btn-mark-attendance" onclick="openPunchModal()" class="w-full py-4 bg-gradient-to-r from-ashiana-green via-[#08693A] to-emerald-900 hover:from-[#08693A] hover:to-[#054625] text-white rounded-2xl font-extrabold text-sm sm:text-base tracking-wide flex items-center justify-center space-x-2 shadow-lg shadow-emerald-700/30 active:scale-[0.98] transition-all border-b-2 border-ashiana-red">
-                <i data-lucide="scan-line" class="w-5 h-5"></i>
+                <i data-lucide="camera" class="w-5 h-5 animate-pulse"></i>
                 <span>MARK ATTENDANCE</span>
               </button>
 
@@ -528,7 +550,7 @@
         </button>
         <button onclick="switchAdminTab('audit')" id="tab-btn-audit" class="px-4 py-2 rounded-xl text-xs font-bold text-slate-600 hover:bg-slate-100 flex items-center space-x-1.5 transition-all">
           <i data-lucide="file-check-2" class="w-3.5 h-3.5"></i>
-          <span>Audit Log & Storage</span>
+          <span>Audit Log & Cloud Storage</span>
         </button>
       </div>
 
@@ -576,7 +598,6 @@
       <div id="admin-tab-qr" class="hidden space-y-4">
         <div class="max-w-xl mx-auto bg-white rounded-3xl border border-slate-200 shadow-xl overflow-hidden text-center p-8">
           
-          <!-- Official Crest on QR Station -->
           <div class="w-24 h-24 mx-auto mb-3 rounded-full bg-white p-1 shadow-lg border-2 border-emerald-500 flex items-center justify-center overflow-hidden">
             <img src="logo 2.jpg" alt="Ashiana Public School" 
                  onerror="this.style.display='none'; this.nextElementSibling.classList.remove('hidden');" 
@@ -759,13 +780,44 @@
         </div>
       </div>
 
-      <!-- TAB 6: IMMUTABLE AUDIT LOG & STORAGE MANAGEMENT -->
+      <!-- TAB 6: IMMUTABLE AUDIT LOG & STORAGE / CLOUD SETTINGS -->
       <div id="admin-tab-audit" class="hidden space-y-4">
+        
+        <!-- Cloud Database Integration Card -->
+        <div class="bg-gradient-to-r from-emerald-950 via-[#064E3B] to-emerald-900 rounded-2xl p-5 text-white shadow-md border border-emerald-700/60">
+          <div class="flex flex-col sm:flex-row sm:items-center justify-between gap-4">
+            <div class="space-y-1">
+              <div class="flex items-center space-x-2">
+                <span class="px-2.5 py-0.5 rounded-full text-[10px] font-bold bg-emerald-400/20 text-emerald-300 border border-emerald-400/30 uppercase tracking-wider">
+                  PostgreSQL Cloud Sync
+                </span>
+                <span id="cloud-connection-indicator" class="text-xs text-amber-300 font-mono font-bold flex items-center space-x-1">
+                  <span class="w-2 h-2 rounded-full bg-amber-400 animate-pulse"></span>
+                  <span>Local Mode (Cloud Not Connected)</span>
+                </span>
+              </div>
+              <h4 class="text-sm font-bold text-white">Supabase Cloud Database Synchronization</h4>
+              <p class="text-xs text-emerald-200">Connect to sync punches across teachers' phones and admin PCs in real time.</p>
+            </div>
+            <div class="flex flex-wrap items-center gap-2">
+              <button onclick="openCloudConfigModal()" class="px-3.5 py-2 bg-ashiana-green hover:bg-[#08693A] text-white rounded-xl text-xs font-bold flex items-center space-x-1.5 shadow transition-all">
+                <i data-lucide="database" class="w-3.5 h-3.5"></i>
+                <span>Configure Cloud Keys</span>
+              </button>
+              <button onclick="syncAllToSupabase()" id="btn-sync-to-cloud" class="px-3.5 py-2 bg-white/10 hover:bg-white/20 text-emerald-100 rounded-xl text-xs font-bold flex items-center space-x-1.5 border border-white/20 transition-all">
+                <i data-lucide="cloud-upload" class="w-3.5 h-3.5"></i>
+                <span>Seed Roster to Cloud</span>
+              </button>
+            </div>
+          </div>
+        </div>
+
+        <!-- Audit Trail Table -->
         <div class="bg-white rounded-2xl border border-slate-200 shadow-sm p-4 sm:p-6">
           <div class="flex flex-col sm:flex-row sm:items-center justify-between gap-3 mb-4">
             <div>
-              <h3 class="text-base font-bold text-slate-800">Authoritative Audit Trail & Storage Desk</h3>
-              <p class="text-xs text-slate-500">Every administrative action, staff edit, and punch is preserved in browser persistent storage.</p>
+              <h3 class="text-base font-bold text-slate-800">Authoritative Audit Trail</h3>
+              <p class="text-xs text-slate-500">Every administrative action, staff edit, and punch is preserved permanently.</p>
             </div>
             <div class="flex items-center space-x-2">
               <span class="text-xs font-mono font-bold bg-emerald-50 text-emerald-800 border border-emerald-200 px-3 py-1.5 rounded-xl flex items-center space-x-1.5">
@@ -803,54 +855,137 @@
   </main>
 
   <!-- ========================================================================= -->
-  <!-- MODAL: MARK ATTENDANCE STEPPER (SIMULATED CAMERA & PIN NUMPAD)            -->
+  <!-- MODAL: CLOUD DATABASE (SUPABASE) CONFIGURATION                            -->
   <!-- ========================================================================= -->
-  <div id="modal-punch" class="fixed inset-0 bg-slate-950/70 backdrop-blur-sm z-50 hidden flex items-center justify-center p-4">
+  <div id="cloud-config-modal" class="fixed inset-0 bg-slate-950/70 backdrop-blur-sm z-50 hidden flex items-center justify-center p-4">
+    <div class="bg-white rounded-3xl max-w-md w-full overflow-hidden shadow-2xl border border-slate-200">
+      <div class="bg-gradient-to-r from-emerald-950 to-[#064E3B] p-5 text-white flex items-center justify-between border-b-2 border-ashiana-red">
+        <div class="flex items-center space-x-2.5">
+          <div class="w-9 h-9 rounded-xl bg-emerald-500/20 flex items-center justify-center border border-emerald-400/40">
+            <i data-lucide="database" class="w-5 h-5 text-emerald-300"></i>
+          </div>
+          <div>
+            <h3 class="text-sm font-bold uppercase tracking-wider font-serif">Cloud Database Config</h3>
+            <p class="text-[11px] text-emerald-200">Supabase (PostgreSQL) Live Connection</p>
+          </div>
+        </div>
+        <button onclick="closeCloudConfigModal()" class="w-8 h-8 rounded-full bg-white/10 hover:bg-white/20 flex items-center justify-center text-white">
+          <i data-lucide="x" class="w-4 h-4"></i>
+        </button>
+      </div>
+
+      <form onsubmit="handleSaveCloudConfig(event)" class="p-6 space-y-4">
+        <div class="p-3 bg-emerald-50 rounded-2xl border border-emerald-200 text-[11px] text-emerald-950 space-y-1">
+          <p class="font-bold flex items-center space-x-1">
+            <i data-lucide="info" class="w-3.5 h-3.5 text-ashiana-green"></i>
+            <span>Multi-Device Real-Time Sync</span>
+          </p>
+          <p class="text-slate-600">Enter your project credentials from your Supabase Dashboard (Settings &rarr; API) to enable real-time sync across staff phones and the Principal dashboard.</p>
+        </div>
+
+        <div>
+          <label class="block text-xs font-bold text-slate-700 mb-1">Supabase Project URL</label>
+          <input type="url" id="cfg-supabase-url" placeholder="https://xyzcompany.supabase.co" class="w-full text-xs p-3 bg-slate-50 border border-slate-200 rounded-xl focus:ring-2 focus:ring-ashiana-green font-mono">
+          <p class="text-[10px] text-slate-400 mt-1">Found under Supabase &rarr; Settings &rarr; API &rarr; Project URL</p>
+        </div>
+
+        <div>
+          <label class="block text-xs font-bold text-slate-700 mb-1">Supabase Public Anon Key</label>
+          <textarea id="cfg-supabase-key" rows="3" placeholder="eyJhbGciOiJIUzI1NiIsInR5cCI6IkpXVCJ9..." class="w-full text-xs p-3 bg-slate-50 border border-slate-200 rounded-xl focus:ring-2 focus:ring-ashiana-green font-mono text-[11px]"></textarea>
+          <p class="text-[10px] text-slate-400 mt-1">Found under Supabase &rarr; Settings &rarr; API &rarr; Project API keys &rarr; anon / public</p>
+        </div>
+
+        <div class="flex items-center justify-between pt-2 border-t border-slate-100">
+          <button type="button" onclick="disconnectCloudDatabase()" class="px-3 py-2 bg-rose-50 hover:bg-rose-100 text-ashiana-red rounded-xl text-xs font-bold transition-colors">
+            Disconnect Cloud
+          </button>
+          <div class="flex items-center space-x-2">
+            <button type="button" onclick="closeCloudConfigModal()" class="px-4 py-2 bg-slate-100 hover:bg-slate-200 text-slate-700 rounded-xl text-xs font-bold">
+              Cancel
+            </button>
+            <button type="submit" class="px-5 py-2 bg-ashiana-green hover:bg-[#08693A] text-white rounded-xl text-xs font-bold shadow">
+              Save & Connect
+            </button>
+          </div>
+        </div>
+      </form>
+    </div>
+  </div>
+
+  <!-- ========================================================================= -->
+  <!-- MODAL: MARK ATTENDANCE STEPPER (REAL CAMERA SCANNER & PIN NUMPAD)          -->
+  <!-- ========================================================================= -->
+  <div id="modal-punch" class="fixed inset-0 bg-slate-950/75 backdrop-blur-sm z-50 hidden flex items-center justify-center p-3 sm:p-4">
     <div class="bg-white rounded-3xl max-w-sm w-full overflow-hidden shadow-2xl border border-slate-200">
       
       <!-- Stepper Header -->
       <div class="bg-gradient-to-r from-emerald-950 to-[#064E3B] p-4 text-white flex items-center justify-between border-b-2 border-ashiana-red">
         <div class="flex items-center space-x-2">
-          <i data-lucide="scan" class="w-5 h-5 text-emerald-300"></i>
+          <i data-lucide="camera" class="w-5 h-5 text-emerald-300"></i>
           <div>
             <h3 class="text-xs font-bold uppercase tracking-wider font-serif">Mark Attendance</h3>
-            <p id="punch-stepper-subtitle" class="text-[11px] text-emerald-200">Step 1: Scan Today's QR Code</p>
+            <p id="punch-stepper-subtitle" class="text-[11px] text-emerald-200">Step 1: Point Camera at Daily QR Code</p>
           </div>
         </div>
-        <button onclick="closePunchModal()" class="w-8 h-8 rounded-full bg-white/10 hover:bg-white/20 flex items-center justify-center text-white">
+        <button onclick="closePunchModal()" class="w-8 h-8 rounded-full bg-white/10 hover:bg-white/20 flex items-center justify-center text-white transition-colors">
           <i data-lucide="x" class="w-4 h-4"></i>
         </button>
       </div>
 
-      <div class="p-5">
-        <!-- STEP 1: SCANNER VIEWPORT -->
-        <div id="punch-step-scan" class="space-y-4">
-          <div class="relative w-64 h-64 mx-auto bg-slate-900 rounded-3xl overflow-hidden border-2 border-emerald-500 shadow-inner flex flex-col items-center justify-center text-center p-4">
-            <!-- Animated Scan Laser -->
-            <div class="absolute top-4 left-4 right-4 h-0.5 bg-gradient-to-r from-emerald-400 via-ashiana-red to-emerald-400 scanner-line shadow-lg shadow-emerald-400/50"></div>
+      <div class="p-4 sm:p-5">
+        <!-- STEP 1: REAL HARDWARE CAMERA SCANNER VIEWPORT -->
+        <div id="punch-step-scan" class="space-y-3.5">
+          
+          <!-- Viewfinder Frame with Live Video Feed -->
+          <div class="relative w-64 h-64 mx-auto bg-slate-950 rounded-3xl overflow-hidden border-2 border-emerald-500 shadow-xl flex flex-col items-center justify-center text-center">
             
-            <div class="w-44 h-44 border-2 border-dashed border-white/30 rounded-2xl flex flex-col items-center justify-center p-3 relative">
-              <i data-lucide="qr-code" class="w-16 h-16 text-white/40 mb-2"></i>
-              <span class="text-[10px] text-emerald-200 font-semibold uppercase tracking-wider">Point at Daily QR</span>
+            <!-- Real HTML5 Video element mounts inside this container -->
+            <div id="scanner-reader" class="w-full h-full"></div>
+
+            <!-- Animated Laser Scan Line Overlay -->
+            <div id="scanner-laser-bar" class="absolute top-4 left-4 right-4 h-0.5 bg-gradient-to-r from-emerald-400 via-ashiana-red to-emerald-400 scanner-line shadow-lg shadow-emerald-400/60 pointer-events-none z-10"></div>
+            
+            <!-- Viewfinder Target Reticle Lines Overlay -->
+            <div class="absolute inset-5 border-2 border-dashed border-white/40 rounded-2xl pointer-events-none flex items-center justify-center z-10">
+              <div class="w-2.5 h-2.5 bg-emerald-400/80 rounded-full animate-ping"></div>
             </div>
-            
-            <span class="text-[10px] text-slate-400 mt-3 font-mono">APS-SCANNER-V3.4</span>
+
+            <div class="absolute bottom-2 left-2 right-2 bg-black/60 backdrop-blur-sm py-1 px-2 rounded-lg text-[10px] text-emerald-300 font-mono z-10 pointer-events-none">
+              APS-VISION-SCANNER
+            </div>
           </div>
 
-          <div class="space-y-2 pt-2">
-            <button onclick="handleScanSuccess()" class="w-full py-3 bg-ashiana-green hover:bg-[#08693A] text-white rounded-xl text-xs font-bold flex items-center justify-center space-x-2 shadow-lg shadow-emerald-700/20 active:scale-95 transition-all">
-              <i data-lucide="check-circle-2" class="w-4 h-4"></i>
-              <span>Simulate QR Code Scanned</span>
+          <!-- Camera Status & Diagnostics Message -->
+          <div id="scanner-status-box" class="text-center">
+            <p id="scanner-status-text" class="text-xs font-semibold text-emerald-800">
+              Initializing phone camera...
+            </p>
+          </div>
+
+          <!-- Camera Controls (Flip Camera + Simulation Fallback) -->
+          <div class="space-y-2 pt-1">
+            <button type="button" onclick="toggleCameraFacingMode()" id="btn-flip-cam" class="w-full py-2.5 bg-slate-100 hover:bg-slate-200 text-slate-700 rounded-xl text-xs font-bold flex items-center justify-center space-x-2 transition-colors">
+              <i data-lucide="switch-camera" class="w-4 h-4"></i>
+              <span>Switch Front / Rear Camera</span>
             </button>
-            <button onclick="handleSimulateExpiredQR()" class="w-full py-2 bg-slate-100 hover:bg-slate-200 text-slate-600 rounded-xl text-[11px] font-semibold">
-              Simulate Expired QR (Test Rejection)
-            </button>
+
+            <!-- Test Scan Shortcut (For PC without webcam or quick validation) -->
+            <div class="pt-1 border-t border-slate-100">
+              <button type="button" onclick="handleSimulateScanSuccess()" class="w-full py-2 bg-emerald-50 hover:bg-emerald-100 text-ashiana-green border border-emerald-200 rounded-xl text-[11px] font-bold flex items-center justify-center space-x-1.5 transition-all">
+                <i data-lucide="check-circle" class="w-3.5 h-3.5"></i>
+                <span>Simulate QR Detected (Test Mode)</span>
+              </button>
+            </div>
           </div>
         </div>
 
         <!-- STEP 2: PIN PAD ENTRY -->
         <div id="punch-step-pin" class="hidden space-y-4">
           <div class="text-center">
+            <div class="inline-flex items-center space-x-1.5 px-3 py-1 rounded-full bg-emerald-50 border border-emerald-200 text-emerald-800 text-[11px] font-bold mb-1">
+              <i data-lucide="check" class="w-3.5 h-3.5 text-ashiana-green"></i>
+              <span>QR Code Verified</span>
+            </div>
             <p class="text-xs text-slate-500">Enter personal 4-digit attendance PIN for:</p>
             <h4 id="pin-modal-staff-name" class="text-sm font-bold text-slate-800 mt-0.5">Faculty Member</h4>
           </div>
@@ -1216,7 +1351,7 @@
   </div>
 
   <!-- ========================================================================= -->
-  <!-- JAVASCRIPT ENGINE (WITH LOCAL PERSISTENCE LAYER)                           -->
+  <!-- JAVASCRIPT ENGINE (CAMERA SCANNER + SUPABASE CLOUD & PERSISTENCE)          -->
   <!-- ========================================================================= -->
   <script>
     // System Parameters
@@ -1234,6 +1369,18 @@
     const STORAGE_KEY_PUNCHES = 'aps_attendance_punch_ledger_v1';
     const STORAGE_KEY_LEAVE = 'aps_attendance_leave_requests_v1';
     const STORAGE_KEY_AUDIT = 'aps_attendance_audit_logs_v1';
+    const STORAGE_KEY_SUPABASE_URL = 'aps_supabase_project_url';
+    const STORAGE_KEY_SUPABASE_KEY = 'aps_supabase_anon_key';
+
+    // Supabase Cloud Client State
+    let supabaseClient = null;
+    let isCloudConnected = false;
+    let realtimeChannel = null;
+
+    // Real Camera Scanner State
+    let html5QrScannerInstance = null;
+    let isScannerRunning = false;
+    let currentCameraFacingMode = "environment"; // "environment" (rear) or "user" (selfie)
 
     // Audio Feedback Synthesis
     let audioCtx = null;
@@ -1377,14 +1524,71 @@
       return baseline;
     }
 
-    // Initialize State variables
+    // State Variables
     let staffDatabase = [];
     let punchLedger = [];
     let leaveRequests = [];
     let auditLogs = [];
 
-    // Local Storage Persistence Handlers
-    function loadPersistedData() {
+    // =========================================================================
+    // SUPABASE CLOUD & LOCAL STORAGE PERSISTENCE ENGINE
+    // =========================================================================
+
+    function initSupabaseClient() {
+      const url = localStorage.getItem(STORAGE_KEY_SUPABASE_URL);
+      const key = localStorage.getItem(STORAGE_KEY_SUPABASE_KEY);
+
+      if (url && key && window.supabase && window.supabase.createClient) {
+        try {
+          supabaseClient = window.supabase.createClient(url.trim(), key.trim());
+          isCloudConnected = true;
+          updateCloudStatusBadge(true);
+          listenToRealtimePunches();
+        } catch (e) {
+          console.warn("Supabase init error:", e);
+          isCloudConnected = false;
+          updateCloudStatusBadge(false);
+        }
+      } else {
+        isCloudConnected = false;
+        updateCloudStatusBadge(false);
+      }
+    }
+
+    function updateCloudStatusBadge(connected) {
+      const dot = document.getElementById("nav-cloud-dot");
+      const label = document.getElementById("nav-cloud-label");
+      const indicator = document.getElementById("cloud-connection-indicator");
+      const statusTag = document.getElementById("storage-status-tag");
+      const banner = document.getElementById("banner-status-text");
+
+      if (connected) {
+        if (dot) dot.className = "w-2 h-2 rounded-full bg-emerald-400";
+        if (label) label.innerText = "Supabase Cloud";
+        if (indicator) {
+          indicator.className = "text-xs text-emerald-300 font-mono font-bold flex items-center space-x-1";
+          indicator.innerHTML = `<span class="w-2 h-2 rounded-full bg-emerald-400"></span><span>Connected to Supabase PostgreSQL</span>`;
+        }
+        if (statusTag) statusTag.innerText = "Cloud PostgreSQL Active";
+        if (banner) {
+          banner.innerHTML = `<strong>Ashiana Faculty Attendance Active:</strong> Shift <strong>07:40 AM – 02:30 PM</strong>. Live PostgreSQL cloud synchronization active.`;
+        }
+      } else {
+        if (dot) dot.className = "w-2 h-2 rounded-full bg-amber-400 animate-pulse";
+        if (label) label.innerText = "Local Mode";
+        if (indicator) {
+          indicator.className = "text-xs text-amber-300 font-mono font-bold flex items-center space-x-1";
+          indicator.innerHTML = `<span class="w-2 h-2 rounded-full bg-amber-400 animate-pulse"></span><span>Local Mode (Cloud Not Connected)</span>`;
+        }
+        if (statusTag) statusTag.innerText = "LocalStorage Active";
+        if (banner) {
+          banner.innerHTML = `<strong>Ashiana Faculty Attendance Active:</strong> Shift <strong>07:40 AM – 02:30 PM</strong>. Local persistent storage enabled.`;
+        }
+      }
+    }
+
+    async function loadPersistedData() {
+      // 1. Initial Local Cache Load
       try {
         const savedStaff = localStorage.getItem(STORAGE_KEY_STAFF);
         staffDatabase = savedStaff ? JSON.parse(savedStaff) : getBaselineFacultyData();
@@ -1405,11 +1609,86 @@
           { id: "aud_2", timestamp: "2026-09-22 07:15:00", actor: "Principal Office", action: "LEAVE_APPROVAL", entity: "Leave #lev_1", details: "Approved medical leave for Ms. Alka Bhalla." }
         ];
       } catch (e) {
-        console.warn("Storage loading failed, using defaults:", e);
+        console.warn("Storage fallback error:", e);
         staffDatabase = getBaselineFacultyData();
-        punchLedger = [];
-        leaveRequests = [];
-        auditLogs = [];
+      }
+
+      // 2. Fetch from Supabase Cloud if configured
+      if (supabaseClient) {
+        try {
+          showToast("Syncing with Supabase cloud...", "info");
+
+          // A. Fetch Staff Roster
+          const { data: remoteStaff, error: staffErr } = await supabaseClient
+            .from('staff')
+            .select('*')
+            .order('emp_id', { ascending: true });
+
+          if (staffErr) throw staffErr;
+
+          if (remoteStaff && remoteStaff.length > 0) {
+            staffDatabase = remoteStaff.map(s => ({
+              id: s.id,
+              empId: s.emp_id,
+              name: s.name,
+              department: s.department,
+              role: s.role,
+              email: s.email,
+              pinHash: s.pin_hash,
+              status: s.status
+            }));
+            localStorage.setItem(STORAGE_KEY_STAFF, JSON.stringify(staffDatabase));
+          } else {
+            console.log("Empty Supabase staff table, seeding Ashiana faculty roster...");
+            await syncAllToSupabase(true);
+          }
+
+          // B. Fetch Today's Attendance Punches
+          const { data: remotePunches } = await supabaseClient
+            .from('attendance_punches')
+            .select('*')
+            .eq('attendance_date', systemConfig.currentAttendanceDate)
+            .order('timestamp', { ascending: true });
+
+          if (remotePunches && remotePunches.length > 0) {
+            punchLedger = remotePunches.map(p => ({
+              id: p.id,
+              staffId: p.staff_id,
+              staffName: p.staff_name,
+              empId: p.emp_id,
+              attendanceDate: p.attendance_date,
+              type: p.type,
+              timestamp: p.timestamp,
+              method: p.method
+            }));
+            localStorage.setItem(STORAGE_KEY_PUNCHES, JSON.stringify(punchLedger));
+          }
+
+          // C. Fetch Leaves
+          const { data: remoteLeaves } = await supabaseClient
+            .from('leave_requests')
+            .select('*')
+            .order('created_at', { ascending: false });
+
+          if (remoteLeaves && remoteLeaves.length > 0) {
+            leaveRequests = remoteLeaves.map(l => ({
+              id: l.id,
+              staffId: l.staff_id,
+              staffName: l.staff_name,
+              type: l.type,
+              from: l.from_date,
+              to: l.to_date,
+              reason: l.reason,
+              status: l.status
+            }));
+            localStorage.setItem(STORAGE_KEY_LEAVE, JSON.stringify(leaveRequests));
+          }
+
+          showToast("Synchronized with Supabase Cloud PostgreSQL.", "success");
+        } catch (err) {
+          console.error("Cloud fetch error:", err);
+          showToast("Cloud sync failed: " + (err.message || err), "error");
+        }
       }
     }
 
@@ -1421,6 +1700,134 @@
         localStorage.setItem(STORAGE_KEY_AUDIT, JSON.stringify(auditLogs));
       } catch (e) {
         console.error("Storage save failed:", e);
+      }
+    }
+
+    // Realtime Punch Subscription
+    function listenToRealtimePunches() {
+      if (!supabaseClient) return;
+
+      if (realtimeChannel) {
+        supabaseClient.removeChannel(realtimeChannel);
+      }
+
+      realtimeChannel = supabaseClient
+        .channel('public:attendance_punches')
+        .on('postgres_changes', { event: 'INSERT', schema: 'public', table: 'attendance_punches' }, payload => {
+          const newPunch = payload.new;
+          if (!newPunch) return;
+
+          if (!punchLedger.some(p => p.id === newPunch.id)) {
+            punchLedger.push({
+              id: newPunch.id,
+              staffId: newPunch.staff_id,
+              staffName: newPunch.staff_name,
+              empId: newPunch.emp_id,
+              attendanceDate: newPunch.attendance_date,
+              type: newPunch.type,
+              timestamp: newPunch.timestamp,
+              method: newPunch.method
+            });
+
+            savePersistedData();
+            playAudio('SUCCESS');
+            showToast(`Live Punch: ${newPunch.staff_name} marked PUNCH ${newPunch.type}`, "info");
+
+            renderLiveAttendanceTable();
+            updateKPICards();
+            if (currentStaffId === newPunch.staff_id) {
+              refreshStaffUI();
+            }
+          }
+        })
+        .subscribe();
+    }
+
+    // Cloud DB Modal Controllers
+    function openCloudConfigModal() {
+      const urlInput = document.getElementById("cfg-supabase-url");
+      const keyInput = document.getElementById("cfg-supabase-key");
+
+      if (urlInput) urlInput.value = localStorage.getItem(STORAGE_KEY_SUPABASE_URL) || "";
+      if (keyInput) keyInput.value = localStorage.getItem(STORAGE_KEY_SUPABASE_KEY) || "";
+
+      document.getElementById("cloud-config-modal")?.classList.remove("hidden");
+      if (window.lucide) lucide.createIcons();
+    }
+
+    function closeCloudConfigModal() {
+      document.getElementById("cloud-config-modal")?.classList.add("hidden");
+    }
+
+    async function handleSaveCloudConfig(event) {
+      event.preventDefault();
+      const url = (document.getElementById("cfg-supabase-url")?.value || "").trim();
+      const key = (document.getElementById("cfg-supabase-key")?.value || "").trim();
+
+      if (!url || !key) {
+        showToast("Please provide both Supabase URL and anon public key.", "error");
+        return;
+      }
+
+      localStorage.setItem(STORAGE_KEY_SUPABASE_URL, url);
+      localStorage.setItem(STORAGE_KEY_SUPABASE_KEY, key);
+
+      initSupabaseClient();
+      closeCloudConfigModal();
+
+      await loadPersistedData();
+      applyAuthenticatedUI();
+      populateCorrectionDropdown();
+      showToast("Connected to Supabase PostgreSQL.", "success");
+    }
+
+    function disconnectCloudDatabase() {
+      if (confirm("Disconnect Supabase cloud database? The app will operate in local persistence mode on this browser.")) {
+        localStorage.removeItem(STORAGE_KEY_SUPABASE_URL);
+        localStorage.removeItem(STORAGE_KEY_SUPABASE_KEY);
+        supabaseClient = null;
+        isCloudConnected = false;
+        updateCloudStatusBadge(false);
+        closeCloudConfigModal();
+        showToast("Switched back to local persistence mode.", "info");
+      }
+    }
+
+    // Seed/Upload Faculty Roster to Supabase
+    async function syncAllToSupabase(silent = false) {
+      if (!supabaseClient) {
+        showToast("Connect your Supabase database first via Cloud Keys.", "error");
+        openCloudConfigModal();
+        return;
+      }
+
+      try {
+        if (!silent) showToast("Uploading faculty roster to Supabase...", "info");
+
+        const payload = staffDatabase.map(s => ({
+          id: s.id,
+          emp_id: s.empId,
+          name: s.name,
+          department: s.department,
+          role: s.role,
+          email: s.email,
+          pin_hash: s.pinHash,
+          status: s.status
+        }));
+
+        const { error } = await supabaseClient
+          .from('staff')
+          .upsert(payload, { onConflict: 'id' });
+
+        if (error) throw error;
+
+        if (!silent) {
+          playAudio('SUCCESS');
+          showToast(`Successfully synced ${staffDatabase.length} faculty members to Supabase!`, "success");
+        }
+      } catch (err) {
+        console.error("Supabase sync error:", err);
+        showToast("Upload failed: " + (err.message || err), "error");
       }
     }
 
@@ -1643,7 +2050,6 @@
       let attendanceStatus = "ABSENT";
       let lateMinutes = 0;
 
-      // Completed pairs calculation: Sum(OUT - IN)
       for (let i = 0; i < punches.length; i += 2) {
         const inPunch = punches[i];
         const outPunch = punches[i + 1];
@@ -1655,7 +2061,6 @@
         }
       }
 
-      // Breaks: Sum(Next IN - Previous OUT)
       for (let i = 1; i < punches.length - 1; i += 2) {
         const prevOut = punches[i];
         const nextIn = punches[i + 1];
@@ -1671,7 +2076,6 @@
         const lastPunch = punches[punches.length - 1];
         currentStatus = lastPunch.type === 'IN' ? 'WORKING' : 'COMPLETED';
 
-        // Late evaluation against 07:40 AM with grace period
         const firstInMinutes = timeToMinutes(firstIn);
         const scheduleStart = timeToMinutes(systemConfig.schoolScheduleStart);
         const graceLimit = scheduleStart + systemConfig.lateGraceMinutes;
@@ -1713,6 +2117,128 @@
       return `${h}h ${m < 10 ? '0' : ''}${m}m`;
     }
 
+    // =========================================================================
+    // REAL HARDWARE CAMERA SCANNER CONTROLLER (HTML5-QRCODE ENGINE)
+    // =========================================================================
+
+    async function startCameraScanner() {
+      const statusText = document.getElementById("scanner-status-text");
+      const laserBar = document.getElementById("scanner-laser-bar");
+
+      if (typeof Html5Qrcode === "undefined") {
+        if (statusText) statusText.innerText = "Scanner library loading... Please wait.";
+        return;
+      }
+
+      // Stop any existing session cleanly
+      await stopCameraScanner();
+
+      // Check if secure context (HTTPS or localhost)
+      const isSecureOrigin = location.protocol === 'https:' || location.hostname === 'localhost' || location.hostname === '127.0.0.1';
+      if (!isSecureOrigin) {
+        console.warn("Camera getUserMedia requires HTTPS or localhost.");
+        if (statusText) {
+          statusText.innerHTML = `<span class="text-ashiana-red font-bold">HTTPS Required for Camera!</span><br><span class="text-[10px] text-slate-500">Mobile browsers require HTTPS to open cameras. Use "Simulate QR Detected" below for local testing.</span>`;
+        }
+        return;
+      }
+
+      try {
+        if (statusText) statusText.innerText = "Requesting camera permission...";
+        html5QrScannerInstance = new Html5Qrcode("scanner-reader");
+
+        const qrSuccessCallback = (decodedText, decodedResult) => {
+          onQRCodeDetected(decodedText);
+        };
+
+        const qrConfig = {
+          fps: 15,
+          qrbox: { width: 220, height: 220 },
+          aspectRatio: 1.0
+        };
+
+        await html5QrScannerInstance.start(
+          { facingMode: currentCameraFacingMode },
+          qrConfig,
+          qrSuccessCallback,
+          (errorMessage) => {
+            // Per-frame scanning attempts (silent)
+          }
+        );
+
+        isScannerRunning = true;
+        if (laserBar) laserBar.classList.remove("hidden");
+        if (statusText) statusText.innerHTML = `<span class="text-ashiana-green font-bold">Camera active.</span> Point lens at today's school QR code.`;
+      } catch (err) {
+        console.error("Camera access error:", err);
+        isScannerRunning = false;
+        if (laserBar) laserBar.classList.add("hidden");
+        if (statusText) {
+          statusText.innerHTML = `<span class="text-ashiana-red font-bold">Camera access blocked or unavailable.</span><br><span class="text-[10px] text-slate-500">Please allow camera permissions in your browser or tap "Simulate QR Detected".</span>`;
+        }
+      }
+    }
+
+    async function stopCameraScanner() {
+      if (html5QrScannerInstance && isScannerRunning) {
+        try {
+          await html5QrScannerInstance.stop();
+          html5QrScannerInstance.clear();
+        } catch (e) {
+          console.warn("Scanner stop notice:", e);
+        }
+        isScannerRunning = false;
+      }
+      const laserBar = document.getElementById("scanner-laser-bar");
+      if (laserBar) laserBar.classList.add("hidden");
+    }
+
+    async function toggleCameraFacingMode() {
+      currentCameraFacingMode = (currentCameraFacingMode === "environment") ? "user" : "environment";
+      showToast(`Switched to ${currentCameraFacingMode === "environment" ? "Rear" : "Front"} camera.`, "info");
+      await startCameraScanner();
+    }
+
+    function onQRCodeDetected(decodedText) {
+      let isVerified = false;
+
+      // Validate decoded payload against Ashiana institutional criteria
+      try {
+        const payload = JSON.parse(decodedText);
+        if (payload && (payload.school === "ASHIANA_PUBLIC_SCHOOL" || payload.token)) {
+          isVerified = true;
+        }
+      } catch (e) {
+        // Raw token text or formatted string
+        if (decodedText.includes("ASHIANA") || decodedText.includes("SEC-APS-") || decodedText.includes(activeQRSession.token)) {
+          isVerified = true;
+        }
+      }
+
+      // Also accept if current active token is found
+      if (decodedText.includes(activeQRSession.token)) {
+        isVerified = true;
+      }
+
+      if (isVerified) {
+        playAudio('KEY');
+        stopCameraScanner();
+
+        // Step transition to PIN Pad
+        document.getElementById("punch-step-scan").classList.add("hidden");
+        document.getElementById("punch-step-pin").classList.remove("hidden");
+        document.getElementById("punch-stepper-subtitle").innerText = "Step 2: Enter 4-Digit Attendance PIN";
+        if (window.lucide) lucide.createIcons();
+      } else {
+        playAudio('ERROR');
+        showToast("Invalid QR code. Please point at the official Ashiana daily QR station.", "error");
+      }
+    }
+
+    function handleSimulateScanSuccess() {
+      onQRCodeDetected(activeQRSession.token);
+    }
+
     function openPunchModal() {
       if (!currentStaffId) {
         showToast("Please log in first.", "error");
@@ -1724,35 +2250,25 @@
 
       document.getElementById("punch-step-scan").classList.remove("hidden");
       document.getElementById("punch-step-pin").classList.add("hidden");
-      document.getElementById("punch-stepper-subtitle").innerText = "Step 1: Scan Today's QR Code";
+      document.getElementById("punch-stepper-subtitle").innerText = "Step 1: Point Camera at Daily QR Code";
 
       currentPinInput = "";
       updatePinDots();
-      simulatedQRValid = true;
 
       document.getElementById("modal-punch").classList.remove("hidden");
       if (window.lucide) lucide.createIcons();
+
+      // Launch actual camera hardware
+      setTimeout(() => {
+        startCameraScanner();
+      }, 150);
     }
 
-    function closePunchModal() {
+    async function closePunchModal() {
+      await stopCameraScanner();
       document.getElementById("modal-punch").classList.add("hidden");
       currentPinInput = "";
       updatePinDots();
-    }
-
-    function handleScanSuccess() {
-      simulatedQRValid = true;
-      playAudio('KEY');
-      document.getElementById("punch-step-scan").classList.add("hidden");
-      document.getElementById("punch-step-pin").classList.remove("hidden");
-      document.getElementById("punch-stepper-subtitle").innerText = "Step 2: Enter 4-Digit Attendance PIN";
-      if (window.lucide) lucide.createIcons();
-    }
-
-    function handleSimulateExpiredQR() {
-      playAudio('ERROR');
-      showToast("Invalid or expired attendance QR. Please scan the current QR displayed by the school.", "error");
-      closePunchModal();
     }
 
     function pressPinDigit(digit) {
@@ -1792,7 +2308,7 @@
       }
     }
 
-    function verifyAndExecutePunch() {
+    async function verifyAndExecutePunch() {
       const staff = staffDatabase.find(s => s.id === currentStaffId);
       if (!staff) {
         playAudio('ERROR');
@@ -1823,21 +2339,43 @@
         }
       }
 
-      // Determine next sequential punch
+      // Determine next sequential punch (Strict alternating)
       const nextType = recentPunches.length % 2 === 0 ? "IN" : "OUT";
+      const newPunchId = "pch_" + Date.now();
 
-      punchLedger.push({
-        id: "pch_" + Date.now(),
+      const newRecord = {
+        id: newPunchId,
         staffId: currentStaffId,
         staffName: staff.name,
         empId: staff.empId,
         attendanceDate: systemConfig.currentAttendanceDate,
         type: nextType,
         timestamp: nowClock,
-        method: "QR_PIN"
-      });
+        method: "QR_CAMERA_PIN"
+      };
 
+      // 1. Save locally
+      punchLedger.push(newRecord);
       savePersistedData();
+
+      // 2. Save to Supabase Cloud if connected
+      if (supabaseClient) {
+        try {
+          await supabaseClient.from('attendance_punches').insert([{
+            id: newPunchId,
+            staff_id: currentStaffId,
+            staff_name: staff.name,
+            emp_id: staff.empId,
+            attendance_date: systemConfig.currentAttendanceDate,
+            type: nextType,
+            timestamp: nowClock,
+            method: "QR_CAMERA_PIN"
+          }]);
+        } catch (cloudErr) {
+          console.error("Cloud insert punch failed:", cloudErr);
+        }
+      }
+
       playAudio('SUCCESS');
       closePunchModal();
       showToast(`PUNCH ${nextType} recorded successfully at ${nowClock}.`, "success");
@@ -2001,7 +2539,6 @@
       if (window.lucide) lucide.createIcons();
     }
 
-    // Export Staff with PINs for Administrators
     function exportStaffCredentialsWithPIN() {
       let csv = "Employee ID,Faculty Name,Department,Designation,Email,Attendance PIN,Status,Instructions\n";
       staffDatabase.forEach(s => {
@@ -2021,7 +2558,6 @@
       showToast("Staff PIN credentials report downloaded.", "success");
     }
 
-    // Staff Self-Service PIN Change
     function openStaffProfileModal() {
       if (!currentStaffId) {
         showToast("Please sign in first.", "error");
@@ -2056,7 +2592,7 @@
       if (modal) modal.classList.add("hidden");
     }
 
-    function handleChangePinSubmit(event) {
+    async function handleChangePinSubmit(event) {
       event.preventDefault();
       const currentPin = (document.getElementById("change-pin-current")?.value || "").trim();
       const newPin = (document.getElementById("change-pin-new")?.value || "").trim();
@@ -2092,6 +2628,18 @@
       }
 
       savePersistedData();
+
+      if (supabaseClient) {
+        try {
+          await supabaseClient
+            .from('staff')
+            .update({ pin_hash: newPin })
+            .eq('id', currentStaffId);
+        } catch (e) {
+          console.warn("Supabase PIN sync failed:", e);
+        }
+      }
+
       recordAuditLog("PIN_CHANGE", staff.name, `Staff member changed their attendance PIN via self-service.`);
       playAudio('SUCCESS');
       showToast("Attendance PIN updated successfully!", "success");
@@ -2099,7 +2647,6 @@
       renderStaffDirectoryTable();
     }
 
-    // Modal Controllers: Edit Staff
     function openEditStaffModal(id) {
       const staff = staffDatabase.find(s => s.id === id);
       if (!staff) return;
@@ -2119,7 +2666,7 @@
       document.getElementById("edit-staff-modal")?.classList.add("hidden");
     }
 
-    function handleEditStaffSubmit(event) {
+    async function handleEditStaffSubmit(event) {
       event.preventDefault();
       const id = document.getElementById("edit-staff-target-id").value;
       const staff = staffDatabase.find(s => s.id === id);
@@ -2140,6 +2687,26 @@
       staff.status = document.getElementById("edit-staff-status").value;
 
       savePersistedData();
+
+      if (supabaseClient) {
+        try {
+          await supabaseClient
+            .from('staff')
+            .update({
+              emp_id: staff.empId,
+              name: staff.name,
+              department: staff.department,
+              role: staff.role,
+              email: staff.email,
+              pin_hash: staff.pinHash,
+              status: staff.status
+            })
+            .eq('id', staff.id);
+        } catch (e) {
+          console.warn("Supabase edit staff failed:", e);
+        }
+      }
+
       recordAuditLog("STAFF_EDITED", staff.name, `Admin updated record for ${staff.empId}`);
       playAudio('SUCCESS');
       showToast(`Faculty record for ${staff.name} updated.`, "success");
@@ -2151,7 +2718,6 @@
       }
     }
 
-    // Modal Controllers: Delete Staff
     function openDeleteStaffModal(id) {
       const staff = staffDatabase.find(s => s.id === id);
       if (!staff) return;
@@ -2165,7 +2731,7 @@
       document.getElementById("delete-staff-modal")?.classList.add("hidden");
     }
 
-    function executeStaffDeletion() {
+    async function executeStaffDeletion() {
       const id = document.getElementById("delete-staff-target-id").value;
       const idx = staffDatabase.findIndex(s => s.id === id);
       if (idx !== -1) {
@@ -2173,6 +2739,15 @@
         const deletedEmp = staffDatabase[idx].empId;
         staffDatabase.splice(idx, 1);
         savePersistedData();
+
+        if (supabaseClient) {
+          try {
+            await supabaseClient.from('staff').delete().eq('id', id);
+          } catch (e) {
+            console.warn("Supabase delete failed:", e);
+          }
+        }
+
         recordAuditLog("STAFF_DELETED", deletedName, `Removed faculty member (${deletedEmp})`);
         playAudio('SUCCESS');
         showToast(`Removed ${deletedName} from directory.`, "info");
@@ -2186,7 +2761,6 @@
       }
     }
 
-    // Modal Controllers: Add Staff
     function openAddStaffModal() {
       const form = document.getElementById("add-staff-form");
       if (form) form.reset();
@@ -2200,7 +2774,7 @@
       document.getElementById("add-staff-modal")?.classList.add("hidden");
     }
 
-    function handleAddStaffSubmit(event) {
+    async function handleAddStaffSubmit(event) {
       event.preventDefault();
       const empId = document.getElementById("add-staff-empid").value.trim();
       const name = document.getElementById("add-staff-name").value.trim();
@@ -2220,8 +2794,9 @@
         return;
       }
 
+      const newId = "usr_" + Date.now();
       const newStaff = {
-        id: "usr_" + Date.now(),
+        id: newId,
         empId,
         name,
         department: dept,
@@ -2233,6 +2808,24 @@
 
       staffDatabase.push(newStaff);
       savePersistedData();
+
+      if (supabaseClient) {
+        try {
+          await supabaseClient.from('staff').insert([{
+            id: newId,
+            emp_id: empId,
+            name,
+            department: dept,
+            role,
+            email,
+            pin_hash: pin,
+            status: "ACTIVE"
+          }]);
+        } catch (e) {
+          console.warn("Supabase add staff failed:", e);
+        }
+      }
+
       recordAuditLog("STAFF_ENROLLED", name, `Enrolled new faculty member (${empId}, ${role})`);
       playAudio('SUCCESS');
       showToast(`Faculty member ${name} enrolled successfully!`, "success");
@@ -2242,7 +2835,6 @@
       updateKPICards();
     }
 
-    // Modal Controllers: Import Staff
     function openImportModal() {
       document.getElementById("import-staff-modal")?.classList.remove("hidden");
       if (window.lucide) lucide.createIcons();
@@ -2268,7 +2860,7 @@
       const file = event.target.files[0];
       if (!file) return;
       const reader = new FileReader();
-      reader.onload = function(e) {
+      reader.onload = async function(e) {
         try {
           const data = new Uint8Array(e.target.result);
           const workbook = XLSX.read(data, { type: 'array' });
@@ -2301,6 +2893,10 @@
           }
           
           savePersistedData();
+          if (supabaseClient) {
+            await syncAllToSupabase(true);
+          }
+
           recordAuditLog("STAFF_IMPORT", "File Upload", `Imported ${importedCount} staff records from spreadsheet.`);
           renderStaffDirectoryTable();
           populateCorrectionDropdown();
@@ -2317,7 +2913,6 @@
       reader.readAsArrayBuffer(file);
     }
 
-    // Modal Controllers: Leave Application
     function openLeaveApplyModal() {
       const modal = document.getElementById("leave-apply-modal");
       if (!currentStaffId) {
@@ -2339,7 +2934,7 @@
       document.getElementById("leave-apply-modal")?.classList.add("hidden");
     }
 
-    function handleLeaveApplySubmit(event) {
+    async function handleLeaveApplySubmit(event) {
       event.preventDefault();
       const staff = staffDatabase.find(s => s.id === currentStaffId);
       if (!staff) {
@@ -2351,8 +2946,9 @@
       const to = document.getElementById("leave-apply-to").value;
       const reason = document.getElementById("leave-apply-reason").value.trim();
 
+      const newId = "lev_" + Date.now();
       const newLeave = {
-        id: "lev_" + Date.now(),
+        id: newId,
         staffId: staff.id,
         staffName: staff.name,
         type,
@@ -2364,6 +2960,24 @@
 
       leaveRequests.unshift(newLeave);
       savePersistedData();
+
+      if (supabaseClient) {
+        try {
+          await supabaseClient.from('leave_requests').insert([{
+            id: newId,
+            staff_id: staff.id,
+            staff_name: staff.name,
+            type,
+            from_date: from,
+            to_date: to,
+            reason,
+            status: "PENDING"
+          }]);
+        } catch (e) {
+          console.warn("Supabase leave sync failed:", e);
+        }
+      }
+
       recordAuditLog("LEAVE_APPLIED", staff.name, `Applied for ${type} (${from} to ${to})`);
       playAudio('SUCCESS');
       showToast("Leave application submitted for approval.", "success");
@@ -2375,7 +2989,6 @@
       }
     }
 
-    // Admin Leave Actions
     function renderAdminLeaveTable() {
       const tbody = document.getElementById("admin-leave-tbody");
       if (!tbody) return;
@@ -2408,11 +3021,20 @@
       if (window.lucide) lucide.createIcons();
     }
 
-    function approveLeave(id) {
+    async function approveLeave(id) {
       const req = leaveRequests.find(l => l.id === id);
       if (req) {
         req.status = "APPROVED";
         savePersistedData();
+
+        if (supabaseClient) {
+          try {
+            await supabaseClient.from('leave_requests').update({ status: 'APPROVED' }).eq('id', id);
+          } catch (e) {
+            console.warn("Supabase approve failed:", e);
+          }
+        }
+
         recordAuditLog("LEAVE_APPROVE", req.staffName, `Approved ${req.type} from ${req.from} to ${req.to}`);
         playAudio('SUCCESS');
         showToast(`Leave approved for ${req.staffName}.`, "success");
@@ -2422,19 +3044,27 @@
       }
     }
 
-    function rejectLeave(id) {
+    async function rejectLeave(id) {
       const req = leaveRequests.find(l => l.id === id);
       if (req) {
         req.status = "REJECTED";
         savePersistedData();
+
+        if (supabaseClient) {
+          try {
+            await supabaseClient.from('leave_requests').update({ status: 'REJECTED' }).eq('id', id);
+          } catch (e) {
+            console.warn("Supabase reject failed:", e);
+          }
+        }
+
         recordAuditLog("LEAVE_REJECT", req.staffName, `Rejected ${req.type}`);
         showToast(`Rejected leave for ${req.staffName}`, "info");
         renderAdminLeaveTable();
       }
     }
 
-    // Manual Attendance Correction
-    function handleManualCorrectionSubmit(event) {
+    async function handleManualCorrectionSubmit(event) {
       event.preventDefault();
       const staffSelect = document.getElementById("correction-staff-select");
       const punchTypeSelect = document.getElementById("correction-punch-type");
@@ -2459,8 +3089,9 @@
         return;
       }
       
+      const newPunchId = "pch_corr_" + Date.now();
       punchLedger.push({
-        id: "pch_corr_" + Date.now(),
+        id: newPunchId,
         staffId: staff.id,
         staffName: staff.name,
         empId: staff.empId,
@@ -2471,6 +3102,24 @@
       });
       
       savePersistedData();
+
+      if (supabaseClient) {
+        try {
+          await supabaseClient.from('attendance_punches').insert([{
+            id: newPunchId,
+            staff_id: staff.id,
+            staff_name: staff.name,
+            emp_id: staff.empId,
+            attendance_date: systemConfig.currentAttendanceDate,
+            type: punchType,
+            timestamp: timestamp,
+            method: "MANUAL_ADMIN"
+          }]);
+        } catch (e) {
+          console.warn("Supabase manual punch insert failed:", e);
+        }
+      }
+
       recordAuditLog(
         "MANUAL_CORRECTION",
         staff.name,
@@ -2488,7 +3137,6 @@
       updateKPICards();
     }
 
-    // Dynamic QR Station Controls
     function renderQRCodeCanvas() {
       const container = document.getElementById("qr-code-canvas-container");
       if (!container) return;
@@ -2528,16 +3176,17 @@
       openPunchModal();
     }
 
-    function testPunchStaffMember(staffId) {
+    async function testPunchStaffMember(staffId) {
       const staff = staffDatabase.find(s => s.id === staffId);
       if (!staff) return;
       
       const punches = getTodayPunches(staffId);
       const nextType = punches.length % 2 === 0 ? "IN" : "OUT";
       const nowClock = getSimulatedCurrentTime();
+      const newPunchId = "pch_" + Date.now() + "_" + Math.floor(Math.random() * 1000);
       
       punchLedger.push({
-        id: "pch_" + Date.now() + "_" + Math.floor(Math.random() * 1000),
+        id: newPunchId,
         staffId: staff.id,
         staffName: staff.name,
         empId: staff.empId,
@@ -2548,6 +3197,24 @@
       });
       
       savePersistedData();
+
+      if (supabaseClient) {
+        try {
+          await supabaseClient.from('attendance_punches').insert([{
+            id: newPunchId,
+            staff_id: staff.id,
+            staff_name: staff.name,
+            emp_id: staff.empId,
+            attendance_date: systemConfig.currentAttendanceDate,
+            type: nextType,
+            timestamp: nowClock,
+            method: "ADMIN_QUICK"
+          }]);
+        } catch (e) {
+          console.warn("Supabase test punch insert failed:", e);
+        }
+      }
+
       playAudio('SUCCESS');
       showToast(`PUNCH ${nextType} marked for ${staff.name} at ${nowClock}.`, "success");
       if (currentStaffId === staff.id) {
@@ -2557,7 +3224,6 @@
       updateKPICards();
     }
 
-    // KPI Summary Cards
     function updateKPICards() {
       let presentCount = 0;
       let workingCount = 0;
@@ -2582,7 +3248,6 @@
       document.getElementById("kpi-total-hours").innerText = formatMinutes(totalMinutesCumulative);
     }
 
-    // Admin Tab Navigation
     function switchAdminTab(tabKey) {
       const tabs = ['live', 'qr', 'directory', 'corrections', 'leave', 'audit'];
       tabs.forEach(t => {
@@ -2601,17 +3266,23 @@
       if (window.lucide) lucide.createIcons();
     }
 
-    // Audit Log Engine
     function recordAuditLog(action, entity, details) {
-      auditLogs.unshift({
+      const newLog = {
         id: "aud_" + Date.now(),
         timestamp: new Date().toISOString().replace('T', ' ').substring(0, 19),
         actor: currentAuthUser ? (currentAuthUser.type === 'ADMIN' ? 'Principal Office' : currentAuthUser.staffRecord?.name) : 'Security Gateway',
         action,
         entity,
         details
-      });
+      };
+
+      auditLogs.unshift(newLog);
       savePersistedData();
+
+      if (supabaseClient) {
+        supabaseClient.from('audit_logs').insert([newLog]).then(() => {}).catch(e => console.warn(e));
+      }
+
       renderAuditLogsTable();
     }
 
@@ -2630,7 +3301,6 @@
       `).join('');
     }
 
-    // Live search filters
     function filterLiveAttendance() {
       const query = (document.getElementById("live-search-input")?.value || "").toLowerCase();
       const rows = document.querySelectorAll("#live-attendance-tbody tr");
@@ -2672,7 +3342,6 @@
       `).join('');
     }
 
-    // System Clock & QR Ticker
     function startLiveClock() {
       setInterval(() => {
         const d = new Date();
@@ -2701,14 +3370,15 @@
     }
 
     // App Initialization
-    window.onload = function () {
-      loadPersistedData();
+    window.onload = async function () {
+      initSupabaseClient();
+      await loadPersistedData();
       populateCorrectionDropdown();
       startLiveClock();
       applyAuthenticatedUI();
       renderQRCodeCanvas();
       if (window.lucide) lucide.createIcons();
-      console.log(`Ashiana Public School Attendance System ready. ${staffDatabase.length} faculty members loaded from persistent storage.`);
+      console.log(`Ashiana Public School Attendance System ready. ${staffDatabase.length} faculty members loaded.`);
     };
   </script>
 </body>
