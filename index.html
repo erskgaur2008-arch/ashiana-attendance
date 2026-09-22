@@ -1,0 +1,2715 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+  <meta charset="UTF-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1.0">
+  <title>Ashiana Public School • Staff Attendance System</title>
+  
+  <!-- Inter & Mono Fonts -->
+  <link rel="preconnect" href="https://fonts.googleapis.com">
+  <link rel="preconnect" href="https://fonts.gstatic.com">
+  <link href="https://fonts.googleapis.com/css2?family=Cinzel:wght@600;700;800&family=Inter:wght@300;400;500;600;700;800&family=JetBrains+Mono:wght@400;600;700&display=swap" rel="stylesheet">
+  
+  <!-- Tailwind CSS CDN -->
+  <script src="https://cdn.tailwindcss.com"></script>
+  
+  <!-- Lucide Icons CDN -->
+  <script src="https://unpkg.com/lucide@latest"></script>
+  
+  <!-- SheetJS for Excel and CSV parsing -->
+  <script src="https://cdn.jsdelivr.net/npm/xlsx@0.18.5/dist/xlsx.full.min.js"></script>
+
+  <!-- QRCode.js for client-side QR generation -->
+  <script src="https://cdnjs.cloudflare.com/ajax/libs/qrcodejs/1.0.0/qrcode.min.js"></script>
+
+  <script>
+    tailwind.config = {
+      darkMode: 'class',
+      theme: {
+        extend: {
+          colors: {
+            ashiana: {
+              green: '#0A7E46',
+              'green-dark': '#064E3B',
+              'green-deep': '#022C22',
+              'green-light': '#EBF7EE',
+              red: '#D92D31',
+              'red-dark': '#B81D21',
+              'red-light': '#FEE2E2',
+            }
+          },
+          fontFamily: {
+            sans: ['Inter', 'sans-serif'],
+            serif: ['Cinzel', 'Georgia', 'serif'],
+            mono: ['JetBrains Mono', 'monospace'],
+          }
+        }
+      }
+    }
+  </script>
+
+  <style>
+    body { font-family: 'Inter', sans-serif; }
+    .hide-scrollbar::-webkit-scrollbar { display: none; }
+    .hide-scrollbar { -ms-overflow-style: none; scrollbar-width: none; }
+    @keyframes scanline {
+      0% { transform: translateY(0%); }
+      50% { transform: translateY(220px); }
+      100% { transform: translateY(0%); }
+    }
+    .scanner-line {
+      animation: scanline 2.2s ease-in-out infinite;
+    }
+    .brand-red-line {
+      height: 3px;
+      background: linear-gradient(90deg, #D92D31 0%, #EF4444 50%, #D92D31 100%);
+    }
+  </style>
+</head>
+<body class="bg-slate-100 text-slate-800 antialiased min-h-screen flex flex-col">
+
+  <!-- Top Navigation & Role Switcher Bar (Ashiana Forest Green & Crimson Accent) -->
+  <header class="bg-gradient-to-r from-emerald-950 via-[#064E3B] to-emerald-900 text-white shadow-lg sticky top-0 z-40 border-b-2 border-ashiana-red">
+    <div class="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8 h-16 flex items-center justify-between">
+      
+      <!-- Brand & Official Logo -->
+      <div class="flex items-center space-x-3">
+        <!-- Logo Image with inline vector fallback -->
+        <div class="relative w-11 h-11 rounded-full bg-white p-0.5 shadow-md flex items-center justify-center overflow-hidden border border-emerald-400/40 flex-shrink-0">
+          <img src="logo 2.jpg" alt="Ashiana Public School Logo" 
+               onerror="this.style.display='none'; this.nextElementSibling.classList.remove('hidden');" 
+               class="w-full h-full object-cover rounded-full">
+          <svg class="w-full h-full hidden" viewBox="0 0 200 200" fill="none" xmlns="http://www.w3.org/2000/svg">
+            <circle cx="100" cy="100" r="98" fill="white"/>
+            <path d="M100 24 L34 140 H64 L79 108 H121 L136 140 H166 Z" fill="#0A7E46"/>
+            <path d="M100 48 L86 92 H114 Z" fill="white"/>
+            <circle cx="100" cy="74" r="7.5" fill="#D92D31"/>
+            <path d="M91 85 C91 83 93 82 95 82 H105 C107 82 109 83 109 85 V106 C109 107 108 108 107 108 H103 V136 H97 V108 H93 C92 108 91 107 91 106 Z" fill="#D92D31"/>
+            <polygon points="100,90 94,97 100,103 106,97" fill="white"/>
+            <text x="100" y="160" font-family="'Cinzel', Georgia, serif" font-weight="bold" font-size="20" text-anchor="middle" fill="#1A1A1A" letter-spacing="1.5">ASHIANA</text>
+            <rect x="28" y="164" width="144" height="2.5" fill="#D92D31" rx="1"/>
+            <text x="100" y="179" font-family="'Cinzel', Georgia, serif" font-weight="600" font-size="11" text-anchor="middle" fill="#1A1A1A" letter-spacing="2">PUBLIC SCHOOL</text>
+          </svg>
+        </div>
+        
+        <div>
+          <h1 class="text-sm sm:text-base font-extrabold leading-tight tracking-tight flex items-center space-x-2 text-white">
+            <span class="tracking-wide">ASHIANA PUBLIC SCHOOL</span>
+            <span class="text-[9px] uppercase tracking-widest bg-emerald-400/20 text-emerald-200 font-bold px-2 py-0.5 rounded-full border border-emerald-400/30">EduPunch</span>
+          </h1>
+          <p class="text-[10px] sm:text-[11px] text-emerald-200/90 font-medium">Sector 46-A, Chandigarh • Staff Attendance Portal</p>
+        </div>
+      </div>
+
+      <!-- Quick Role / Portal Selector & Session Controls -->
+      <div class="flex items-center space-x-2 sm:space-x-4">
+        <!-- Live Clock -->
+        <div class="hidden md:flex flex-col text-right pr-3 border-r border-emerald-800">
+          <span id="global-live-time" class="text-sm font-semibold tracking-wider font-mono text-emerald-100">07:40:00 AM</span>
+          <span id="global-live-date" class="text-[11px] text-emerald-300">22 September 2026</span>
+        </div>
+
+        <!-- Portal Switcher (Visible only when logged in as Admin) -->
+        <div id="admin-view-toggle-bar" class="hidden bg-emerald-950/90 p-1 rounded-xl items-center border border-emerald-700/60 shadow-inner">
+          <button id="btn-portal-staff" onclick="switchPortal('staff')" class="flex items-center space-x-1.5 px-3 py-1.5 rounded-lg text-xs font-bold transition-all bg-ashiana-green text-white shadow">
+            <i data-lucide="smartphone" class="w-3.5 h-3.5"></i>
+            <span>Staff App</span>
+          </button>
+          <button id="btn-portal-admin" onclick="switchPortal('admin')" class="flex items-center space-x-1.5 px-3 py-1.5 rounded-lg text-xs font-bold transition-all text-emerald-200 hover:text-white">
+            <i data-lucide="layout-dashboard" class="w-3.5 h-3.5"></i>
+            <span>Admin Portal</span>
+          </button>
+        </div>
+
+        <!-- Authenticated User Profile Pill & Logout -->
+        <div id="authenticated-session-controls" class="hidden items-center space-x-2">
+          <div class="bg-emerald-900/80 border border-emerald-700 rounded-xl px-3 py-1.5 flex items-center space-x-2 text-xs">
+            <div id="nav-user-avatar" class="w-6 h-6 rounded-full bg-ashiana-green text-white font-bold flex items-center justify-center text-[10px]">
+              AP
+            </div>
+            <div class="text-left hidden sm:block">
+              <p id="nav-user-name" class="font-bold leading-none text-white truncate max-w-[130px]">Faculty Member</p>
+              <p id="nav-user-role" class="text-[10px] text-emerald-300 leading-none mt-0.5">Teacher</p>
+            </div>
+          </div>
+          <button onclick="handleLogout()" class="px-2.5 py-1.5 bg-ashiana-red hover:bg-ashiana-red-dark text-white text-xs font-bold rounded-xl flex items-center space-x-1 transition-colors shadow">
+            <i data-lucide="log-out" class="w-3.5 h-3.5"></i>
+            <span class="hidden sm:inline">Logout</span>
+          </button>
+        </div>
+
+        <!-- Logged Out Label -->
+        <div id="logged-out-header-tag" class="text-xs bg-emerald-900/70 border border-emerald-700/80 px-3 py-1.5 rounded-xl text-emerald-200 flex items-center space-x-1.5">
+          <i data-lucide="shield-check" class="w-3.5 h-3.5 text-emerald-400"></i>
+          <span>Secure Staff Portal</span>
+        </div>
+      </div>
+    </div>
+  </header>
+
+  <!-- Toast Notification Overlay -->
+  <div id="toast-container" class="fixed bottom-5 right-5 z-50 flex flex-col space-y-2 pointer-events-none max-w-sm w-full"></div>
+
+  <!-- Notification Banner -->
+  <div id="global-status-banner" class="bg-emerald-50 border-b border-emerald-200 px-4 py-2 text-xs text-emerald-950 flex items-center justify-between">
+    <div class="flex items-center space-x-2 max-w-7xl mx-auto w-full">
+      <span class="w-2 h-2 rounded-full bg-ashiana-green animate-pulse flex-shrink-0"></span>
+      <span class="truncate"><strong>Ashiana Faculty Attendance Active:</strong> Shift <strong>07:40 AM – 02:30 PM</strong>. Local persistent storage enabled.</span>
+    </div>
+  </div>
+
+  <!-- MAIN WRAPPER -->
+  <main class="flex-1 max-w-7xl w-full mx-auto p-3 sm:p-6 lg:p-8 flex flex-col items-center justify-center">
+
+    <!-- ========================================================================= -->
+    <!-- SECTION 0: AUTHENTICATION GATEWAY (LOGIN PANEL)                           -->
+    <!-- ========================================================================= -->
+    <div id="auth-gateway-view" class="w-full max-w-md bg-white rounded-3xl shadow-2xl border border-slate-200 overflow-hidden my-auto">
+      
+      <!-- Brand Header Banner with Official Crest -->
+      <div class="bg-gradient-to-br from-emerald-950 via-[#064E3B] to-emerald-900 p-6 text-white text-center relative overflow-hidden">
+        <div class="absolute -right-8 -top-8 w-28 h-28 bg-emerald-400/10 rounded-full blur-xl pointer-events-none"></div>
+        
+        <!-- Center Logo Display -->
+        <div class="w-20 h-20 mx-auto mb-3 rounded-full bg-white p-1 shadow-xl border-2 border-emerald-400/50 flex items-center justify-center overflow-hidden">
+          <img src="logo 2.jpg" alt="Ashiana Public School" 
+               onerror="this.style.display='none'; this.nextElementSibling.classList.remove('hidden');" 
+               class="w-full h-full object-cover rounded-full">
+          <svg class="w-full h-full hidden" viewBox="0 0 200 200" fill="none" xmlns="http://www.w3.org/2000/svg">
+            <circle cx="100" cy="100" r="98" fill="white"/>
+            <path d="M100 24 L34 140 H64 L79 108 H121 L136 140 H166 Z" fill="#0A7E46"/>
+            <path d="M100 48 L86 92 H114 Z" fill="white"/>
+            <circle cx="100" cy="74" r="7.5" fill="#D92D31"/>
+            <path d="M91 85 C91 83 93 82 95 82 H105 C107 82 109 83 109 85 V106 C109 107 108 108 107 108 H103 V136 H97 V108 H93 C92 108 91 107 91 106 Z" fill="#D92D31"/>
+            <polygon points="100,90 94,97 100,103 106,97" fill="white"/>
+            <text x="100" y="160" font-family="'Cinzel', Georgia, serif" font-weight="bold" font-size="20" text-anchor="middle" fill="#1A1A1A" letter-spacing="1.5">ASHIANA</text>
+            <rect x="28" y="164" width="144" height="2.5" fill="#D92D31" rx="1"/>
+            <text x="100" y="179" font-family="'Cinzel', Georgia, serif" font-weight="600" font-size="11" text-anchor="middle" fill="#1A1A1A" letter-spacing="2">PUBLIC SCHOOL</text>
+          </svg>
+        </div>
+        
+        <h2 class="text-xl font-extrabold tracking-tight font-serif">ASHIANA PUBLIC SCHOOL</h2>
+        <div class="w-20 h-0.5 bg-ashiana-red mx-auto my-1.5 rounded-full"></div>
+        <p class="text-xs text-emerald-200">Sector 46-A, Chandigarh • Staff Attendance Portal</p>
+        
+        <!-- Auth Mode Tabs -->
+        <div class="flex bg-emerald-950/70 p-1 rounded-2xl mt-5 border border-emerald-700/50">
+          <button id="btn-login-tab-teacher" onclick="switchLoginTab('teacher')" class="flex-1 py-2 rounded-xl text-xs font-bold transition-all bg-white text-emerald-950 shadow flex items-center justify-center space-x-1.5">
+            <i data-lucide="user-check" class="w-3.5 h-3.5 text-ashiana-green"></i>
+            <span>Teacher / Staff</span>
+          </button>
+          <button id="btn-login-tab-admin" onclick="switchLoginTab('admin')" class="flex-1 py-2 rounded-xl text-xs font-bold transition-all text-emerald-200 hover:text-white flex items-center justify-center space-x-1.5">
+            <i data-lucide="shield-check" class="w-3.5 h-3.5"></i>
+            <span>Administrator</span>
+          </button>
+        </div>
+      </div>
+
+      <div class="p-6">
+        <!-- TEACHER / STAFF LOGIN FORM -->
+        <form id="teacher-login-form" onsubmit="handleTeacherLogin(event)" class="space-y-4">
+          <div>
+            <label class="block text-xs font-bold text-slate-700 mb-1.5">Employee ID or Registered Email</label>
+            <div class="relative">
+              <div class="absolute inset-y-0 left-0 pl-3.5 flex items-center pointer-events-none text-slate-400">
+                <i data-lucide="id-card" class="w-4 h-4 text-ashiana-green"></i>
+              </div>
+              <input type="text" id="teacher-login-id" required placeholder="Enter Employee ID (e.g. APS-101)" class="w-full text-xs pl-10 pr-3.5 py-3 bg-slate-50 border border-slate-200 rounded-xl focus:ring-2 focus:ring-ashiana-green focus:outline-none focus:bg-white font-medium">
+            </div>
+            <p class="text-[11px] text-slate-400 mt-1">Enter your assigned school employee code</p>
+          </div>
+
+          <div>
+            <label class="block text-xs font-bold text-slate-700 mb-1.5">Personal 4-Digit Attendance PIN</label>
+            <div class="relative">
+              <div class="absolute inset-y-0 left-0 pl-3.5 flex items-center pointer-events-none text-slate-400">
+                <i data-lucide="lock" class="w-4 h-4 text-ashiana-green"></i>
+              </div>
+              <input type="password" maxlength="4" pattern="[0-9]{4}" id="teacher-login-pin" required placeholder="Enter 4-digit PIN" class="w-full text-xs pl-10 pr-10 py-3 bg-slate-50 border border-slate-200 rounded-xl focus:ring-2 focus:ring-ashiana-green focus:outline-none focus:bg-white font-mono tracking-widest text-base font-bold">
+              <button type="button" onclick="togglePinVisibility('teacher-login-pin')" class="absolute inset-y-0 right-0 pr-3.5 flex items-center text-slate-400 hover:text-slate-600">
+                <i data-lucide="eye" class="w-4 h-4"></i>
+              </button>
+            </div>
+            <p class="text-[11px] text-slate-400 mt-1">Contact administration if you forgot your attendance PIN</p>
+          </div>
+
+          <button type="submit" class="w-full py-3 bg-gradient-to-r from-ashiana-green to-[#065F35] hover:from-[#08693A] hover:to-[#054625] text-white font-bold rounded-xl text-xs flex items-center justify-center space-x-2 shadow-lg shadow-emerald-700/25 active:scale-[0.99] transition-all">
+            <i data-lucide="log-in" class="w-4 h-4"></i>
+            <span>Sign In to Staff App</span>
+          </button>
+        </form>
+
+        <!-- ADMINISTRATOR LOGIN FORM -->
+        <form id="admin-login-form" onsubmit="handleAdminLogin(event)" class="space-y-4 hidden">
+          <div class="p-3 bg-emerald-50 border border-emerald-200 rounded-2xl flex items-center space-x-2.5 text-xs text-emerald-950">
+            <i data-lucide="shield-alert" class="w-4 h-4 text-ashiana-red flex-shrink-0"></i>
+            <span>Authorized access for Principal Office & System Administrators only.</span>
+          </div>
+
+          <div>
+            <label class="block text-xs font-bold text-slate-700 mb-1.5">Admin Email / Username</label>
+            <div class="relative">
+              <div class="absolute inset-y-0 left-0 pl-3.5 flex items-center pointer-events-none text-slate-400">
+                <i data-lucide="user" class="w-4 h-4 text-ashiana-green"></i>
+              </div>
+              <input type="text" id="admin-login-user" required placeholder="Enter admin username or email" class="w-full text-xs pl-10 pr-3.5 py-3 bg-slate-50 border border-slate-200 rounded-xl focus:ring-2 focus:ring-ashiana-green focus:outline-none focus:bg-white font-medium">
+            </div>
+          </div>
+
+          <div>
+            <label class="block text-xs font-bold text-slate-700 mb-1.5">Admin Password</label>
+            <div class="relative">
+              <div class="absolute inset-y-0 left-0 pl-3.5 flex items-center pointer-events-none text-slate-400">
+                <i data-lucide="key" class="w-4 h-4 text-ashiana-green"></i>
+              </div>
+              <input type="password" id="admin-login-pass" required placeholder="Enter administrator password" class="w-full text-xs pl-10 pr-10 py-3 bg-slate-50 border border-slate-200 rounded-xl focus:ring-2 focus:ring-ashiana-green focus:outline-none focus:bg-white font-medium">
+              <button type="button" onclick="togglePinVisibility('admin-login-pass')" class="absolute inset-y-0 right-0 pr-3.5 flex items-center text-slate-400 hover:text-slate-600">
+                <i data-lucide="eye" class="w-4 h-4"></i>
+              </button>
+            </div>
+          </div>
+
+          <button type="submit" class="w-full py-3 bg-emerald-950 hover:bg-black text-white font-bold rounded-xl text-xs flex items-center justify-center space-x-2 shadow-lg shadow-emerald-950/20 active:scale-[0.99] transition-all">
+            <i data-lucide="lock" class="w-4 h-4"></i>
+            <span>Access Administrator Portal</span>
+          </button>
+        </form>
+      </div>
+
+      <div class="bg-slate-50 p-4 text-center border-t border-slate-100 text-[11px] text-slate-500">
+        Ashiana Public School • Attendance & Personnel Register
+      </div>
+    </div>
+
+    <!-- ========================================================================= -->
+    <!-- SECTION 1: STAFF MOBILE INTERFACE                                         -->
+    <!-- ========================================================================= -->
+    <div id="staff-portal-view" class="hidden flex-col items-center justify-center w-full">
+      <!-- Phone Bezel Shell -->
+      <div class="w-full max-w-[420px] bg-slate-900 rounded-[42px] p-3.5 shadow-2xl border-4 border-slate-800 transition-all">
+        <div class="bg-slate-50 rounded-[34px] overflow-hidden flex flex-col min-h-[740px] max-h-[820px] relative">
+          
+          <!-- Phone Status Bar -->
+          <div class="bg-emerald-950 text-white px-6 pt-3 pb-2 flex justify-between items-center text-[11px] font-medium tracking-wide">
+            <span id="mobile-live-clock" class="font-mono">07:40 AM</span>
+            <div class="w-20 h-4 bg-slate-900 rounded-full mx-auto"></div>
+            <div class="flex items-center space-x-1.5">
+              <i data-lucide="wifi" class="w-3 h-3 text-emerald-300"></i>
+              <i data-lucide="battery-charging" class="w-3.5 h-3.5 text-emerald-400"></i>
+            </div>
+          </div>
+
+          <!-- Staff Header Info (Ashiana Green Theme) -->
+          <div class="bg-gradient-to-b from-emerald-950 to-[#064E3B] text-white px-5 pt-2 pb-5 border-b-2 border-ashiana-red">
+            <div class="flex items-center justify-between">
+              <div class="flex items-center space-x-3">
+                <div id="staff-avatar-circle" class="w-11 h-11 rounded-2xl bg-emerald-500/20 border border-emerald-400/40 flex items-center justify-center font-bold text-sm text-emerald-100 shadow-inner">
+                  AP
+                </div>
+                <div>
+                  <h3 id="staff-header-name" class="font-bold text-sm text-white leading-tight">Mrs. Monika Sharma</h3>
+                  <p id="staff-header-role" class="text-[11px] text-emerald-200">Principal • APS-101</p>
+                </div>
+              </div>
+              <div class="flex flex-col items-end space-y-1.5">
+                <span id="staff-badge-status" class="px-2.5 py-1 rounded-full text-[10px] font-bold bg-amber-500/20 text-amber-300 border border-amber-500/30 uppercase tracking-wider">
+                  NOT MARKED
+                </span>
+                <button onclick="openStaffProfileModal()" class="text-[10px] bg-white/10 hover:bg-white/20 text-emerald-200 px-2 py-0.5 rounded-lg flex items-center space-x-1 transition-colors">
+                  <i data-lucide="key" class="w-3 h-3"></i>
+                  <span>Change PIN</span>
+                </button>
+              </div>
+            </div>
+          </div>
+
+          <!-- Phone Inner Content Scrollable -->
+          <div class="flex-1 overflow-y-auto hide-scrollbar p-4 space-y-4">
+
+            <!-- Today's Attendance Overview Card -->
+            <div class="bg-white rounded-2xl p-4 shadow-sm border border-slate-200/80">
+              <div class="flex items-center justify-between border-b border-slate-100 pb-2.5 mb-3">
+                <div class="flex items-center space-x-2">
+                  <i data-lucide="calendar" class="w-4 h-4 text-ashiana-green"></i>
+                  <span class="text-xs font-bold text-slate-700">Today's Schedule</span>
+                </div>
+                <span class="text-[11px] font-mono text-emerald-800 bg-emerald-50 px-2 py-0.5 rounded-md font-bold border border-emerald-200">07:40 AM – 02:30 PM</span>
+              </div>
+
+              <div class="grid grid-cols-2 gap-3 text-center mb-3">
+                <div class="bg-slate-50 rounded-xl p-2.5 border border-slate-100">
+                  <span class="text-[10px] uppercase font-bold text-slate-400 block tracking-wider">First IN</span>
+                  <span id="card-first-in" class="text-base font-bold font-mono text-slate-800">--:--</span>
+                  <span id="card-first-in-status" class="text-[10px] font-medium text-slate-400 block mt-0.5">Awaiting Arrival</span>
+                </div>
+                <div class="bg-slate-50 rounded-xl p-2.5 border border-slate-100">
+                  <span class="text-[10px] uppercase font-bold text-slate-400 block tracking-wider">Last OUT</span>
+                  <span id="card-last-out" class="text-base font-bold font-mono text-slate-800">--:--</span>
+                  <span id="card-last-out-status" class="text-[10px] font-medium text-slate-400 block mt-0.5">Shift Incomplete</span>
+                </div>
+              </div>
+
+              <!-- Working Duration Meters -->
+              <div class="grid grid-cols-3 gap-2 pt-2 border-t border-slate-100 text-center">
+                <div>
+                  <span class="text-[9px] uppercase font-bold text-slate-400 block">Working Hrs</span>
+                  <span id="metric-work-hours" class="text-xs font-bold font-mono text-ashiana-green">0h 00m</span>
+                </div>
+                <div>
+                  <span class="text-[9px] uppercase font-bold text-slate-400 block">Break Time</span>
+                  <span id="metric-break-time" class="text-xs font-bold font-mono text-slate-600">0m</span>
+                </div>
+                <div>
+                  <span class="text-[9px] uppercase font-bold text-slate-400 block">Late / Early</span>
+                  <span id="metric-late-mins" class="text-xs font-bold font-mono text-slate-600">0m</span>
+                </div>
+              </div>
+            </div>
+
+            <!-- MANDATORY NON-NEGOTIABLE ACTION BUTTON: "MARK ATTENDANCE" -->
+            <div class="bg-gradient-to-br from-emerald-50 to-green-50/80 rounded-2xl p-4 border border-emerald-200 shadow-sm text-center">
+              <div class="mb-3">
+                <span class="text-[11px] font-bold text-ashiana-green uppercase tracking-wider block">Unified Attendance Punch</span>
+                <p class="text-[11px] text-slate-500 mt-0.5">System automatically alternates IN and OUT sequence.</p>
+              </div>
+
+              <button id="btn-mark-attendance" onclick="openPunchModal()" class="w-full py-4 bg-gradient-to-r from-ashiana-green via-[#08693A] to-emerald-900 hover:from-[#08693A] hover:to-[#054625] text-white rounded-2xl font-extrabold text-sm sm:text-base tracking-wide flex items-center justify-center space-x-2 shadow-lg shadow-emerald-700/30 active:scale-[0.98] transition-all border-b-2 border-ashiana-red">
+                <i data-lucide="scan-line" class="w-5 h-5"></i>
+                <span>MARK ATTENDANCE</span>
+              </button>
+
+              <div class="flex items-center justify-between text-[10px] text-slate-500 mt-3 px-1 font-medium">
+                <span class="flex items-center space-x-1">
+                  <span class="w-2 h-2 rounded-full bg-emerald-500 animate-pulse"></span>
+                  <span>Next Punch: <strong id="lbl-next-punch" class="text-ashiana-green uppercase font-bold">PUNCH IN</strong></span>
+                </span>
+                <span id="lbl-punches-today">Total Punches: 0</span>
+              </div>
+            </div>
+
+            <!-- Today's Punch Timeline -->
+            <div class="bg-white rounded-2xl p-4 shadow-sm border border-slate-200/80">
+              <div class="flex items-center justify-between mb-3">
+                <h4 class="text-xs font-bold text-slate-800 flex items-center space-x-1.5">
+                  <i data-lucide="history" class="w-3.5 h-3.5 text-ashiana-green"></i>
+                  <span>Today's Punch Log (Alternating)</span>
+                </h4>
+                <span id="punch-count-pill" class="text-[10px] font-bold px-2 py-0.5 rounded-full bg-slate-100 text-slate-600">0 logs</span>
+              </div>
+
+              <div id="staff-today-timeline" class="space-y-2">
+                <div class="text-center py-6 text-slate-400 text-xs italic">
+                  No attendance recorded yet today.<br>Tap "MARK ATTENDANCE" above.
+                </div>
+              </div>
+            </div>
+
+            <!-- Leave Request Self Service Card -->
+            <div class="bg-white rounded-2xl p-4 shadow-sm border border-slate-200/80">
+              <div class="flex items-center justify-between mb-2">
+                <h4 class="text-xs font-bold text-slate-800 flex items-center space-x-1.5">
+                  <i data-lucide="plane-takeoff" class="w-3.5 h-3.5 text-ashiana-green"></i>
+                  <span>Leave & Absence Portal</span>
+                </h4>
+                <button onclick="openLeaveApplyModal()" class="text-[11px] font-bold text-ashiana-green hover:text-emerald-800">
+                  + Apply Leave
+                </button>
+              </div>
+              <div id="staff-leave-status-widget" class="text-[11px] text-slate-500">
+                No active leave requests for this week.
+              </div>
+            </div>
+
+          </div>
+
+          <!-- Bottom Phone Navigation -->
+          <div class="bg-white border-t border-slate-200 px-6 py-2.5 flex justify-around items-center text-slate-400">
+            <button class="flex flex-col items-center text-ashiana-green">
+              <i data-lucide="home" class="w-4 h-4"></i>
+              <span class="text-[9px] font-bold mt-0.5">Punch</span>
+            </button>
+            <button onclick="openLeaveApplyModal()" class="flex flex-col items-center hover:text-ashiana-green">
+              <i data-lucide="file-text" class="w-4 h-4"></i>
+              <span class="text-[9px] font-bold mt-0.5">Leave</span>
+            </button>
+            <button onclick="openStaffProfileModal()" class="flex flex-col items-center hover:text-ashiana-green">
+              <i data-lucide="user" class="w-4 h-4"></i>
+              <span class="text-[9px] font-bold mt-0.5">Profile & PIN</span>
+            </button>
+          </div>
+
+        </div>
+      </div>
+    </div>
+
+    <!-- ========================================================================= -->
+    <!-- SECTION 2: ADMINISTRATOR PORTAL                                           -->
+    <!-- ========================================================================= -->
+    <div id="admin-portal-view" class="hidden flex-col w-full space-y-6">
+
+      <!-- Executive KPI Cards Grid -->
+      <div class="grid grid-cols-2 sm:grid-cols-3 lg:grid-cols-6 gap-3 sm:gap-4">
+        <div class="bg-white p-4 rounded-2xl border border-slate-200 shadow-sm border-t-4 border-t-ashiana-green">
+          <div class="flex items-center justify-between text-slate-400 mb-1">
+            <span class="text-xs font-bold uppercase tracking-wider">Total Staff</span>
+            <i data-lucide="users" class="w-4 h-4 text-ashiana-green"></i>
+          </div>
+          <span id="kpi-total-staff" class="text-2xl font-black text-slate-800">72</span>
+          <span class="text-[10px] text-slate-400 block mt-1">Active Faculty</span>
+        </div>
+
+        <div class="bg-white p-4 rounded-2xl border border-slate-200 shadow-sm border-t-4 border-t-emerald-600">
+          <div class="flex items-center justify-between text-slate-400 mb-1">
+            <span class="text-xs font-bold uppercase tracking-wider">Present Today</span>
+            <i data-lucide="user-check" class="w-4 h-4 text-emerald-600"></i>
+          </div>
+          <span id="kpi-present-today" class="text-2xl font-black text-emerald-600">0</span>
+          <span class="text-[10px] text-slate-400 block mt-1">First IN recorded</span>
+        </div>
+
+        <div class="bg-white p-4 rounded-2xl border border-slate-200 shadow-sm border-t-4 border-t-blue-600">
+          <div class="flex items-center justify-between text-slate-400 mb-1">
+            <span class="text-xs font-bold uppercase tracking-wider">Working Now</span>
+            <i data-lucide="clock" class="w-4 h-4 text-blue-600"></i>
+          </div>
+          <span id="kpi-currently-working" class="text-2xl font-black text-blue-600">0</span>
+          <span class="text-[10px] text-slate-400 block mt-1">Open IN status</span>
+        </div>
+
+        <div class="bg-white p-4 rounded-2xl border border-slate-200 shadow-sm border-t-4 border-t-ashiana-red">
+          <div class="flex items-center justify-between text-slate-400 mb-1">
+            <span class="text-xs font-bold uppercase tracking-wider">Late Arrivals</span>
+            <i data-lucide="alert-triangle" class="w-4 h-4 text-ashiana-red"></i>
+          </div>
+          <span id="kpi-late-today" class="text-2xl font-black text-ashiana-red">0</span>
+          <span class="text-[10px] text-slate-400 block mt-1">> 07:50 AM</span>
+        </div>
+
+        <div class="bg-white p-4 rounded-2xl border border-slate-200 shadow-sm border-t-4 border-t-purple-600">
+          <div class="flex items-center justify-between text-slate-400 mb-1">
+            <span class="text-xs font-bold uppercase tracking-wider">On Leave</span>
+            <i data-lucide="calendar-off" class="w-4 h-4 text-purple-600"></i>
+          </div>
+          <span id="kpi-on-leave" class="text-2xl font-black text-purple-600">2</span>
+          <span class="text-[10px] text-slate-400 block mt-1">Approved absences</span>
+        </div>
+
+        <div class="bg-white p-4 rounded-2xl border border-slate-200 shadow-sm border-t-4 border-t-emerald-800">
+          <div class="flex items-center justify-between text-slate-400 mb-1">
+            <span class="text-xs font-bold uppercase tracking-wider">Total Work</span>
+            <i data-lucide="activity" class="w-4 h-4 text-ashiana-green"></i>
+          </div>
+          <span id="kpi-total-hours" class="text-2xl font-black text-emerald-900">0h 00m</span>
+          <span class="text-[10px] text-slate-400 block mt-1">Cumulative Today</span>
+        </div>
+      </div>
+
+      <!-- Admin Tab Navigation -->
+      <div class="bg-white rounded-2xl p-1.5 border border-slate-200 shadow-sm flex flex-wrap gap-1">
+        <button onclick="switchAdminTab('live')" id="tab-btn-live" class="px-4 py-2 rounded-xl text-xs font-bold bg-ashiana-green text-white shadow flex items-center space-x-1.5 transition-all">
+          <i data-lucide="radio" class="w-3.5 h-3.5"></i>
+          <span>Live Attendance Board</span>
+        </button>
+        <button onclick="switchAdminTab('qr')" id="tab-btn-qr" class="px-4 py-2 rounded-xl text-xs font-bold text-slate-600 hover:bg-slate-100 flex items-center space-x-1.5 transition-all">
+          <i data-lucide="qr-code" class="w-3.5 h-3.5"></i>
+          <span>Daily QR Station</span>
+        </button>
+        <button onclick="switchAdminTab('directory')" id="tab-btn-directory" class="px-4 py-2 rounded-xl text-xs font-bold text-slate-600 hover:bg-slate-100 flex items-center space-x-1.5 transition-all">
+          <i data-lucide="users" class="w-3.5 h-3.5"></i>
+          <span>Staff Directory</span>
+        </button>
+        <button onclick="switchAdminTab('corrections')" id="tab-btn-corrections" class="px-4 py-2 rounded-xl text-xs font-bold text-slate-600 hover:bg-slate-100 flex items-center space-x-1.5 transition-all">
+          <i data-lucide="edit" class="w-3.5 h-3.5"></i>
+          <span>Manual Corrections</span>
+        </button>
+        <button onclick="switchAdminTab('leave')" id="tab-btn-leave" class="px-4 py-2 rounded-xl text-xs font-bold text-slate-600 hover:bg-slate-100 flex items-center space-x-1.5 transition-all">
+          <i data-lucide="calendar" class="w-3.5 h-3.5"></i>
+          <span>Leave Approvals</span>
+        </button>
+        <button onclick="switchAdminTab('audit')" id="tab-btn-audit" class="px-4 py-2 rounded-xl text-xs font-bold text-slate-600 hover:bg-slate-100 flex items-center space-x-1.5 transition-all">
+          <i data-lucide="file-check-2" class="w-3.5 h-3.5"></i>
+          <span>Audit Log & Storage</span>
+        </button>
+      </div>
+
+      <!-- TAB 1: LIVE ATTENDANCE STREAM -->
+      <div id="admin-tab-live" class="space-y-4">
+        <div class="bg-white rounded-2xl border border-slate-200 shadow-sm p-4 sm:p-6">
+          <div class="flex flex-col sm:flex-row sm:items-center justify-between gap-3 mb-5">
+            <div>
+              <h3 class="text-base font-bold text-slate-800">Faculty Attendance Roster</h3>
+              <p class="text-xs text-slate-500">Live automatic status tracking for Ashiana Public School staff.</p>
+            </div>
+            <div class="flex items-center space-x-2">
+              <input type="text" id="live-search-input" onkeyup="filterLiveAttendance()" placeholder="Search teacher or department..." class="text-xs px-3.5 py-2 bg-slate-50 border border-slate-200 rounded-xl focus:outline-none focus:ring-2 focus:ring-ashiana-green w-52 sm:w-64">
+              <button onclick="exportLiveToCSV()" class="px-3.5 py-2 bg-emerald-50 hover:bg-emerald-100 text-ashiana-green border border-emerald-200 text-xs font-bold rounded-xl flex items-center space-x-1.5 transition-colors">
+                <i data-lucide="download" class="w-3.5 h-3.5"></i>
+                <span>Export CSV</span>
+              </button>
+            </div>
+          </div>
+
+          <div class="overflow-x-auto">
+            <table class="w-full text-left text-xs text-slate-600">
+              <thead class="bg-slate-50 text-slate-500 font-bold uppercase text-[10px] tracking-wider border-b border-slate-200">
+                <tr>
+                  <th class="py-3 px-4">Faculty Member</th>
+                  <th class="py-3 px-4">Department / Role</th>
+                  <th class="py-3 px-4">First IN</th>
+                  <th class="py-3 px-4">Last OUT</th>
+                  <th class="py-3 px-4">Punches</th>
+                  <th class="py-3 px-4">Working Time</th>
+                  <th class="py-3 px-4">Late Mins</th>
+                  <th class="py-3 px-4">Current Status</th>
+                  <th class="py-3 px-4 text-right">Quick Test</th>
+                </tr>
+              </thead>
+              <tbody id="live-attendance-tbody" class="divide-y divide-slate-100">
+                <!-- Dynamically Rendered -->
+              </tbody>
+            </table>
+          </div>
+        </div>
+      </div>
+
+      <!-- TAB 2: DAILY QR DISPLAY STATION (OFFICIAL LOGO BRANDED) -->
+      <div id="admin-tab-qr" class="hidden space-y-4">
+        <div class="max-w-xl mx-auto bg-white rounded-3xl border border-slate-200 shadow-xl overflow-hidden text-center p-8">
+          
+          <!-- Official Crest on QR Station -->
+          <div class="w-24 h-24 mx-auto mb-3 rounded-full bg-white p-1 shadow-lg border-2 border-emerald-500 flex items-center justify-center overflow-hidden">
+            <img src="logo 2.jpg" alt="Ashiana Public School" 
+                 onerror="this.style.display='none'; this.nextElementSibling.classList.remove('hidden');" 
+                 class="w-full h-full object-cover rounded-full">
+            <svg class="w-full h-full hidden" viewBox="0 0 200 200" fill="none" xmlns="http://www.w3.org/2000/svg">
+              <circle cx="100" cy="100" r="98" fill="white"/>
+              <path d="M100 24 L34 140 H64 L79 108 H121 L136 140 H166 Z" fill="#0A7E46"/>
+              <path d="M100 48 L86 92 H114 Z" fill="white"/>
+              <circle cx="100" cy="74" r="7.5" fill="#D92D31"/>
+              <path d="M91 85 C91 83 93 82 95 82 H105 C107 82 109 83 109 85 V106 C109 107 108 108 107 108 H103 V136 H97 V108 H93 C92 108 91 107 91 106 Z" fill="#D92D31"/>
+              <polygon points="100,90 94,97 100,103 106,97" fill="white"/>
+              <text x="100" y="160" font-family="'Cinzel', Georgia, serif" font-weight="bold" font-size="20" text-anchor="middle" fill="#1A1A1A" letter-spacing="1.5">ASHIANA</text>
+              <rect x="28" y="164" width="144" height="2.5" fill="#D92D31" rx="1"/>
+              <text x="100" y="179" font-family="'Cinzel', Georgia, serif" font-weight="600" font-size="11" text-anchor="middle" fill="#1A1A1A" letter-spacing="2">PUBLIC SCHOOL</text>
+            </svg>
+          </div>
+
+          <h2 class="text-2xl font-black text-slate-900 font-serif">ASHIANA PUBLIC SCHOOL</h2>
+          <div class="w-24 h-1 bg-ashiana-red mx-auto my-1.5 rounded-full"></div>
+          <p class="text-xs font-bold text-ashiana-green uppercase tracking-widest mt-0.5">Faculty Attendance Station</p>
+          <p class="text-xs text-slate-500 mt-0.5">Sector 46-A, Chandigarh • Academic Session 2026</p>
+
+          <!-- Dynamic QR Canvas Box -->
+          <div class="my-6 p-6 bg-slate-50 rounded-3xl border border-slate-200 inline-block shadow-inner relative">
+            <div id="qr-code-canvas-container" class="flex justify-center items-center w-56 h-56 mx-auto bg-white p-3 rounded-2xl shadow-sm border border-emerald-300">
+              <!-- QRCode mounts here -->
+            </div>
+            <div class="mt-3">
+              <span id="qr-token-preview" class="text-[10px] font-mono text-emerald-800 font-bold block bg-emerald-50 px-2 py-1 rounded-md border border-emerald-200">SEC-APS-TOKEN-2026-ACTIVE</span>
+            </div>
+          </div>
+
+          <!-- Live Expiration Progress -->
+          <div class="max-w-xs mx-auto space-y-2 mb-6">
+            <div class="flex justify-between text-xs font-bold text-slate-600">
+              <span>Token Expires In:</span>
+              <span id="qr-countdown-text" class="font-mono text-ashiana-green">60s</span>
+            </div>
+            <div class="w-full h-2 bg-slate-100 rounded-full overflow-hidden">
+              <div id="qr-progress-bar" class="h-full bg-ashiana-green transition-all duration-1000" style="width: 100%;"></div>
+            </div>
+            <p class="text-[10px] text-slate-400">Tokens rotate automatically every 60s for fraud prevention.</p>
+          </div>
+
+          <div class="flex items-center justify-center space-x-3">
+            <button onclick="rotateQRSession()" class="px-4 py-2 bg-ashiana-green hover:bg-[#08693A] text-white rounded-xl text-xs font-bold flex items-center space-x-1.5 shadow">
+              <i data-lucide="refresh-cw" class="w-3.5 h-3.5"></i>
+              <span>Regenerate QR Token</span>
+            </button>
+            <button onclick="simulateStaffScanFromAdmin()" class="px-4 py-2 bg-slate-100 hover:bg-slate-200 text-slate-700 rounded-xl text-xs font-bold flex items-center space-x-1.5">
+              <i data-lucide="smartphone" class="w-3.5 h-3.5"></i>
+              <span>Test Punch as Staff</span>
+            </button>
+          </div>
+        </div>
+      </div>
+
+      <!-- TAB 3: STAFF DIRECTORY & MANAGEMENT -->
+      <div id="admin-tab-directory" class="hidden space-y-4">
+        <div class="bg-white rounded-2xl border border-slate-200 shadow-sm p-4 sm:p-6">
+          <div class="flex flex-col sm:flex-row sm:items-center justify-between gap-3 mb-5">
+            <div>
+              <h3 class="text-base font-bold text-slate-800">Faculty & Staff Directory</h3>
+              <p class="text-xs text-slate-500">Manage enrolled teachers, coordinators, and administrative staff.</p>
+            </div>
+            <div class="flex flex-wrap items-center gap-2">
+              <input type="text" id="staff-directory-search" onkeyup="filterStaffDirectory()" placeholder="Search by name, ID or role..." class="text-xs px-3.5 py-2 bg-slate-50 border border-slate-200 rounded-xl focus:outline-none focus:ring-2 focus:ring-ashiana-green w-52 sm:w-60">
+              <button onclick="openAddStaffModal()" class="px-3 py-2 bg-ashiana-green hover:bg-[#08693A] text-white text-xs font-bold rounded-xl flex items-center space-x-1.5 transition-all shadow">
+                <i data-lucide="user-plus" class="w-3.5 h-3.5"></i>
+                <span>Add Staff</span>
+              </button>
+              <button onclick="openImportModal()" class="px-3 py-2 bg-emerald-700 hover:bg-emerald-800 text-white text-xs font-bold rounded-xl flex items-center space-x-1.5 transition-all shadow">
+                <i data-lucide="file-spreadsheet" class="w-3.5 h-3.5"></i>
+                <span>Import File</span>
+              </button>
+              <button onclick="exportStaffCredentialsWithPIN()" class="px-3 py-2 bg-emerald-950 hover:bg-black text-white text-xs font-bold rounded-xl flex items-center space-x-1.5 transition-all shadow border-b-2 border-ashiana-red">
+                <i data-lucide="key" class="w-3.5 h-3.5 text-amber-300"></i>
+                <span>Export Staff with PINs</span>
+              </button>
+            </div>
+          </div>
+
+          <div class="overflow-x-auto max-h-[600px] overflow-y-auto">
+            <table class="w-full text-left text-xs text-slate-600">
+              <thead class="bg-slate-50 text-slate-500 font-bold uppercase text-[10px] tracking-wider sticky top-0 border-b border-slate-200 z-10">
+                <tr>
+                  <th class="py-3 px-4">Emp ID</th>
+                  <th class="py-3 px-4">Full Name</th>
+                  <th class="py-3 px-4">Department</th>
+                  <th class="py-3 px-4">Designation</th>
+                  <th class="py-3 px-4">Email</th>
+                  <th class="py-3 px-4 text-center">4-Digit PIN</th>
+                  <th class="py-3 px-4">Status</th>
+                  <th class="py-3 px-4 text-center">Actions</th>
+                </tr>
+              </thead>
+              <tbody id="staff-directory-tbody" class="divide-y divide-slate-100">
+                <!-- Dynamically Rendered -->
+              </tbody>
+            </table>
+          </div>
+        </div>
+      </div>
+
+      <!-- TAB 4: MANUAL CORRECTIONS -->
+      <div id="admin-tab-corrections" class="hidden space-y-4">
+        <div class="bg-white rounded-2xl border border-slate-200 shadow-sm p-4 sm:p-6">
+          <div class="max-w-xl mx-auto space-y-4">
+            <div class="border-b border-slate-100 pb-3">
+              <h3 class="text-base font-bold text-slate-800">Exceptional Attendance Correction</h3>
+              <p class="text-xs text-slate-500">Every manual correction requires an authoritative audit reason.</p>
+            </div>
+
+            <form onsubmit="handleManualCorrectionSubmit(event)" class="space-y-4">
+              <div>
+                <label class="block text-xs font-bold text-slate-700 mb-1">Select Faculty Member</label>
+                <select id="correction-staff-select" required class="w-full text-xs p-3 bg-slate-50 border border-slate-200 rounded-xl focus:ring-2 focus:ring-ashiana-green">
+                  <!-- Populated dynamically -->
+                </select>
+              </div>
+
+              <div class="grid grid-cols-2 gap-3">
+                <div>
+                  <label class="block text-xs font-bold text-slate-700 mb-1">Punch Type</label>
+                  <select id="correction-punch-type" required class="w-full text-xs p-3 bg-slate-50 border border-slate-200 rounded-xl focus:ring-2 focus:ring-ashiana-green font-bold">
+                    <option value="IN">Force Manual PUNCH IN</option>
+                    <option value="OUT">Force Manual PUNCH OUT</option>
+                  </select>
+                </div>
+                <div>
+                  <label class="block text-xs font-bold text-slate-700 mb-1">Correction Timestamp</label>
+                  <input type="time" id="correction-timestamp" required value="07:40" class="w-full text-xs p-3 bg-slate-50 border border-slate-200 rounded-xl focus:ring-2 focus:ring-ashiana-green font-mono">
+                </div>
+              </div>
+
+              <div>
+                <label class="block text-xs font-bold text-slate-700 mb-1">Mandatory Administrative Reason (Audit Log)</label>
+                <textarea id="correction-reason" required rows="2" placeholder="e.g. Teacher on bus arrival duty, verified by Principal Office" class="w-full text-xs p-3 bg-slate-50 border border-slate-200 rounded-xl focus:ring-2 focus:ring-ashiana-green"></textarea>
+              </div>
+
+              <button type="submit" class="w-full py-3 bg-emerald-950 hover:bg-black text-white rounded-xl text-xs font-bold flex items-center justify-center space-x-2 shadow">
+                <i data-lucide="shield-check" class="w-4 h-4"></i>
+                <span>Save Correction & Log Audit Record</span>
+              </button>
+            </form>
+          </div>
+        </div>
+      </div>
+
+      <!-- TAB 5: LEAVE APPROVALS -->
+      <div id="admin-tab-leave" class="hidden space-y-4">
+        <div class="bg-white rounded-2xl border border-slate-200 shadow-sm p-4 sm:p-6">
+          <div class="flex items-center justify-between mb-4">
+            <div>
+              <h3 class="text-base font-bold text-slate-800">Faculty Leave Requests</h3>
+              <p class="text-xs text-slate-500">Review, approve, or reject staff leave applications.</p>
+            </div>
+            <span class="text-xs font-bold px-3 py-1 bg-emerald-50 text-ashiana-green rounded-full border border-emerald-200">
+              Leave Desk
+            </span>
+          </div>
+
+          <div class="overflow-x-auto">
+            <table class="w-full text-left text-xs text-slate-600">
+              <thead class="bg-slate-50 text-slate-500 font-bold uppercase text-[10px] tracking-wider border-b border-slate-200">
+                <tr>
+                  <th class="py-3 px-4">Staff Member</th>
+                  <th class="py-3 px-4">Type</th>
+                  <th class="py-3 px-4">Dates</th>
+                  <th class="py-3 px-4">Reason</th>
+                  <th class="py-3 px-4">Status</th>
+                  <th class="py-3 px-4 text-right">Actions</th>
+                </tr>
+              </thead>
+              <tbody id="admin-leave-tbody" class="divide-y divide-slate-100">
+                <!-- Rendered dynamically -->
+              </tbody>
+            </table>
+          </div>
+        </div>
+      </div>
+
+      <!-- TAB 6: IMMUTABLE AUDIT LOG & STORAGE MANAGEMENT -->
+      <div id="admin-tab-audit" class="hidden space-y-4">
+        <div class="bg-white rounded-2xl border border-slate-200 shadow-sm p-4 sm:p-6">
+          <div class="flex flex-col sm:flex-row sm:items-center justify-between gap-3 mb-4">
+            <div>
+              <h3 class="text-base font-bold text-slate-800">Authoritative Audit Trail & Storage Desk</h3>
+              <p class="text-xs text-slate-500">Every administrative action, staff edit, and punch is preserved in browser persistent storage.</p>
+            </div>
+            <div class="flex items-center space-x-2">
+              <span class="text-xs font-mono font-bold bg-emerald-50 text-emerald-800 border border-emerald-200 px-3 py-1.5 rounded-xl flex items-center space-x-1.5">
+                <i data-lucide="hard-drive" class="w-3.5 h-3.5 text-ashiana-green"></i>
+                <span id="storage-status-tag">LocalStorage Active</span>
+              </span>
+              <button onclick="clearSavedDataAndReset()" class="px-3 py-1.5 bg-rose-50 hover:bg-rose-100 text-ashiana-red border border-rose-200 rounded-xl text-xs font-bold flex items-center space-x-1 transition-colors">
+                <i data-lucide="rotate-ccw" class="w-3.5 h-3.5"></i>
+                <span>Reset to Factory Data</span>
+              </button>
+            </div>
+          </div>
+
+          <div class="overflow-x-auto max-h-[500px] overflow-y-auto">
+            <table class="w-full text-left text-xs text-slate-600">
+              <thead class="bg-slate-50 text-slate-500 font-bold uppercase text-[10px] tracking-wider sticky top-0 border-b border-slate-200">
+                <tr>
+                  <th class="py-3 px-4">Timestamp</th>
+                  <th class="py-3 px-4">Actor</th>
+                  <th class="py-3 px-4">Action</th>
+                  <th class="py-3 px-4">Entity</th>
+                  <th class="py-3 px-4">Details / Remarks</th>
+                </tr>
+              </thead>
+              <tbody id="audit-logs-tbody" class="divide-y divide-slate-100 font-mono text-[11px]">
+                <!-- Populated dynamically -->
+              </tbody>
+            </table>
+          </div>
+        </div>
+      </div>
+
+    </div>
+
+  </main>
+
+  <!-- ========================================================================= -->
+  <!-- MODAL: MARK ATTENDANCE STEPPER (SIMULATED CAMERA & PIN NUMPAD)            -->
+  <!-- ========================================================================= -->
+  <div id="modal-punch" class="fixed inset-0 bg-slate-950/70 backdrop-blur-sm z-50 hidden flex items-center justify-center p-4">
+    <div class="bg-white rounded-3xl max-w-sm w-full overflow-hidden shadow-2xl border border-slate-200">
+      
+      <!-- Stepper Header -->
+      <div class="bg-gradient-to-r from-emerald-950 to-[#064E3B] p-4 text-white flex items-center justify-between border-b-2 border-ashiana-red">
+        <div class="flex items-center space-x-2">
+          <i data-lucide="scan" class="w-5 h-5 text-emerald-300"></i>
+          <div>
+            <h3 class="text-xs font-bold uppercase tracking-wider font-serif">Mark Attendance</h3>
+            <p id="punch-stepper-subtitle" class="text-[11px] text-emerald-200">Step 1: Scan Today's QR Code</p>
+          </div>
+        </div>
+        <button onclick="closePunchModal()" class="w-8 h-8 rounded-full bg-white/10 hover:bg-white/20 flex items-center justify-center text-white">
+          <i data-lucide="x" class="w-4 h-4"></i>
+        </button>
+      </div>
+
+      <div class="p-5">
+        <!-- STEP 1: SCANNER VIEWPORT -->
+        <div id="punch-step-scan" class="space-y-4">
+          <div class="relative w-64 h-64 mx-auto bg-slate-900 rounded-3xl overflow-hidden border-2 border-emerald-500 shadow-inner flex flex-col items-center justify-center text-center p-4">
+            <!-- Animated Scan Laser -->
+            <div class="absolute top-4 left-4 right-4 h-0.5 bg-gradient-to-r from-emerald-400 via-ashiana-red to-emerald-400 scanner-line shadow-lg shadow-emerald-400/50"></div>
+            
+            <div class="w-44 h-44 border-2 border-dashed border-white/30 rounded-2xl flex flex-col items-center justify-center p-3 relative">
+              <i data-lucide="qr-code" class="w-16 h-16 text-white/40 mb-2"></i>
+              <span class="text-[10px] text-emerald-200 font-semibold uppercase tracking-wider">Point at Daily QR</span>
+            </div>
+            
+            <span class="text-[10px] text-slate-400 mt-3 font-mono">APS-SCANNER-V3.4</span>
+          </div>
+
+          <div class="space-y-2 pt-2">
+            <button onclick="handleScanSuccess()" class="w-full py-3 bg-ashiana-green hover:bg-[#08693A] text-white rounded-xl text-xs font-bold flex items-center justify-center space-x-2 shadow-lg shadow-emerald-700/20 active:scale-95 transition-all">
+              <i data-lucide="check-circle-2" class="w-4 h-4"></i>
+              <span>Simulate QR Code Scanned</span>
+            </button>
+            <button onclick="handleSimulateExpiredQR()" class="w-full py-2 bg-slate-100 hover:bg-slate-200 text-slate-600 rounded-xl text-[11px] font-semibold">
+              Simulate Expired QR (Test Rejection)
+            </button>
+          </div>
+        </div>
+
+        <!-- STEP 2: PIN PAD ENTRY -->
+        <div id="punch-step-pin" class="hidden space-y-4">
+          <div class="text-center">
+            <p class="text-xs text-slate-500">Enter personal 4-digit attendance PIN for:</p>
+            <h4 id="pin-modal-staff-name" class="text-sm font-bold text-slate-800 mt-0.5">Faculty Member</h4>
+          </div>
+
+          <!-- PIN Dots Indicator -->
+          <div class="flex justify-center items-center space-x-3 my-2">
+            <div id="pin-dot-1" class="w-3.5 h-3.5 rounded-full border-2 border-slate-300 bg-white"></div>
+            <div id="pin-dot-2" class="w-3.5 h-3.5 rounded-full border-2 border-slate-300 bg-white"></div>
+            <div id="pin-dot-3" class="w-3.5 h-3.5 rounded-full border-2 border-slate-300 bg-white"></div>
+            <div id="pin-dot-4" class="w-3.5 h-3.5 rounded-full border-2 border-slate-300 bg-white"></div>
+          </div>
+
+          <!-- On-screen PIN Pad -->
+          <div class="grid grid-cols-3 gap-2 max-w-[240px] mx-auto pt-2">
+            <button onclick="pressPinDigit('1')" class="h-12 rounded-2xl bg-slate-100 hover:bg-emerald-50 text-slate-800 hover:text-ashiana-green font-bold text-base shadow-sm active:scale-95 transition-all">1</button>
+            <button onclick="pressPinDigit('2')" class="h-12 rounded-2xl bg-slate-100 hover:bg-emerald-50 text-slate-800 hover:text-ashiana-green font-bold text-base shadow-sm active:scale-95 transition-all">2</button>
+            <button onclick="pressPinDigit('3')" class="h-12 rounded-2xl bg-slate-100 hover:bg-emerald-50 text-slate-800 hover:text-ashiana-green font-bold text-base shadow-sm active:scale-95 transition-all">3</button>
+            <button onclick="pressPinDigit('4')" class="h-12 rounded-2xl bg-slate-100 hover:bg-emerald-50 text-slate-800 hover:text-ashiana-green font-bold text-base shadow-sm active:scale-95 transition-all">4</button>
+            <button onclick="pressPinDigit('5')" class="h-12 rounded-2xl bg-slate-100 hover:bg-emerald-50 text-slate-800 hover:text-ashiana-green font-bold text-base shadow-sm active:scale-95 transition-all">5</button>
+            <button onclick="pressPinDigit('6')" class="h-12 rounded-2xl bg-slate-100 hover:bg-emerald-50 text-slate-800 hover:text-ashiana-green font-bold text-base shadow-sm active:scale-95 transition-all">6</button>
+            <button onclick="pressPinDigit('7')" class="h-12 rounded-2xl bg-slate-100 hover:bg-emerald-50 text-slate-800 hover:text-ashiana-green font-bold text-base shadow-sm active:scale-95 transition-all">7</button>
+            <button onclick="pressPinDigit('8')" class="h-12 rounded-2xl bg-slate-100 hover:bg-emerald-50 text-slate-800 hover:text-ashiana-green font-bold text-base shadow-sm active:scale-95 transition-all">8</button>
+            <button onclick="pressPinDigit('9')" class="h-12 rounded-2xl bg-slate-100 hover:bg-emerald-50 text-slate-800 hover:text-ashiana-green font-bold text-base shadow-sm active:scale-95 transition-all">9</button>
+            <button onclick="clearPinInput()" class="h-12 rounded-2xl bg-rose-50 hover:bg-rose-100 text-ashiana-red font-bold text-xs shadow-sm active:scale-95 transition-all">C</button>
+            <button onclick="pressPinDigit('0')" class="h-12 rounded-2xl bg-slate-100 hover:bg-emerald-50 text-slate-800 hover:text-ashiana-green font-bold text-base shadow-sm active:scale-95 transition-all">0</button>
+            <button onclick="pressPinBackspace()" class="h-12 rounded-2xl bg-slate-100 hover:bg-slate-200 text-slate-700 flex items-center justify-center shadow-sm active:scale-95 transition-all">
+              <i data-lucide="delete" class="w-4 h-4"></i>
+            </button>
+          </div>
+
+          <div class="text-center pt-2">
+            <span class="text-[10px] text-slate-400">PIN verification required for attendance</span>
+          </div>
+        </div>
+
+      </div>
+    </div>
+  </div>
+
+  <!-- ========================================================================= -->
+  <!-- MODAL: STAFF PROFILE & CHANGE PIN (SELF-SERVICE)                          -->
+  <!-- ========================================================================= -->
+  <div id="staff-profile-modal" class="fixed inset-0 bg-slate-950/70 backdrop-blur-sm z-50 hidden flex items-center justify-center p-4">
+    <div class="bg-white rounded-3xl max-w-sm w-full overflow-hidden shadow-2xl border border-slate-200">
+      <div class="bg-gradient-to-r from-emerald-950 to-[#064E3B] p-4 text-white flex items-center justify-between border-b-2 border-ashiana-red">
+        <div class="flex items-center space-x-2">
+          <i data-lucide="user" class="w-5 h-5 text-emerald-300"></i>
+          <div>
+            <h3 class="text-xs font-bold uppercase tracking-wider font-serif">Faculty Profile</h3>
+            <p class="text-[11px] text-emerald-200">Ashiana Public School Portal</p>
+          </div>
+        </div>
+        <button onclick="closeStaffProfileModal()" class="w-8 h-8 rounded-full bg-white/10 hover:bg-white/20 flex items-center justify-center text-white">
+          <i data-lucide="x" class="w-4 h-4"></i>
+        </button>
+      </div>
+
+      <div class="p-5 space-y-4">
+        <div class="flex items-center space-x-3 p-3 bg-slate-50 rounded-2xl border border-slate-200/80">
+          <div id="profile-modal-avatar" class="w-12 h-12 rounded-2xl bg-ashiana-green text-white font-bold text-sm flex items-center justify-center shadow">
+            AP
+          </div>
+          <div>
+            <h4 id="profile-modal-name" class="font-bold text-sm text-slate-800">Faculty Member</h4>
+            <p id="profile-modal-role" class="text-xs text-slate-500">Teacher • Science</p>
+            <span id="profile-modal-empid" class="text-[10px] font-mono text-ashiana-green font-bold block mt-0.5">APS-101</span>
+          </div>
+        </div>
+
+        <form id="staff-change-pin-form" onsubmit="handleChangePinSubmit(event)" class="space-y-3 pt-2 border-t border-slate-100">
+          <h5 class="text-xs font-bold text-slate-800 flex items-center space-x-1.5">
+            <i data-lucide="lock" class="w-3.5 h-3.5 text-ashiana-green"></i>
+            <span>Change 4-Digit Attendance PIN</span>
+          </h5>
+
+          <div>
+            <label class="block text-[11px] font-bold text-slate-600 mb-1">Current PIN</label>
+            <input type="password" maxlength="4" pattern="[0-9]{4}" id="change-pin-current" required placeholder="Enter current PIN" class="w-full text-xs p-2.5 bg-slate-50 border border-slate-200 rounded-xl focus:ring-2 focus:ring-ashiana-green font-mono tracking-widest text-center font-bold">
+          </div>
+
+          <div class="grid grid-cols-2 gap-2">
+            <div>
+              <label class="block text-[11px] font-bold text-slate-600 mb-1">New PIN</label>
+              <input type="password" maxlength="4" pattern="[0-9]{4}" id="change-pin-new" required placeholder="New 4-digits" class="w-full text-xs p-2.5 bg-slate-50 border border-slate-200 rounded-xl focus:ring-2 focus:ring-ashiana-green font-mono tracking-widest text-center font-bold">
+            </div>
+            <div>
+              <label class="block text-[11px] font-bold text-slate-600 mb-1">Confirm PIN</label>
+              <input type="password" maxlength="4" pattern="[0-9]{4}" id="change-pin-confirm" required placeholder="Confirm PIN" class="w-full text-xs p-2.5 bg-slate-50 border border-slate-200 rounded-xl focus:ring-2 focus:ring-ashiana-green font-mono tracking-widest text-center font-bold">
+            </div>
+          </div>
+
+          <button type="submit" class="w-full py-2.5 bg-ashiana-green hover:bg-[#08693A] text-white rounded-xl text-xs font-bold shadow flex items-center justify-center space-x-1.5">
+            <i data-lucide="check" class="w-3.5 h-3.5"></i>
+            <span>Update Attendance PIN</span>
+          </button>
+        </form>
+      </div>
+    </div>
+  </div>
+
+  <!-- ========================================================================= -->
+  <!-- MODAL: EDIT STAFF RECORD                                                  -->
+  <!-- ========================================================================= -->
+  <div id="edit-staff-modal" class="fixed inset-0 bg-slate-950/70 backdrop-blur-sm z-50 hidden flex items-center justify-center p-4">
+    <div class="bg-white rounded-3xl max-w-lg w-full overflow-hidden shadow-2xl border border-slate-200">
+      <div class="bg-emerald-950 p-4 text-white flex items-center justify-between border-b-2 border-ashiana-red">
+        <div class="flex items-center space-x-2">
+          <i data-lucide="edit-3" class="w-5 h-5 text-emerald-300"></i>
+          <div>
+            <h3 class="text-xs font-bold uppercase tracking-wider font-serif">Edit Faculty Record</h3>
+            <p class="text-[11px] text-emerald-200">Ashiana Public School Personnel Register</p>
+          </div>
+        </div>
+        <button onclick="closeEditStaffModal()" class="w-8 h-8 rounded-full bg-white/10 hover:bg-white/20 flex items-center justify-center text-white">
+          <i data-lucide="x" class="w-4 h-4"></i>
+        </button>
+      </div>
+
+      <form id="edit-staff-form" onsubmit="handleEditStaffSubmit(event)" class="p-6 space-y-4">
+        <input type="hidden" id="edit-staff-target-id">
+
+        <div class="grid grid-cols-2 gap-3">
+          <div>
+            <label class="block text-xs font-bold text-slate-700 mb-1">Employee ID</label>
+            <input type="text" id="edit-staff-empid" required class="w-full text-xs p-3 bg-slate-50 border border-slate-200 rounded-xl focus:ring-2 focus:ring-ashiana-green font-mono font-bold">
+          </div>
+          <div>
+            <label class="block text-xs font-bold text-slate-700 mb-1">Full Name</label>
+            <input type="text" id="edit-staff-name" required class="w-full text-xs p-3 bg-slate-50 border border-slate-200 rounded-xl focus:ring-2 focus:ring-ashiana-green font-bold">
+          </div>
+        </div>
+
+        <div class="grid grid-cols-2 gap-3">
+          <div>
+            <label class="block text-xs font-bold text-slate-700 mb-1">Department</label>
+            <select id="edit-staff-dept" required class="w-full text-xs p-3 bg-slate-50 border border-slate-200 rounded-xl focus:ring-2 focus:ring-ashiana-green">
+              <option value="Administration">Administration</option>
+              <option value="Science & Mathematics">Science & Mathematics</option>
+              <option value="Languages & Literature">Languages & Literature</option>
+              <option value="Information Technology">Information Technology</option>
+              <option value="Primary Wing (PRT)">Primary Wing (PRT)</option>
+              <option value="Kindergarten Wing">Kindergarten Wing</option>
+              <option value="Physical Education & Sports">Physical Education & Sports</option>
+              <option value="Arts, Music & Dance">Arts, Music & Dance</option>
+              <option value="Student Support & Counselling">Student Support & Counselling</option>
+            </select>
+          </div>
+          <div>
+            <label class="block text-xs font-bold text-slate-700 mb-1">Role / Designation</label>
+            <input type="text" id="edit-staff-role" required class="w-full text-xs p-3 bg-slate-50 border border-slate-200 rounded-xl focus:ring-2 focus:ring-ashiana-green">
+          </div>
+        </div>
+
+        <div class="grid grid-cols-2 gap-3">
+          <div>
+            <label class="block text-xs font-bold text-slate-700 mb-1">Email</label>
+            <input type="email" id="edit-staff-email" required class="w-full text-xs p-3 bg-slate-50 border border-slate-200 rounded-xl focus:ring-2 focus:ring-ashiana-green">
+          </div>
+          <div>
+            <label class="block text-xs font-bold text-slate-700 mb-1">4-Digit PIN</label>
+            <input type="text" maxlength="4" pattern="[0-9]{4}" id="edit-staff-pin" required class="w-full text-xs p-3 bg-slate-50 border border-slate-200 rounded-xl focus:ring-2 focus:ring-ashiana-green font-mono tracking-widest font-bold">
+          </div>
+        </div>
+
+        <div>
+          <label class="block text-xs font-bold text-slate-700 mb-1">Account Status</label>
+          <select id="edit-staff-status" required class="w-full text-xs p-3 bg-slate-50 border border-slate-200 rounded-xl focus:ring-2 focus:ring-ashiana-green">
+            <option value="ACTIVE">ACTIVE (Authorized to Punch)</option>
+            <option value="INACTIVE">INACTIVE (Account Suspended / On Leave)</option>
+          </select>
+        </div>
+
+        <div class="flex items-center justify-end space-x-2 pt-2 border-t border-slate-100">
+          <button type="button" onclick="closeEditStaffModal()" class="px-4 py-2.5 bg-slate-100 hover:bg-slate-200 text-slate-700 rounded-xl text-xs font-bold">Cancel</button>
+          <button type="submit" class="px-5 py-2.5 bg-ashiana-green hover:bg-[#08693A] text-white rounded-xl text-xs font-bold shadow">Save Changes</button>
+        </div>
+      </form>
+    </div>
+  </div>
+
+  <!-- ========================================================================= -->
+  <!-- MODAL: DELETE CONFIRMATION                                                -->
+  <!-- ========================================================================= -->
+  <div id="delete-staff-modal" class="fixed inset-0 bg-slate-950/70 backdrop-blur-sm z-50 hidden flex items-center justify-center p-4">
+    <div class="bg-white rounded-3xl max-w-sm w-full p-6 text-center shadow-2xl border border-slate-200">
+      <div class="w-12 h-12 rounded-2xl bg-rose-100 text-ashiana-red flex items-center justify-center mx-auto mb-3">
+        <i data-lucide="trash-2" class="w-6 h-6"></i>
+      </div>
+      <h3 class="text-base font-bold text-slate-800">Remove Staff Member?</h3>
+      <p id="delete-staff-confirm-message" class="text-xs text-slate-500 mt-1">Are you sure you want to remove this faculty record?</p>
+      <input type="hidden" id="delete-staff-target-id">
+
+      <div class="grid grid-cols-2 gap-2 mt-6">
+        <button onclick="closeDeleteStaffModal()" class="py-2.5 bg-slate-100 hover:bg-slate-200 text-slate-700 text-xs font-bold rounded-xl">
+          Cancel
+        </button>
+        <button onclick="executeStaffDeletion()" class="py-2.5 bg-ashiana-red hover:bg-ashiana-red-dark text-white text-xs font-bold rounded-xl shadow">
+          Confirm Deletion
+        </button>
+      </div>
+    </div>
+  </div>
+
+  <!-- ========================================================================= -->
+  <!-- MODAL: ADD NEW STAFF MEMBER                                              -->
+  <!-- ========================================================================= -->
+  <div id="add-staff-modal" class="fixed inset-0 bg-slate-950/70 backdrop-blur-sm z-50 hidden flex items-center justify-center p-4">
+    <div class="bg-white rounded-3xl max-w-lg w-full overflow-hidden shadow-2xl border border-slate-200">
+      <div class="bg-emerald-950 p-4 text-white flex items-center justify-between border-b-2 border-ashiana-red">
+        <div class="flex items-center space-x-2">
+          <i data-lucide="user-plus" class="w-5 h-5 text-emerald-300"></i>
+          <div>
+            <h3 class="text-xs font-bold uppercase tracking-wider font-serif">Enroll New Staff Member</h3>
+            <p class="text-[11px] text-emerald-200">Ashiana Public School Roster</p>
+          </div>
+        </div>
+        <button onclick="closeAddStaffModal()" class="w-8 h-8 rounded-full bg-white/10 hover:bg-white/20 flex items-center justify-center text-white">
+          <i data-lucide="x" class="w-4 h-4"></i>
+        </button>
+      </div>
+
+      <form id="add-staff-form" onsubmit="handleAddStaffSubmit(event)" class="p-6 space-y-4">
+        <div class="grid grid-cols-2 gap-3">
+          <div>
+            <label class="block text-xs font-bold text-slate-700 mb-1">Employee ID</label>
+            <input type="text" id="add-staff-empid" required placeholder="e.g. APS-173" class="w-full text-xs p-3 bg-slate-50 border border-slate-200 rounded-xl focus:ring-2 focus:ring-ashiana-green font-mono font-bold">
+          </div>
+          <div>
+            <label class="block text-xs font-bold text-slate-700 mb-1">Full Name</label>
+            <input type="text" id="add-staff-name" required placeholder="e.g. Mrs. Sunita Sharma" class="w-full text-xs p-3 bg-slate-50 border border-slate-200 rounded-xl focus:ring-2 focus:ring-ashiana-green font-bold">
+          </div>
+        </div>
+
+        <div class="grid grid-cols-2 gap-3">
+          <div>
+            <label class="block text-xs font-bold text-slate-700 mb-1">Department</label>
+            <select id="add-staff-dept" required class="w-full text-xs p-3 bg-slate-50 border border-slate-200 rounded-xl focus:ring-2 focus:ring-ashiana-green">
+              <option value="Primary Wing (PRT)">Primary Wing (PRT)</option>
+              <option value="Science & Mathematics">Science & Mathematics</option>
+              <option value="Languages & Literature">Languages & Literature</option>
+              <option value="Kindergarten Wing">Kindergarten Wing</option>
+              <option value="Physical Education & Sports">Physical Education & Sports</option>
+              <option value="Information Technology">Information Technology</option>
+              <option value="Arts, Music & Dance">Arts, Music & Dance</option>
+              <option value="Administration">Administration</option>
+            </select>
+          </div>
+          <div>
+            <label class="block text-xs font-bold text-slate-700 mb-1">Role / Subject</label>
+            <input type="text" id="add-staff-role" required placeholder="e.g. PRT Mathematics" class="w-full text-xs p-3 bg-slate-50 border border-slate-200 rounded-xl focus:ring-2 focus:ring-ashiana-green">
+          </div>
+        </div>
+
+        <div class="grid grid-cols-2 gap-3">
+          <div>
+            <label class="block text-xs font-bold text-slate-700 mb-1">Email</label>
+            <input type="email" id="add-staff-email" required placeholder="name@ashianapublicschool.com" class="w-full text-xs p-3 bg-slate-50 border border-slate-200 rounded-xl focus:ring-2 focus:ring-ashiana-green">
+          </div>
+          <div>
+            <label class="block text-xs font-bold text-slate-700 mb-1">4-Digit PIN</label>
+            <input type="text" maxlength="4" pattern="[0-9]{4}" id="add-staff-pin" required value="1234" class="w-full text-xs p-3 bg-slate-50 border border-slate-200 rounded-xl focus:ring-2 focus:ring-ashiana-green font-mono tracking-widest font-bold">
+          </div>
+        </div>
+
+        <div class="flex items-center justify-end space-x-2 pt-2 border-t border-slate-100">
+          <button type="button" onclick="closeAddStaffModal()" class="px-4 py-2.5 bg-slate-100 hover:bg-slate-200 text-slate-700 rounded-xl text-xs font-bold">Cancel</button>
+          <button type="submit" class="px-5 py-2.5 bg-ashiana-green hover:bg-[#08693A] text-white rounded-xl text-xs font-bold shadow">Save Staff & Register</button>
+        </div>
+      </form>
+    </div>
+  </div>
+
+  <!-- ========================================================================= -->
+  <!-- MODAL: EXCEL & CSV IMPORT                                                 -->
+  <!-- ========================================================================= -->
+  <div id="import-staff-modal" class="fixed inset-0 bg-slate-950/70 backdrop-blur-sm z-50 hidden flex items-center justify-center p-4">
+    <div class="bg-white rounded-3xl max-w-lg w-full p-6 shadow-2xl border border-slate-200">
+      <div class="flex items-center justify-between pb-3 border-b border-slate-100 mb-4">
+        <div>
+          <h3 class="text-base font-bold text-slate-800">Import Staff Roster</h3>
+          <p class="text-xs text-slate-500">Upload `.xlsx`, `.xls` or `.csv` spreadsheet.</p>
+        </div>
+        <button onclick="closeImportModal()" class="w-8 h-8 rounded-full bg-slate-100 hover:bg-slate-200 flex items-center justify-center text-slate-600">
+          <i data-lucide="x" class="w-4 h-4"></i>
+        </button>
+      </div>
+
+      <div class="space-y-4">
+        <div class="p-4 bg-emerald-50 border border-emerald-200 rounded-2xl">
+          <div class="flex items-center space-x-3">
+            <div class="w-9 h-9 rounded-xl bg-ashiana-green text-white flex items-center justify-center flex-shrink-0">
+              <i data-lucide="file-spreadsheet" class="w-5 h-5"></i>
+            </div>
+            <div>
+              <h4 class="text-xs font-bold text-emerald-950">Ashiana Master Roster Sync</h4>
+              <p class="text-[11px] text-emerald-700">Synchronize all faculty records with official roster.</p>
+            </div>
+          </div>
+          <button onclick="reloadAshianaMasterExcel()" class="mt-3 w-full py-2 bg-ashiana-green hover:bg-[#08693A] text-white text-xs font-bold rounded-xl transition-all shadow">
+            Reset to Official Ashiana Master Roster
+          </button>
+        </div>
+
+        <div class="border-2 border-dashed border-slate-200 rounded-2xl p-6 text-center hover:border-emerald-400 transition-colors">
+          <input type="file" id="excel-file-input" accept=".xlsx, .xls, .csv" onchange="handleExcelFileUpload(event)" class="hidden">
+          <label for="excel-file-input" class="cursor-pointer block">
+            <i data-lucide="upload-cloud" class="w-8 h-8 text-slate-400 mx-auto mb-2"></i>
+            <span class="text-xs font-bold text-slate-700 block">Click to select custom file</span>
+            <span class="text-[10px] text-slate-400 block mt-1">Supports XLSX, XLS, and CSV</span>
+          </label>
+        </div>
+      </div>
+    </div>
+  </div>
+
+  <!-- ========================================================================= -->
+  <!-- MODAL: LEAVE APPLY (STAFF SELF-SERVICE)                                   -->
+  <!-- ========================================================================= -->
+  <div id="leave-apply-modal" class="fixed inset-0 bg-slate-950/70 backdrop-blur-sm z-50 hidden flex items-center justify-center p-4">
+    <div class="bg-white rounded-3xl max-w-md w-full p-6 shadow-2xl border border-slate-200">
+      <div class="flex items-center justify-between pb-3 border-b border-slate-100 mb-4">
+        <div>
+          <h3 class="text-base font-bold text-slate-800">Apply for Leave</h3>
+          <p class="text-xs text-slate-500">Ashiana Public School Faculty Portal</p>
+        </div>
+        <button onclick="closeLeaveApplyModal()" class="w-8 h-8 rounded-full bg-slate-100 hover:bg-slate-200 flex items-center justify-center text-slate-600">
+          <i data-lucide="x" class="w-4 h-4"></i>
+        </button>
+      </div>
+
+      <form onsubmit="handleLeaveApplySubmit(event)" class="space-y-4">
+        <div>
+          <label class="block text-xs font-bold text-slate-700 mb-1">Leave Type</label>
+          <select id="leave-apply-type" required class="w-full text-xs p-3 bg-slate-50 border border-slate-200 rounded-xl focus:ring-2 focus:ring-ashiana-green">
+            <option value="Casual Leave">Casual Leave (CL)</option>
+            <option value="Medical Leave">Medical Leave (ML)</option>
+            <option value="Duty Leave">Duty Leave (CBSE Workshop / Exam Duty)</option>
+          </select>
+        </div>
+
+        <div class="grid grid-cols-2 gap-3">
+          <div>
+            <label class="block text-xs font-bold text-slate-700 mb-1">From Date</label>
+            <input type="date" id="leave-apply-from" required class="w-full text-xs p-3 bg-slate-50 border border-slate-200 rounded-xl focus:ring-2 focus:ring-ashiana-green font-mono">
+          </div>
+          <div>
+            <label class="block text-xs font-bold text-slate-700 mb-1">To Date</label>
+            <input type="date" id="leave-apply-to" required class="w-full text-xs p-3 bg-slate-50 border border-slate-200 rounded-xl focus:ring-2 focus:ring-ashiana-green font-mono">
+          </div>
+        </div>
+
+        <div>
+          <label class="block text-xs font-bold text-slate-700 mb-1">Reason for Leave</label>
+          <textarea id="leave-apply-reason" required rows="2" placeholder="e.g. Attending CBSE Teacher Training workshop" class="w-full text-xs p-3 bg-slate-50 border border-slate-200 rounded-xl focus:ring-2 focus:ring-ashiana-green"></textarea>
+        </div>
+
+        <button type="submit" class="w-full py-3 bg-ashiana-green hover:bg-[#08693A] text-white font-bold rounded-xl text-xs flex items-center justify-center space-x-2 shadow">
+          <i data-lucide="send" class="w-4 h-4"></i>
+          <span>Submit Application for Approval</span>
+        </button>
+      </form>
+    </div>
+  </div>
+
+  <!-- ========================================================================= -->
+  <!-- JAVASCRIPT ENGINE (WITH LOCAL PERSISTENCE LAYER)                           -->
+  <!-- ========================================================================= -->
+  <script>
+    // System Parameters
+    const systemConfig = {
+      schoolScheduleStart: "07:40",
+      schoolScheduleEnd: "14:30",
+      lateGraceMinutes: 10,
+      qrExpirySeconds: 60,
+      duplicateDebounceSeconds: 30,
+      currentAttendanceDate: "2026-09-22"
+    };
+
+    // Storage Keys
+    const STORAGE_KEY_STAFF = 'aps_attendance_staff_data_v1';
+    const STORAGE_KEY_PUNCHES = 'aps_attendance_punch_ledger_v1';
+    const STORAGE_KEY_LEAVE = 'aps_attendance_leave_requests_v1';
+    const STORAGE_KEY_AUDIT = 'aps_attendance_audit_logs_v1';
+
+    // Audio Feedback Synthesis
+    let audioCtx = null;
+    function playAudio(type) {
+      try {
+        if (!audioCtx) audioCtx = new (window.AudioContext || window.webkitAudioContext)();
+        if (audioCtx.state === 'suspended') audioCtx.resume();
+        const now = audioCtx.currentTime;
+        const osc = audioCtx.createOscillator();
+        const gain = audioCtx.createGain();
+        osc.connect(gain);
+        gain.connect(audioCtx.destination);
+
+        if (type === 'SUCCESS') {
+          osc.type = 'sine';
+          osc.frequency.setValueAtTime(587.33, now);
+          osc.frequency.exponentialRampToValueAtTime(880.00, now + 0.12);
+          gain.gain.setValueAtTime(0.2, now);
+          gain.gain.linearRampToValueAtTime(0.01, now + 0.25);
+          osc.start(now);
+          osc.stop(now + 0.25);
+        } else if (type === 'ERROR') {
+          osc.type = 'sawtooth';
+          osc.frequency.setValueAtTime(220, now);
+          osc.frequency.setValueAtTime(160, now + 0.1);
+          gain.gain.setValueAtTime(0.25, now);
+          gain.gain.linearRampToValueAtTime(0.01, now + 0.3);
+          osc.start(now);
+          osc.stop(now + 0.3);
+        } else if (type === 'KEY') {
+          osc.type = 'triangle';
+          osc.frequency.setValueAtTime(440, now);
+          gain.gain.setValueAtTime(0.08, now);
+          gain.gain.linearRampToValueAtTime(0.001, now + 0.04);
+          osc.start(now);
+          osc.stop(now + 0.04);
+        }
+      } catch (e) {
+        console.warn("Audio unavailable:", e);
+      }
+    }
+
+    // Toast Notification Dispatcher
+    function showToast(message, type = "info") {
+      const container = document.getElementById("toast-container");
+      if (!container) return;
+      const toast = document.createElement("div");
+      const bgMap = {
+        success: "bg-emerald-800 text-white border-emerald-600",
+        error: "bg-rose-800 text-white border-rose-600",
+        info: "bg-[#064E3B] text-white border-emerald-700"
+      };
+      toast.className = `p-3.5 rounded-2xl shadow-xl border pointer-events-auto flex items-center space-x-2.5 text-xs transition-all transform duration-200 translate-y-2 opacity-0 ${bgMap[type] || bgMap.info}`;
+      
+      const iconName = type === 'success' ? 'check-circle' : type === 'error' ? 'alert-circle' : 'info';
+      toast.innerHTML = `<i data-lucide="${iconName}" class="w-4 h-4 flex-shrink-0"></i><span class="font-medium">${message}</span>`;
+      container.appendChild(toast);
+      if (window.lucide) lucide.createIcons();
+
+      requestAnimationFrame(() => {
+        toast.classList.remove("translate-y-2", "opacity-0");
+      });
+
+      setTimeout(() => {
+        toast.classList.add("opacity-0", "translate-y-2");
+        setTimeout(() => toast.remove(), 250);
+      }, 3500);
+    }
+
+    // Official Ashiana Public School Faculty Dataset Builder
+    function getBaselineFacultyData() {
+      const baseline = [
+        { id: "usr_101", empId: "APS-101", name: "Mrs. Monika Sharma", role: "Principal", department: "Administration", email: "principal@ashianapublicschool.com", pinHash: "1234", status: "ACTIVE" },
+        { id: "usr_102", empId: "APS-102", name: "Ms. Kavita Chhabra", role: "Vice Principal & Academic Coordinator", department: "Administration", email: "kavita.chhabra@ashianapublicschool.com", pinHash: "1234", status: "ACTIVE" },
+        { id: "usr_103", empId: "APS-103", name: "Ms. Saloni Varma", role: "Office Coordinator", department: "Administration", email: "saloni.varma@ashianapublicschool.com", pinHash: "1234", status: "ACTIVE" },
+        { id: "usr_104", empId: "APS-104", name: "Ms. Jyotsna Leekha", role: "TGT Science & Mathematics", department: "Science & Mathematics", email: "jyotsna.leekha@ashianapublicschool.com", pinHash: "1234", status: "ACTIVE" },
+        { id: "usr_105", empId: "APS-105", name: "Ms. Shally Vij", role: "TGT Hindi & Sanskrit", department: "Languages & Literature", email: "shally.vij@ashianapublicschool.com", pinHash: "1234", status: "ACTIVE" },
+        { id: "usr_106", empId: "APS-106", name: "Ms. Deepali Pathak", role: "TGT Mathematics", department: "Science & Mathematics", email: "deepali.pathak@ashianapublicschool.com", pinHash: "1234", status: "ACTIVE" },
+        { id: "usr_107", empId: "APS-107", name: "Ms. Ambika Handoo Sharma", role: "PGT Computer Science", department: "Information Technology", email: "ambika.handoo@ashianapublicschool.com", pinHash: "1234", status: "ACTIVE" },
+        { id: "usr_108", empId: "APS-108", name: "Ms. Ramandeep Kaur", role: "TGT Punjabi", department: "Languages & Literature", email: "ramandeep.kaur@ashianapublicschool.com", pinHash: "1234", status: "ACTIVE" },
+        { id: "usr_109", empId: "APS-109", name: "Ms. Savleen Chahal", role: "TGT English", department: "Languages & Literature", email: "savleen.chahal@ashianapublicschool.com", pinHash: "1234", status: "ACTIVE" },
+        { id: "usr_110", empId: "APS-110", name: "Ms. Anita Kashyap", role: "TGT Social Science", department: "Languages & Literature", email: "anita.kashyap@ashianapublicschool.com", pinHash: "1234", status: "ACTIVE" },
+        { id: "usr_111", empId: "APS-111", name: "Ms. Alka Bhalla", role: "TGT Science", department: "Science & Mathematics", email: "alka.bhalla@ashianapublicschool.com", pinHash: "1234", status: "ACTIVE" },
+        { id: "usr_112", empId: "APS-112", name: "Ms. Nitika Sihota", role: "PGT Physics", department: "Science & Mathematics", email: "nitika.sihota@ashianapublicschool.com", pinHash: "1234", status: "ACTIVE" },
+        { id: "usr_113", empId: "APS-113", name: "Ms. Renu Devgun", role: "TGT English", department: "Languages & Literature", email: "renu.devgun@ashianapublicschool.com", pinHash: "1234", status: "ACTIVE" },
+        { id: "usr_114", empId: "APS-114", name: "Ms. Anupama Rana", role: "TGT Science & Biology", department: "Science & Mathematics", email: "anupama.rana@ashianapublicschool.com", pinHash: "1234", status: "ACTIVE" },
+        { id: "usr_115", empId: "APS-115", name: "Ms. Shweta Arora", role: "TGT Mathematics", department: "Science & Mathematics", email: "shweta.arora@ashianapublicschool.com", pinHash: "1234", status: "ACTIVE" },
+        { id: "usr_116", empId: "APS-116", name: "Ms. Dharaa Sharma", role: "PRT English", department: "Primary Wing (PRT)", email: "dharaa.sharma@ashianapublicschool.com", pinHash: "1234", status: "ACTIVE" },
+        { id: "usr_117", empId: "APS-117", name: "Ms. Shruti Narula", role: "PRT Mathematics", department: "Primary Wing (PRT)", email: "shruti.narula@ashianapublicschool.com", pinHash: "1234", status: "ACTIVE" },
+        { id: "usr_118", empId: "APS-118", name: "Ms. Harpreet Kaur", role: "PRT Punjabi", department: "Primary Wing (PRT)", email: "harpreet.kaur@ashianapublicschool.com", pinHash: "1234", status: "ACTIVE" },
+        { id: "usr_119", empId: "APS-119", name: "Ms. Sushma Sajwan", role: "PRT Hindi", department: "Primary Wing (PRT)", email: "sushma.sajwan@ashianapublicschool.com", pinHash: "1234", status: "ACTIVE" },
+        { id: "usr_120", empId: "APS-120", name: "Ms. Lata Rani", role: "PRT EVS & Science", department: "Primary Wing (PRT)", email: "lata.rani@ashianapublicschool.com", pinHash: "1234", status: "ACTIVE" },
+        { id: "usr_121", empId: "APS-121", name: "Ms. Upasna Kapuria", role: "PRT Art & Craft", department: "Arts, Music & Dance", email: "upasna.kapuria@ashianapublicschool.com", pinHash: "1234", status: "ACTIVE" },
+        { id: "usr_122", empId: "APS-122", name: "Ms. Amita Arora", role: "Kindergarten Coordinator", department: "Kindergarten Wing", email: "amita.arora@ashianapublicschool.com", pinHash: "1234", status: "ACTIVE" },
+        { id: "usr_123", empId: "APS-123", name: "Ms. Shikha Gupta", role: "Pre-Primary Teacher", department: "Kindergarten Wing", email: "shikha.gupta@ashianapublicschool.com", pinHash: "1234", status: "ACTIVE" },
+        { id: "usr_124", empId: "APS-124", name: "Ms. Artti Prashar", role: "Pre-Primary Teacher", department: "Kindergarten Wing", email: "artti.prashar@ashianapublicschool.com", pinHash: "1234", status: "ACTIVE" },
+        { id: "usr_125", empId: "APS-125", name: "Ms. Manpreet Kaur", role: "Pre-Primary Teacher", department: "Kindergarten Wing", email: "manpreet.k@ashianapublicschool.com", pinHash: "1234", status: "ACTIVE" },
+        { id: "usr_126", empId: "APS-126", name: "Ms. Neenu Mahajan", role: "Pre-Primary Teacher", department: "Kindergarten Wing", email: "neenu.mahajan@ashianapublicschool.com", pinHash: "1234", status: "ACTIVE" },
+        { id: "usr_127", empId: "APS-127", name: "Ms. Abhilasha Gulati", role: "Pre-Primary Teacher", department: "Kindergarten Wing", email: "abhilasha.gulati@ashianapublicschool.com", pinHash: "1234", status: "ACTIVE" },
+        { id: "usr_128", empId: "APS-128", name: "Ms. Simranjeet Kaur", role: "PRT Social Studies", department: "Primary Wing (PRT)", email: "simranjeet.k@ashianapublicschool.com", pinHash: "1234", status: "ACTIVE" },
+        { id: "usr_129", empId: "APS-129", name: "Ms. Pooja Mehra", role: "PRT Science", department: "Primary Wing (PRT)", email: "pooja.mehra@ashianapublicschool.com", pinHash: "1234", status: "ACTIVE" },
+        { id: "usr_130", empId: "APS-130", name: "Ms. Ritu Sharma", role: "PRT Hindi", department: "Primary Wing (PRT)", email: "ritu.sharma@ashianapublicschool.com", pinHash: "1234", status: "ACTIVE" },
+        { id: "usr_131", empId: "APS-131", name: "Ms. Gurpreet Saini", role: "TGT Punjabi", department: "Languages & Literature", email: "gurpreet.saini@ashianapublicschool.com", pinHash: "1234", status: "ACTIVE" },
+        { id: "usr_132", empId: "APS-132", name: "Ms. Meenakshi Dogra", role: "TGT English", department: "Languages & Literature", email: "meenakshi.dogra@ashianapublicschool.com", pinHash: "1234", status: "ACTIVE" },
+        { id: "usr_133", empId: "APS-133", name: "Ms. Jaswinder Kaur", role: "PRT General", department: "Primary Wing (PRT)", email: "jaswinder.kaur@ashianapublicschool.com", pinHash: "1234", status: "ACTIVE" },
+        { id: "usr_134", empId: "APS-134", name: "Ms. Sunita Rawat", role: "TGT Social Studies", department: "Languages & Literature", email: "sunita.rawat@ashianapublicschool.com", pinHash: "1234", status: "ACTIVE" },
+        { id: "usr_135", empId: "APS-135", name: "Ms. Vandana Thakur", role: "Special Educator & Counsellor", department: "Student Support & Counselling", email: "vandana.thakur@ashianapublicschool.com", pinHash: "1234", status: "ACTIVE" },
+        { id: "usr_136", empId: "APS-136", name: "Ms. Sheela Jaswal", role: "Chief Librarian", department: "Administration", email: "sheela.jaswal@ashianapublicschool.com", pinHash: "1234", status: "ACTIVE" },
+        { id: "usr_137", empId: "APS-137", name: "Mr. Amit Kumar", role: "Physical Education Teacher (PET)", department: "Physical Education & Sports", email: "amit.kumar@ashianapublicschool.com", pinHash: "1234", status: "ACTIVE" },
+        { id: "usr_138", empId: "APS-138", name: "Mr. Manjeet Singh", role: "Taekwondo Coach (Black Belt 1st Dan)", department: "Physical Education & Sports", email: "manjeet.singh@ashianapublicschool.com", pinHash: "1234", status: "ACTIVE" },
+        { id: "usr_139", empId: "APS-139", name: "Mr. Gaurav Birla", role: "Zumba & Fitness Coach", department: "Physical Education & Sports", email: "gaurav.birla@ashianapublicschool.com", pinHash: "1234", status: "ACTIVE" },
+        { id: "usr_140", empId: "APS-140", name: "Mr. Rinku Sharma", role: "PET & Athletics Coach", department: "Physical Education & Sports", email: "rinku.sharma@ashianapublicschool.com", pinHash: "1234", status: "ACTIVE" },
+        { id: "usr_141", empId: "APS-141", name: "Mr. Satya Pal Negi", role: "Table Tennis Instructor", department: "Physical Education & Sports", email: "satyapal.negi@ashianapublicschool.com", pinHash: "1234", status: "ACTIVE" },
+        { id: "usr_142", empId: "APS-142", name: "Mr. Yogesh Verma", role: "Aerobics & Yoga Trainer", department: "Physical Education & Sports", email: "yogesh.verma@ashianapublicschool.com", pinHash: "1234", status: "ACTIVE" },
+        { id: "usr_143", empId: "APS-143", name: "Ms. Ambika Singh", role: "Indian & Western Music Teacher", department: "Arts, Music & Dance", email: "ambika.singh@ashianapublicschool.com", pinHash: "1234", status: "ACTIVE" },
+        { id: "usr_144", empId: "APS-144", name: "Ms. Pooja Rajput", role: "Classical & Folk Dance Teacher", department: "Arts, Music & Dance", email: "pooja.rajput@ashianapublicschool.com", pinHash: "1234", status: "ACTIVE" },
+        { id: "usr_145", empId: "APS-145", name: "Mr. Sanjay Kumar", role: "IT Systems Administrator", department: "Information Technology", email: "sanjay.kumar@ashianapublicschool.com", pinHash: "1234", status: "ACTIVE" },
+        { id: "usr_146", empId: "APS-146", name: "Ms. Prabhjot Kaur", role: "Accounts Officer", department: "Administration", email: "prabhjot.kaur@ashianapublicschool.com", pinHash: "1234", status: "ACTIVE" },
+        { id: "usr_147", empId: "APS-147", name: "Ms. Anju Mehra", role: "Front Desk & Public Relations", department: "Administration", email: "anju.mehra@ashianapublicschool.com", pinHash: "1234", status: "ACTIVE" }
+      ];
+
+      const wings = [
+        { dept: "Primary Wing (PRT)", role: "PRT Associate Teacher" },
+        { dept: "Science & Mathematics", role: "TGT Lab & Subject Assistant" },
+        { dept: "Languages & Literature", role: "Language Lab Instructor" },
+        { dept: "Kindergarten Wing", role: "Early Childhood Educator" }
+      ];
+      for (let i = 148; i <= 172; i++) {
+        const template = wings[(i - 148) % wings.length];
+        baseline.push({
+          id: `usr_${i}`,
+          empId: `APS-${i}`,
+          name: `Faculty Member ${i}`,
+          role: template.role,
+          department: template.dept,
+          email: `faculty.${i}@ashianapublicschool.com`,
+          pinHash: "1234",
+          status: "ACTIVE"
+        });
+      }
+      return baseline;
+    }
+
+    // Initialize State variables
+    let staffDatabase = [];
+    let punchLedger = [];
+    let leaveRequests = [];
+    let auditLogs = [];
+
+    // Local Storage Persistence Handlers
+    function loadPersistedData() {
+      try {
+        const savedStaff = localStorage.getItem(STORAGE_KEY_STAFF);
+        staffDatabase = savedStaff ? JSON.parse(savedStaff) : getBaselineFacultyData();
+
+        const savedPunches = localStorage.getItem(STORAGE_KEY_PUNCHES);
+        punchLedger = savedPunches ? JSON.parse(savedPunches) : [];
+
+        const savedLeave = localStorage.getItem(STORAGE_KEY_LEAVE);
+        leaveRequests = savedLeave ? JSON.parse(savedLeave) : [
+          { id: "lev_1", staffId: "usr_111", staffName: "Ms. Alka Bhalla", type: "Medical Leave", from: "2026-09-22", to: "2026-09-23", reason: "Viral fever; doctor advised rest", status: "APPROVED" },
+          { id: "lev_2", staffId: "usr_123", staffName: "Ms. Shikha Gupta", type: "Casual Leave", from: "2026-09-22", to: "2026-09-22", reason: "Family commitment in Chandigarh", status: "APPROVED" },
+          { id: "lev_3", staffId: "usr_132", staffName: "Ms. Meenakshi Dogra", type: "Duty Leave", from: "2026-09-23", to: "2026-09-24", reason: "CBSE English Evaluator Workshop", status: "PENDING" }
+        ];
+
+        const savedAudit = localStorage.getItem(STORAGE_KEY_AUDIT);
+        auditLogs = savedAudit ? JSON.parse(savedAudit) : [
+          { id: "aud_1", timestamp: "2026-09-22 07:00:00", actor: "System Engine", action: "SYSTEM_INIT", entity: "School Calendar", details: "Shift 07:40 AM – 02:30 PM initialized for Ashiana Public School." },
+          { id: "aud_2", timestamp: "2026-09-22 07:15:00", actor: "Principal Office", action: "LEAVE_APPROVAL", entity: "Leave #lev_1", details: "Approved medical leave for Ms. Alka Bhalla." }
+        ];
+      } catch (e) {
+        console.warn("Storage loading failed, using defaults:", e);
+        staffDatabase = getBaselineFacultyData();
+        punchLedger = [];
+        leaveRequests = [];
+        auditLogs = [];
+      }
+    }
+
+    function savePersistedData() {
+      try {
+        localStorage.setItem(STORAGE_KEY_STAFF, JSON.stringify(staffDatabase));
+        localStorage.setItem(STORAGE_KEY_PUNCHES, JSON.stringify(punchLedger));
+        localStorage.setItem(STORAGE_KEY_LEAVE, JSON.stringify(leaveRequests));
+        localStorage.setItem(STORAGE_KEY_AUDIT, JSON.stringify(auditLogs));
+      } catch (e) {
+        console.error("Storage save failed:", e);
+      }
+    }
+
+    function clearSavedDataAndReset() {
+      if (confirm("Reset all staff, attendance punches, and logs to original school defaults? This will erase custom additions on this device.")) {
+        localStorage.removeItem(STORAGE_KEY_STAFF);
+        localStorage.removeItem(STORAGE_KEY_PUNCHES);
+        localStorage.removeItem(STORAGE_KEY_LEAVE);
+        localStorage.removeItem(STORAGE_KEY_AUDIT);
+        loadPersistedData();
+        applyAuthenticatedUI();
+        populateCorrectionDropdown();
+        showToast("System reset to original factory data.", "info");
+      }
+    }
+
+    let activeQRSession = {
+      token: "SEC-APS-" + Math.random().toString(36).substring(2, 10).toUpperCase(),
+      date: "2026-09-22",
+      expiresIn: 60
+    };
+
+    let currentAuthUser = null;
+    let currentStaffId = null;
+    let currentPortal = "staff";
+    let currentPinInput = "";
+    let simulatedQRValid = true;
+
+    // Login Tabs Switcher
+    function switchLoginTab(tab) {
+      const btnTeacher = document.getElementById("btn-login-tab-teacher");
+      const btnAdmin = document.getElementById("btn-login-tab-admin");
+      const formTeacher = document.getElementById("teacher-login-form");
+      const formAdmin = document.getElementById("admin-login-form");
+
+      if (tab === 'teacher') {
+        btnTeacher.className = "flex-1 py-2 rounded-xl text-xs font-bold transition-all bg-white text-emerald-950 shadow flex items-center justify-center space-x-1.5";
+        btnAdmin.className = "flex-1 py-2 rounded-xl text-xs font-bold transition-all text-emerald-200 hover:text-white flex items-center justify-center space-x-1.5";
+        formTeacher.classList.remove("hidden");
+        formAdmin.classList.add("hidden");
+      } else {
+        btnAdmin.className = "flex-1 py-2 rounded-xl text-xs font-bold transition-all bg-white text-emerald-950 shadow flex items-center justify-center space-x-1.5";
+        btnTeacher.className = "flex-1 py-2 rounded-xl text-xs font-bold transition-all text-emerald-200 hover:text-white flex items-center justify-center space-x-1.5";
+        formAdmin.classList.remove("hidden");
+        formTeacher.classList.add("hidden");
+      }
+      if (window.lucide) lucide.createIcons();
+    }
+
+    function togglePinVisibility(inputId) {
+      const input = document.getElementById(inputId);
+      if (!input) return;
+      input.type = input.type === 'password' ? 'text' : 'password';
+    }
+
+    // Teacher Login Handler
+    function handleTeacherLogin(event) {
+      event.preventDefault();
+      const idVal = (document.getElementById("teacher-login-id")?.value || "").trim();
+      const pinVal = (document.getElementById("teacher-login-pin")?.value || "").trim();
+
+      const matchedStaff = staffDatabase.find(s => 
+        s.empId.toLowerCase() === idVal.toLowerCase() || 
+        s.email.toLowerCase() === idVal.toLowerCase()
+      );
+
+      if (!matchedStaff) {
+        playAudio('ERROR');
+        showToast("Employee ID or email not found in school database.", "error");
+        return;
+      }
+
+      if (matchedStaff.status !== "ACTIVE") {
+        playAudio('ERROR');
+        showToast("Your staff account is inactive. Please contact administration.", "error");
+        return;
+      }
+
+      if (matchedStaff.pinHash !== pinVal) {
+        playAudio('ERROR');
+        showToast("Incorrect PIN. Punch was not recorded.", "error");
+        return;
+      }
+
+      currentAuthUser = {
+        type: 'STAFF',
+        staffRecord: matchedStaff
+      };
+      currentStaffId = matchedStaff.id;
+
+      playAudio('SUCCESS');
+      showToast(`Welcome, ${matchedStaff.name}!`, "success");
+      applyAuthenticatedUI();
+    }
+
+    // Admin Login Handler
+    function handleAdminLogin(event) {
+      event.preventDefault();
+      const userVal = (document.getElementById("admin-login-user")?.value || "").trim();
+      const passVal = (document.getElementById("admin-login-pass")?.value || "").trim();
+
+      if ((userVal === "admin@ashianapublicschool.com" || userVal.toLowerCase() === "admin") && passVal === "admin123") {
+        currentAuthUser = {
+          type: 'ADMIN',
+          username: "Administrator (Principal Office)"
+        };
+        currentStaffId = staffDatabase[0]?.id || "usr_101";
+
+        recordAuditLog("ADMIN_LOGIN", "Security Gateway", "Administrator logged into management console.");
+        playAudio('SUCCESS');
+        showToast("Administrator authenticated successfully.", "success");
+        applyAuthenticatedUI();
+      } else {
+        playAudio('ERROR');
+        showToast("Invalid admin credentials. Please check your username and password.", "error");
+      }
+    }
+
+    function handleLogout() {
+      if (currentAuthUser && currentAuthUser.type === 'ADMIN') {
+        recordAuditLog("ADMIN_LOGOUT", "Security Gateway", "Administrator ended session.");
+      }
+      currentAuthUser = null;
+      currentStaffId = null;
+      showToast("Signed out safely.", "info");
+      applyAuthenticatedUI();
+    }
+
+    function applyAuthenticatedUI() {
+      const authGateway = document.getElementById("auth-gateway-view");
+      const staffPortal = document.getElementById("staff-portal-view");
+      const adminPortal = document.getElementById("admin-portal-view");
+      const adminToggleBar = document.getElementById("admin-view-toggle-bar");
+      const sessionControls = document.getElementById("authenticated-session-controls");
+      const loggedOutTag = document.getElementById("logged-out-header-tag");
+
+      if (!currentAuthUser) {
+        authGateway.classList.remove("hidden");
+        staffPortal.classList.add("hidden");
+        adminPortal.classList.add("hidden");
+        adminToggleBar.classList.add("hidden");
+        sessionControls.classList.add("hidden");
+        loggedOutTag.classList.remove("hidden");
+        return;
+      }
+
+      authGateway.classList.add("hidden");
+      loggedOutTag.classList.add("hidden");
+      sessionControls.classList.remove("hidden");
+
+      const navAvatar = document.getElementById("nav-user-avatar");
+      const navName = document.getElementById("nav-user-name");
+      const navRole = document.getElementById("nav-user-role");
+
+      if (currentAuthUser.type === 'ADMIN') {
+        adminToggleBar.classList.remove("hidden");
+        navAvatar.innerText = "AD";
+        navAvatar.className = "w-6 h-6 rounded-full bg-ashiana-red text-white font-bold flex items-center justify-center text-[10px]";
+        navName.innerText = "Admin Office";
+        navRole.innerText = "Administrator";
+        switchPortal('admin');
+      } else {
+        adminToggleBar.classList.add("hidden");
+        const s = currentAuthUser.staffRecord;
+        const initials = s.name.replace(/^(Mrs\.|Ms\.|Mr\.)\s*/, '').split(' ').map(n => n[0]).join('').substring(0, 2);
+        navAvatar.innerText = initials || "AP";
+        navAvatar.className = "w-6 h-6 rounded-full bg-ashiana-green text-white font-bold flex items-center justify-center text-[10px]";
+        navName.innerText = s.name;
+        navRole.innerText = s.role || s.department;
+        switchPortal('staff');
+      }
+
+      refreshStaffUI();
+      renderLiveAttendanceTable();
+      renderStaffDirectoryTable();
+      renderAuditLogsTable();
+      renderAdminLeaveTable();
+      updateKPICards();
+      if (window.lucide) lucide.createIcons();
+    }
+
+    function switchPortal(portal) {
+      currentPortal = portal;
+      const staffView = document.getElementById("staff-portal-view");
+      const adminView = document.getElementById("admin-portal-view");
+      const btnStaff = document.getElementById("btn-portal-staff");
+      const btnAdmin = document.getElementById("btn-portal-admin");
+
+      if (portal === 'staff') {
+        staffView.classList.remove("hidden");
+        adminView.classList.add("hidden");
+        if (btnStaff) btnStaff.className = "flex items-center space-x-1.5 px-3 py-1.5 rounded-lg text-xs font-bold transition-all bg-ashiana-green text-white shadow";
+        if (btnAdmin) btnAdmin.className = "flex items-center space-x-1.5 px-3 py-1.5 rounded-lg text-xs font-bold transition-all text-emerald-200 hover:text-white";
+        refreshStaffUI();
+      } else {
+        staffView.classList.add("hidden");
+        adminView.classList.remove("hidden");
+        if (btnStaff) btnStaff.className = "flex items-center space-x-1.5 px-3 py-1.5 rounded-lg text-xs font-bold transition-all text-emerald-200 hover:text-white";
+        if (btnAdmin) btnAdmin.className = "flex items-center space-x-1.5 px-3 py-1.5 rounded-lg text-xs font-bold transition-all bg-ashiana-green text-white shadow";
+        renderLiveAttendanceTable();
+        renderStaffDirectoryTable();
+        updateKPICards();
+      }
+      if (window.lucide) lucide.createIcons();
+    }
+
+    function getTodayPunches(staffId) {
+      return punchLedger
+        .filter(p => p.staffId === staffId && p.attendanceDate === systemConfig.currentAttendanceDate)
+        .sort((a, b) => a.timestamp.localeCompare(b.timestamp));
+    }
+
+    function calculateDailyAttendance(staffId) {
+      const punches = getTodayPunches(staffId);
+      let totalWorkingMinutes = 0;
+      let totalBreakMinutes = 0;
+      let firstIn = punches.length > 0 ? punches[0].timestamp : null;
+      let lastOut = null;
+      let currentStatus = "NOT MARKED";
+      let attendanceStatus = "ABSENT";
+      let lateMinutes = 0;
+
+      // Completed pairs calculation: Sum(OUT - IN)
+      for (let i = 0; i < punches.length; i += 2) {
+        const inPunch = punches[i];
+        const outPunch = punches[i + 1];
+        if (inPunch && outPunch) {
+          const inMins = timeToMinutes(inPunch.timestamp);
+          const outMins = timeToMinutes(outPunch.timestamp);
+          totalWorkingMinutes += Math.max(0, outMins - inMins);
+          lastOut = outPunch.timestamp;
+        }
+      }
+
+      // Breaks: Sum(Next IN - Previous OUT)
+      for (let i = 1; i < punches.length - 1; i += 2) {
+        const prevOut = punches[i];
+        const nextIn = punches[i + 1];
+        if (prevOut && nextIn) {
+          const outM = timeToMinutes(prevOut.timestamp);
+          const inM = timeToMinutes(nextIn.timestamp);
+          totalBreakMinutes += Math.max(0, inM - outM);
+        }
+      }
+
+      if (punches.length > 0) {
+        attendanceStatus = "PRESENT";
+        const lastPunch = punches[punches.length - 1];
+        currentStatus = lastPunch.type === 'IN' ? 'WORKING' : 'COMPLETED';
+
+        // Late evaluation against 07:40 AM with grace period
+        const firstInMinutes = timeToMinutes(firstIn);
+        const scheduleStart = timeToMinutes(systemConfig.schoolScheduleStart);
+        const graceLimit = scheduleStart + systemConfig.lateGraceMinutes;
+        if (firstInMinutes > graceLimit) {
+          lateMinutes = firstInMinutes - scheduleStart;
+        }
+      }
+
+      const leave = leaveRequests.find(l => l.staffId === staffId && l.status === 'APPROVED');
+      if (leave && punches.length === 0) {
+        attendanceStatus = "ON LEAVE";
+        currentStatus = "ON LEAVE";
+      }
+
+      const nextPunchType = punches.length % 2 === 0 ? "IN" : "OUT";
+
+      return {
+        punches,
+        firstIn,
+        lastOut,
+        totalWorkingMinutes,
+        totalBreakMinutes,
+        lateMinutes,
+        attendanceStatus,
+        currentStatus,
+        nextPunchType
+      };
+    }
+
+    function timeToMinutes(timeStr) {
+      if (!timeStr) return 0;
+      const [h, m] = timeStr.split(':').map(Number);
+      return h * 60 + m;
+    }
+
+    function formatMinutes(mins) {
+      const h = Math.floor(mins / 60);
+      const m = mins % 60;
+      return `${h}h ${m < 10 ? '0' : ''}${m}m`;
+    }
+
+    function openPunchModal() {
+      if (!currentStaffId) {
+        showToast("Please log in first.", "error");
+        return;
+      }
+      const staff = staffDatabase.find(s => s.id === currentStaffId);
+      const nameEl = document.getElementById("pin-modal-staff-name");
+      if (nameEl && staff) nameEl.innerText = staff.name;
+
+      document.getElementById("punch-step-scan").classList.remove("hidden");
+      document.getElementById("punch-step-pin").classList.add("hidden");
+      document.getElementById("punch-stepper-subtitle").innerText = "Step 1: Scan Today's QR Code";
+
+      currentPinInput = "";
+      updatePinDots();
+      simulatedQRValid = true;
+
+      document.getElementById("modal-punch").classList.remove("hidden");
+      if (window.lucide) lucide.createIcons();
+    }
+
+    function closePunchModal() {
+      document.getElementById("modal-punch").classList.add("hidden");
+      currentPinInput = "";
+      updatePinDots();
+    }
+
+    function handleScanSuccess() {
+      simulatedQRValid = true;
+      playAudio('KEY');
+      document.getElementById("punch-step-scan").classList.add("hidden");
+      document.getElementById("punch-step-pin").classList.remove("hidden");
+      document.getElementById("punch-stepper-subtitle").innerText = "Step 2: Enter 4-Digit Attendance PIN";
+      if (window.lucide) lucide.createIcons();
+    }
+
+    function handleSimulateExpiredQR() {
+      playAudio('ERROR');
+      showToast("Invalid or expired attendance QR. Please scan the current QR displayed by the school.", "error");
+      closePunchModal();
+    }
+
+    function pressPinDigit(digit) {
+      if (currentPinInput.length < 4) {
+        currentPinInput += digit;
+        playAudio('KEY');
+        updatePinDots();
+        if (currentPinInput.length === 4) {
+          setTimeout(verifyAndExecutePunch, 180);
+        }
+      }
+    }
+
+    function pressPinBackspace() {
+      if (currentPinInput.length > 0) {
+        currentPinInput = currentPinInput.slice(0, -1);
+        playAudio('KEY');
+        updatePinDots();
+      }
+    }
+
+    function clearPinInput() {
+      currentPinInput = "";
+      playAudio('KEY');
+      updatePinDots();
+    }
+
+    function updatePinDots() {
+      for (let i = 1; i <= 4; i++) {
+        const dot = document.getElementById(`pin-dot-${i}`);
+        if (!dot) continue;
+        if (i <= currentPinInput.length) {
+          dot.className = "w-3.5 h-3.5 rounded-full bg-ashiana-green border-2 border-ashiana-green scale-110 transition-transform";
+        } else {
+          dot.className = "w-3.5 h-3.5 rounded-full border-2 border-slate-300 bg-white transition-transform";
+        }
+      }
+    }
+
+    function verifyAndExecutePunch() {
+      const staff = staffDatabase.find(s => s.id === currentStaffId);
+      if (!staff) {
+        playAudio('ERROR');
+        showToast("Faculty profile not found.", "error");
+        closePunchModal();
+        return;
+      }
+
+      if (staff.pinHash !== currentPinInput) {
+        playAudio('ERROR');
+        showToast("Incorrect PIN. Punch was not recorded.", "error");
+        currentPinInput = "";
+        updatePinDots();
+        return;
+      }
+
+      // 30 seconds duplicate idempotency check
+      const nowClock = getSimulatedCurrentTime();
+      const recentPunches = getTodayPunches(currentStaffId);
+      if (recentPunches.length > 0) {
+        const lastP = recentPunches[recentPunches.length - 1];
+        const diffMins = Math.abs(timeToMinutes(nowClock) - timeToMinutes(lastP.timestamp));
+        if (diffMins < 0.5) {
+          playAudio('ERROR');
+          showToast(`Attendance already recorded at ${lastP.timestamp}.`, "error");
+          closePunchModal();
+          return;
+        }
+      }
+
+      // Determine next sequential punch
+      const nextType = recentPunches.length % 2 === 0 ? "IN" : "OUT";
+
+      punchLedger.push({
+        id: "pch_" + Date.now(),
+        staffId: currentStaffId,
+        staffName: staff.name,
+        empId: staff.empId,
+        attendanceDate: systemConfig.currentAttendanceDate,
+        type: nextType,
+        timestamp: nowClock,
+        method: "QR_PIN"
+      });
+
+      savePersistedData();
+      playAudio('SUCCESS');
+      closePunchModal();
+      showToast(`PUNCH ${nextType} recorded successfully at ${nowClock}.`, "success");
+
+      refreshStaffUI();
+      renderLiveAttendanceTable();
+      updateKPICards();
+    }
+
+    function getSimulatedCurrentTime() {
+      const d = new Date();
+      let h = d.getHours().toString().padStart(2, '0');
+      let m = d.getMinutes().toString().padStart(2, '0');
+      return `${h}:${m}`;
+    }
+
+    function refreshStaffUI() {
+      if (!currentStaffId) return;
+      const staff = staffDatabase.find(s => s.id === currentStaffId) || staffDatabase[0];
+      const stats = calculateDailyAttendance(staff.id);
+
+      const nameEl = document.getElementById("staff-header-name");
+      const roleEl = document.getElementById("staff-header-role");
+      const avatarEl = document.getElementById("staff-avatar-circle");
+      const statusBadge = document.getElementById("staff-badge-status");
+
+      if (nameEl) nameEl.innerText = staff.name;
+      if (roleEl) roleEl.innerText = `${staff.role} • ${staff.empId}`;
+      if (avatarEl) {
+        const initials = staff.name.replace(/^(Mrs\.|Ms\.|Mr\.)\s*/, '').split(' ').map(n => n[0]).join('').substring(0, 2);
+        avatarEl.innerText = initials || "AP";
+      }
+
+      if (statusBadge) {
+        if (stats.currentStatus === 'WORKING') {
+          statusBadge.className = "px-2.5 py-1 rounded-full text-[10px] font-bold bg-emerald-500/20 text-emerald-300 border border-emerald-500/30 uppercase";
+          statusBadge.innerText = "WORKING NOW";
+        } else if (stats.currentStatus === 'COMPLETED') {
+          statusBadge.className = "px-2.5 py-1 rounded-full text-[10px] font-bold bg-blue-500/20 text-blue-300 border border-blue-500/30 uppercase";
+          statusBadge.innerText = "SHIFT COMPLETE";
+        } else if (stats.attendanceStatus === 'ON LEAVE') {
+          statusBadge.className = "px-2.5 py-1 rounded-full text-[10px] font-bold bg-purple-500/20 text-purple-300 border border-purple-500/30 uppercase";
+          statusBadge.innerText = "ON LEAVE";
+        } else {
+          statusBadge.className = "px-2.5 py-1 rounded-full text-[10px] font-bold bg-amber-500/20 text-amber-300 border border-amber-500/30 uppercase";
+          statusBadge.innerText = "NOT MARKED";
+        }
+      }
+
+      document.getElementById("card-first-in").innerText = stats.firstIn || "--:--";
+      document.getElementById("card-last-out").innerText = stats.lastOut || "--:--";
+      document.getElementById("metric-work-hours").innerText = formatMinutes(stats.totalWorkingMinutes);
+      document.getElementById("metric-break-time").innerText = `${stats.totalBreakMinutes}m`;
+      document.getElementById("metric-late-mins").innerText = stats.lateMinutes > 0 ? `${stats.lateMinutes}m Late` : "On Time";
+
+      document.getElementById("lbl-next-punch").innerText = `PUNCH ${stats.nextPunchType}`;
+      document.getElementById("lbl-punches-today").innerText = `Total Punches: ${stats.punches.length}`;
+
+      const timelineContainer = document.getElementById("staff-today-timeline");
+      const pill = document.getElementById("punch-count-pill");
+      if (pill) pill.innerText = `${stats.punches.length} logged`;
+
+      if (!timelineContainer) return;
+      if (stats.punches.length === 0) {
+        timelineContainer.innerHTML = `<div class="text-center py-6 text-slate-400 text-xs italic">No attendance recorded yet today.<br>Tap "MARK ATTENDANCE" above.</div>`;
+      } else {
+        timelineContainer.innerHTML = stats.punches.map((p, idx) => {
+          const isIN = p.type === 'IN';
+          return `
+            <div class="flex items-center justify-between p-2.5 rounded-xl border ${isIN ? 'bg-emerald-50/80 border-emerald-200 text-emerald-950' : 'bg-slate-50 border-slate-200 text-slate-900'}">
+              <div class="flex items-center space-x-2">
+                <span class="w-5 h-5 rounded-full ${isIN ? 'bg-ashiana-green' : 'bg-slate-700'} text-white font-bold text-[10px] flex items-center justify-center">${idx + 1}</span>
+                <span class="font-bold text-xs">PUNCH ${p.type}</span>
+              </div>
+              <div class="flex items-center space-x-2">
+                <span class="font-mono text-xs font-bold text-ashiana-green">${p.timestamp}</span>
+                <span class="text-[9px] uppercase px-1.5 py-0.5 rounded bg-white font-semibold text-slate-500 border border-slate-200">${p.method}</span>
+              </div>
+            </div>
+          `;
+        }).join('');
+      }
+    }
+
+    function renderLiveAttendanceTable() {
+      const tbody = document.getElementById("live-attendance-tbody");
+      if (!tbody) return;
+
+      tbody.innerHTML = staffDatabase.map(staff => {
+        const stats = calculateDailyAttendance(staff.id);
+        const isSelected = staff.id === currentStaffId;
+
+        let badgeClass = "bg-slate-100 text-slate-600";
+        if (stats.currentStatus === 'WORKING') badgeClass = "bg-emerald-100 text-emerald-800 font-bold border border-emerald-300";
+        else if (stats.currentStatus === 'COMPLETED') badgeClass = "bg-blue-100 text-blue-800 font-bold border border-blue-300";
+        else if (stats.attendanceStatus === 'ON LEAVE') badgeClass = "bg-purple-100 text-purple-800 font-bold border border-purple-300";
+
+        return `
+          <tr class="hover:bg-slate-50/80 transition-colors ${isSelected ? 'bg-emerald-50/40' : ''}">
+            <td class="py-3 px-4 font-medium text-slate-900">
+              <div class="font-bold">${staff.name}</div>
+              <div class="text-[10px] text-slate-400 font-mono">${staff.empId}</div>
+            </td>
+            <td class="py-3 px-4">
+              <div>${staff.department}</div>
+              <div class="text-[10px] text-slate-400">${staff.role}</div>
+            </td>
+            <td class="py-3 px-4 font-mono font-bold ${stats.firstIn ? 'text-ashiana-green' : 'text-slate-400'}">${stats.firstIn || '--:--'}</td>
+            <td class="py-3 px-4 font-mono font-bold ${stats.lastOut ? 'text-ashiana-green' : 'text-slate-400'}">${stats.lastOut || '--:--'}</td>
+            <td class="py-3 px-4 font-mono font-bold">${stats.punches.length}</td>
+            <td class="py-3 px-4 font-mono font-bold text-slate-700">${formatMinutes(stats.totalWorkingMinutes)}</td>
+            <td class="py-3 px-4 font-mono ${stats.lateMinutes > 0 ? 'text-ashiana-red font-bold' : 'text-slate-400'}">${stats.lateMinutes > 0 ? stats.lateMinutes + 'm' : '0m'}</td>
+            <td class="py-3 px-4">
+              <span class="px-2 py-0.5 rounded-full text-[10px] ${badgeClass}">${stats.currentStatus}</span>
+            </td>
+            <td class="py-3 px-4 text-right">
+              <button onclick="testPunchStaffMember('${staff.id}')" class="px-2.5 py-1 bg-emerald-50 hover:bg-ashiana-green text-ashiana-green hover:text-white rounded-lg text-[10px] font-bold transition-all border border-emerald-300">
+                + Mark
+              </button>
+            </td>
+          </tr>
+        `;
+      }).join('');
+    }
+
+    function renderStaffDirectoryTable() {
+      const tbody = document.getElementById("staff-directory-tbody");
+      if (!tbody) return;
+
+      tbody.innerHTML = staffDatabase.map(staff => {
+        return `
+          <tr class="hover:bg-slate-50 transition-colors">
+            <td class="py-2.5 px-4 font-mono font-bold text-ashiana-green text-xs">${staff.empId}</td>
+            <td class="py-2.5 px-4 font-bold text-slate-800">${staff.name}</td>
+            <td class="py-2.5 px-4 text-slate-600">${staff.department}</td>
+            <td class="py-2.5 px-4 text-slate-600">${staff.role}</td>
+            <td class="py-2.5 px-4 font-mono text-[11px] text-slate-500">${staff.email}</td>
+            <td class="py-2.5 px-4 text-center">
+              <span class="px-2 py-0.5 rounded font-mono font-bold text-xs bg-emerald-50 text-ashiana-green border border-emerald-300">
+                ${staff.pinHash}
+              </span>
+            </td>
+            <td class="py-2.5 px-4">
+              <span class="px-2 py-0.5 rounded-full text-[10px] font-bold ${staff.status === 'ACTIVE' ? 'bg-emerald-100 text-emerald-800' : 'bg-rose-100 text-rose-800'}">
+                ${staff.status}
+              </span>
+            </td>
+            <td class="py-2.5 px-4 text-center">
+              <div class="flex items-center justify-center space-x-1.5">
+                <button onclick="openEditStaffModal('${staff.id}')" title="Edit Teacher" class="p-1.5 text-ashiana-green hover:bg-emerald-50 rounded-lg transition-colors">
+                  <i data-lucide="pencil" class="w-3.5 h-3.5"></i>
+                </button>
+                <button onclick="openDeleteStaffModal('${staff.id}')" title="Delete Teacher" class="p-1.5 text-ashiana-red hover:bg-rose-50 rounded-lg transition-colors">
+                  <i data-lucide="trash-2" class="w-3.5 h-3.5"></i>
+                </button>
+              </div>
+            </td>
+          </tr>
+        `;
+      }).join('');
+      if (window.lucide) lucide.createIcons();
+    }
+
+    // Export Staff with PINs for Administrators
+    function exportStaffCredentialsWithPIN() {
+      let csv = "Employee ID,Faculty Name,Department,Designation,Email,Attendance PIN,Status,Instructions\n";
+      staffDatabase.forEach(s => {
+        csv += `"${s.empId}","${s.name}","${s.department}","${s.role}","${s.email}","${s.pinHash}","${s.status}","Enter PIN on phone after scanning daily QR"\n`;
+      });
+
+      const blob = new Blob([csv], { type: "text/csv;charset=utf-8;" });
+      const url = URL.createObjectURL(blob);
+      const a = document.createElement("a");
+      a.href = url;
+      a.download = `Ashiana_Public_School_Staff_PIN_Credentials_${systemConfig.currentAttendanceDate}.csv`;
+      a.click();
+      URL.revokeObjectURL(url);
+
+      recordAuditLog("CREDENTIAL_EXPORT", "Staff Directory", "Exported faculty roster with attendance PINs for staff distribution.");
+      playAudio('SUCCESS');
+      showToast("Staff PIN credentials report downloaded.", "success");
+    }
+
+    // Staff Self-Service PIN Change
+    function openStaffProfileModal() {
+      if (!currentStaffId) {
+        showToast("Please sign in first.", "error");
+        return;
+      }
+      const staff = staffDatabase.find(s => s.id === currentStaffId);
+      if (!staff) return;
+
+      const modal = document.getElementById("staff-profile-modal");
+      const nameEl = document.getElementById("profile-modal-name");
+      const roleEl = document.getElementById("profile-modal-role");
+      const empidEl = document.getElementById("profile-modal-empid");
+      const avatarEl = document.getElementById("profile-modal-avatar");
+
+      if (nameEl) nameEl.innerText = staff.name;
+      if (roleEl) roleEl.innerText = `${staff.role} • ${staff.department}`;
+      if (empidEl) empidEl.innerText = staff.empId;
+      if (avatarEl) {
+        const initials = staff.name.replace(/^(Mrs\.|Ms\.|Mr\.)\s*/, '').split(' ').map(n => n[0]).join('').substring(0, 2);
+        avatarEl.innerText = initials || "AP";
+      }
+
+      const form = document.getElementById("staff-change-pin-form");
+      if (form) form.reset();
+
+      if (modal) modal.classList.remove("hidden");
+      if (window.lucide) lucide.createIcons();
+    }
+
+    function closeStaffProfileModal() {
+      const modal = document.getElementById("staff-profile-modal");
+      if (modal) modal.classList.add("hidden");
+    }
+
+    function handleChangePinSubmit(event) {
+      event.preventDefault();
+      const currentPin = (document.getElementById("change-pin-current")?.value || "").trim();
+      const newPin = (document.getElementById("change-pin-new")?.value || "").trim();
+      const confirmPin = (document.getElementById("change-pin-confirm")?.value || "").trim();
+
+      const staff = staffDatabase.find(s => s.id === currentStaffId);
+      if (!staff) {
+        showToast("Profile not found.", "error");
+        return;
+      }
+
+      if (staff.pinHash !== currentPin) {
+        playAudio('ERROR');
+        showToast("Current PIN is incorrect.", "error");
+        return;
+      }
+
+      if (!/^\d{4}$/.test(newPin)) {
+        playAudio('ERROR');
+        showToast("New PIN must be exactly 4 numeric digits.", "error");
+        return;
+      }
+
+      if (newPin !== confirmPin) {
+        playAudio('ERROR');
+        showToast("New PIN and Confirm PIN do not match.", "error");
+        return;
+      }
+
+      staff.pinHash = newPin;
+      if (currentAuthUser?.staffRecord) {
+        currentAuthUser.staffRecord.pinHash = newPin;
+      }
+
+      savePersistedData();
+      recordAuditLog("PIN_CHANGE", staff.name, `Staff member changed their attendance PIN via self-service.`);
+      playAudio('SUCCESS');
+      showToast("Attendance PIN updated successfully!", "success");
+      closeStaffProfileModal();
+      renderStaffDirectoryTable();
+    }
+
+    // Modal Controllers: Edit Staff
+    function openEditStaffModal(id) {
+      const staff = staffDatabase.find(s => s.id === id);
+      if (!staff) return;
+      document.getElementById("edit-staff-target-id").value = staff.id;
+      document.getElementById("edit-staff-empid").value = staff.empId;
+      document.getElementById("edit-staff-name").value = staff.name;
+      document.getElementById("edit-staff-dept").value = staff.department;
+      document.getElementById("edit-staff-role").value = staff.role;
+      document.getElementById("edit-staff-email").value = staff.email;
+      document.getElementById("edit-staff-pin").value = staff.pinHash;
+      document.getElementById("edit-staff-status").value = staff.status;
+      document.getElementById("edit-staff-modal")?.classList.remove("hidden");
+      if (window.lucide) lucide.createIcons();
+    }
+
+    function closeEditStaffModal() {
+      document.getElementById("edit-staff-modal")?.classList.add("hidden");
+    }
+
+    function handleEditStaffSubmit(event) {
+      event.preventDefault();
+      const id = document.getElementById("edit-staff-target-id").value;
+      const staff = staffDatabase.find(s => s.id === id);
+      if (!staff) return;
+
+      const pin = document.getElementById("edit-staff-pin").value.trim();
+      if (!/^\d{4}$/.test(pin)) {
+        showToast("PIN must be exactly 4 digits.", "error");
+        return;
+      }
+
+      staff.empId = document.getElementById("edit-staff-empid").value.trim();
+      staff.name = document.getElementById("edit-staff-name").value.trim();
+      staff.department = document.getElementById("edit-staff-dept").value;
+      staff.role = document.getElementById("edit-staff-role").value.trim();
+      staff.email = document.getElementById("edit-staff-email").value.trim();
+      staff.pinHash = pin;
+      staff.status = document.getElementById("edit-staff-status").value;
+
+      savePersistedData();
+      recordAuditLog("STAFF_EDITED", staff.name, `Admin updated record for ${staff.empId}`);
+      playAudio('SUCCESS');
+      showToast(`Faculty record for ${staff.name} updated.`, "success");
+      closeEditStaffModal();
+      renderStaffDirectoryTable();
+      populateCorrectionDropdown();
+      if (currentStaffId === staff.id) {
+        refreshStaffUI();
+      }
+    }
+
+    // Modal Controllers: Delete Staff
+    function openDeleteStaffModal(id) {
+      const staff = staffDatabase.find(s => s.id === id);
+      if (!staff) return;
+      document.getElementById("delete-staff-target-id").value = staff.id;
+      document.getElementById("delete-staff-confirm-message").innerText = `Are you sure you want to remove ${staff.name} (${staff.empId}) from the faculty directory?`;
+      document.getElementById("delete-staff-modal")?.classList.remove("hidden");
+      if (window.lucide) lucide.createIcons();
+    }
+
+    function closeDeleteStaffModal() {
+      document.getElementById("delete-staff-modal")?.classList.add("hidden");
+    }
+
+    function executeStaffDeletion() {
+      const id = document.getElementById("delete-staff-target-id").value;
+      const idx = staffDatabase.findIndex(s => s.id === id);
+      if (idx !== -1) {
+        const deletedName = staffDatabase[idx].name;
+        const deletedEmp = staffDatabase[idx].empId;
+        staffDatabase.splice(idx, 1);
+        savePersistedData();
+        recordAuditLog("STAFF_DELETED", deletedName, `Removed faculty member (${deletedEmp})`);
+        playAudio('SUCCESS');
+        showToast(`Removed ${deletedName} from directory.`, "info");
+        closeDeleteStaffModal();
+        renderStaffDirectoryTable();
+        populateCorrectionDropdown();
+        updateKPICards();
+        if (currentStaffId === id) {
+          handleLogout();
+        }
+      }
+    }
+
+    // Modal Controllers: Add Staff
+    function openAddStaffModal() {
+      const form = document.getElementById("add-staff-form");
+      if (form) form.reset();
+      const empidInput = document.getElementById("add-staff-empid");
+      if (empidInput) empidInput.value = `APS-${staffDatabase.length + 101}`;
+      document.getElementById("add-staff-modal")?.classList.remove("hidden");
+      if (window.lucide) lucide.createIcons();
+    }
+
+    function closeAddStaffModal() {
+      document.getElementById("add-staff-modal")?.classList.add("hidden");
+    }
+
+    function handleAddStaffSubmit(event) {
+      event.preventDefault();
+      const empId = document.getElementById("add-staff-empid").value.trim();
+      const name = document.getElementById("add-staff-name").value.trim();
+      const dept = document.getElementById("add-staff-dept").value;
+      const role = document.getElementById("add-staff-role").value.trim();
+      const email = document.getElementById("add-staff-email").value.trim();
+      const pin = document.getElementById("add-staff-pin").value.trim();
+
+      if (!/^\d{4}$/.test(pin)) {
+        showToast("PIN must be exactly 4 digits.", "error");
+        return;
+      }
+
+      const existing = staffDatabase.find(s => s.empId.toLowerCase() === empId.toLowerCase());
+      if (existing) {
+        showToast(`Employee ID ${empId} already exists.`, "error");
+        return;
+      }
+
+      const newStaff = {
+        id: "usr_" + Date.now(),
+        empId,
+        name,
+        department: dept,
+        role,
+        email,
+        pinHash: pin,
+        status: "ACTIVE"
+      };
+
+      staffDatabase.push(newStaff);
+      savePersistedData();
+      recordAuditLog("STAFF_ENROLLED", name, `Enrolled new faculty member (${empId}, ${role})`);
+      playAudio('SUCCESS');
+      showToast(`Faculty member ${name} enrolled successfully!`, "success");
+      closeAddStaffModal();
+      renderStaffDirectoryTable();
+      populateCorrectionDropdown();
+      updateKPICards();
+    }
+
+    // Modal Controllers: Import Staff
+    function openImportModal() {
+      document.getElementById("import-staff-modal")?.classList.remove("hidden");
+      if (window.lucide) lucide.createIcons();
+    }
+
+    function closeImportModal() {
+      document.getElementById("import-staff-modal")?.classList.add("hidden");
+    }
+
+    function reloadAshianaMasterExcel() {
+      staffDatabase = getBaselineFacultyData();
+      savePersistedData();
+      recordAuditLog("MASTER_SYNC", "Staff Directory", "Synchronized baseline Ashiana Public School faculty roster.");
+      renderStaffDirectoryTable();
+      populateCorrectionDropdown();
+      updateKPICards();
+      closeImportModal();
+      playAudio('SUCCESS');
+      showToast("Roster synchronized to official Ashiana faculty dataset!", "success");
+    }
+
+    function handleExcelFileUpload(event) {
+      const file = event.target.files[0];
+      if (!file) return;
+      const reader = new FileReader();
+      reader.onload = function(e) {
+        try {
+          const data = new Uint8Array(e.target.result);
+          const workbook = XLSX.read(data, { type: 'array' });
+          const firstSheetName = workbook.SheetNames[0];
+          const worksheet = workbook.Sheets[firstSheetName];
+          const json = XLSX.utils.sheet_to_json(worksheet, { header: 1 });
+          
+          let importedCount = 0;
+          for (let i = 1; i < json.length; i++) {
+            const row = json[i];
+            if (!row || row.length === 0 || !row[0]) continue;
+            const name = String(row[0] || row[1] || "").trim();
+            if (!name) continue;
+            const newId = "usr_" + (staffDatabase.length + 101);
+            const empId = "APS-" + (staffDatabase.length + 101);
+            const dept = String(row[1] || row[2] || "Academic Wing").trim();
+            const role = String(row[2] || row[3] || "Faculty Teacher").trim();
+            
+            staffDatabase.push({
+              id: newId,
+              empId: empId,
+              name: name,
+              role: role,
+              department: dept,
+              email: `${name.toLowerCase().replace(/[^a-z]/g, '.')}@ashianapublicschool.com`,
+              pinHash: "1234",
+              status: "ACTIVE"
+            });
+            importedCount++;
+          }
+          
+          savePersistedData();
+          recordAuditLog("STAFF_IMPORT", "File Upload", `Imported ${importedCount} staff records from spreadsheet.`);
+          renderStaffDirectoryTable();
+          populateCorrectionDropdown();
+          updateKPICards();
+          closeImportModal();
+          playAudio('SUCCESS');
+          showToast(`Successfully imported ${importedCount} faculty records!`, "success");
+        } catch (err) {
+          console.error(err);
+          playAudio('ERROR');
+          showToast("Error parsing spreadsheet file.", "error");
+        }
+      };
+      reader.readAsArrayBuffer(file);
+    }
+
+    // Modal Controllers: Leave Application
+    function openLeaveApplyModal() {
+      const modal = document.getElementById("leave-apply-modal");
+      if (!currentStaffId) {
+        showToast("Please sign in as staff first.", "error");
+        return;
+      }
+      const form = document.querySelector("#leave-apply-modal form");
+      if (form) form.reset();
+      const today = systemConfig.currentAttendanceDate;
+      const fromEl = document.getElementById("leave-apply-from");
+      const toEl = document.getElementById("leave-apply-to");
+      if (fromEl) fromEl.value = today;
+      if (toEl) toEl.value = today;
+      if (modal) modal.classList.remove("hidden");
+      if (window.lucide) lucide.createIcons();
+    }
+
+    function closeLeaveApplyModal() {
+      document.getElementById("leave-apply-modal")?.classList.add("hidden");
+    }
+
+    function handleLeaveApplySubmit(event) {
+      event.preventDefault();
+      const staff = staffDatabase.find(s => s.id === currentStaffId);
+      if (!staff) {
+        showToast("Staff profile not found.", "error");
+        return;
+      }
+      const type = document.getElementById("leave-apply-type").value;
+      const from = document.getElementById("leave-apply-from").value;
+      const to = document.getElementById("leave-apply-to").value;
+      const reason = document.getElementById("leave-apply-reason").value.trim();
+
+      const newLeave = {
+        id: "lev_" + Date.now(),
+        staffId: staff.id,
+        staffName: staff.name,
+        type,
+        from,
+        to,
+        reason,
+        status: "PENDING"
+      };
+
+      leaveRequests.unshift(newLeave);
+      savePersistedData();
+      recordAuditLog("LEAVE_APPLIED", staff.name, `Applied for ${type} (${from} to ${to})`);
+      playAudio('SUCCESS');
+      showToast("Leave application submitted for approval.", "success");
+      closeLeaveApplyModal();
+      renderAdminLeaveTable();
+      const statusWidget = document.getElementById("staff-leave-status-widget");
+      if (statusWidget) {
+        statusWidget.innerHTML = `<span class="text-amber-700 font-semibold">Active Request: ${type} (${from} to ${to}) — Pending Approval</span>`;
+      }
+    }
+
+    // Admin Leave Actions
+    function renderAdminLeaveTable() {
+      const tbody = document.getElementById("admin-leave-tbody");
+      if (!tbody) return;
+      if (leaveRequests.length === 0) {
+        tbody.innerHTML = `<tr><td colspan="6" class="text-center py-6 text-slate-400 italic">No leave applications registered.</td></tr>`;
+        return;
+      }
+      tbody.innerHTML = leaveRequests.map(l => {
+        let statusClass = "bg-amber-100 text-amber-800";
+        if (l.status === 'APPROVED') statusClass = "bg-emerald-100 text-emerald-800 font-bold";
+        if (l.status === 'REJECTED') statusClass = "bg-rose-100 text-rose-800 font-bold";
+        return `
+          <tr class="hover:bg-slate-50 transition-colors">
+            <td class="py-3 px-4 font-bold text-slate-800">${l.staffName}</td>
+            <td class="py-3 px-4 font-medium text-slate-700">${l.type}</td>
+            <td class="py-3 px-4 font-mono text-[11px] text-slate-500">${l.from} to ${l.to}</td>
+            <td class="py-3 px-4 text-slate-600 max-w-xs">${l.reason}</td>
+            <td class="py-3 px-4">
+              <span class="px-2.5 py-0.5 rounded-full text-[10px] ${statusClass}">${l.status}</span>
+            </td>
+            <td class="py-3 px-4 text-right space-x-1">
+              ${l.status === 'PENDING' ? `
+                <button onclick="approveLeave('${l.id}')" class="px-2.5 py-1 bg-ashiana-green hover:bg-[#08693A] text-white rounded-lg text-[10px] font-bold transition-all shadow">Approve</button>
+                <button onclick="rejectLeave('${l.id}')" class="px-2.5 py-1 bg-ashiana-red hover:bg-ashiana-red-dark text-white rounded-lg text-[10px] font-bold transition-all shadow">Reject</button>
+              ` : `<span class="text-[10px] text-slate-400 italic">Completed</span>`}
+            </td>
+          </tr>
+        `;
+      }).join('');
+      if (window.lucide) lucide.createIcons();
+    }
+
+    function approveLeave(id) {
+      const req = leaveRequests.find(l => l.id === id);
+      if (req) {
+        req.status = "APPROVED";
+        savePersistedData();
+        recordAuditLog("LEAVE_APPROVE", req.staffName, `Approved ${req.type} from ${req.from} to ${req.to}`);
+        playAudio('SUCCESS');
+        showToast(`Leave approved for ${req.staffName}.`, "success");
+        renderAdminLeaveTable();
+        updateKPICards();
+        renderLiveAttendanceTable();
+      }
+    }
+
+    function rejectLeave(id) {
+      const req = leaveRequests.find(l => l.id === id);
+      if (req) {
+        req.status = "REJECTED";
+        savePersistedData();
+        recordAuditLog("LEAVE_REJECT", req.staffName, `Rejected ${req.type}`);
+        showToast(`Rejected leave for ${req.staffName}`, "info");
+        renderAdminLeaveTable();
+      }
+    }
+
+    // Manual Attendance Correction
+    function handleManualCorrectionSubmit(event) {
+      event.preventDefault();
+      const staffSelect = document.getElementById("correction-staff-select");
+      const punchTypeSelect = document.getElementById("correction-punch-type");
+      const timeInput = document.getElementById("correction-timestamp");
+      const reasonInput = document.getElementById("correction-reason");
+      
+      if (!staffSelect || !punchTypeSelect || !timeInput || !reasonInput) return;
+      
+      const staffId = staffSelect.value;
+      const staff = staffDatabase.find(s => s.id === staffId);
+      if (!staff) {
+        showToast("Faculty member not found.", "error");
+        return;
+      }
+      
+      const punchType = punchTypeSelect.value;
+      const timestamp = timeInput.value;
+      const reason = reasonInput.value.trim();
+      
+      if (!reason) {
+        showToast("Mandatory audit reason is required for manual punch override.", "error");
+        return;
+      }
+      
+      punchLedger.push({
+        id: "pch_corr_" + Date.now(),
+        staffId: staff.id,
+        staffName: staff.name,
+        empId: staff.empId,
+        attendanceDate: systemConfig.currentAttendanceDate,
+        type: punchType,
+        timestamp: timestamp,
+        method: "MANUAL_ADMIN"
+      });
+      
+      savePersistedData();
+      recordAuditLog(
+        "MANUAL_CORRECTION",
+        staff.name,
+        `Admin manually entered PUNCH ${punchType} at ${timestamp}. Reason: "${reason}"`
+      );
+      
+      playAudio('SUCCESS');
+      showToast(`Manual ${punchType} recorded for ${staff.name} at ${timestamp}.`, "success");
+      reasonInput.value = "";
+      
+      if (currentStaffId === staff.id) {
+        refreshStaffUI();
+      }
+      renderLiveAttendanceTable();
+      updateKPICards();
+    }
+
+    // Dynamic QR Station Controls
+    function renderQRCodeCanvas() {
+      const container = document.getElementById("qr-code-canvas-container");
+      if (!container) return;
+      container.innerHTML = "";
+      if (typeof QRCode !== "undefined") {
+        new QRCode(container, {
+          text: JSON.stringify({
+            school: "ASHIANA_PUBLIC_SCHOOL",
+            token: activeQRSession.token,
+            date: activeQRSession.date,
+            expires: activeQRSession.expiresIn
+          }),
+          width: 200,
+          height: 200,
+          colorDark: "#064E3B",
+          colorLight: "#ffffff",
+          correctLevel: QRCode.CorrectLevel.M
+        });
+      } else {
+        container.innerHTML = `<div class="font-mono text-xs text-ashiana-green p-4 text-center font-bold">QR: ${activeQRSession.token}</div>`;
+      }
+      const preview = document.getElementById("qr-token-preview");
+      if (preview) preview.innerText = activeQRSession.token;
+    }
+
+    function rotateQRSession() {
+      activeQRSession.token = "SEC-APS-" + Math.random().toString(36).substring(2, 10).toUpperCase();
+      activeQRSession.expiresIn = systemConfig.qrExpirySeconds;
+      renderQRCodeCanvas();
+      showToast("Dynamic QR token regenerated.", "info");
+    }
+
+    function simulateStaffScanFromAdmin() {
+      if (!currentStaffId) {
+        currentStaffId = staffDatabase[0]?.id || "usr_101";
+      }
+      openPunchModal();
+    }
+
+    function testPunchStaffMember(staffId) {
+      const staff = staffDatabase.find(s => s.id === staffId);
+      if (!staff) return;
+      
+      const punches = getTodayPunches(staffId);
+      const nextType = punches.length % 2 === 0 ? "IN" : "OUT";
+      const nowClock = getSimulatedCurrentTime();
+      
+      punchLedger.push({
+        id: "pch_" + Date.now() + "_" + Math.floor(Math.random() * 1000),
+        staffId: staff.id,
+        staffName: staff.name,
+        empId: staff.empId,
+        attendanceDate: systemConfig.currentAttendanceDate,
+        type: nextType,
+        timestamp: nowClock,
+        method: "ADMIN_QUICK"
+      });
+      
+      savePersistedData();
+      playAudio('SUCCESS');
+      showToast(`PUNCH ${nextType} marked for ${staff.name} at ${nowClock}.`, "success");
+      if (currentStaffId === staff.id) {
+        refreshStaffUI();
+      }
+      renderLiveAttendanceTable();
+      updateKPICards();
+    }
+
+    // KPI Summary Cards
+    function updateKPICards() {
+      let presentCount = 0;
+      let workingCount = 0;
+      let lateCount = 0;
+      let totalMinutesCumulative = 0;
+
+      staffDatabase.forEach(s => {
+        const res = calculateDailyAttendance(s.id);
+        if (res.punches.length > 0) presentCount++;
+        if (res.currentStatus === 'WORKING') workingCount++;
+        if (res.lateMinutes > 0) lateCount++;
+        totalMinutesCumulative += res.totalWorkingMinutes;
+      });
+
+      const onLeaveCount = leaveRequests.filter(l => l.status === 'APPROVED').length;
+
+      document.getElementById("kpi-total-staff").innerText = staffDatabase.length;
+      document.getElementById("kpi-present-today").innerText = presentCount;
+      document.getElementById("kpi-currently-working").innerText = workingCount;
+      document.getElementById("kpi-late-today").innerText = lateCount;
+      document.getElementById("kpi-on-leave").innerText = onLeaveCount;
+      document.getElementById("kpi-total-hours").innerText = formatMinutes(totalMinutesCumulative);
+    }
+
+    // Admin Tab Navigation
+    function switchAdminTab(tabKey) {
+      const tabs = ['live', 'qr', 'directory', 'corrections', 'leave', 'audit'];
+      tabs.forEach(t => {
+        const btn = document.getElementById(`tab-btn-${t}`);
+        const view = document.getElementById(`admin-tab-${t}`);
+        if (!btn || !view) return;
+        if (t === tabKey) {
+          btn.className = "px-4 py-2 rounded-xl text-xs font-bold bg-ashiana-green text-white shadow flex items-center space-x-1.5 transition-all";
+          view.classList.remove("hidden");
+        } else {
+          btn.className = "px-4 py-2 rounded-xl text-xs font-bold text-slate-600 hover:bg-slate-100 flex items-center space-x-1.5 transition-all";
+          view.classList.add("hidden");
+        }
+      });
+      if (tabKey === 'qr') renderQRCodeCanvas();
+      if (window.lucide) lucide.createIcons();
+    }
+
+    // Audit Log Engine
+    function recordAuditLog(action, entity, details) {
+      auditLogs.unshift({
+        id: "aud_" + Date.now(),
+        timestamp: new Date().toISOString().replace('T', ' ').substring(0, 19),
+        actor: currentAuthUser ? (currentAuthUser.type === 'ADMIN' ? 'Principal Office' : currentAuthUser.staffRecord?.name) : 'Security Gateway',
+        action,
+        entity,
+        details
+      });
+      savePersistedData();
+      renderAuditLogsTable();
+    }
+
+    function renderAuditLogsTable() {
+      const tbody = document.getElementById("audit-logs-tbody");
+      if (!tbody) return;
+
+      tbody.innerHTML = auditLogs.map(a => `
+        <tr class="hover:bg-slate-50 transition-colors">
+          <td class="py-2.5 px-4 text-slate-500">${a.timestamp}</td>
+          <td class="py-2.5 px-4 font-bold text-slate-800">${a.actor}</td>
+          <td class="py-2.5 px-4 text-ashiana-green font-bold">${a.action}</td>
+          <td class="py-2.5 px-4 text-slate-600">${a.entity}</td>
+          <td class="py-2.5 px-4 text-slate-500 max-w-sm">${a.details}</td>
+        </tr>
+      `).join('');
+    }
+
+    // Live search filters
+    function filterLiveAttendance() {
+      const query = (document.getElementById("live-search-input")?.value || "").toLowerCase();
+      const rows = document.querySelectorAll("#live-attendance-tbody tr");
+      rows.forEach(r => {
+        r.style.display = r.innerText.toLowerCase().includes(query) ? "" : "none";
+      });
+    }
+
+    function filterStaffDirectory() {
+      const query = (document.getElementById("staff-directory-search")?.value || "").toLowerCase();
+      const rows = document.querySelectorAll("#staff-directory-tbody tr");
+      rows.forEach(r => {
+        r.style.display = r.innerText.toLowerCase().includes(query) ? "" : "none";
+      });
+    }
+
+    function exportLiveToCSV() {
+      let csv = "Employee ID,Staff Name,Department,Role,First IN,Last OUT,Punches,Working Minutes,Late Minutes,Status\n";
+      staffDatabase.forEach(s => {
+        const res = calculateDailyAttendance(s.id);
+        csv += `"${s.empId}","${s.name}","${s.department}","${s.role}","${res.firstIn || ''}","${res.lastOut || ''}",${res.punches.length},${res.totalWorkingMinutes},${res.lateMinutes},"${res.currentStatus}"\n`;
+      });
+
+      const blob = new Blob([csv], { type: "text/csv" });
+      const url = URL.createObjectURL(blob);
+      const a = document.createElement("a");
+      a.href = url;
+      a.download = `Ashiana_Faculty_Attendance_${systemConfig.currentAttendanceDate}.csv`;
+      a.click();
+      URL.revokeObjectURL(url);
+      showToast("Exported attendance report to CSV.", "success");
+    }
+
+    function populateCorrectionDropdown() {
+      const select = document.getElementById("correction-staff-select");
+      if (!select) return;
+      select.innerHTML = staffDatabase.map(s => `
+        <option value="${s.id}">${s.name} (${s.empId}) - ${s.department}</option>
+      `).join('');
+    }
+
+    // System Clock & QR Ticker
+    function startLiveClock() {
+      setInterval(() => {
+        const d = new Date();
+        const timeStr = d.toLocaleTimeString('en-US', { hour12: true });
+        const dateStr = d.toLocaleDateString('en-US', { day: 'numeric', month: 'long', year: 'numeric' });
+
+        const clockGlobal = document.getElementById("global-live-time");
+        const dateGlobal = document.getElementById("global-live-date");
+        const clockMobile = document.getElementById("mobile-live-clock");
+
+        if (clockGlobal) clockGlobal.innerText = timeStr;
+        if (dateGlobal) dateGlobal.innerText = dateStr;
+        if (clockMobile) clockMobile.innerText = timeStr.replace(/:\d+ /, ' ');
+
+        if (activeQRSession.expiresIn > 0) {
+          activeQRSession.expiresIn--;
+          const cdText = document.getElementById("qr-countdown-text");
+          const bar = document.getElementById("qr-progress-bar");
+          if (cdText) cdText.innerText = `${activeQRSession.expiresIn}s`;
+          if (bar) bar.style.width = `${(activeQRSession.expiresIn / 60) * 100}%`;
+          if (activeQRSession.expiresIn === 0) {
+            rotateQRSession();
+          }
+        }
+      }, 1000);
+    }
+
+    // App Initialization
+    window.onload = function () {
+      loadPersistedData();
+      populateCorrectionDropdown();
+      startLiveClock();
+      applyAuthenticatedUI();
+      renderQRCodeCanvas();
+      if (window.lucide) lucide.createIcons();
+      console.log(`Ashiana Public School Attendance System ready. ${staffDatabase.length} faculty members loaded from persistent storage.`);
+    };
+  </script>
+</body>
+</html>
