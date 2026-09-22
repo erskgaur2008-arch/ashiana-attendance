@@ -159,7 +159,7 @@
     <div class="flex items-center space-x-2 max-w-7xl mx-auto w-full">
       <span class="w-2 h-2 rounded-full bg-ashiana-green animate-pulse flex-shrink-0"></span>
       <span id="banner-status-text" class="truncate">
-        <strong>Ashiana Faculty Attendance:</strong> Working Shift <strong>07:40 AM – 02:30 PM</strong>. Supabase Auto-Sync active.
+        <strong>Ashiana Faculty Attendance:</strong> Shift <strong>07:40 AM – 02:30 PM</strong>. Fast 1-Tap QR Scan enabled.
       </span>
     </div>
   </div>
@@ -353,8 +353,8 @@
           <!-- PRIMARY ACTION BUTTON: MARK ATTENDANCE -->
           <div class="bg-gradient-to-br from-emerald-50 to-green-50/80 rounded-2xl p-4 border border-emerald-200 shadow-sm text-center">
             <div class="mb-2.5">
-              <span class="text-[10px] font-bold text-ashiana-green uppercase tracking-wider block">Unified Attendance Punch</span>
-              <p class="text-[11px] text-slate-500 mt-0.5">Scans school daily QR to record your punch</p>
+              <span class="text-[10px] font-bold text-ashiana-green uppercase tracking-wider block">Instant QR Attendance</span>
+              <p class="text-[11px] text-slate-500 mt-0.5">Simply scan school QR code — PIN not required!</p>
             </div>
 
             <button id="btn-mark-attendance" onclick="openPunchModal()" class="w-full py-3.5 bg-gradient-to-r from-ashiana-green via-[#08693A] to-emerald-900 hover:from-[#08693A] hover:to-[#054625] text-white rounded-2xl font-extrabold text-sm sm:text-base tracking-wide flex items-center justify-center space-x-2 shadow-lg shadow-emerald-700/30 active:scale-[0.98] transition-all border-b-2 border-ashiana-red">
@@ -383,7 +383,7 @@
 
             <div id="staff-today-timeline" class="space-y-1.5">
               <div class="text-center py-5 text-slate-400 text-xs italic">
-                No punches recorded today.<br>Tap "MARK ATTENDANCE" above.
+                No punches recorded today.<br>Tap "MARK ATTENDANCE" above to scan.
               </div>
             </div>
           </div>
@@ -571,7 +571,7 @@
               <span id="qr-station-date" class="font-mono text-ashiana-green">Today</span>
             </div>
             <p class="text-[10px] text-slate-500 text-left">
-              This QR code remains valid throughout today's shift (07:40 AM – 02:30 PM). Teachers can scan this code upon arrival and departure.
+              Teachers can point their smartphone camera to instantly mark PUNCH IN or PUNCH OUT. No PIN entry required on scan!
             </p>
           </div>
 
@@ -672,7 +672,7 @@
                 <tr>
                   <th class="py-2.5 px-3">Faculty</th>
                   <th class="py-2.5 px-3">Type</th>
-                  <th class="py-2.5 px-3">Dates</th>
+                  <th class="py-2.5 px-3 font-mono text-[10px]">Dates</th>
                   <th class="py-2.5 px-3">Reason</th>
                   <th class="py-2.5 px-3">Status</th>
                   <th class="py-2.5 px-3 text-right">Actions</th>
@@ -735,7 +735,7 @@
     </div>
   </main>
 
-  <!-- PUNCH MODAL WITH CAMERA SCANNER -->
+  <!-- PUNCH MODAL WITH CAMERA SCANNER (1-STEP INSTANT SCAN - NO PIN REQUIRED) -->
   <div id="modal-punch" class="fixed inset-0 bg-slate-950/80 backdrop-blur-sm z-50 hidden flex items-center justify-center p-3">
     <div class="bg-white rounded-3xl max-w-sm w-full overflow-hidden shadow-2xl border border-slate-200">
       <div class="bg-gradient-to-r from-emerald-950 to-[#064E3B] p-3.5 text-white flex items-center justify-between border-b-2 border-ashiana-red">
@@ -743,7 +743,7 @@
           <i data-lucide="camera" class="w-4 h-4 text-emerald-300"></i>
           <div>
             <h3 class="text-xs font-bold uppercase tracking-wider font-serif">Mark Attendance</h3>
-            <p id="punch-stepper-subtitle" class="text-[10px] text-emerald-200">Step 1: Point Camera at School QR Code</p>
+            <p id="punch-stepper-subtitle" class="text-[10px] text-emerald-200">Point Camera at School Daily QR</p>
           </div>
         </div>
         <button onclick="closePunchModal()" class="w-7 h-7 rounded-full bg-white/10 hover:bg-white/20 flex items-center justify-center text-white">
@@ -751,66 +751,28 @@
         </button>
       </div>
 
-      <div class="p-4">
-        <!-- SCAN STEP -->
-        <div id="punch-step-scan" class="space-y-3">
-          <div class="relative w-60 h-60 mx-auto bg-slate-950 rounded-2xl overflow-hidden border-2 border-emerald-500 shadow flex flex-col items-center justify-center text-center">
-            <div id="scanner-reader" class="w-full h-full"></div>
-            <div id="scanner-laser-bar" class="absolute top-4 left-4 right-4 h-0.5 bg-gradient-to-r from-emerald-400 via-ashiana-red to-emerald-400 scanner-line shadow-lg shadow-emerald-400/60 pointer-events-none z-10"></div>
-          </div>
-
-          <div id="scanner-status-box" class="text-center">
-            <p id="scanner-status-text" class="text-xs font-semibold text-emerald-800">
-              Align camera with school QR code
-            </p>
-          </div>
-
-          <div class="space-y-1.5 pt-1">
-            <button type="button" onclick="toggleCameraFacingMode()" class="w-full py-2 bg-slate-100 hover:bg-slate-200 text-slate-700 rounded-xl text-xs font-bold flex items-center justify-center space-x-1.5">
-              <i data-lucide="switch-camera" class="w-3.5 h-3.5"></i>
-              <span>Switch Front / Rear Camera</span>
-            </button>
-            <button type="button" onclick="handleSimulateScanSuccess()" class="w-full py-1.5 bg-emerald-50 hover:bg-emerald-100 text-ashiana-green border border-emerald-200 rounded-xl text-[11px] font-bold flex items-center justify-center space-x-1">
-              <i data-lucide="check-circle" class="w-3.5 h-3.5"></i>
-              <span>Simulate QR Detected (Test Mode)</span>
-            </button>
-          </div>
+      <div class="p-4 space-y-3">
+        <div class="relative w-60 h-60 mx-auto bg-slate-950 rounded-2xl overflow-hidden border-2 border-emerald-500 shadow flex flex-col items-center justify-center text-center">
+          <div id="scanner-reader" class="w-full h-full"></div>
+          <div id="scanner-laser-bar" class="absolute top-4 left-4 right-4 h-0.5 bg-gradient-to-r from-emerald-400 via-ashiana-red to-emerald-400 scanner-line shadow-lg shadow-emerald-400/60 pointer-events-none z-10"></div>
         </div>
 
-        <!-- PIN STEP -->
-        <div id="punch-step-pin" class="hidden space-y-3.5">
-          <div class="text-center">
-            <div class="inline-flex items-center space-x-1 px-2.5 py-0.5 rounded-full bg-emerald-50 border border-emerald-200 text-emerald-800 text-[10px] font-bold mb-1">
-              <i data-lucide="check" class="w-3 h-3 text-ashiana-green"></i>
-              <span>QR Verified</span>
-            </div>
-            <p class="text-xs text-slate-500">Enter personal 4-digit PIN for:</p>
-            <h4 id="pin-modal-staff-name" class="text-sm font-bold text-slate-800">Faculty Member</h4>
-          </div>
+        <div id="scanner-status-box" class="text-center">
+          <p id="scanner-status-text" class="text-xs font-semibold text-emerald-800">
+            Scan to record your attendance instantly
+          </p>
+          <p class="text-[10px] text-slate-500 mt-0.5">Your punch registers immediately upon scanning!</p>
+        </div>
 
-          <div class="flex justify-center items-center space-x-3 my-2">
-            <div id="pin-dot-1" class="w-3 h-3 rounded-full border-2 border-slate-300 bg-white"></div>
-            <div id="pin-dot-2" class="w-3 h-3 rounded-full border-2 border-slate-300 bg-white"></div>
-            <div id="pin-dot-3" class="w-3 h-3 rounded-full border-2 border-slate-300 bg-white"></div>
-            <div id="pin-dot-4" class="w-3 h-3 rounded-full border-2 border-slate-300 bg-white"></div>
-          </div>
-
-          <div class="grid grid-cols-3 gap-2 max-w-[220px] mx-auto pt-1">
-            <button onclick="pressPinDigit('1')" class="h-11 rounded-xl bg-slate-100 text-slate-800 font-bold text-base active:bg-emerald-100">1</button>
-            <button onclick="pressPinDigit('2')" class="h-11 rounded-xl bg-slate-100 text-slate-800 font-bold text-base active:bg-emerald-100">2</button>
-            <button onclick="pressPinDigit('3')" class="h-11 rounded-xl bg-slate-100 text-slate-800 font-bold text-base active:bg-emerald-100">3</button>
-            <button onclick="pressPinDigit('4')" class="h-11 rounded-xl bg-slate-100 text-slate-800 font-bold text-base active:bg-emerald-100">4</button>
-            <button onclick="pressPinDigit('5')" class="h-11 rounded-xl bg-slate-100 text-slate-800 font-bold text-base active:bg-emerald-100">5</button>
-            <button onclick="pressPinDigit('6')" class="h-11 rounded-xl bg-slate-100 text-slate-800 font-bold text-base active:bg-emerald-100">6</button>
-            <button onclick="pressPinDigit('7')" class="h-11 rounded-xl bg-slate-100 text-slate-800 font-bold text-base active:bg-emerald-100">7</button>
-            <button onclick="pressPinDigit('8')" class="h-11 rounded-xl bg-slate-100 text-slate-800 font-bold text-base active:bg-emerald-100">8</button>
-            <button onclick="pressPinDigit('9')" class="h-11 rounded-xl bg-slate-100 text-slate-800 font-bold text-base active:bg-emerald-100">9</button>
-            <button onclick="clearPinInput()" class="h-11 rounded-xl bg-rose-50 text-ashiana-red font-bold text-xs">C</button>
-            <button onclick="pressPinDigit('0')" class="h-11 rounded-xl bg-slate-100 text-slate-800 font-bold text-base active:bg-emerald-100">0</button>
-            <button onclick="pressPinBackspace()" class="h-11 rounded-xl bg-slate-100 text-slate-700 flex items-center justify-center">
-              <i data-lucide="delete" class="w-4 h-4"></i>
-            </button>
-          </div>
+        <div class="space-y-1.5 pt-1">
+          <button type="button" onclick="toggleCameraFacingMode()" class="w-full py-2 bg-slate-100 hover:bg-slate-200 text-slate-700 rounded-xl text-xs font-bold flex items-center justify-center space-x-1.5">
+            <i data-lucide="switch-camera" class="w-3.5 h-3.5"></i>
+            <span>Switch Front / Rear Camera</span>
+          </button>
+          <button type="button" onclick="handleSimulateScanSuccess()" class="w-full py-1.5 bg-emerald-50 hover:bg-emerald-100 text-ashiana-green border border-emerald-200 rounded-xl text-[11px] font-bold flex items-center justify-center space-x-1">
+            <i data-lucide="check-circle" class="w-3.5 h-3.5"></i>
+            <span>Simulate QR Detected (Test Mode)</span>
+          </button>
         </div>
       </div>
     </div>
@@ -1196,7 +1158,6 @@
     let currentAuthUser = null;
     let currentStaffId = null;
     let currentPortal = "staff";
-    let currentPinInput = "";
 
     // Daily QR Session: Valid for the entire current calendar date
     function getTodayDailyToken(dateStr) {
@@ -1332,7 +1293,7 @@
                 attendanceDate: rp.attendance_date,
                 type: rp.type,
                 timestamp: rp.timestamp,
-                method: rp.method || "QR_CAMERA_PIN"
+                method: rp.method || "QR_CAMERA"
               });
               hasNewPunches = true;
             }
@@ -1482,7 +1443,7 @@
               attendanceDate: newPunch.attendance_date,
               type: newPunch.type,
               timestamp: newPunch.timestamp,
-              method: newPunch.method || "QR_CAMERA_PIN"
+              method: newPunch.method || "QR_CAMERA"
             });
             savePersistedData();
             playTone('SUCCESS');
@@ -1584,7 +1545,7 @@
       }
       if (matched.pinHash !== pinVal) {
         playTone('ERROR');
-        showToast("Incorrect PIN. Punch not recorded.", "error");
+        showToast("Incorrect PIN. Sign in failed.", "error");
         return;
       }
 
@@ -1752,7 +1713,9 @@
       return `${h}h ${m < 10 ? '0' : ''}${m}m`;
     }
 
-    // Camera & Attendance Punching
+    // =========================================================================
+    // CAMERA & 1-STEP DIRECT ATTENDANCE PUNCHING (NO PIN REQUIRED ON SCAN)
+    // =========================================================================
     async function startCameraScanner() {
       if (typeof Html5Qrcode === "undefined") return;
       await stopCameraScanner();
@@ -1792,13 +1755,9 @@
       await startCameraScanner();
     }
 
-    function onQRCodeDetected(decodedText) {
-      playTone('KEY');
-      stopCameraScanner();
-      document.getElementById("punch-step-scan").classList.add("hidden");
-      document.getElementById("punch-step-pin").classList.remove("hidden");
-      document.getElementById("punch-stepper-subtitle").innerText = "Step 2: Enter 4-Digit Attendance PIN";
-      if (window.lucide) lucide.createIcons();
+    async function onQRCodeDetected(decodedText) {
+      await stopCameraScanner();
+      await executeDirectPunch();
     }
 
     function handleSimulateScanSuccess() {
@@ -1807,15 +1766,6 @@
 
     function openPunchModal() {
       if (!currentStaffId) return;
-      const staff = staffDatabase.find(s => s.id === currentStaffId);
-      if (staff) document.getElementById("pin-modal-staff-name").innerText = staff.name;
-
-      document.getElementById("punch-step-scan").classList.remove("hidden");
-      document.getElementById("punch-step-pin").classList.add("hidden");
-      document.getElementById("punch-stepper-subtitle").innerText = "Step 1: Point Camera at School QR Code";
-      currentPinInput = "";
-      updatePinDots();
-
       document.getElementById("modal-punch").classList.remove("hidden");
       if (window.lucide) lucide.createIcons();
       setTimeout(startCameraScanner, 150);
@@ -1826,43 +1776,11 @@
       document.getElementById("modal-punch").classList.add("hidden");
     }
 
-    function pressPinDigit(digit) {
-      if (currentPinInput.length < 4) {
-        currentPinInput += digit;
-        playTone('KEY');
-        updatePinDots();
-        if (currentPinInput.length === 4) setTimeout(verifyAndExecutePunch, 150);
-      }
-    }
-
-    function pressPinBackspace() {
-      if (currentPinInput.length > 0) {
-        currentPinInput = currentPinInput.slice(0, -1);
-        playTone('KEY');
-        updatePinDots();
-      }
-    }
-
-    function clearPinInput() {
-      currentPinInput = "";
-      playTone('KEY');
-      updatePinDots();
-    }
-
-    function updatePinDots() {
-      for (let i = 1; i <= 4; i++) {
-        const dot = document.getElementById(`pin-dot-${i}`);
-        if (dot) dot.className = i <= currentPinInput.length ? "w-3 h-3 rounded-full bg-ashiana-green border-2 border-ashiana-green" : "w-3 h-3 rounded-full border-2 border-slate-300 bg-white";
-      }
-    }
-
-    async function verifyAndExecutePunch() {
+    // Direct 1-Tap Attendance Punch upon scanning QR (PIN completely bypassed)
+    async function executeDirectPunch() {
       const staff = staffDatabase.find(s => s.id === currentStaffId);
-      if (!staff || staff.pinHash !== currentPinInput) {
-        playTone('ERROR');
-        showToast("Incorrect PIN. Punch not recorded.", "error");
-        currentPinInput = "";
-        updatePinDots();
+      if (!staff) {
+        showToast("Error: No faculty account active.", "error");
         return;
       }
 
@@ -1880,7 +1798,7 @@
         attendanceDate: systemConfig.currentAttendanceDate,
         type: nextType,
         timestamp: nowClock,
-        method: "QR_CAMERA_PIN"
+        method: "QR_CAMERA"
       };
 
       punchLedger.push(newRecord);
@@ -1897,7 +1815,7 @@
             attendance_date: systemConfig.currentAttendanceDate,
             type: nextType,
             timestamp: nowClock,
-            method: "QR_CAMERA_PIN"
+            method: "QR_CAMERA"
           }]).then(({ error }) => {
             if (error) console.warn("Supabase punch insert notice:", error);
           });
@@ -1905,8 +1823,8 @@
       }
 
       playTone('SUCCESS');
-      closePunchModal();
-      showToast(`PUNCH ${nextType} marked at ${nowClock}.`, "success");
+      await closePunchModal();
+      showToast(`PUNCH ${nextType} recorded successfully at ${nowClock}!`, "success");
       refreshStaffUI();
       renderLiveAttendanceTable();
       updateKPICards();
@@ -1952,7 +1870,7 @@
 
       const timeline = document.getElementById("staff-today-timeline");
       if (stats.punches.length === 0) {
-        timeline.innerHTML = `<div class="text-center py-5 text-slate-400 text-xs italic">No punches recorded today.<br>Tap "MARK ATTENDANCE" above.</div>`;
+        timeline.innerHTML = `<div class="text-center py-5 text-slate-400 text-xs italic">No punches recorded today.<br>Tap "MARK ATTENDANCE" above to scan.</div>`;
       } else {
         timeline.innerHTML = stats.punches.map((p, idx) => `
           <div class="flex items-center justify-between p-2 rounded-xl border ${p.type === 'IN' ? 'bg-emerald-50/80 border-emerald-200 text-emerald-950' : 'bg-slate-50 border-slate-200 text-slate-900'}">
@@ -2211,7 +2129,6 @@
         const initials = staff.name.replace(/^(Mrs\.|Ms\.|Mr\.)\s*/, '').split(' ').map(n => n[0]).join('').substring(0, 2);
         document.getElementById("profile-modal-avatar").innerText = initials || "AP";
 
-        // Prefill profile edit inputs
         const nameInp = document.getElementById("profile-edit-name");
         const emailInp = document.getElementById("profile-edit-email");
         if (nameInp) nameInp.value = staff.name;
@@ -2359,7 +2276,6 @@
       renderStaffDirectoryTable();
       updateKPICards();
 
-      // Refresh manual correction dropdown
       const sel = document.getElementById("correction-staff-select");
       if (sel) sel.innerHTML = staffDatabase.map(s => `<option value="${s.id}">${s.name} (${s.empId})</option>`).join('');
     }
@@ -2516,7 +2432,6 @@
       renderLiveAttendanceTable();
       updateKPICards();
 
-      // Refresh manual correction dropdown
       const sel = document.getElementById("correction-staff-select");
       if (sel) sel.innerHTML = staffDatabase.map(s => `<option value="${s.id}">${s.name} (${s.empId})</option>`).join('');
     }
@@ -2635,7 +2550,7 @@
         if (cG) cG.innerText = tStr;
         if (dG) dG.innerText = dStr;
 
-        // Check date rollover at midnight to refresh daily QR session
+        // Midnight rollover to refresh daily QR session
         const todayStr = d.toISOString().split('T')[0];
         if (activeQRSession.date !== todayStr) {
           systemConfig.currentAttendanceDate = todayStr;
