@@ -705,6 +705,10 @@
                 <i data-lucide="key" class="w-3.5 h-3.5 text-amber-300"></i>
                 <span>Export PINs (CSV)</span>
               </button>
+              <button onclick="openBulkDeleteStaffModal()" class="px-3 py-2 bg-rose-700 hover:bg-rose-800 text-white text-xs font-bold rounded-xl flex items-center space-x-1.5 shadow transition-all active:scale-95 border-b-2 border-rose-950" title="Select All for Delete Multiple Staff">
+                <i data-lucide="user-minus" class="w-3.5 h-3.5"></i>
+                <span>Select All for Delete Multiple Staff</span>
+              </button>
             </div>
           </div>
 
@@ -1495,6 +1499,72 @@
     </div>
   </div>
 
+  <!-- ADMIN: BULK DELETE STAFF MODAL -->
+  <div id="admin-bulk-delete-staff-modal" class="fixed inset-0 bg-slate-950/80 backdrop-blur-sm z-50 hidden flex items-center justify-center p-3">
+    <div class="bg-white rounded-3xl max-w-lg w-full overflow-hidden shadow-2xl border border-slate-200 flex flex-col max-h-[90vh]">
+      <div class="bg-gradient-to-r from-rose-950 via-rose-900 to-rose-950 p-3.5 text-white flex items-center justify-between border-b-2 border-ashiana-red flex-shrink-0">
+        <div class="flex items-center space-x-2">
+          <i data-lucide="trash-2" class="w-4 h-4 text-rose-300"></i>
+          <div>
+            <h3 class="text-xs font-bold uppercase tracking-wider font-serif">Delete Multiple Faculty Members</h3>
+            <p class="text-[10px] text-rose-200">Bulk purge selected staff records from roster and cloud database</p>
+          </div>
+        </div>
+        <button onclick="closeBulkDeleteStaffModal()" class="w-7 h-7 rounded-full bg-white/10 hover:bg-white/20 flex items-center justify-center text-white">
+          <i data-lucide="x" class="w-3.5 h-3.5"></i>
+        </button>
+      </div>
+
+      <div class="p-3.5 space-y-3 flex-1 overflow-y-auto hide-scrollbar">
+        <div class="flex flex-col sm:flex-row sm:items-center justify-between gap-2 bg-slate-50 p-2.5 rounded-2xl border border-slate-200">
+          <div class="flex items-center space-x-2">
+            <button type="button" onclick="modalToggleSelectAll(true)" class="px-2.5 py-1 bg-white hover:bg-slate-100 text-slate-700 border border-slate-300 rounded-lg text-[11px] font-bold shadow-sm">
+              Select All
+            </button>
+            <button type="button" onclick="modalToggleSelectAll(false)" class="px-2.5 py-1 bg-white hover:bg-slate-100 text-slate-700 border border-slate-300 rounded-lg text-[11px] font-bold shadow-sm">
+              Deselect All
+            </button>
+            <span id="modal-bulk-selected-count" class="text-xs font-bold text-rose-700 bg-rose-50 px-2 py-0.5 rounded-md border border-rose-200">
+              0 staff selected
+            </span>
+          </div>
+          <input type="text" id="modal-bulk-search" onkeyup="filterBulkDeleteModalList()" placeholder="Filter faculty..." class="text-xs px-2.5 py-1 bg-white border border-slate-200 rounded-lg focus:outline-none focus:ring-1 focus:ring-rose-500 w-full sm:w-44">
+        </div>
+
+        <div class="overflow-x-auto max-h-64 border border-slate-200 rounded-xl bg-white shadow-inner">
+          <table class="w-full text-left text-xs text-slate-600">
+            <thead class="bg-slate-100 text-slate-600 font-bold sticky top-0 border-b border-slate-200 text-[10px] uppercase">
+              <tr>
+                <th class="py-2 px-3 text-center w-10">
+                  <input type="checkbox" id="modal-master-cb" onchange="modalToggleSelectAll(this.checked)" class="rounded text-rose-600 focus:ring-rose-500 cursor-pointer w-4 h-4">
+                </th>
+                <th class="py-2 px-2">Emp ID</th>
+                <th class="py-2 px-2">Faculty Name</th>
+                <th class="py-2 px-2">Department</th>
+              </tr>
+            </thead>
+            <tbody id="modal-bulk-staff-tbody" class="divide-y divide-slate-100 font-medium"></tbody>
+          </table>
+        </div>
+
+        <div class="p-2.5 bg-rose-50 border border-rose-200 rounded-xl text-[11px] text-rose-800 flex items-start space-x-2">
+          <i data-lucide="alert-triangle" class="w-4 h-4 flex-shrink-0 text-rose-600 mt-0.5"></i>
+          <span><strong>Warning:</strong> Deleting staff will remove their accounts, login PINs, and attendance records from both this browser and the Supabase PostgreSQL database. This action cannot be undone.</span>
+        </div>
+      </div>
+
+      <div class="p-3 bg-slate-50 border-t border-slate-200 flex items-center justify-end space-x-2 flex-shrink-0">
+        <button type="button" onclick="closeBulkDeleteStaffModal()" class="px-3.5 py-2 bg-white hover:bg-slate-100 text-slate-700 border border-slate-300 rounded-xl text-xs font-bold">
+          Cancel
+        </button>
+        <button type="button" id="btn-execute-bulk-delete" onclick="executeBulkStaffDeletion()" class="px-4 py-2 bg-ashiana-red hover:bg-ashiana-red-dark text-white rounded-xl text-xs font-bold flex items-center space-x-1.5 shadow active:scale-95 disabled:opacity-40 disabled:cursor-not-allowed">
+          <i data-lucide="trash-2" class="w-3.5 h-3.5"></i>
+          <span id="btn-execute-bulk-delete-label">Delete Selected Staff</span>
+        </button>
+      </div>
+    </div>
+  </div>
+
   <!-- LEAVE APPLY MODAL -->
   <div id="leave-apply-modal" class="fixed inset-0 bg-slate-950/75 backdrop-blur-sm z-50 hidden flex items-center justify-center p-3">
     <div class="bg-white rounded-3xl max-w-sm w-full p-5 shadow-2xl border border-slate-200">
@@ -1583,6 +1653,9 @@
     let currentAuthUser = null;
     let currentStaffId = null;
     let currentPortal = "staff";
+
+    // Staff Directory Selection State
+    let selectedStaffIds = new Set();
 
     // Current Report State
     let currentReportType = 'daily'; // 'daily' | 'monthly' | 'faculty'
@@ -2562,64 +2635,220 @@
     function renderStaffDirectoryTable() {
       const tbody = document.getElementById("staff-directory-tbody");
       if (!tbody) return;
-      tbody.innerHTML = staffDatabase.map(s => `
-        <tr class="hover:bg-slate-50 transition-colors">
-          <td class="py-2 px-3 font-mono font-bold text-ashiana-green text-xs">${s.empId}</td>
-          <td class="py-2 px-3 font-bold text-slate-800">${s.name}</td>
-          <td class="py-2 px-3 text-slate-600">${s.department}</td>
-          <td class="py-2 px-3 text-slate-600">${s.role}</td>
-          <td class="py-2 px-3 font-mono text-[10px] text-slate-500">${s.email}</td>
-          <td class="py-2 px-3 text-center"><span class="px-1.5 py-0.5 rounded font-mono font-bold text-[10px] bg-emerald-50 text-ashiana-green border border-emerald-300">${s.pinHash}</span></td>
-          <td class="py-2 px-3"><span class="px-2 py-0.5 rounded-full text-[9px] font-bold ${s.status === 'ACTIVE' ? 'bg-emerald-100 text-emerald-800' : 'bg-rose-100 text-rose-800'}">${s.status}</span></td>
-          <td class="py-2 px-3 text-center">
-            <div class="flex items-center justify-center space-x-1">
-              <button onclick="openEditStaffModal('${s.id}')" title="Edit Faculty" class="p-1 text-slate-600 hover:text-ashiana-green hover:bg-emerald-50 rounded-lg transition-colors">
-                <i data-lucide="edit-3" class="w-3.5 h-3.5"></i>
-              </button>
-              <button onclick="openResetPinModal('${s.id}')" title="Reset PIN" class="p-1 text-amber-600 hover:text-amber-800 hover:bg-amber-50 rounded-lg transition-colors">
-                <i data-lucide="key" class="w-3.5 h-3.5"></i>
-              </button>
-              <button onclick="openDeleteStaffModal('${s.id}')" title="Delete Faculty" class="p-1 text-slate-400 hover:text-ashiana-red hover:bg-rose-50 rounded-lg transition-colors">
-                <i data-lucide="trash-2" class="w-3.5 h-3.5"></i>
-              </button>
-              <button onclick="quickTestPunch('${s.id}')" title="Quick Mark" class="p-1 text-ashiana-green hover:bg-emerald-50 rounded-lg transition-colors">
-                <i data-lucide="check" class="w-3.5 h-3.5"></i>
-              </button>
-            </div>
-          </td>
-        </tr>
-      `).join('');
+      tbody.innerHTML = staffDatabase.map(s => {
+        return `
+          <tr class="hover:bg-slate-50 transition-colors">
+            <td class="py-2 px-3 font-mono font-bold text-ashiana-green text-xs">${s.empId}</td>
+            <td class="py-2 px-3 font-bold text-slate-800">
+              <div>${s.name}</div>
+              <div class="text-[9px] text-slate-400 font-normal sm:hidden">${s.department} • ${s.role}</div>
+            </td>
+            <td class="py-2 px-3 text-slate-600">${s.department}</td>
+            <td class="py-2 px-3 text-slate-600">${s.role}</td>
+            <td class="py-2 px-3 font-mono text-[10px] text-slate-500">${s.email}</td>
+            <td class="py-2 px-3 text-center"><span class="px-1.5 py-0.5 rounded font-mono font-bold text-[10px] bg-emerald-50 text-ashiana-green border border-emerald-300">${s.pinHash}</span></td>
+            <td class="py-2 px-3"><span class="px-2 py-0.5 rounded-full text-[9px] font-bold ${s.status === 'ACTIVE' ? 'bg-emerald-100 text-emerald-800' : 'bg-rose-100 text-rose-800'}">${s.status}</span></td>
+            <td class="py-2 px-3 text-center">
+              <div class="flex items-center justify-center space-x-1.5">
+                <button onclick="jumpToStaffReport('${s.id}')" title="View Dossier Report" class="p-1 text-slate-600 hover:text-ashiana-green hover:bg-emerald-50 rounded-lg transition-colors">
+                  <i data-lucide="file-text" class="w-3.5 h-3.5"></i>
+                </button>
+                <button onclick="openEditStaffModal('${s.id}')" title="Edit Faculty" class="p-1 text-slate-600 hover:text-ashiana-green hover:bg-emerald-50 rounded-lg transition-colors">
+                  <i data-lucide="edit-3" class="w-3.5 h-3.5"></i>
+                </button>
+                <button onclick="openResetPinModal('${s.id}')" title="Reset PIN" class="p-1 text-amber-600 hover:text-amber-800 hover:bg-amber-50 rounded-lg transition-colors">
+                  <i data-lucide="key" class="w-3.5 h-3.5"></i>
+                </button>
+                <button onclick="openDeleteStaffModal('${s.id}')" title="Delete Faculty" class="p-1 text-slate-400 hover:text-ashiana-red hover:bg-rose-50 rounded-lg transition-colors">
+                  <i data-lucide="trash-2" class="w-3.5 h-3.5"></i>
+                </button>
+                <button onclick="quickTestPunch('${s.id}')" title="Quick Mark Attendance" class="p-1 text-ashiana-green hover:bg-emerald-50 rounded-lg transition-colors">
+                  <i data-lucide="check" class="w-3.5 h-3.5"></i>
+                </button>
+              </div>
+            </td>
+          </tr>
+        `;
+      }).join('');
       if (window.lucide) lucide.createIcons();
     }
 
-    function renderAdminLeaveTable() {
-      const tbody = document.getElementById("admin-leave-tbody");
+    // Modal state for bulk deletion
+    let modalBulkSelectedIds = new Set();
+
+    function openBulkDeleteStaffModal() {
+      modalBulkSelectedIds.clear();
+      // Default: select all staff immediately so user can delete all or deselect as desired
+      staffDatabase.forEach(s => modalBulkSelectedIds.add(s.id));
+      renderModalBulkStaffList();
+      cancelBulkDeleteConfirmation();
+      document.getElementById("admin-bulk-delete-staff-modal")?.classList.remove("hidden");
+      if (window.lucide) lucide.createIcons();
+    }
+
+    function closeBulkDeleteStaffModal() {
+      cancelBulkDeleteConfirmation();
+      document.getElementById("admin-bulk-delete-staff-modal")?.classList.add("hidden");
+    }
+
+    function promptBulkDeleteConfirmation() {
+      const count = modalBulkSelectedIds.size;
+      if (count === 0) {
+        showToast("Please select at least one staff member to delete.", "error");
+        return;
+      }
+      const defaultActions = document.getElementById("bulk-delete-default-actions");
+      const confirmPrompt = document.getElementById("bulk-delete-confirm-prompt");
+      const confirmText = document.getElementById("bulk-delete-confirm-text");
+
+      if (confirmText) {
+        confirmText.innerText = `Permanently delete ${count} faculty member(s)? This cannot be undone.`;
+      }
+      if (defaultActions) defaultActions.classList.add("hidden");
+      if (confirmPrompt) confirmPrompt.classList.remove("hidden");
+      if (window.lucide) lucide.createIcons();
+    }
+
+    function cancelBulkDeleteConfirmation() {
+      const defaultActions = document.getElementById("bulk-delete-default-actions");
+      const confirmPrompt = document.getElementById("bulk-delete-confirm-prompt");
+      if (defaultActions) defaultActions.classList.remove("hidden");
+      if (confirmPrompt) confirmPrompt.classList.add("hidden");
+    }
+
+    async function executeBulkStaffDeletionNow() {
+      const count = modalBulkSelectedIds.size;
+      if (count === 0) return;
+
+      const idsToDelete = Array.from(modalBulkSelectedIds);
+      staffDatabase = staffDatabase.filter(s => !modalBulkSelectedIds.has(s.id));
+      modalBulkSelectedIds.clear();
+      savePersistedData();
+
+      // Cloud deletion from Supabase
+      if (supabaseClient) {
+        idsToDelete.forEach(id => {
+          supabaseClient.from('staff').delete().eq('id', id).then(() => {});
+        });
+      }
+
+      recordAuditLog("BULK_DELETE", `${count} Faculty`, `Bulk deleted ${count} faculty records`);
+      playTone('SUCCESS');
+      showToast(`Successfully deleted ${count} faculty members.`, "info");
+      closeBulkDeleteStaffModal();
+      renderStaffDirectoryTable();
+      renderLiveAttendanceTable();
+      updateKPICards();
+
+      const sel = document.getElementById("correction-staff-select");
+      if (sel) sel.innerHTML = staffDatabase.map(s => `<option value="${s.id}">${s.name} (${s.empId})</option>`).join('');
+    }
+
+    function renderModalBulkStaffList() {
+      const tbody = document.getElementById("modal-bulk-staff-tbody");
       if (!tbody) return;
-      tbody.innerHTML = leaveRequests.map(l => `
-        <tr class="hover:bg-slate-50 transition-colors">
-          <td class="py-2.5 px-3 font-bold text-slate-800">${l.staffName}</td>
-          <td class="py-2.5 px-3">${l.type}</td>
-          <td class="py-2.5 px-3 font-mono text-[10px]">${l.from} to ${l.to}</td>
-          <td class="py-2.5 px-3 text-slate-600">${l.reason}</td>
-          <td class="py-2.5 px-3"><span class="px-2 py-0.5 rounded-full text-[9px] font-bold ${l.status === 'APPROVED' ? 'bg-emerald-100 text-emerald-800' : 'bg-amber-100 text-amber-800'}">${l.status}</span></td>
-          <td class="py-2.5 px-3 text-right">
-            ${l.status === 'PENDING' ? `
-              <button onclick="approveLeave('${l.id}')" class="px-2 py-1 bg-ashiana-green text-white rounded text-[9px] font-bold">Approve</button>
-            ` : `<span class="text-[9px] text-slate-400">Done</span>`}
-          </td>
-        </tr>
-      `).join('');
-      if (window.lucide) lucide.createIcons();
+
+      const q = (document.getElementById("modal-bulk-search")?.value || "").toLowerCase().trim();
+      const filtered = staffDatabase.filter(s => {
+        if (!q) return true;
+        return s.name.toLowerCase().includes(q) || s.empId.toLowerCase().includes(q) || s.department.toLowerCase().includes(q);
+      });
+
+      tbody.innerHTML = filtered.map(s => {
+        const isChecked = modalBulkSelectedIds.has(s.id);
+        return `
+          <tr class="hover:bg-slate-50 transition-colors ${isChecked ? 'bg-rose-50/50' : ''}">
+            <td class="py-2 px-3 text-center">
+              <input type="checkbox" class="rounded text-rose-600 focus:ring-rose-500 cursor-pointer w-4 h-4" ${isChecked ? 'checked' : ''} onchange="toggleModalStaffItem('${s.id}', this.checked)">
+            </td>
+            <td class="py-2 px-2 font-mono font-bold text-ashiana-green text-xs">${s.empId}</td>
+            <td class="py-2 px-2 font-bold text-slate-800">${s.name}</td>
+            <td class="py-2 px-2 text-slate-500">${s.department}</td>
+          </tr>
+        `;
+      }).join('');
+
+      updateModalBulkCounters();
     }
 
-    function approveLeave(id) {
-      const req = leaveRequests.find(l => l.id === id);
-      if (req) {
-        req.status = "APPROVED";
-        savePersistedData();
-        showToast(`Approved leave for ${req.staffName}`, "success");
-        renderAdminLeaveTable();
-        updateKPICards();
+    function toggleModalStaffItem(staffId, isChecked) {
+      if (isChecked) {
+        modalBulkSelectedIds.add(staffId);
+      } else {
+        modalBulkSelectedIds.delete(staffId);
+      }
+      renderModalBulkStaffList();
+    }
+
+    function modalToggleSelectAll(shouldSelect) {
+      if (shouldSelect) {
+        staffDatabase.forEach(s => modalBulkSelectedIds.add(s.id));
+      } else {
+        modalBulkSelectedIds.clear();
+      }
+      renderModalBulkStaffList();
+    }
+
+    function filterBulkDeleteModalList() {
+      renderModalBulkStaffList();
+    }
+
+    function updateModalBulkCounters() {
+      const count = modalBulkSelectedIds.size;
+      const countPill = document.getElementById("modal-bulk-selected-count");
+      const btnDelete = document.getElementById("btn-execute-bulk-delete");
+      const btnLabel = document.getElementById("btn-execute-bulk-delete-label");
+      const masterCb = document.getElementById("modal-master-cb");
+
+      if (countPill) countPill.innerText = `${count} staff selected`;
+      if (btnLabel) btnLabel.innerText = `Delete Selected Staff (${count})`;
+      if (btnDelete) btnDelete.disabled = (count === 0);
+
+      if (masterCb) {
+        masterCb.checked = staffDatabase.length > 0 && count === staffDatabase.length;
+        masterCb.indeterminate = count > 0 && count < staffDatabase.length;
+      }
+    }
+
+    async function executeBulkStaffDeletion() {
+      const count = modalBulkSelectedIds.size;
+      if (count === 0) return;
+
+      const confirmDelete = window.confirm(`Are you sure you want to permanently delete the ${count} selected faculty member(s)? This will remove them from the roster and database.`);
+      if (!confirmDelete) return;
+
+      const idsToDelete = Array.from(modalBulkSelectedIds);
+      staffDatabase = staffDatabase.filter(s => !modalBulkSelectedIds.has(s.id));
+      modalBulkSelectedIds.clear();
+      savePersistedData();
+
+      // Cloud deletion from Supabase
+      if (supabaseClient) {
+        idsToDelete.forEach(id => {
+          supabaseClient.from('staff').delete().eq('id', id).then(() => {});
+        });
+      }
+
+      recordAuditLog("BULK_DELETE", `${count} Faculty`, `Bulk deleted ${count} faculty records`);
+      playTone('SUCCESS');
+      showToast(`Successfully deleted ${count} faculty members.`, "info");
+      closeBulkDeleteStaffModal();
+      renderStaffDirectoryTable();
+      renderLiveAttendanceTable();
+      updateKPICards();
+
+      const sel = document.getElementById("correction-staff-select");
+      if (sel) sel.innerHTML = staffDatabase.map(s => `<option value="${s.id}">${s.name} (${s.empId})</option>`).join('');
+    }
+
+    // Jump straight to the individual report dossier for a selected staff member
+    function jumpToStaffReport(staffId) {
+      switchAdminTab('reports');
+      setReportType('faculty');
+      const sel = document.getElementById("report-faculty-select");
+      if (sel) {
+        sel.value = staffId;
+        runAdminReportGeneration();
       }
     }
 
@@ -3813,6 +4042,136 @@
 
     function closeLeaveApplyModal() {
       document.getElementById("leave-apply-modal")?.classList.add("hidden");
+    }
+
+    function renderAdminLeaveTable() {
+      const tbody = document.getElementById("admin-leave-tbody");
+      if (!tbody) return;
+      if (!leaveRequests || leaveRequests.length === 0) {
+        tbody.innerHTML = `<tr><td colspan="6" class="text-center py-6 text-slate-400 italic">No leave applications submitted.</td></tr>`;
+        return;
+      }
+      tbody.innerHTML = leaveRequests.map(l => {
+        let statusBadge = `<span class="px-2 py-0.5 rounded-full text-[9px] font-bold bg-amber-100 text-amber-800 border border-amber-300">PENDING</span>`;
+        if (l.status === 'APPROVED') {
+          statusBadge = `<span class="px-2 py-0.5 rounded-full text-[9px] font-bold bg-emerald-100 text-emerald-800 border border-emerald-300">APPROVED</span>`;
+        } else if (l.status === 'REJECTED') {
+          statusBadge = `<span class="px-2 py-0.5 rounded-full text-[9px] font-bold bg-rose-100 text-rose-800 border border-rose-300">REJECTED</span>`;
+        }
+
+        return `
+          <tr class="hover:bg-slate-50 transition-colors">
+            <td class="py-2.5 px-3 font-bold text-slate-800">${l.staffName}</td>
+            <td class="py-2.5 px-3 font-medium text-slate-600">${l.type}</td>
+            <td class="py-2.5 px-3 font-mono text-slate-500 text-[10px]">${l.from} to ${l.to}</td>
+            <td class="py-2.5 px-3 text-slate-600 max-w-xs truncate" title="${l.reason}">${l.reason}</td>
+            <td class="py-2.5 px-3">${statusBadge}</td>
+            <td class="py-2.5 px-3 text-right">
+              ${l.status === 'PENDING' ? `
+                <div class="flex items-center justify-end space-x-1.5">
+                  <button onclick="approveLeave('${l.id}')" class="px-2.5 py-1 bg-ashiana-green hover:bg-[#08693A] text-white rounded-lg text-[10px] font-bold transition-all shadow-sm flex items-center space-x-1">
+                    <i data-lucide="check" class="w-3 h-3"></i>
+                    <span>Approve</span>
+                  </button>
+                  <button onclick="rejectLeave('${l.id}')" class="px-2 py-1 bg-rose-50 hover:bg-rose-100 text-ashiana-red border border-rose-200 rounded-lg text-[10px] font-bold transition-all flex items-center space-x-1">
+                    <i data-lucide="x" class="w-3 h-3"></i>
+                    <span>Reject</span>
+                  </button>
+                </div>
+              ` : `
+                <span class="text-[10px] text-slate-400 font-semibold capitalize">${l.status.toLowerCase()}</span>
+              `}
+            </td>
+          </tr>
+        `;
+      }).join('');
+      if (window.lucide) lucide.createIcons();
+    }
+
+    function approveLeave(id) {
+      const l = leaveRequests.find(x => x.id === id);
+      if (!l) return;
+      l.status = 'APPROVED';
+      savePersistedData();
+      if (supabaseClient) {
+        supabaseClient.from('leave_requests').update({ status: 'APPROVED' }).eq('id', id).then(() => {});
+      }
+      recordAuditLog("LEAVE_APPROVED", l.staffName, `Approved ${l.type} from ${l.from} to ${l.to}`);
+      playTone('SUCCESS');
+      showToast(`Approved leave request for ${l.staffName}`, "success");
+      renderAdminLeaveTable();
+      updateKPICards();
+      refreshStaffUI();
+    }
+
+    function rejectLeave(id) {
+      const l = leaveRequests.find(x => x.id === id);
+      if (!l) return;
+      l.status = 'REJECTED';
+      savePersistedData();
+      if (supabaseClient) {
+        supabaseClient.from('leave_requests').update({ status: 'REJECTED' }).eq('id', id).then(() => {});
+      }
+      recordAuditLog("LEAVE_REJECTED", l.staffName, `Rejected ${l.type} from ${l.from} to ${l.to}`);
+      playTone('ERROR');
+      showToast(`Rejected leave request for ${l.staffName}`, "info");
+      renderAdminLeaveTable();
+      updateKPICards();
+      refreshStaffUI();
+    }
+
+    function handleLeaveApplySubmit(event) {
+      event.preventDefault();
+      if (!currentStaffId) return;
+      const staff = staffDatabase.find(s => s.id === currentStaffId);
+      if (!staff) return;
+
+      const type = document.getElementById("leave-apply-type").value;
+      const from = document.getElementById("leave-apply-from").value;
+      const to = document.getElementById("leave-apply-to").value;
+      const reason = document.getElementById("leave-apply-reason").value.trim();
+
+      if (!from || !to) {
+        showToast("Please specify both From and To dates", "error");
+        return;
+      }
+
+      const newLeave = {
+        id: "lev_" + Date.now(),
+        staffId: staff.id,
+        staffName: staff.name,
+        type,
+        from,
+        to,
+        reason,
+        status: "PENDING"
+      };
+
+      leaveRequests.unshift(newLeave);
+      savePersistedData();
+
+      if (supabaseClient) {
+        ensureStaffExistsInSupabase(staff).then(() => {
+          supabaseClient.from('leave_requests').insert([{
+            id: newLeave.id,
+            staff_id: staff.id,
+            staff_name: staff.name,
+            type: newLeave.type,
+            from_date: newLeave.from,
+            to_date: newLeave.to,
+            reason: newLeave.reason,
+            status: newLeave.status
+          }]).then(() => {});
+        });
+      }
+
+      recordAuditLog("LEAVE_APPLIED", staff.name, `Applied for ${type} from ${from} to ${to}`);
+      playTone('SUCCESS');
+      showToast("Leave request submitted for Principal approval!", "success");
+      closeLeaveApplyModal();
+      renderAdminLeaveTable();
+      updateKPICards();
+      refreshStaffUI();
     }
 
     // =========================================================================
