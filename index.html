@@ -85,6 +85,29 @@
         min-height: -webkit-fill-available;
       }
     }
+
+    /* Print styling for official school reports */
+    @media print {
+      body * {
+        visibility: hidden;
+      }
+      #print-report-container, #print-report-container * {
+        visibility: visible;
+      }
+      #print-report-container {
+        position: absolute;
+        left: 0;
+        top: 0;
+        width: 100%;
+        margin: 0;
+        padding: 20px;
+        background: white !important;
+        color: black !important;
+      }
+      .no-print {
+        display: none !important;
+      }
+    }
   </style>
 </head>
 <body class="bg-slate-100 text-slate-800 antialiased min-h-screen min-h-screen-safe flex flex-col selection:bg-emerald-600 selection:text-white">
@@ -310,8 +333,8 @@
           </div>
         </div>
 
-        <!-- Scrollable Dashboard Body -->
-        <div class="flex-1 overflow-y-auto hide-scrollbar p-3.5 space-y-3">
+        <!-- TAB 1: TODAY'S PUNCH DASHBOARD BODY -->
+        <div id="staff-tab-punch" class="flex-1 overflow-y-auto hide-scrollbar p-3.5 space-y-3">
           
           <!-- Shift Overview Card -->
           <div class="bg-white rounded-2xl p-3.5 shadow-sm border border-slate-200/80">
@@ -405,21 +428,93 @@
           </div>
         </div>
 
+        <!-- TAB 2: COMPLETE STAFF ATTENDANCE HISTORY VIEW -->
+        <div id="staff-tab-history" class="hidden flex-1 overflow-y-auto hide-scrollbar p-3.5 space-y-3">
+          
+          <!-- Month & Filter Selector Card -->
+          <div class="bg-white rounded-2xl p-3 shadow-sm border border-slate-200/80 space-y-2.5">
+            <div class="flex items-center justify-between border-b border-slate-100 pb-2">
+              <div class="flex items-center space-x-1.5">
+                <i data-lucide="calendar-clock" class="w-4 h-4 text-ashiana-green"></i>
+                <h4 class="text-xs font-bold text-slate-800">Attendance History</h4>
+              </div>
+              <span id="staff-history-range-badge" class="text-[9px] font-mono font-bold px-2 py-0.5 rounded bg-emerald-50 text-emerald-800 border border-emerald-200">
+                September 2026
+              </span>
+            </div>
+
+            <div class="grid grid-cols-2 gap-2">
+              <div>
+                <label class="block text-[9px] font-bold text-slate-500 uppercase mb-1">Select Month</label>
+                <input type="month" id="staff-history-month-input" onchange="renderStaffHistory()" class="w-full text-xs p-2 bg-slate-50 border border-slate-200 rounded-xl font-mono font-semibold focus:ring-2 focus:ring-ashiana-green">
+              </div>
+              <div>
+                <label class="block text-[9px] font-bold text-slate-500 uppercase mb-1">Status Filter</label>
+                <select id="staff-history-filter" onchange="renderStaffHistory()" class="w-full text-xs p-2 bg-slate-50 border border-slate-200 rounded-xl font-medium focus:ring-2 focus:ring-ashiana-green">
+                  <option value="ALL">All Records</option>
+                  <option value="PRESENT">Present Only</option>
+                  <option value="LATE">Late Arrivals</option>
+                  <option value="ON_LEAVE">On Leave</option>
+                </select>
+              </div>
+            </div>
+          </div>
+
+          <!-- Monthly Personal KPI Metrics -->
+          <div class="grid grid-cols-4 gap-1.5 text-center">
+            <div class="bg-white p-2 rounded-xl border border-slate-200 shadow-sm border-b-2 border-b-emerald-600">
+              <span class="text-[8px] uppercase font-bold text-slate-400 block truncate">Days Present</span>
+              <span id="staff-hist-kpi-present" class="text-sm font-black text-emerald-700">0</span>
+            </div>
+            <div class="bg-white p-2 rounded-xl border border-slate-200 shadow-sm border-b-2 border-b-blue-600">
+              <span class="text-[8px] uppercase font-bold text-slate-400 block truncate">Total Hours</span>
+              <span id="staff-hist-kpi-hours" class="text-xs font-black text-blue-700 font-mono">0h</span>
+            </div>
+            <div class="bg-white p-2 rounded-xl border border-slate-200 shadow-sm border-b-2 border-b-ashiana-red">
+              <span class="text-[8px] uppercase font-bold text-slate-400 block truncate">Late Days</span>
+              <span id="staff-hist-kpi-late" class="text-sm font-black text-ashiana-red">0</span>
+            </div>
+            <div class="bg-white p-2 rounded-xl border border-slate-200 shadow-sm border-b-2 border-b-purple-600">
+              <span class="text-[8px] uppercase font-bold text-slate-400 block truncate">Leaves</span>
+              <span id="staff-hist-kpi-leaves" class="text-sm font-black text-purple-700">0</span>
+            </div>
+          </div>
+
+          <!-- History Timeline Cards Container -->
+          <div class="space-y-2">
+            <div class="flex items-center justify-between px-1">
+              <span class="text-[10px] font-bold text-slate-500 uppercase tracking-wider">Punch Log By Date</span>
+              <span id="staff-hist-log-count" class="text-[9px] text-slate-400 font-medium">0 days</span>
+            </div>
+
+            <div id="staff-history-cards-container" class="space-y-2">
+              <!-- Dynamically populated -->
+              <div class="text-center py-8 text-slate-400 text-xs italic bg-white rounded-2xl border border-slate-200 p-4">
+                Loading attendance history...
+              </div>
+            </div>
+          </div>
+        </div>
+
         <!-- Mobile Bottom Navigation Bar -->
-        <div class="bg-white border-t border-slate-200 px-4 py-2 flex justify-around items-center text-slate-500 text-xs">
-          <button class="flex flex-col items-center text-ashiana-green font-bold">
+        <div class="bg-white border-t border-slate-200 px-3 py-2 flex justify-around items-center text-slate-500 text-xs">
+          <button id="staff-nav-punch" onclick="switchStaffTab('punch')" class="flex flex-col items-center text-ashiana-green font-bold transition-colors">
             <i data-lucide="clock" class="w-4 h-4"></i>
             <span class="text-[9px] mt-0.5">Punch</span>
           </button>
-          <button onclick="openLeaveApplyModal()" class="flex flex-col items-center hover:text-ashiana-green">
+          <button id="staff-nav-history" onclick="switchStaffTab('history')" class="flex flex-col items-center hover:text-ashiana-green text-slate-500 font-semibold transition-colors">
+            <i data-lucide="calendar-days" class="w-4 h-4"></i>
+            <span class="text-[9px] mt-0.5">History</span>
+          </button>
+          <button onclick="openLeaveApplyModal()" class="flex flex-col items-center hover:text-ashiana-green text-slate-500 font-semibold transition-colors">
             <i data-lucide="file-text" class="w-4 h-4"></i>
             <span class="text-[9px] mt-0.5">Leave</span>
           </button>
-          <button onclick="openStaffProfileModal()" class="flex flex-col items-center hover:text-ashiana-green">
+          <button onclick="openStaffProfileModal()" class="flex flex-col items-center hover:text-ashiana-green text-slate-500 font-semibold transition-colors">
             <i data-lucide="user" class="w-4 h-4"></i>
             <span class="text-[9px] mt-0.5">Profile</span>
           </button>
-          <button onclick="handleLogout()" class="flex flex-col items-center hover:text-ashiana-red text-slate-400">
+          <button onclick="handleLogout()" class="flex flex-col items-center hover:text-ashiana-red text-slate-400 transition-colors">
             <i data-lucide="log-out" class="w-4 h-4"></i>
             <span class="text-[9px] mt-0.5">Sign Out</span>
           </button>
@@ -483,6 +578,10 @@
         <button onclick="switchAdminTab('directory')" id="tab-btn-directory" class="px-3.5 py-1.5 rounded-xl text-xs font-bold text-slate-600 hover:bg-slate-100 flex items-center space-x-1.5">
           <i data-lucide="users" class="w-3.5 h-3.5"></i>
           <span>Faculty Directory</span>
+        </button>
+        <button onclick="switchAdminTab('reports')" id="tab-btn-reports" class="px-3.5 py-1.5 rounded-xl text-xs font-bold text-slate-600 hover:bg-slate-100 flex items-center space-x-1.5">
+          <i data-lucide="file-spreadsheet" class="w-3.5 h-3.5"></i>
+          <span>Reports & Exports</span>
         </button>
         <button onclick="switchAdminTab('corrections')" id="tab-btn-corrections" class="px-3.5 py-1.5 rounded-xl text-xs font-bold text-slate-600 hover:bg-slate-100 flex items-center space-x-1.5">
           <i data-lucide="edit" class="w-3.5 h-3.5"></i>
@@ -732,18 +831,260 @@
         </div>
       </div>
 
+      <!-- TAB 7: REPORTS & EXPORTS (DAILY, MONTHLY & FACULTY) -->
+      <div id="admin-tab-reports" class="hidden space-y-4">
+        
+        <!-- Controls & Parameter Config Card -->
+        <div class="bg-white rounded-2xl border border-slate-200 shadow-sm p-4 sm:p-5">
+          <div class="flex flex-col md:flex-row md:items-center justify-between gap-3 border-b border-slate-100 pb-3 mb-4">
+            <div>
+              <h3 class="text-base font-extrabold text-slate-900 flex items-center space-x-2">
+                <i data-lucide="file-spreadsheet" class="w-5 h-5 text-ashiana-green"></i>
+                <span>Attendance Reports & Muster Roll</span>
+              </h3>
+              <p class="text-xs text-slate-500 mt-0.5">Generate, analyze, and export daily rosters, monthly summaries, or individual faculty logs.</p>
+            </div>
+
+            <!-- Report Mode Switcher -->
+            <div class="flex bg-slate-100 p-1 rounded-xl border border-slate-200 text-xs font-bold">
+              <button onclick="setReportType('daily')" id="report-type-btn-daily" class="px-3 py-1.5 rounded-lg transition-all bg-white text-emerald-950 shadow">
+                Daily Report
+              </button>
+              <button onclick="setReportType('monthly')" id="report-type-btn-monthly" class="px-3 py-1.5 rounded-lg transition-all text-slate-600 hover:text-slate-900">
+                Monthly Summary
+              </button>
+              <button onclick="setReportType('faculty')" id="report-type-btn-faculty" class="px-3 py-1.5 rounded-lg transition-all text-slate-600 hover:text-slate-900">
+                Faculty Individual
+              </button>
+            </div>
+          </div>
+
+          <!-- Filters Row -->
+          <div class="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-4 gap-2.5 mb-3">
+            
+            <!-- Date / Month Picker -->
+            <div id="filter-container-date">
+              <label class="block text-[11px] font-bold text-slate-700 mb-1" id="lbl-report-date-filter">Attendance Date</label>
+              <input type="date" id="report-date-input" onchange="runAdminReportGeneration()" class="w-full text-xs p-2.5 bg-slate-50 border border-slate-200 rounded-xl font-mono focus:ring-2 focus:ring-ashiana-green">
+            </div>
+
+            <div id="filter-container-month" class="hidden">
+              <label class="block text-[11px] font-bold text-slate-700 mb-1">Select Month & Year</label>
+              <input type="month" id="report-month-input" onchange="runAdminReportGeneration()" class="w-full text-xs p-2.5 bg-slate-50 border border-slate-200 rounded-xl font-mono focus:ring-2 focus:ring-ashiana-green">
+            </div>
+
+            <!-- Individual Faculty Selector (shown only in faculty mode) -->
+            <div id="filter-container-faculty" class="hidden">
+              <label class="block text-[11px] font-bold text-slate-700 mb-1">Select Faculty Member</label>
+              <select id="report-faculty-select" onchange="runAdminReportGeneration()" class="w-full text-xs p-2.5 bg-slate-50 border border-slate-200 rounded-xl font-medium focus:ring-2 focus:ring-ashiana-green"></select>
+            </div>
+
+            <!-- Department Filter -->
+            <div>
+              <label class="block text-[11px] font-bold text-slate-700 mb-1">Department</label>
+              <select id="report-dept-filter" onchange="runAdminReportGeneration()" class="w-full text-xs p-2.5 bg-slate-50 border border-slate-200 rounded-xl text-slate-700 focus:ring-2 focus:ring-ashiana-green">
+                <option value="ALL">All Departments</option>
+                <option value="Administration">Administration</option>
+                <option value="Science & Mathematics">Science & Mathematics</option>
+                <option value="Languages & Literature">Languages & Literature</option>
+                <option value="Primary Wing (PRT)">Primary Wing (PRT)</option>
+                <option value="Kindergarten Wing">Kindergarten Wing</option>
+                <option value="Information Technology">Information Technology</option>
+                <option value="Physical Education">Physical Education</option>
+                <option value="Arts, Music & Dance">Arts, Music & Dance</option>
+                <option value="Student Support">Student Support</option>
+                <option value="Academic Wing">Academic Wing</option>
+              </select>
+            </div>
+
+            <!-- Status Filter -->
+            <div>
+              <label class="block text-[11px] font-bold text-slate-700 mb-1">Attendance Status</label>
+              <select id="report-status-filter" onchange="runAdminReportGeneration()" class="w-full text-xs p-2.5 bg-slate-50 border border-slate-200 rounded-xl text-slate-700 focus:ring-2 focus:ring-ashiana-green">
+                <option value="ALL">All Statuses</option>
+                <option value="PRESENT">Present Only</option>
+                <option value="LATE">Late Arrivals (> 07:50 AM)</option>
+                <option value="ON_LEAVE">On Leave</option>
+                <option value="ABSENT">Absent / Not Marked</option>
+              </select>
+            </div>
+
+            <!-- Faculty Search -->
+            <div>
+              <label class="block text-[11px] font-bold text-slate-700 mb-1">Quick Search</label>
+              <div class="relative">
+                <i data-lucide="search" class="w-3.5 h-3.5 absolute left-3 top-3 text-slate-400"></i>
+                <input type="text" id="report-search-query" onkeyup="runAdminReportGeneration()" placeholder="Name or Emp ID..." class="w-full text-xs pl-8 pr-3 py-2.5 bg-slate-50 border border-slate-200 rounded-xl focus:ring-2 focus:ring-ashiana-green">
+              </div>
+            </div>
+          </div>
+
+          <!-- Action & Export Toolbar -->
+          <div class="flex flex-wrap items-center justify-between gap-2 pt-2 border-t border-slate-100">
+            <div class="flex items-center space-x-2">
+              <button onclick="runAdminReportGeneration()" class="px-4 py-2 bg-ashiana-green hover:bg-[#08693A] text-white rounded-xl text-xs font-bold flex items-center space-x-1.5 shadow active:scale-95 transition-all">
+                <i data-lucide="refresh-cw" class="w-3.5 h-3.5"></i>
+                <span>Refresh Report</span>
+              </button>
+              <button onclick="seedSampleMonthlyAttendanceData()" class="px-3 py-2 bg-slate-100 hover:bg-slate-200 text-slate-700 rounded-xl text-xs font-semibold flex items-center space-x-1 transition-colors" title="Populate sample punches for earlier days of this month to preview monthly reports">
+                <i data-lucide="sparkles" class="w-3.5 h-3.5 text-amber-500"></i>
+                <span class="hidden sm:inline">Seed Sample Month Punches</span>
+              </button>
+            </div>
+
+            <div class="flex items-center space-x-1.5">
+              <!-- Export Excel Button -->
+              <button onclick="exportCurrentReportToExcel()" class="px-3.5 py-2 bg-emerald-700 hover:bg-emerald-800 text-white rounded-xl text-xs font-bold flex items-center space-x-1.5 shadow transition-all active:scale-95">
+                <i data-lucide="file-spreadsheet" class="w-3.5 h-3.5"></i>
+                <span>Export Excel (.xlsx)</span>
+              </button>
+
+              <!-- Export CSV Button -->
+              <button onclick="exportCurrentReportToCSV()" class="px-3 py-2 bg-slate-800 hover:bg-slate-900 text-white rounded-xl text-xs font-bold flex items-center space-x-1.5 shadow transition-all active:scale-95">
+                <i data-lucide="download" class="w-3.5 h-3.5"></i>
+                <span>Export CSV</span>
+              </button>
+
+              <!-- Print / PDF Button -->
+              <button onclick="printCurrentReport()" class="px-3 py-2 bg-white hover:bg-slate-100 text-slate-700 border border-slate-300 rounded-xl text-xs font-bold flex items-center space-x-1.5 shadow-sm transition-all active:scale-95">
+                <i data-lucide="printer" class="w-3.5 h-3.5 text-ashiana-red"></i>
+                <span>Print / PDF</span>
+              </button>
+            </div>
+          </div>
+        </div>
+
+        <!-- KPI Metrics Ribbon for Current Report Selection -->
+        <div class="grid grid-cols-2 sm:grid-cols-5 gap-2.5">
+          <div class="bg-white p-3 rounded-2xl border border-slate-200 shadow-sm border-l-4 border-l-ashiana-green">
+            <span class="text-[9px] font-bold uppercase tracking-wider text-slate-400 block" id="kpi-report-label-1">Total Faculty</span>
+            <span id="kpi-rep-total" class="text-lg sm:text-xl font-black text-slate-800">72</span>
+            <span class="text-[9px] text-slate-400 block mt-0.5">In Scope</span>
+          </div>
+
+          <div class="bg-white p-3 rounded-2xl border border-slate-200 shadow-sm border-l-4 border-l-emerald-600">
+            <span class="text-[9px] font-bold uppercase tracking-wider text-slate-400 block" id="kpi-report-label-2">Present Rate</span>
+            <span id="kpi-rep-present" class="text-lg sm:text-xl font-black text-emerald-600">0%</span>
+            <span class="text-[9px] text-slate-400 block mt-0.5" id="kpi-rep-present-sub">0 Marked</span>
+          </div>
+
+          <div class="bg-white p-3 rounded-2xl border border-slate-200 shadow-sm border-l-4 border-l-ashiana-red">
+            <span class="text-[9px] font-bold uppercase tracking-wider text-slate-400 block">Late Arrivals</span>
+            <span id="kpi-rep-late" class="text-lg sm:text-xl font-black text-ashiana-red">0</span>
+            <span class="text-[9px] text-slate-400 block mt-0.5">> 07:50 AM arrival</span>
+          </div>
+
+          <div class="bg-white p-3 rounded-2xl border border-slate-200 shadow-sm border-l-4 border-l-purple-600">
+            <span class="text-[9px] font-bold uppercase tracking-wider text-slate-400 block">Leaves / Off</span>
+            <span id="kpi-rep-leave" class="text-lg sm:text-xl font-black text-purple-600">0</span>
+            <span class="text-[9px] text-slate-400 block mt-0.5">Approved Absence</span>
+          </div>
+
+          <div class="bg-white p-3 rounded-2xl border border-slate-200 shadow-sm border-l-4 border-l-blue-600 col-span-2 sm:col-span-1">
+            <span class="text-[9px] font-bold uppercase tracking-wider text-slate-400 block">Total Work Hours</span>
+            <span id="kpi-rep-hours" class="text-lg sm:text-xl font-black text-blue-700">0h 00m</span>
+            <span class="text-[9px] text-slate-400 block mt-0.5">Cumulative Hours</span>
+          </div>
+        </div>
+
+        <!-- Report Data Table Card -->
+        <div class="bg-white rounded-2xl border border-slate-200 shadow-sm overflow-hidden p-4">
+          <div class="flex flex-col sm:flex-row sm:items-center justify-between gap-2 mb-3">
+            <div>
+              <h4 id="report-active-title" class="text-sm font-bold text-slate-800">Daily Attendance Record</h4>
+              <p id="report-active-subtitle" class="text-[11px] text-slate-500 font-mono">Date: 2026-09-23 • Shift: 07:40 AM - 02:30 PM</p>
+            </div>
+            <span id="report-record-count-badge" class="px-2.5 py-1 rounded-full text-[10px] font-bold bg-slate-100 text-slate-600 self-start sm:self-auto">
+              Showing 0 records
+            </span>
+          </div>
+
+          <div class="overflow-x-auto max-h-[550px] overflow-y-auto">
+            <table class="w-full text-left text-xs text-slate-600" id="report-main-table">
+              <thead class="bg-slate-50 text-slate-500 font-bold uppercase text-[10px] tracking-wider sticky top-0 border-b border-slate-200" id="report-table-thead">
+                <!-- Injected dynamically based on report mode -->
+              </thead>
+              <tbody id="report-table-tbody" class="divide-y divide-slate-100">
+                <!-- Rows injected dynamically -->
+              </tbody>
+            </table>
+          </div>
+        </div>
+
+      </div>
+
     </div>
   </main>
 
-  <!-- PUNCH MODAL WITH CAMERA SCANNER (1-STEP INSTANT SCAN - NO PIN REQUIRED) -->
+  <!-- PRINT-READY REPORT CONTAINER (OFFSCREEN / VISIBLE DURING WINDOW.PRINT) -->
+  <div id="print-report-container" class="hidden">
+    <div class="border-b-2 border-emerald-900 pb-3 mb-4 flex items-center justify-between">
+      <div class="flex items-center space-x-3">
+        <div class="w-14 h-14 rounded-full border border-emerald-700 p-0.5">
+          <img src="logo 2.jpg" alt="Ashiana Public School" class="w-full h-full object-cover rounded-full" onerror="this.src='https://placehold.co/100x100/0A7E46/ffffff?text=APS'">
+        </div>
+        <div>
+          <h1 class="text-xl font-bold font-serif text-slate-900 leading-tight">ASHIANA PUBLIC SCHOOL</h1>
+          <p class="text-xs text-slate-600 font-medium">Sector 46-A, Chandigarh • Staff Attendance & Muster Roll Report</p>
+          <p class="text-[10px] text-slate-500">Official CBSE Affiliation • Generated automatically by EduPunch System</p>
+        </div>
+      </div>
+      <div class="text-right text-xs">
+        <p class="font-bold text-slate-800" id="print-header-report-type">Daily Attendance Report</p>
+        <p class="text-[10px] text-slate-500" id="print-header-date-range">Date: 23 September 2026</p>
+        <p class="text-[9px] text-slate-400" id="print-header-generated-time">Printed on: Today</p>
+      </div>
+    </div>
+
+    <!-- Print Summary Metrics Bar -->
+    <div class="grid grid-cols-5 gap-2 p-2.5 bg-slate-50 border border-slate-200 rounded-lg text-center text-xs mb-4">
+      <div>
+        <span class="text-[9px] text-slate-500 uppercase block">Total Roster</span>
+        <strong id="print-metric-total" class="text-sm">72</strong>
+      </div>
+      <div>
+        <span class="text-[9px] text-slate-500 uppercase block">Present</span>
+        <strong id="print-metric-present" class="text-sm text-emerald-800">0</strong>
+      </div>
+      <div>
+        <span class="text-[9px] text-slate-500 uppercase block">Late Arrivals</span>
+        <strong id="print-metric-late" class="text-sm text-rose-800">0</strong>
+      </div>
+      <div>
+        <span class="text-[9px] text-slate-500 uppercase block">Approved Leaves</span>
+        <strong id="print-metric-leave" class="text-sm text-purple-800">0</strong>
+      </div>
+      <div>
+        <span class="text-[9px] text-slate-500 uppercase block">Total Work Hours</span>
+        <strong id="print-metric-hours" class="text-sm">0h 00m</strong>
+      </div>
+    </div>
+
+    <!-- Printable Table Container -->
+    <div id="print-table-wrapper" class="text-xs"></div>
+
+    <!-- Official Signature Footer -->
+    <div class="mt-10 pt-6 border-t border-slate-200 flex justify-between items-end text-xs text-slate-600">
+      <div>
+        <p class="text-[10px] text-slate-400">Ashiana Public School • Sector 46-A, Chandigarh (U.T.)</p>
+        <p class="text-[9px] text-slate-400">System Verification Token: APS-AUDIT-VERIFIED</p>
+      </div>
+      <div class="text-center w-48 border-t border-slate-400 pt-1">
+        <p class="font-bold text-slate-800">Principal / Coordinator</p>
+        <p class="text-[10px] text-slate-500">Ashiana Public School</p>
+      </div>
+    </div>
+  </div>
+
+  <!-- QR SCANNER CAMERA MODAL -->
   <div id="modal-punch" class="fixed inset-0 bg-slate-950/80 backdrop-blur-sm z-50 hidden flex items-center justify-center p-3">
-    <div class="bg-white rounded-3xl max-w-sm w-full overflow-hidden shadow-2xl border border-slate-200">
+    <div class="bg-white rounded-3xl max-w-sm w-full overflow-hidden shadow-2xl border border-slate-200 flex flex-col">
       <div class="bg-gradient-to-r from-emerald-950 to-[#064E3B] p-3.5 text-white flex items-center justify-between border-b-2 border-ashiana-red">
         <div class="flex items-center space-x-2">
           <i data-lucide="camera" class="w-4 h-4 text-emerald-300"></i>
           <div>
-            <h3 class="text-xs font-bold uppercase tracking-wider font-serif">Mark Attendance</h3>
-            <p id="punch-stepper-subtitle" class="text-[10px] text-emerald-200">Point Camera at School Daily QR</p>
+            <h3 class="text-xs font-bold uppercase tracking-wider font-serif">Scan School QR Code</h3>
+            <p class="text-[10px] text-emerald-200">Point phone camera at the station QR</p>
           </div>
         </div>
         <button onclick="closePunchModal()" class="w-7 h-7 rounded-full bg-white/10 hover:bg-white/20 flex items-center justify-center text-white">
@@ -752,26 +1093,25 @@
       </div>
 
       <div class="p-4 space-y-3">
-        <div class="relative w-60 h-60 mx-auto bg-slate-950 rounded-2xl overflow-hidden border-2 border-emerald-500 shadow flex flex-col items-center justify-center text-center">
+        <!-- Live Camera Viewfinder -->
+        <div class="relative w-full aspect-square bg-black rounded-2xl overflow-hidden shadow-inner flex items-center justify-center border border-slate-300">
           <div id="scanner-reader" class="w-full h-full"></div>
-          <div id="scanner-laser-bar" class="absolute top-4 left-4 right-4 h-0.5 bg-gradient-to-r from-emerald-400 via-ashiana-red to-emerald-400 scanner-line shadow-lg shadow-emerald-400/60 pointer-events-none z-10"></div>
+          <div class="absolute inset-0 border-2 border-emerald-400/60 rounded-2xl pointer-events-none"></div>
+          <div class="scanner-line absolute left-4 right-4 h-0.5 bg-red-500 shadow-[0_0_8px_rgba(217,45,49,0.8)] pointer-events-none"></div>
         </div>
 
-        <div id="scanner-status-box" class="text-center">
-          <p id="scanner-status-text" class="text-xs font-semibold text-emerald-800">
-            Scan to record your attendance instantly
-          </p>
-          <p class="text-[10px] text-slate-500 mt-0.5">Your punch registers immediately upon scanning!</p>
+        <div id="scanner-status-text" class="text-center text-xs text-slate-600 font-medium">
+          Align the Daily QR Station code inside the viewfinder to mark attendance automatically.
         </div>
 
-        <div class="space-y-1.5 pt-1">
-          <button type="button" onclick="toggleCameraFacingMode()" class="w-full py-2 bg-slate-100 hover:bg-slate-200 text-slate-700 rounded-xl text-xs font-bold flex items-center justify-center space-x-1.5">
-            <i data-lucide="switch-camera" class="w-3.5 h-3.5"></i>
-            <span>Switch Front / Rear Camera</span>
+        <div class="flex items-center space-x-2 pt-1">
+          <button type="button" onclick="toggleCameraFacingMode()" class="flex-1 py-2 bg-slate-100 hover:bg-slate-200 text-slate-700 rounded-xl text-xs font-bold flex items-center justify-center space-x-1.5 transition-colors">
+            <i data-lucide="refresh-cw" class="w-3.5 h-3.5"></i>
+            <span>Flip Camera</span>
           </button>
-          <button type="button" onclick="handleSimulateScanSuccess()" class="w-full py-1.5 bg-emerald-50 hover:bg-emerald-100 text-ashiana-green border border-emerald-200 rounded-xl text-[11px] font-bold flex items-center justify-center space-x-1">
-            <i data-lucide="check-circle" class="w-3.5 h-3.5"></i>
-            <span>Simulate QR Detected (Test Mode)</span>
+          <button type="button" onclick="handleSimulateScanSuccess()" class="flex-1 py-2 bg-emerald-50 hover:bg-emerald-100 text-ashiana-green border border-emerald-300 rounded-xl text-xs font-bold flex items-center justify-center space-x-1.5 transition-colors" title="Test scan without camera">
+            <i data-lucide="zap" class="w-3.5 h-3.5"></i>
+            <span>Simulate Scan</span>
           </button>
         </div>
       </div>
@@ -1159,7 +1499,11 @@
     let currentStaffId = null;
     let currentPortal = "staff";
 
-    // Daily QR Session: Valid for the entire current calendar date
+    // Current Report State
+    let currentReportType = 'daily'; // 'daily' | 'monthly' | 'faculty'
+    let lastGeneratedReportData = [];
+    let lastGeneratedReportColumns = [];
+
     function getTodayDailyToken(dateStr) {
       const storageKey = 'aps_daily_qr_token_' + dateStr;
       let token = localStorage.getItem(storageKey);
@@ -1830,6 +2174,211 @@
       updateKPICards();
     }
 
+    // Staff Mobile Tab Switching (Punch vs History)
+    let currentStaffTab = 'punch';
+
+    function switchStaffTab(tab) {
+      currentStaffTab = tab;
+      const punchView = document.getElementById("staff-tab-punch");
+      const historyView = document.getElementById("staff-tab-history");
+      const btnPunch = document.getElementById("staff-nav-punch");
+      const btnHistory = document.getElementById("staff-nav-history");
+
+      if (tab === 'punch') {
+        if (punchView) punchView.classList.remove("hidden");
+        if (historyView) historyView.classList.add("hidden");
+        if (btnPunch) btnPunch.className = "flex flex-col items-center text-ashiana-green font-bold transition-colors";
+        if (btnHistory) btnHistory.className = "flex flex-col items-center hover:text-ashiana-green text-slate-500 font-semibold transition-colors";
+        refreshStaffUI();
+      } else {
+        if (punchView) punchView.classList.add("hidden");
+        if (historyView) historyView.classList.remove("hidden");
+        if (btnHistory) btnHistory.className = "flex flex-col items-center text-ashiana-green font-bold transition-colors";
+        if (btnPunch) btnPunch.className = "flex flex-col items-center hover:text-ashiana-green text-slate-500 font-semibold transition-colors";
+        renderStaffHistory();
+      }
+      if (window.lucide) lucide.createIcons();
+    }
+
+    // Render personal attendance history for the logged-in teacher
+    function renderStaffHistory() {
+      if (!currentStaffId) return;
+
+      const monthInput = document.getElementById("staff-history-month-input");
+      if (monthInput && !monthInput.value) {
+        monthInput.value = systemConfig.currentAttendanceDate.substring(0, 7); // e.g. "2026-09"
+      }
+
+      const selectedMonth = monthInput?.value || systemConfig.currentAttendanceDate.substring(0, 7);
+      const [year, month] = selectedMonth.split('-').map(Number);
+      const daysInMonth = new Date(year, month, 0).getDate();
+      const monthObj = new Date(year, month - 1, 1);
+      const monthName = monthObj.toLocaleString('en-US', { month: 'long', year: 'numeric' });
+
+      const badgeRange = document.getElementById("staff-history-range-badge");
+      if (badgeRange) badgeRange.innerText = monthName;
+
+      const filterType = document.getElementById("staff-history-filter")?.value || "ALL";
+
+      // Collect all dates for the month in descending order (today or latest date first)
+      const isCurrentMonth = selectedMonth === systemConfig.currentAttendanceDate.substring(0, 7);
+      const maxDay = isCurrentMonth ? Math.min(new Date().getDate(), daysInMonth) : daysInMonth;
+
+      const dailyRecords = [];
+      let presentCount = 0;
+      let lateCount = 0;
+      let leaveCount = 0;
+      let totalWorkMinutes = 0;
+
+      for (let day = maxDay; day >= 1; day--) {
+        const dObj = new Date(year, month - 1, day);
+        const dayOfWeek = dObj.toLocaleString('en-US', { weekday: 'short' });
+        const isSunday = dObj.getDay() === 0;
+        const dStr = `${year}-${String(month).padStart(2, '0')}-${String(day).padStart(2, '0')}`;
+
+        const stat = calculateAttendanceForDate(currentStaffId, dStr);
+        const hasPunches = stat.punches.length > 0;
+        const isLate = stat.lateMinutes > 0;
+        const isOnLeave = stat.currentStatus === 'ON LEAVE';
+
+        if (hasPunches) {
+          presentCount++;
+          totalWorkMinutes += stat.totalWorkMinutes;
+          if (isLate) lateCount++;
+        } else if (isOnLeave) {
+          leaveCount++;
+        }
+
+        // Apply filtering
+        if (filterType === 'PRESENT' && !hasPunches) continue;
+        if (filterType === 'LATE' && !isLate) continue;
+        if (filterType === 'ON_LEAVE' && !isOnLeave) continue;
+
+        dailyRecords.push({
+          dateStr: dStr,
+          dayNumber: day,
+          dayOfWeek,
+          isSunday,
+          isToday: dStr === systemConfig.currentAttendanceDate,
+          punches: stat.punches,
+          firstIn: stat.firstIn,
+          lastOut: stat.lastOut,
+          workMinutes: stat.totalWorkMinutes,
+          lateMinutes: stat.lateMinutes,
+          status: stat.currentStatus,
+          leaveType: stat.leaveType
+        });
+      }
+
+      // Update KPI metrics
+      const kpiPresent = document.getElementById("staff-hist-kpi-present");
+      const kpiHours = document.getElementById("staff-hist-kpi-hours");
+      const kpiLate = document.getElementById("staff-hist-kpi-late");
+      const kpiLeaves = document.getElementById("staff-hist-kpi-leaves");
+      const logCount = document.getElementById("staff-hist-log-count");
+
+      if (kpiPresent) kpiPresent.innerText = presentCount;
+      if (kpiHours) kpiHours.innerText = fmtMins(totalWorkMinutes);
+      if (kpiLate) kpiLate.innerText = lateCount;
+      if (kpiLeaves) kpiLeaves.innerText = leaveCount;
+      if (logCount) logCount.innerText = `${dailyRecords.length} entries`;
+
+      // Render Cards
+      const container = document.getElementById("staff-history-cards-container");
+      if (!container) return;
+
+      if (dailyRecords.length === 0) {
+        container.innerHTML = `
+          <div class="text-center py-8 text-slate-400 text-xs italic bg-white rounded-2xl border border-slate-200 p-4">
+            No punch logs found for ${monthName} matching filter.
+          </div>
+        `;
+        return;
+      }
+
+      container.innerHTML = dailyRecords.map(item => {
+        let statusBadge = `<span class="px-2 py-0.5 rounded-full text-[8px] font-bold bg-slate-100 text-slate-500 uppercase">Not Marked</span>`;
+        if (item.isSunday) {
+          statusBadge = `<span class="px-2 py-0.5 rounded-full text-[8px] font-bold bg-slate-200 text-slate-600 uppercase">Sunday Off</span>`;
+        } else if (item.status === 'WORKING') {
+          statusBadge = `<span class="px-2 py-0.5 rounded-full text-[8px] font-bold bg-emerald-100 text-emerald-800 border border-emerald-300 uppercase">Working Now</span>`;
+        } else if (item.status === 'COMPLETED') {
+          statusBadge = `<span class="px-2 py-0.5 rounded-full text-[8px] font-bold bg-blue-100 text-blue-800 border border-blue-200 uppercase">Completed</span>`;
+        } else if (item.status === 'ON LEAVE') {
+          statusBadge = `<span class="px-2 py-0.5 rounded-full text-[8px] font-bold bg-purple-100 text-purple-800 border border-purple-200 uppercase">On Leave</span>`;
+        }
+
+        const dateFormatted = new Date(item.dateStr).toLocaleDateString('en-US', { day: 'numeric', month: 'short' });
+
+        return `
+          <div class="bg-white rounded-2xl p-3 border border-slate-200/80 shadow-sm transition-all hover:border-emerald-300">
+            <div class="flex items-center justify-between border-b border-slate-100 pb-1.5 mb-2">
+              <div class="flex items-center space-x-2">
+                <span class="w-7 h-7 rounded-xl ${item.isToday ? 'bg-ashiana-green text-white' : 'bg-slate-100 text-slate-700'} font-black text-xs flex items-center justify-center font-mono">
+                  ${item.dayNumber}
+                </span>
+                <div>
+                  <div class="text-xs font-bold text-slate-800 flex items-center space-x-1.5">
+                    <span>${dateFormatted}</span>
+                    <span class="text-[10px] text-slate-400 font-normal">(${item.dayOfWeek})</span>
+                    ${item.isToday ? '<span class="text-[8px] bg-emerald-100 text-ashiana-green px-1.5 py-0.2 rounded font-bold uppercase">Today</span>' : ''}
+                  </div>
+                  <span class="text-[9px] text-slate-400 font-mono">${item.dateStr}</span>
+                </div>
+              </div>
+              <div class="text-right">
+                ${statusBadge}
+              </div>
+            </div>
+
+            <!-- Punch Times Grid -->
+            <div class="grid grid-cols-3 gap-1.5 text-center text-xs py-1">
+              <div class="bg-slate-50 p-1.5 rounded-xl border border-slate-100">
+                <span class="text-[8px] uppercase font-bold text-slate-400 block">First IN</span>
+                <span class="font-mono font-bold ${item.firstIn ? 'text-ashiana-green' : 'text-slate-400'}">${item.firstIn || '--:--'}</span>
+              </div>
+              <div class="bg-slate-50 p-1.5 rounded-xl border border-slate-100">
+                <span class="text-[8px] uppercase font-bold text-slate-400 block">Last OUT</span>
+                <span class="font-mono font-bold ${item.lastOut ? 'text-ashiana-green' : 'text-slate-400'}">${item.lastOut || '--:--'}</span>
+              </div>
+              <div class="bg-slate-50 p-1.5 rounded-xl border border-slate-100">
+                <span class="text-[8px] uppercase font-bold text-slate-400 block">Total Work</span>
+                <span class="font-mono font-bold text-slate-700">${fmtMins(item.workMinutes)}</span>
+              </div>
+            </div>
+
+            <!-- Detailed Logs if present -->
+            ${item.punches.length > 0 ? `
+              <div class="mt-2 pt-1.5 border-t border-slate-100 flex flex-wrap items-center justify-between gap-1 text-[9px]">
+                <div class="flex items-center space-x-1 font-mono text-slate-500">
+                  <i data-lucide="layers" class="w-3 h-3 text-ashiana-green"></i>
+                  <span>${item.punches.length} punch logs:</span>
+                  ${item.punches.map(p => `
+                    <span class="px-1.5 py-0.5 rounded ${p.type === 'IN' ? 'bg-emerald-50 text-emerald-800 border border-emerald-200 font-bold' : 'bg-slate-100 text-slate-700'}">
+                      ${p.type} ${p.timestamp}
+                    </span>
+                  `).join(' ')}
+                </div>
+                ${item.lateMinutes > 0 ? `
+                  <span class="font-mono text-ashiana-red font-bold flex items-center space-x-0.5">
+                    <i data-lucide="alert-triangle" class="w-2.5 h-2.5"></i>
+                    <span>Late by ${item.lateMinutes}m</span>
+                  </span>
+                ` : '<span class="text-emerald-700 font-semibold">Punctual</span>'}
+              </div>
+            ` : item.status === 'ON LEAVE' ? `
+              <div class="mt-1 text-[10px] text-purple-700 font-medium px-1 flex items-center space-x-1">
+                <i data-lucide="calendar-off" class="w-3 h-3"></i>
+                <span>Leave: ${item.leaveType || 'Approved Absence'}</span>
+              </div>
+            ` : ''}
+          </div>
+        `;
+      }).join('');
+
+      if (window.lucide) lucide.createIcons();
+    }
+
     // Refresh UI Components
     function refreshStaffUI() {
       if (!currentStaffId) return;
@@ -2102,7 +2651,7 @@
     }
 
     function switchAdminTab(tab) {
-      ['live', 'qr', 'directory', 'corrections', 'leave', 'audit'].forEach(t => {
+      ['live', 'qr', 'directory', 'corrections', 'leave', 'audit', 'reports'].forEach(t => {
         const btn = document.getElementById(`tab-btn-${t}`);
         const view = document.getElementById(`admin-tab-${t}`);
         if (btn && view) {
@@ -2116,7 +2665,731 @@
         }
       });
       if (tab === 'qr') renderQRCode();
+      if (tab === 'reports') runAdminReportGeneration();
       if (window.lucide) lucide.createIcons();
+    }
+
+    // =========================================================================
+    // 📊 ADVANCED ATTENDANCE REPORT GENERATION & EXPORT ENGINE
+    // =========================================================================
+    function setReportType(type) {
+      currentReportType = type;
+      
+      const btnDaily = document.getElementById("report-type-btn-daily");
+      const btnMonthly = document.getElementById("report-type-btn-monthly");
+      const btnFaculty = document.getElementById("report-type-btn-faculty");
+
+      const contDate = document.getElementById("filter-container-date");
+      const contMonth = document.getElementById("filter-container-month");
+      const contFaculty = document.getElementById("filter-container-faculty");
+
+      const activeClass = "px-3 py-1.5 rounded-lg transition-all bg-white text-emerald-950 shadow font-bold";
+      const inactiveClass = "px-3 py-1.5 rounded-lg transition-all text-slate-600 hover:text-slate-900 font-bold";
+
+      btnDaily.className = type === 'daily' ? activeClass : inactiveClass;
+      btnMonthly.className = type === 'monthly' ? activeClass : inactiveClass;
+      btnFaculty.className = type === 'faculty' ? activeClass : inactiveClass;
+
+      if (type === 'daily') {
+        contDate.classList.remove("hidden");
+        contMonth.classList.add("hidden");
+        contFaculty.classList.add("hidden");
+      } else if (type === 'monthly') {
+        contDate.classList.add("hidden");
+        contMonth.classList.remove("hidden");
+        contFaculty.classList.add("hidden");
+      } else if (type === 'faculty') {
+        contDate.classList.add("hidden");
+        contMonth.classList.remove("hidden");
+        contFaculty.classList.remove("hidden");
+        populateReportFacultySelect();
+      }
+
+      runAdminReportGeneration();
+    }
+
+    function populateReportFacultySelect() {
+      const sel = document.getElementById("report-faculty-select");
+      if (!sel) return;
+      sel.innerHTML = staffDatabase.map(s => `<option value="${s.id}">${s.name} (${s.empId})</option>`).join('');
+    }
+
+    // Helper to calculate attendance stats for a specific date
+    function calculateAttendanceForDate(staffId, dateStr) {
+      const punches = punchLedger
+        .filter(p => p.staffId === staffId && p.attendanceDate === dateStr)
+        .sort((a, b) => a.timestamp.localeCompare(b.timestamp));
+
+      let totalWorkMinutes = 0;
+      let totalBreakMinutes = 0;
+      let firstIn = punches.length > 0 ? punches[0].timestamp : null;
+      let lastOut = null;
+      let currentStatus = "NOT MARKED";
+      let lateMinutes = 0;
+
+      for (let i = 0; i < punches.length; i += 2) {
+        const inP = punches[i];
+        const outP = punches[i + 1];
+        if (inP && outP) {
+          totalWorkMinutes += Math.max(0, toMins(outP.timestamp) - toMins(inP.timestamp));
+          lastOut = outP.timestamp;
+        }
+      }
+
+      for (let i = 1; i < punches.length - 1; i += 2) {
+        const prevOut = punches[i];
+        const nextIn = punches[i + 1];
+        if (prevOut && nextIn) {
+          totalBreakMinutes += Math.max(0, toMins(nextIn.timestamp) - toMins(prevOut.timestamp));
+        }
+      }
+
+      if (punches.length > 0) {
+        currentStatus = punches[punches.length - 1].type === 'IN' ? 'WORKING' : 'COMPLETED';
+        const startMins = toMins(systemConfig.schoolScheduleStart);
+        const arrival = toMins(firstIn);
+        if (arrival > startMins + systemConfig.lateGraceMinutes) {
+          lateMinutes = arrival - startMins;
+        }
+      }
+
+      const leave = leaveRequests.find(l => 
+        l.staffId === staffId && 
+        l.status === 'APPROVED' && 
+        dateStr >= l.from && 
+        dateStr <= l.to
+      );
+      if (leave && punches.length === 0) {
+        currentStatus = "ON LEAVE";
+      }
+
+      return { punches, firstIn, lastOut, totalWorkMinutes, totalBreakMinutes, lateMinutes, currentStatus, leaveType: leave?.type || null };
+    }
+
+    // Main Report Generation Router
+    function runAdminReportGeneration() {
+      // Initialize inputs if empty
+      const dateInp = document.getElementById("report-date-input");
+      const monthInp = document.getElementById("report-month-input");
+
+      if (dateInp && !dateInp.value) {
+        dateInp.value = systemConfig.currentAttendanceDate;
+      }
+      if (monthInp && !monthInp.value) {
+        monthInp.value = systemConfig.currentAttendanceDate.substring(0, 7); // e.g. "2026-09"
+      }
+
+      const deptFilter = document.getElementById("report-dept-filter")?.value || "ALL";
+      const statusFilter = document.getElementById("report-status-filter")?.value || "ALL";
+      const searchQuery = (document.getElementById("report-search-query")?.value || "").toLowerCase().trim();
+
+      if (currentReportType === 'daily') {
+        generateDailyReport(dateInp.value, deptFilter, statusFilter, searchQuery);
+      } else if (currentReportType === 'monthly') {
+        generateMonthlyReport(monthInp.value, deptFilter, statusFilter, searchQuery);
+      } else if (currentReportType === 'faculty') {
+        const facultyId = document.getElementById("report-faculty-select")?.value || staffDatabase[0]?.id;
+        generateFacultyReport(facultyId, monthInp.value, statusFilter);
+      }
+      if (window.lucide) lucide.createIcons();
+    }
+
+    // 1. Daily Report Generator
+    function generateDailyReport(selectedDate, deptFilter, statusFilter, searchQuery) {
+      document.getElementById("report-active-title").innerText = `Daily Attendance Roster`;
+      document.getElementById("report-active-subtitle").innerText = `Date: ${selectedDate} • Shift 07:40 AM – 02:30 PM (Grace: 10m)`;
+
+      // Filter staff
+      let staffList = staffDatabase.filter(s => {
+        if (deptFilter !== 'ALL' && s.department !== deptFilter) return false;
+        if (searchQuery && !s.name.toLowerCase().includes(searchQuery) && !s.empId.toLowerCase().includes(searchQuery)) return false;
+        return true;
+      });
+
+      const records = [];
+      let totalPresent = 0;
+      let totalLate = 0;
+      let totalLeave = 0;
+      let totalMinutes = 0;
+
+      staffList.forEach(s => {
+        const stat = calculateAttendanceForDate(s.id, selectedDate);
+        const isPresent = stat.punches.length > 0;
+        const isLate = stat.lateMinutes > 0;
+        const isOnLeave = stat.currentStatus === 'ON LEAVE';
+        const isAbsent = !isPresent && !isOnLeave;
+
+        // Apply status filter
+        if (statusFilter === 'PRESENT' && !isPresent) return;
+        if (statusFilter === 'LATE' && !isLate) return;
+        if (statusFilter === 'ON_LEAVE' && !isOnLeave) return;
+        if (statusFilter === 'ABSENT' && !isAbsent) return;
+
+        if (isPresent) totalPresent++;
+        if (isLate) totalLate++;
+        if (isOnLeave) totalLeave++;
+        totalMinutes += stat.totalWorkMinutes;
+
+        records.push({
+          staffId: s.id,
+          empId: s.empId,
+          name: s.name,
+          department: s.department,
+          role: s.role,
+          firstIn: stat.firstIn || '--:--',
+          lastOut: stat.lastOut || '--:--',
+          punchCount: stat.punches.length,
+          workTimeStr: fmtMins(stat.totalWorkMinutes),
+          workMinutes: stat.totalWorkMinutes,
+          lateMins: stat.lateMinutes,
+          status: stat.currentStatus,
+          leaveType: stat.leaveType
+        });
+      });
+
+      lastGeneratedReportData = records;
+
+      // Update KPI Ribbons
+      document.getElementById("kpi-report-label-1").innerText = "Total Faculty";
+      document.getElementById("kpi-rep-total").innerText = staffList.length;
+      document.getElementById("kpi-report-label-2").innerText = "Attendance Rate";
+      const rate = staffList.length > 0 ? Math.round((totalPresent / staffList.length) * 100) : 0;
+      document.getElementById("kpi-rep-present").innerText = `${rate}%`;
+      document.getElementById("kpi-rep-present-sub").innerText = `${totalPresent} of ${staffList.length} Present`;
+      document.getElementById("kpi-rep-late").innerText = totalLate;
+      document.getElementById("kpi-rep-leave").innerText = totalLeave;
+      document.getElementById("kpi-rep-hours").innerText = fmtMins(totalMinutes);
+
+      document.getElementById("report-record-count-badge").innerText = `Showing ${records.length} records`;
+
+      // Render Table Header
+      const thead = document.getElementById("report-table-thead");
+      thead.innerHTML = `
+        <tr>
+          <th class="py-2.5 px-3">S.No</th>
+          <th class="py-2.5 px-3">Emp ID</th>
+          <th class="py-2.5 px-3">Faculty Name</th>
+          <th class="py-2.5 px-3">Department</th>
+          <th class="py-2.5 px-3">First IN</th>
+          <th class="py-2.5 px-3">Last OUT</th>
+          <th class="py-2.5 px-3">Punches</th>
+          <th class="py-2.5 px-3">Work Duration</th>
+          <th class="py-2.5 px-3">Late Mins</th>
+          <th class="py-2.5 px-3 text-right">Status</th>
+        </tr>
+      `;
+
+      // Render Table Body
+      const tbody = document.getElementById("report-table-tbody");
+      if (records.length === 0) {
+        tbody.innerHTML = `<tr><td colspan="10" class="text-center py-8 text-slate-400 text-xs italic">No attendance records match the selected date and filters.</td></tr>`;
+        return;
+      }
+
+      tbody.innerHTML = records.map((r, idx) => {
+        let statusBadge = `<span class="px-2 py-0.5 rounded-full text-[9px] font-bold bg-slate-100 text-slate-600">NOT MARKED</span>`;
+        if (r.status === 'WORKING') statusBadge = `<span class="px-2 py-0.5 rounded-full text-[9px] font-bold bg-emerald-100 text-emerald-800 border border-emerald-300">WORKING NOW</span>`;
+        else if (r.status === 'COMPLETED') statusBadge = `<span class="px-2 py-0.5 rounded-full text-[9px] font-bold bg-blue-100 text-blue-800 border border-blue-200">COMPLETED</span>`;
+        else if (r.status === 'ON LEAVE') statusBadge = `<span class="px-2 py-0.5 rounded-full text-[9px] font-bold bg-purple-100 text-purple-800 border border-purple-200">ON LEAVE (${r.leaveType || 'LEAVE'})</span>`;
+
+        return `
+          <tr class="hover:bg-slate-50 transition-colors">
+            <td class="py-2.5 px-3 font-mono text-slate-400">${idx + 1}</td>
+            <td class="py-2.5 px-3 font-mono font-bold text-ashiana-green">${r.empId}</td>
+            <td class="py-2.5 px-3 font-bold text-slate-800">
+              <div>${r.name}</div>
+              <div class="text-[9px] text-slate-400 font-normal">${r.role}</div>
+            </td>
+            <td class="py-2.5 px-3 text-slate-600">${r.department}</td>
+            <td class="py-2.5 px-3 font-mono font-bold ${r.firstIn !== '--:--' ? 'text-ashiana-green' : 'text-slate-400'}">${r.firstIn}</td>
+            <td class="py-2.5 px-3 font-mono font-bold ${r.lastOut !== '--:--' ? 'text-ashiana-green' : 'text-slate-400'}">${r.lastOut}</td>
+            <td class="py-2.5 px-3 font-mono font-bold">${r.punchCount}</td>
+            <td class="py-2.5 px-3 font-mono font-bold text-slate-700">${r.workTimeStr}</td>
+            <td class="py-2.5 px-3 font-mono ${r.lateMins > 0 ? 'text-ashiana-red font-bold' : 'text-slate-400'}">${r.lateMins > 0 ? r.lateMins + 'm' : '0m'}</td>
+            <td class="py-2.5 px-3 text-right">${statusBadge}</td>
+          </tr>
+        `;
+      }).join('');
+    }
+
+    // 2. Monthly Muster Roll Generator
+    function generateMonthlyReport(monthYearStr, deptFilter, statusFilter, searchQuery) {
+      // monthYearStr is "YYYY-MM" (e.g. "2026-09")
+      const [year, month] = monthYearStr.split('-').map(Number);
+      const daysInMonth = new Date(year, month, 0).getDate();
+      const monthName = new Date(year, month - 1, 1).toLocaleString('en-US', { month: 'long', year: 'numeric' });
+
+      document.getElementById("report-active-title").innerText = `Monthly Muster Roll & Attendance Summary`;
+      document.getElementById("report-active-subtitle").innerText = `Month: ${monthName} • Total Days: ${daysInMonth} • Working Shifts Evaluated`;
+
+      let staffList = staffDatabase.filter(s => {
+        if (deptFilter !== 'ALL' && s.department !== deptFilter) return false;
+        if (searchQuery && !s.name.toLowerCase().includes(searchQuery) && !s.empId.toLowerCase().includes(searchQuery)) return false;
+        return true;
+      });
+
+      // Calculate working dates in the month up to current date or end of month
+      const datesInMonth = [];
+      for (let day = 1; day <= daysInMonth; day++) {
+        const dStr = `${year}-${String(month).padStart(2, '0')}-${String(day).padStart(2, '0')}`;
+        // Skip Sundays
+        const dayOfWeek = new Date(year, month - 1, day).getDay();
+        if (dayOfWeek !== 0) { // 0 is Sunday
+          datesInMonth.push(dStr);
+        }
+      }
+
+      const totalSchoolWorkingDays = datesInMonth.length;
+      const records = [];
+      let grandTotalPresentDays = 0;
+      let grandTotalLateDays = 0;
+      let grandTotalLeaveDays = 0;
+      let grandTotalHours = 0;
+
+      staffList.forEach(s => {
+        let presentDays = 0;
+        let lateDays = 0;
+        let leaveDays = 0;
+        let totalMinutes = 0;
+
+        datesInMonth.forEach(dStr => {
+          const stat = calculateAttendanceForDate(s.id, dStr);
+          if (stat.punches.length > 0) {
+            presentDays++;
+            totalMinutes += stat.totalWorkMinutes;
+            if (stat.lateMinutes > 0) lateDays++;
+          } else if (stat.currentStatus === 'ON LEAVE') {
+            leaveDays++;
+          }
+        });
+
+        const absentDays = Math.max(0, totalSchoolWorkingDays - presentDays - leaveDays);
+        const attendanceRate = totalSchoolWorkingDays > 0 ? Math.round((presentDays / totalSchoolWorkingDays) * 100) : 0;
+        const avgMinutesPerPresentDay = presentDays > 0 ? Math.round(totalMinutes / presentDays) : 0;
+
+        // Apply status filter
+        if (statusFilter === 'PRESENT' && presentDays === 0) return;
+        if (statusFilter === 'LATE' && lateDays === 0) return;
+        if (statusFilter === 'ON_LEAVE' && leaveDays === 0) return;
+        if (statusFilter === 'ABSENT' && absentDays === 0) return;
+
+        grandTotalPresentDays += presentDays;
+        grandTotalLateDays += lateDays;
+        grandTotalLeaveDays += leaveDays;
+        grandTotalHours += totalMinutes;
+
+        records.push({
+          staffId: s.id,
+          empId: s.empId,
+          name: s.name,
+          department: s.department,
+          role: s.role,
+          workingDays: totalSchoolWorkingDays,
+          presentDays,
+          absentDays,
+          leaveDays,
+          lateDays,
+          totalWorkStr: fmtMins(totalMinutes),
+          totalMinutes,
+          avgDayStr: fmtMins(avgMinutesPerPresentDay),
+          attendanceRate
+        });
+      });
+
+      lastGeneratedReportData = records;
+
+      // Update KPI Ribbons
+      document.getElementById("kpi-report-label-1").innerText = "Total Faculty";
+      document.getElementById("kpi-rep-total").innerText = staffList.length;
+      document.getElementById("kpi-report-label-2").innerText = "Avg Attendance %";
+      const avgRate = staffList.length > 0 ? Math.round((grandTotalPresentDays / (staffList.length * totalSchoolWorkingDays)) * 100) : 0;
+      document.getElementById("kpi-rep-present").innerText = `${avgRate}%`;
+      document.getElementById("kpi-rep-present-sub").innerText = `${grandTotalPresentDays} Total Attended Days`;
+      document.getElementById("kpi-rep-late").innerText = grandTotalLateDays;
+      document.getElementById("kpi-rep-leave").innerText = grandTotalLeaveDays;
+      document.getElementById("kpi-rep-hours").innerText = fmtMins(grandTotalHours);
+
+      document.getElementById("report-record-count-badge").innerText = `Showing ${records.length} faculty members`;
+
+      // Render Table Header
+      const thead = document.getElementById("report-table-thead");
+      thead.innerHTML = `
+        <tr>
+          <th class="py-2.5 px-3">S.No</th>
+          <th class="py-2.5 px-3">Emp ID</th>
+          <th class="py-2.5 px-3">Faculty Member</th>
+          <th class="py-2.5 px-3">Department</th>
+          <th class="py-2.5 px-3 text-center">Working Days</th>
+          <th class="py-2.5 px-3 text-center text-emerald-800">Present</th>
+          <th class="py-2.5 px-3 text-center text-rose-800">Absent</th>
+          <th class="py-2.5 px-3 text-center text-purple-800">Leaves</th>
+          <th class="py-2.5 px-3 text-center text-amber-800">Late Days</th>
+          <th class="py-2.5 px-3">Total Work</th>
+          <th class="py-2.5 px-3">Avg/Day</th>
+          <th class="py-2.5 px-3 text-right">Attendance %</th>
+        </tr>
+      `;
+
+      // Render Table Body
+      const tbody = document.getElementById("report-table-tbody");
+      if (records.length === 0) {
+        tbody.innerHTML = `<tr><td colspan="12" class="text-center py-8 text-slate-400 text-xs italic">No records found for ${monthName}. Tap "Seed Sample Month Punches" to preview populated data.</td></tr>`;
+        return;
+      }
+
+      tbody.innerHTML = records.map((r, idx) => `
+        <tr class="hover:bg-slate-50 transition-colors">
+          <td class="py-2.5 px-3 font-mono text-slate-400">${idx + 1}</td>
+          <td class="py-2.5 px-3 font-mono font-bold text-ashiana-green">${r.empId}</td>
+          <td class="py-2.5 px-3 font-bold text-slate-800">
+            <div>${r.name}</div>
+            <div class="text-[9px] text-slate-400 font-normal">${r.role}</div>
+          </td>
+          <td class="py-2.5 px-3 text-slate-600">${r.department}</td>
+          <td class="py-2.5 px-3 text-center font-mono font-bold">${r.workingDays}</td>
+          <td class="py-2.5 px-3 text-center font-mono font-bold text-emerald-700 bg-emerald-50/50">${r.presentDays}</td>
+          <td class="py-2.5 px-3 text-center font-mono font-bold ${r.absentDays > 0 ? 'text-rose-600' : 'text-slate-400'}">${r.absentDays}</td>
+          <td class="py-2.5 px-3 text-center font-mono font-bold text-purple-700">${r.leaveDays}</td>
+          <td class="py-2.5 px-3 text-center font-mono font-bold ${r.lateDays > 0 ? 'text-amber-700' : 'text-slate-400'}">${r.lateDays}</td>
+          <td class="py-2.5 px-3 font-mono font-bold text-slate-700">${r.totalWorkStr}</td>
+          <td class="py-2.5 px-3 font-mono text-slate-600">${r.avgDayStr}</td>
+          <td class="py-2.5 px-3 text-right">
+            <span class="px-2 py-0.5 rounded-full text-[10px] font-bold font-mono ${r.attendanceRate >= 85 ? 'bg-emerald-100 text-emerald-800' : r.attendanceRate >= 70 ? 'bg-amber-100 text-amber-800' : 'bg-rose-100 text-rose-800'}">
+              ${r.attendanceRate}%
+            </span>
+          </td>
+        </tr>
+      `).join('');
+    }
+
+    // 3. Individual Faculty Dossier Generator
+    function generateFacultyReport(facultyId, monthYearStr, statusFilter) {
+      const staff = staffDatabase.find(s => s.id === facultyId) || staffDatabase[0];
+      if (!staff) return;
+
+      const [year, month] = monthYearStr.split('-').map(Number);
+      const daysInMonth = new Date(year, month, 0).getDate();
+      const monthName = new Date(year, month - 1, 1).toLocaleString('en-US', { month: 'long', year: 'numeric' });
+
+      document.getElementById("report-active-title").innerText = `Faculty Dossier: ${staff.name} (${staff.empId})`;
+      document.getElementById("report-active-subtitle").innerText = `Department: ${staff.department} • Designation: ${staff.role} • Month: ${monthName}`;
+
+      const records = [];
+      let presentDays = 0;
+      let lateDays = 0;
+      let leaveDays = 0;
+      let totalMinutes = 0;
+
+      for (let day = 1; day <= daysInMonth; day++) {
+        const dObj = new Date(year, month - 1, day);
+        const dayOfWeek = dObj.toLocaleString('en-US', { weekday: 'short' });
+        const isSunday = dObj.getDay() === 0;
+        const dStr = `${year}-${String(month).padStart(2, '0')}-${String(day).padStart(2, '0')}`;
+
+        if (isSunday) {
+          records.push({
+            date: dStr,
+            dayOfWeek,
+            firstIn: '--',
+            lastOut: '--',
+            punchCount: 0,
+            workTimeStr: '--',
+            lateMins: 0,
+            status: "SUNDAY",
+            details: "Weekly Off"
+          });
+          continue;
+        }
+
+        const stat = calculateAttendanceForDate(staff.id, dStr);
+        const isPresent = stat.punches.length > 0;
+        const isLate = stat.lateMinutes > 0;
+        const isOnLeave = stat.currentStatus === 'ON LEAVE';
+
+        if (isPresent) {
+          presentDays++;
+          totalMinutes += stat.totalWorkMinutes;
+          if (isLate) lateDays++;
+        } else if (isOnLeave) {
+          leaveDays++;
+        }
+
+        records.push({
+          date: dStr,
+          dayOfWeek,
+          firstIn: stat.firstIn || '--:--',
+          lastOut: stat.lastOut || '--:--',
+          punchCount: stat.punches.length,
+          workTimeStr: fmtMins(stat.totalWorkMinutes),
+          lateMins: stat.lateMinutes,
+          status: stat.currentStatus,
+          details: stat.leaveType || (isPresent ? (isLate ? `Late by ${stat.lateMinutes}m` : 'On Time') : 'Absent')
+        });
+      }
+
+      lastGeneratedReportData = records;
+
+      // Update KPI Ribbons
+      const workingDays = records.filter(r => r.status !== 'SUNDAY').length;
+      document.getElementById("kpi-report-label-1").innerText = "Faculty Evaluated";
+      document.getElementById("kpi-rep-total").innerText = staff.empId;
+      document.getElementById("kpi-report-label-2").innerText = "Monthly Attendance";
+      const attPercent = workingDays > 0 ? Math.round((presentDays / workingDays) * 100) : 0;
+      document.getElementById("kpi-rep-present").innerText = `${attPercent}%`;
+      document.getElementById("kpi-rep-present-sub").innerText = `${presentDays} of ${workingDays} Working Days`;
+      document.getElementById("kpi-rep-late").innerText = lateDays;
+      document.getElementById("kpi-rep-leave").innerText = leaveDays;
+      document.getElementById("kpi-rep-hours").innerText = fmtMins(totalMinutes);
+
+      document.getElementById("report-record-count-badge").innerText = `31 Calendar Days`;
+
+      // Render Table Header
+      const thead = document.getElementById("report-table-thead");
+      thead.innerHTML = `
+        <tr>
+          <th class="py-2.5 px-3">Date</th>
+          <th class="py-2.5 px-3">Day</th>
+          <th class="py-2.5 px-3">First IN</th>
+          <th class="py-2.5 px-3">Last OUT</th>
+          <th class="py-2.5 px-3">Punches</th>
+          <th class="py-2.5 px-3">Work Duration</th>
+          <th class="py-2.5 px-3">Late Mins</th>
+          <th class="py-2.5 px-3">Status</th>
+          <th class="py-2.5 px-3 text-right">Remarks</th>
+        </tr>
+      `;
+
+      // Render Table Body
+      const tbody = document.getElementById("report-table-tbody");
+      tbody.innerHTML = records.map(r => {
+        let badge = `<span class="px-2 py-0.5 rounded-full text-[9px] font-bold bg-slate-100 text-slate-500">NOT MARKED</span>`;
+        if (r.status === 'SUNDAY') badge = `<span class="px-2 py-0.5 rounded-full text-[9px] font-bold bg-slate-200 text-slate-600">SUNDAY OFF</span>`;
+        else if (r.status === 'WORKING') badge = `<span class="px-2 py-0.5 rounded-full text-[9px] font-bold bg-emerald-100 text-emerald-800">WORKING</span>`;
+        else if (r.status === 'COMPLETED') badge = `<span class="px-2 py-0.5 rounded-full text-[9px] font-bold bg-blue-100 text-blue-800">COMPLETED</span>`;
+        else if (r.status === 'ON LEAVE') badge = `<span class="px-2 py-0.5 rounded-full text-[9px] font-bold bg-purple-100 text-purple-800">ON LEAVE</span>`;
+
+        return `
+          <tr class="hover:bg-slate-50 transition-colors ${r.status === 'SUNDAY' ? 'bg-slate-50/60 opacity-70' : ''}">
+            <td class="py-2 px-3 font-mono font-bold text-slate-800">${r.date}</td>
+            <td class="py-2 px-3 font-semibold text-slate-600">${r.dayOfWeek}</td>
+            <td class="py-2 px-3 font-mono font-bold ${r.firstIn !== '--:--' && r.firstIn !== '--' ? 'text-ashiana-green' : 'text-slate-400'}">${r.firstIn}</td>
+            <td class="py-2 px-3 font-mono font-bold ${r.lastOut !== '--:--' && r.lastOut !== '--' ? 'text-ashiana-green' : 'text-slate-400'}">${r.lastOut}</td>
+            <td class="py-2 px-3 font-mono font-bold">${r.punchCount}</td>
+            <td class="py-2 px-3 font-mono font-bold text-slate-700">${r.workTimeStr}</td>
+            <td class="py-2 px-3 font-mono ${r.lateMins > 0 ? 'text-ashiana-red font-bold' : 'text-slate-400'}">${r.lateMins > 0 ? r.lateMins + 'm' : '0m'}</td>
+            <td class="py-2 px-3">${badge}</td>
+            <td class="py-2 px-3 text-right text-slate-500 font-medium">${r.details}</td>
+          </tr>
+        `;
+      }).join('');
+    }
+
+    // =========================================================================
+    // 💾 EXCEL & CSV EXPORT HANDLERS (USING SHEETJS)
+    // =========================================================================
+    function exportCurrentReportToExcel() {
+      if (!lastGeneratedReportData || lastGeneratedReportData.length === 0) {
+        showToast("No data to export. Please generate a report first.", "error");
+        return;
+      }
+
+      try {
+        let exportData = [];
+        let filename = "";
+
+        if (currentReportType === 'daily') {
+          const date = document.getElementById("report-date-input").value;
+          filename = `Ashiana_Daily_Attendance_${date}.xlsx`;
+          exportData = lastGeneratedReportData.map((r, i) => ({
+            "S.No": i + 1,
+            "Employee ID": r.empId,
+            "Faculty Name": r.name,
+            "Department": r.department,
+            "Designation": r.role,
+            "First IN": r.firstIn,
+            "Last OUT": r.lastOut,
+            "Total Punches": r.punchCount,
+            "Work Duration": r.workTimeStr,
+            "Late (Minutes)": r.lateMins,
+            "Attendance Status": r.status
+          }));
+        } else if (currentReportType === 'monthly') {
+          const month = document.getElementById("report-month-input").value;
+          filename = `Ashiana_Monthly_Muster_Roll_${month}.xlsx`;
+          exportData = lastGeneratedReportData.map((r, i) => ({
+            "S.No": i + 1,
+            "Employee ID": r.empId,
+            "Faculty Name": r.name,
+            "Department": r.department,
+            "Designation": r.role,
+            "Working Days": r.workingDays,
+            "Present Days": r.presentDays,
+            "Absent Days": r.absentDays,
+            "Approved Leaves": r.leaveDays,
+            "Late Arrivals": r.lateDays,
+            "Total Work Hours": r.totalWorkStr,
+            "Avg Daily Hours": r.avgDayStr,
+            "Attendance Rate (%)": `${r.attendanceRate}%`
+          }));
+        } else if (currentReportType === 'faculty') {
+          const selStaff = staffDatabase.find(s => s.id === document.getElementById("report-faculty-select").value) || staffDatabase[0];
+          const month = document.getElementById("report-month-input").value;
+          filename = `Ashiana_Faculty_Dossier_${selStaff.empId}_${month}.xlsx`;
+          exportData = lastGeneratedReportData.map(r => ({
+            "Date": r.date,
+            "Day": r.dayOfWeek,
+            "First IN": r.firstIn,
+            "Last OUT": r.lastOut,
+            "Punches": r.punchCount,
+            "Work Duration": r.workTimeStr,
+            "Late (Minutes)": r.lateMins,
+            "Status": r.status,
+            "Remarks": r.details
+          }));
+        }
+
+        if (typeof XLSX !== "undefined") {
+          const ws = XLSX.utils.json_to_sheet(exportData);
+          const wb = XLSX.utils.book_new();
+          XLSX.utils.book_append_sheet(wb, ws, "Attendance Report");
+          XLSX.writeFile(wb, filename);
+          playTone('SUCCESS');
+          showToast(`Report exported to ${filename}!`, "success");
+        } else {
+          // Fallback to CSV if XLSX is unavailable
+          exportCurrentReportToCSV();
+        }
+      } catch (err) {
+        showToast("Export failed: " + err.message, "error");
+      }
+    }
+
+    function exportCurrentReportToCSV() {
+      if (!lastGeneratedReportData || lastGeneratedReportData.length === 0) {
+        showToast("No data to export.", "error");
+        return;
+      }
+
+      let csvContent = "";
+      let filename = "";
+
+      if (currentReportType === 'daily') {
+        const date = document.getElementById("report-date-input").value;
+        filename = `Ashiana_Daily_Attendance_${date}.csv`;
+        csvContent = "S.No,Employee ID,Faculty Name,Department,Designation,First IN,Last OUT,Punches,Work Duration,Late Mins,Status\n";
+        lastGeneratedReportData.forEach((r, i) => {
+          csvContent += `"${i + 1}","${r.empId}","${r.name}","${r.department}","${r.role}","${r.firstIn}","${r.lastOut}",${r.punchCount},"${r.workTimeStr}",${r.lateMins},"${r.status}"\n`;
+        });
+      } else if (currentReportType === 'monthly') {
+        const month = document.getElementById("report-month-input").value;
+        filename = `Ashiana_Monthly_Muster_Roll_${month}.csv`;
+        csvContent = "S.No,Employee ID,Faculty Name,Department,Working Days,Present,Absent,Leaves,Late Days,Total Work,Avg/Day,Attendance %\n";
+        lastGeneratedReportData.forEach((r, i) => {
+          csvContent += `"${i + 1}","${r.empId}","${r.name}","${r.department}",${r.workingDays},${r.presentDays},${r.absentDays},${r.leaveDays},${r.lateDays},"${r.totalWorkStr}","${r.avgDayStr}","${r.attendanceRate}%"\n`;
+        });
+      } else if (currentReportType === 'faculty') {
+        const selStaff = staffDatabase.find(s => s.id === document.getElementById("report-faculty-select").value) || staffDatabase[0];
+        const month = document.getElementById("report-month-input").value;
+        filename = `Ashiana_Faculty_Dossier_${selStaff.empId}_${month}.csv`;
+        csvContent = "Date,Day,First IN,Last OUT,Punches,Work Duration,Late Mins,Status,Remarks\n";
+        lastGeneratedReportData.forEach(r => {
+          csvContent += `"${r.date}","${r.dayOfWeek}","${r.firstIn}","${r.lastOut}",${r.punchCount},"${r.workTimeStr}",${r.lateMins},"${r.status}","${r.details}"\n`;
+        });
+      }
+
+      const blob = new Blob([csvContent], { type: "text/csv;charset=utf-8;" });
+      const a = document.createElement("a");
+      a.href = URL.createObjectURL(blob);
+      a.download = filename;
+      a.click();
+      playTone('SUCCESS');
+      showToast(`CSV file ${filename} downloaded!`, "success");
+    }
+
+    // Print / PDF View Handler
+    function printCurrentReport() {
+      const container = document.getElementById("print-report-container");
+      const tableWrapper = document.getElementById("print-table-wrapper");
+      if (!container || !tableWrapper) return;
+
+      // Populate print header details
+      const reportTitle = document.getElementById("report-active-title").innerText;
+      const reportSubtitle = document.getElementById("report-active-subtitle").innerText;
+
+      document.getElementById("print-header-report-type").innerText = reportTitle;
+      document.getElementById("print-header-date-range").innerText = reportSubtitle;
+      document.getElementById("print-header-generated-time").innerText = "Printed on: " + new Date().toLocaleString();
+
+      document.getElementById("print-metric-total").innerText = document.getElementById("kpi-rep-total").innerText;
+      document.getElementById("print-metric-present").innerText = document.getElementById("kpi-rep-present").innerText;
+      document.getElementById("print-metric-late").innerText = document.getElementById("kpi-rep-late").innerText;
+      document.getElementById("print-metric-leave").innerText = document.getElementById("kpi-rep-leave").innerText;
+      document.getElementById("print-metric-hours").innerText = document.getElementById("kpi-rep-hours").innerText;
+
+      // Clone table into print container
+      const mainTable = document.getElementById("report-main-table");
+      tableWrapper.innerHTML = `<table class="w-full text-left text-xs border-collapse border border-slate-300">${mainTable.innerHTML}</table>`;
+
+      // Trigger standard browser print window
+      window.print();
+    }
+
+    // Utility: Seed realistic sample punches across the current month for demo / audit testing
+    function seedSampleMonthlyAttendanceData() {
+      const monthStr = document.getElementById("report-month-input")?.value || systemConfig.currentAttendanceDate.substring(0, 7);
+      const [year, month] = monthStr.split('-').map(Number);
+      const daysInMonth = new Date(year, month, 0).getDate();
+      const todayDay = new Date().getDate();
+
+      let seededCount = 0;
+      const staffSubset = staffDatabase.slice(0, 35); // Seed for first 35 faculty
+
+      for (let day = 1; day <= Math.min(todayDay, daysInMonth); day++) {
+        const dObj = new Date(year, month - 1, day);
+        if (dObj.getDay() === 0) continue; // Skip Sunday
+
+        const dStr = `${year}-${String(month).padStart(2, '0')}-${String(day).padStart(2, '0')}`;
+        
+        staffSubset.forEach((s, idx) => {
+          // Check if punch already exists
+          const existing = punchLedger.some(p => p.staffId === s.id && p.attendanceDate === dStr);
+          if (!existing) {
+            // Semi-realistic timings
+            const isLate = (idx % 7 === 0);
+            const inHour = isLate ? "07:56" : (idx % 2 === 0 ? "07:34" : "07:39");
+            const outHour = "14:32";
+
+            punchLedger.push({
+              id: `seed_in_${s.id}_${dStr}`,
+              staffId: s.id,
+              staffName: s.name,
+              empId: s.empId,
+              attendanceDate: dStr,
+              type: "IN",
+              timestamp: inHour,
+              method: "QR_CAMERA"
+            });
+
+            punchLedger.push({
+              id: `seed_out_${s.id}_${dStr}`,
+              staffId: s.id,
+              staffName: s.name,
+              empId: s.empId,
+              attendanceDate: dStr,
+              type: "OUT",
+              timestamp: outHour,
+              method: "QR_CAMERA"
+            });
+
+            seededCount += 2;
+          }
+        });
+      }
+
+      savePersistedData();
+      playTone('SUCCESS');
+      showToast(`Seeded ${seededCount} sample punches for ${monthStr}!`, "success");
+      runAdminReportGeneration();
     }
 
     function openStaffProfileModal() {
