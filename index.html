@@ -697,6 +697,10 @@
                 <i data-lucide="user-plus" class="w-3.5 h-3.5"></i>
                 <span>Add Staff</span>
               </button>
+              <button onclick="openImportStaffModal()" class="px-3 py-2 bg-emerald-800 hover:bg-emerald-900 text-white text-xs font-bold rounded-xl flex items-center space-x-1.5 shadow">
+                <i data-lucide="file-spreadsheet" class="w-3.5 h-3.5"></i>
+                <span>Import Excel</span>
+              </button>
               <button onclick="exportStaffCredentialsWithPIN()" class="px-3 py-2 bg-emerald-950 hover:bg-black text-white text-xs font-bold rounded-xl flex items-center space-x-1.5 shadow border-b-2 border-ashiana-red">
                 <i data-lucide="key" class="w-3.5 h-3.5 text-amber-300"></i>
                 <span>Export PINs (CSV)</span>
@@ -704,18 +708,18 @@
             </div>
           </div>
 
-          <div class="overflow-x-auto max-h-[500px] overflow-y-auto">
+          <div class="overflow-x-auto">
             <table class="w-full text-left text-xs text-slate-600">
-              <thead class="bg-slate-50 text-slate-500 font-bold uppercase text-[10px] tracking-wider sticky top-0 border-b border-slate-200">
+              <thead class="bg-slate-50 text-slate-500 font-bold uppercase text-[10px] tracking-wider border-b border-slate-200">
                 <tr>
-                  <th class="py-2.5 px-3">Emp ID</th>
-                  <th class="py-2.5 px-3">Full Name</th>
-                  <th class="py-2.5 px-3">Department</th>
-                  <th class="py-2.5 px-3">Designation</th>
-                  <th class="py-2.5 px-3">Email</th>
-                  <th class="py-2.5 px-3 text-center">PIN</th>
-                  <th class="py-2.5 px-3">Status</th>
-                  <th class="py-2.5 px-3 text-center min-w-[140px]">Actions</th>
+                  <th class="py-2 px-3">Emp ID</th>
+                  <th class="py-2 px-3">Name</th>
+                  <th class="py-2 px-3">Department</th>
+                  <th class="py-2 px-3">Role</th>
+                  <th class="py-2 px-3">Email</th>
+                  <th class="py-2 px-3 text-center">PIN</th>
+                  <th class="py-2 px-3">Status</th>
+                  <th class="py-2 px-3 text-center">Actions</th>
                 </tr>
               </thead>
               <tbody id="staff-directory-tbody" class="divide-y divide-slate-100"></tbody>
@@ -1363,25 +1367,105 @@
 
       <form onsubmit="handleResetPinSubmit(event)" class="p-4 space-y-3">
         <input type="hidden" id="reset-pin-staff-id">
-        <div class="text-center pb-2">
-          <p class="text-xs text-slate-500">Reset 4-digit PIN for faculty:</p>
-          <h4 id="reset-pin-staff-name" class="text-sm font-bold text-slate-800">Faculty Name</h4>
-          <span id="reset-pin-staff-empid" class="text-[10px] font-mono text-ashiana-green font-bold">APS-101</span>
+        <div class="p-3 bg-slate-50 rounded-2xl border border-slate-200 text-center">
+          <p class="text-xs font-bold text-slate-800" id="reset-pin-staff-name">Faculty Member</p>
+          <span class="text-[10px] font-mono font-bold text-ashiana-green" id="reset-pin-staff-empid">APS-101</span>
         </div>
-
         <div>
           <label class="block text-[11px] font-bold text-slate-700 mb-1">New 4-Digit Attendance PIN *</label>
-          <input type="password" maxlength="4" pattern="[0-9]{4}" id="reset-pin-new-value" required placeholder="••••" class="w-full text-center font-mono font-bold tracking-widest text-lg p-2.5 bg-slate-50 border border-slate-200 rounded-xl focus:ring-2 focus:ring-ashiana-green">
+          <input type="password" maxlength="4" pattern="[0-9]{4}" id="reset-pin-new-value" required placeholder="••••" class="w-full text-xs p-2.5 bg-slate-50 border border-slate-200 rounded-xl font-mono tracking-widest text-center text-sm font-bold focus:ring-2 focus:ring-ashiana-green">
         </div>
-
         <div class="pt-2 flex items-center justify-end space-x-2">
           <button type="button" onclick="closeResetPinModal()" class="px-3.5 py-2 bg-slate-100 hover:bg-slate-200 text-slate-700 rounded-xl text-xs font-bold">Cancel</button>
-          <button type="submit" class="px-4 py-2 bg-emerald-950 hover:bg-black text-white rounded-xl text-xs font-bold flex items-center space-x-1.5 shadow">
-            <i data-lucide="check" class="w-3.5 h-3.5"></i>
-            <span>Set New PIN & Sync</span>
+          <button type="submit" class="px-4 py-2 bg-amber-600 hover:bg-amber-700 text-white rounded-xl text-xs font-bold flex items-center space-x-1.5 shadow">
+            <i data-lucide="key" class="w-3.5 h-3.5"></i>
+            <span>Set New PIN</span>
           </button>
         </div>
       </form>
+    </div>
+  </div>
+
+  <!-- ADMIN: IMPORT STAFF EXCEL MODAL -->
+  <div id="admin-import-staff-modal" class="fixed inset-0 bg-slate-950/75 backdrop-blur-sm z-50 hidden flex items-center justify-center p-3">
+    <div class="bg-white rounded-3xl max-w-lg w-full overflow-hidden shadow-2xl border border-slate-200 flex flex-col max-h-[90vh]">
+      <div class="bg-gradient-to-r from-emerald-950 to-[#064E3B] p-3.5 text-white flex items-center justify-between border-b-2 border-ashiana-red flex-shrink-0">
+        <div class="flex items-center space-x-2">
+          <i data-lucide="file-spreadsheet" class="w-4 h-4 text-emerald-300"></i>
+          <div>
+            <h3 class="text-xs font-bold uppercase tracking-wider font-serif">Import Faculty From Excel</h3>
+            <p class="text-[10px] text-emerald-200">Bulk upload teachers with credentials and departments</p>
+          </div>
+        </div>
+        <button onclick="closeImportStaffModal()" class="w-7 h-7 rounded-full bg-white/10 hover:bg-white/20 flex items-center justify-center text-white">
+          <i data-lucide="x" class="w-3.5 h-3.5"></i>
+        </button>
+      </div>
+
+      <div class="p-4 space-y-3.5 overflow-y-auto hide-scrollbar">
+        <!-- Download Template Card -->
+        <div class="p-3 bg-emerald-50 rounded-2xl border border-emerald-200 flex items-center justify-between">
+          <div class="flex items-center space-x-2.5">
+            <div class="w-9 h-9 rounded-xl bg-ashiana-green text-white flex items-center justify-center flex-shrink-0">
+              <i data-lucide="download" class="w-4 h-4"></i>
+            </div>
+            <div>
+              <h4 class="text-xs font-bold text-slate-800">Official Excel Template</h4>
+              <p class="text-[10px] text-slate-500">Download pre-formatted template with sample entries & column guides</p>
+            </div>
+          </div>
+          <button type="button" onclick="downloadFacultyExcelTemplate()" class="px-3 py-1.5 bg-ashiana-green hover:bg-[#08693A] text-white rounded-xl text-xs font-bold flex items-center space-x-1 shadow">
+            <span>Download</span>
+          </button>
+        </div>
+
+        <!-- File Upload Area -->
+        <div>
+          <label class="block text-xs font-bold text-slate-700 mb-1">Select Excel (.xlsx, .xls) or CSV File</label>
+          <div class="border-2 border-dashed border-slate-300 hover:border-ashiana-green rounded-2xl p-4 text-center cursor-pointer transition-colors bg-slate-50" onclick="document.getElementById('faculty-excel-file-input').click()">
+            <input type="file" id="faculty-excel-file-input" accept=".xlsx, .xls, .csv" onchange="handleFacultyExcelUpload(event)" class="hidden">
+            <i data-lucide="upload-cloud" class="w-8 h-8 text-ashiana-green mx-auto mb-1"></i>
+            <p class="text-xs font-bold text-slate-700">Click or Drag & Drop file here</p>
+            <p class="text-[10px] text-slate-400 mt-0.5">Supports .xlsx, .xls, or .csv up to 10MB</p>
+          </div>
+        </div>
+
+        <!-- Preview Container -->
+        <div id="excel-preview-container" class="hidden space-y-2">
+          <div class="flex items-center justify-between">
+            <span class="text-xs font-bold text-slate-700" id="excel-preview-count-label">Parsed Records (0)</span>
+            <label class="inline-flex items-center space-x-1 text-[11px] text-slate-600 font-medium">
+              <input type="checkbox" id="excel-update-existing-checkbox" class="rounded text-ashiana-green focus:ring-ashiana-green" checked>
+              <span>Update if Emp ID exists</span>
+            </label>
+          </div>
+
+          <div class="overflow-x-auto max-h-48 border border-slate-200 rounded-xl bg-slate-50">
+            <table class="w-full text-left text-[11px] text-slate-600">
+              <thead class="bg-slate-100 text-slate-500 font-bold sticky top-0 border-b border-slate-200">
+                <tr>
+                  <th class="py-1.5 px-2">Emp ID</th>
+                  <th class="py-1.5 px-2">Name</th>
+                  <th class="py-1.5 px-2">Department</th>
+                  <th class="py-1.5 px-2">Role</th>
+                  <th class="py-1.5 px-2">PIN</th>
+                </tr>
+              </thead>
+              <tbody id="excel-preview-tbody" class="divide-y divide-slate-200 font-mono text-[10px]"></tbody>
+            </table>
+          </div>
+        </div>
+      </div>
+
+      <div class="p-3 bg-slate-50 border-t border-slate-200 flex items-center justify-end space-x-2 flex-shrink-0">
+        <button type="button" onclick="closeImportStaffModal()" class="px-3.5 py-2 bg-white hover:bg-slate-100 text-slate-700 border border-slate-200 rounded-xl text-xs font-bold">
+          Cancel
+        </button>
+        <button type="button" id="btn-confirm-excel-import" onclick="executeFacultyExcelImport()" disabled class="px-4 py-2 bg-ashiana-green hover:bg-[#08693A] disabled:opacity-50 disabled:cursor-not-allowed text-white rounded-xl text-xs font-bold flex items-center space-x-1.5 shadow">
+          <i data-lucide="check" class="w-3.5 h-3.5"></i>
+          <span>Import to Roster & Cloud</span>
+        </button>
+      </div>
     </div>
   </div>
 
@@ -1489,6 +1573,7 @@
     let isScannerRunning = false;
     let currentCameraFacingMode = "environment";
     let audioCtx = null;
+    let parsedExcelStaffRows = [];
 
     let staffDatabase = [];
     let punchLedger = [];
@@ -1556,25 +1641,22 @@
         { id: "usr_135", empId: "APS-135", name: "Ms. Vandana Thakur", role: "Special Educator & Counsellor", department: "Student Support", email: "vandana.thakur@ashianapublicschool.com", pinHash: "1234", status: "ACTIVE" },
         { id: "usr_136", empId: "APS-136", name: "Ms. Sheela Jaswal", role: "Chief Librarian", department: "Administration", email: "sheela.jaswal@ashianapublicschool.com", pinHash: "1234", status: "ACTIVE" },
         { id: "usr_137", empId: "APS-137", name: "Mr. Amit Kumar", role: "PET & Sports Head", department: "Physical Education", email: "amit.kumar@ashianapublicschool.com", pinHash: "1234", status: "ACTIVE" },
-        { id: "usr_138", empId: "APS-138", name: "Mr. Manjeet Singh", role: "Taekwondo Coach", department: "Physical Education", email: "manjeet.singh@ashianapublicschool.com", pinHash: "1234", status: "ACTIVE" },
-        { id: "usr_145", empId: "APS-145", name: "Mr. Sanjay Kumar", role: "IT Systems Administrator", department: "Information Technology", email: "sanjay.kumar@ashianapublicschool.com", pinHash: "1234", status: "ACTIVE" },
-        { id: "usr_146", empId: "APS-146", name: "Ms. Prabhjot Kaur", role: "Accounts Officer", department: "Administration", email: "prabhjot.kaur@ashianapublicschool.com", pinHash: "1234", status: "ACTIVE" },
-        { id: "usr_147", empId: "APS-147", name: "Ms. Anju Mehra", role: "Front Desk & PR", department: "Administration", email: "anju.mehra@ashianapublicschool.com", pinHash: "1234", status: "ACTIVE" }
+        { id: "usr_138", empId: "APS-138", name: "Mr. Manjeet Singh", role: "Taekwondo Coach", department: "Physical Education", email: "manjeet.singh@ashianapublicschool.com", pinHash: "1234", status: "ACTIVE" }
       ];
-
-      for (let i = 148; i <= 172; i++) {
-        baseline.push({
-          id: `usr_${i}`,
-          empId: `APS-${i}`,
-          name: `Faculty Member ${i}`,
-          role: "Associate Teacher",
-          department: "Academic Wing",
-          email: `faculty.${i}@ashianapublicschool.com`,
-          pinHash: "1234",
-          status: "ACTIVE"
-        });
-      }
       return baseline;
+    }
+
+    // Check if WebSockets are permitted in the current runtime environment
+    function checkWebSocketSupport() {
+      try {
+        if (typeof WebSocket === "undefined") return false;
+        // Test instantiation: sandboxed iframes (Canvas) throw SecurityError synchronously
+        const testWs = new WebSocket("wss://localhost:0");
+        testWs.close();
+        return true;
+      } catch (err) {
+        return false;
+      }
     }
 
     // Initialize Supabase Client with Dual Auto-Sync Engine
@@ -1584,7 +1666,14 @@
           supabaseClient = window.supabase.createClient(DEFAULT_SUPABASE_URL, DEFAULT_SUPABASE_ANON_KEY);
           isCloudConnected = true;
           updateCloudBadge(true);
-          listenToRealtimePunches();
+          
+          // Only attempt WebSocket subscriptions if environment security allows it
+          if (checkWebSocketSupport()) {
+            listenToRealtimePunches();
+          } else {
+            console.info("WebSockets restricted in current iframe sandbox. Utilizing high-frequency HTTP polling sync.");
+          }
+          
           startBackgroundPolling();
         } catch (e) {
           console.warn("Supabase init error:", e);
@@ -1769,35 +1858,43 @@
     // WebSockets Real-Time Sync Channel
     function listenToRealtimePunches() {
       if (!supabaseClient) return;
-      if (realtimeChannel) {
-        try { supabaseClient.removeChannel(realtimeChannel); } catch (e) {}
-      }
+      if (!checkWebSocketSupport()) return;
 
-      realtimeChannel = supabaseClient
-        .channel('public:attendance_punches')
-        .on('postgres_changes', { event: 'INSERT', schema: 'public', table: 'attendance_punches' }, payload => {
-          const newPunch = payload.new;
-          if (!newPunch) return;
-          if (!punchLedger.some(p => p.id === newPunch.id)) {
-            punchLedger.push({
-              id: newPunch.id,
-              staffId: newPunch.staff_id,
-              staffName: newPunch.staff_name,
-              empId: newPunch.emp_id,
-              attendanceDate: newPunch.attendance_date,
-              type: newPunch.type,
-              timestamp: newPunch.timestamp,
-              method: newPunch.method || "QR_CAMERA"
-            });
-            savePersistedData();
-            playTone('SUCCESS');
-            showToast(`${newPunch.staff_name} marked PUNCH ${newPunch.type}`, "info");
-            renderLiveAttendanceTable();
-            updateKPICards();
-            if (currentStaffId === newPunch.staff_id) refreshStaffUI();
-          }
-        })
-        .subscribe();
+      try {
+        if (realtimeChannel) {
+          try { supabaseClient.removeChannel(realtimeChannel); } catch (e) {}
+        }
+
+        realtimeChannel = supabaseClient
+          .channel('public:attendance_punches')
+          .on('postgres_changes', { event: 'INSERT', schema: 'public', table: 'attendance_punches' }, payload => {
+            const newPunch = payload.new;
+            if (!newPunch) return;
+            if (!punchLedger.some(p => p.id === newPunch.id)) {
+              punchLedger.push({
+                id: newPunch.id,
+                staffId: newPunch.staff_id,
+                staffName: newPunch.staff_name,
+                empId: newPunch.emp_id,
+                attendanceDate: newPunch.attendance_date,
+                type: newPunch.type,
+                timestamp: newPunch.timestamp,
+                method: newPunch.method || "QR_CAMERA"
+              });
+              savePersistedData();
+              playTone('SUCCESS');
+              showToast(`${newPunch.staff_name} marked PUNCH ${newPunch.type}`, "info");
+              renderLiveAttendanceTable();
+              updateKPICards();
+              if (currentStaffId === newPunch.staff_id) refreshStaffUI();
+            }
+          })
+          .subscribe((status, err) => {
+            if (err) console.warn("Realtime notice:", err);
+          });
+      } catch (err) {
+        console.warn("Realtime WebSocket bypassed safely:", err);
+      }
     }
 
     // Auto-upsert staff row to avoid foreign-key rejections
@@ -3718,27 +3815,238 @@
       document.getElementById("leave-apply-modal")?.classList.add("hidden");
     }
 
-    function handleLeaveApplySubmit(event) {
-      event.preventDefault();
-      const staff = staffDatabase.find(s => s.id === currentStaffId);
-      if (!staff) return;
+    // =========================================================================
+    // 📁 EXCEL BULK STAFF IMPORT & TEMPLATE SYSTEM
+    // =========================================================================
+    function openImportStaffModal() {
+      parsedExcelStaffRows = [];
+      const fileInput = document.getElementById("faculty-excel-file-input");
+      if (fileInput) fileInput.value = "";
+      const previewCont = document.getElementById("excel-preview-container");
+      if (previewCont) previewCont.classList.add("hidden");
+      const btnConfirm = document.getElementById("btn-confirm-excel-import");
+      if (btnConfirm) btnConfirm.disabled = true;
 
-      leaveRequests.unshift({
-        id: "lev_" + Date.now(),
-        staffId: staff.id,
-        staffName: staff.name,
-        type: document.getElementById("leave-apply-type").value,
-        from: document.getElementById("leave-apply-from").value,
-        to: document.getElementById("leave-apply-to").value,
-        reason: document.getElementById("leave-apply-reason").value.trim(),
-        status: "PENDING"
+      document.getElementById("admin-import-staff-modal")?.classList.remove("hidden");
+      if (window.lucide) lucide.createIcons();
+    }
+
+    function closeImportStaffModal() {
+      document.getElementById("admin-import-staff-modal")?.classList.add("hidden");
+    }
+
+    function downloadFacultyExcelTemplate() {
+      try {
+        const templateData = [
+          {
+            "Employee ID": "APS-175",
+            "Full Name": "Mr. Rajiv Varma",
+            "Department": "Science & Mathematics",
+            "Designation": "PGT Chemistry",
+            "Official Email": "rajiv.varma@ashianapublicschool.com",
+            "Attendance PIN": "1234",
+            "Status": "ACTIVE"
+          },
+          {
+            "Employee ID": "APS-176",
+            "Full Name": "Ms. Ananya Sen",
+            "Department": "Languages & Literature",
+            "Designation": "TGT English",
+            "Official Email": "ananya.sen@ashianapublicschool.com",
+            "Attendance PIN": "1234",
+            "Status": "ACTIVE"
+          },
+          {
+            "Employee ID": "APS-177",
+            "Full Name": "Ms. Sunita Rawat",
+            "Department": "Primary Wing (PRT)",
+            "Designation": "PRT Mathematics",
+            "Official Email": "sunita.rawat@ashianapublicschool.com",
+            "Attendance PIN": "1234",
+            "Status": "ACTIVE"
+          }
+        ];
+
+        if (typeof XLSX !== "undefined") {
+          const ws = XLSX.utils.json_to_sheet(templateData);
+          ws['!cols'] = [
+            { wch: 15 },
+            { wch: 25 },
+            { wch: 25 },
+            { wch: 22 },
+            { wch: 35 },
+            { wch: 16 },
+            { wch: 12 }
+          ];
+          const wb = XLSX.utils.book_new();
+          XLSX.utils.book_append_sheet(wb, ws, "Staff Template");
+          XLSX.writeFile(wb, "Ashiana_Faculty_Import_Template.xlsx");
+          showToast("Template downloaded: Ashiana_Faculty_Import_Template.xlsx", "success");
+        } else {
+          // CSV Fallback
+          let csv = "Employee ID,Full Name,Department,Designation,Official Email,Attendance PIN,Status\n";
+          templateData.forEach(r => {
+            csv += `"${r["Employee ID"]}","${r["Full Name"]}","${r["Department"]}","${r["Designation"]}","${r["Official Email"]}","${r["Attendance PIN"]}","${r["Status"]}"\n`;
+          });
+          const blob = new Blob([csv], { type: "text/csv" });
+          const a = document.createElement("a");
+          a.href = URL.createObjectURL(blob);
+          a.download = "Ashiana_Faculty_Import_Template.csv";
+          a.click();
+          showToast("Template downloaded: Ashiana_Faculty_Import_Template.csv", "success");
+        }
+      } catch (err) {
+        showToast("Error generating template: " + err.message, "error");
+      }
+    }
+
+    function handleFacultyExcelUpload(event) {
+      const file = event.target.files?.[0];
+      if (!file) return;
+
+      const reader = new FileReader();
+      reader.onload = function(e) {
+        try {
+          const data = new Uint8Array(e.target.result);
+          const workbook = XLSX.read(data, { type: 'array' });
+          const firstSheetName = workbook.SheetNames[0];
+          const worksheet = workbook.Sheets[firstSheetName];
+          const jsonRows = XLSX.utils.sheet_to_json(worksheet, { defval: "" });
+
+          if (!jsonRows || jsonRows.length === 0) {
+            showToast("No data found in uploaded file.", "error");
+            return;
+          }
+
+          parsedExcelStaffRows = [];
+
+          jsonRows.forEach(row => {
+            const empId = (row["Employee ID"] || row["Emp ID"] || row["EmpId"] || row["empid"] || "").toString().trim().toUpperCase();
+            const name = (row["Full Name"] || row["Name"] || row["Faculty Name"] || "").toString().trim();
+            const department = (row["Department"] || row["Dept"] || "Academic Wing").toString().trim();
+            const role = (row["Designation"] || row["Role"] || "Teacher").toString().trim();
+            const email = (row["Official Email"] || row["Email"] || `${empId.toLowerCase()}@ashianapublicschool.com`).toString().trim().toLowerCase();
+            let pin = (row["Attendance PIN"] || row["PIN"] || row["Pin"] || "1234").toString().trim();
+            if (pin.length < 4) pin = pin.padStart(4, '0');
+            const status = ((row["Status"] || "ACTIVE").toString().trim().toUpperCase() === "INACTIVE") ? "INACTIVE" : "ACTIVE";
+
+            if (empId && name) {
+              parsedExcelStaffRows.push({
+                empId,
+                name,
+                department,
+                role,
+                email,
+                pinHash: pin.substring(0, 4),
+                status
+              });
+            }
+          });
+
+          if (parsedExcelStaffRows.length === 0) {
+            showToast("Could not recognize valid faculty rows. Check columns.", "error");
+            return;
+          }
+
+          // Populate Preview Table
+          const previewCont = document.getElementById("excel-preview-container");
+          const previewTbody = document.getElementById("excel-preview-tbody");
+          const countLabel = document.getElementById("excel-preview-count-label");
+          const btnConfirm = document.getElementById("btn-confirm-excel-import");
+
+          if (countLabel) countLabel.innerText = `Parsed Valid Records (${parsedExcelStaffRows.length})`;
+          if (previewTbody) {
+            previewTbody.innerHTML = parsedExcelStaffRows.map(r => `
+              <tr class="hover:bg-slate-100">
+                <td class="py-1 px-2 font-bold text-ashiana-green">${r.empId}</td>
+                <td class="py-1 px-2 font-sans font-bold text-slate-800">${r.name}</td>
+                <td class="py-1 px-2 font-sans">${r.department}</td>
+                <td class="py-1 px-2 font-sans">${r.role}</td>
+                <td class="py-1 px-2 text-center">${r.pinHash}</td>
+              </tr>
+            `).join('');
+          }
+
+          if (previewCont) previewCont.classList.remove("hidden");
+          if (btnConfirm) btnConfirm.disabled = false;
+          playTone('SUCCESS');
+          showToast(`Read ${parsedExcelStaffRows.length} faculty records successfully.`, "info");
+        } catch (err) {
+          showToast("Failed to parse file: " + err.message, "error");
+        }
+      };
+
+      reader.readAsArrayBuffer(file);
+    }
+
+    async function executeFacultyExcelImport() {
+      if (!parsedExcelStaffRows || parsedExcelStaffRows.length === 0) {
+        showToast("No records to import.", "error");
+        return;
+      }
+
+      const updateExisting = document.getElementById("excel-update-existing-checkbox")?.checked ?? true;
+      let addedCount = 0;
+      let updatedCount = 0;
+
+      parsedExcelStaffRows.forEach(item => {
+        const existingIdx = staffDatabase.findIndex(s => s.empId.toUpperCase() === item.empId.toUpperCase());
+        if (existingIdx !== -1) {
+          if (updateExisting) {
+            staffDatabase[existingIdx].name = item.name;
+            staffDatabase[existingIdx].department = item.department;
+            staffDatabase[existingIdx].role = item.role;
+            staffDatabase[existingIdx].email = item.email;
+            staffDatabase[existingIdx].pinHash = item.pinHash;
+            staffDatabase[existingIdx].status = item.status;
+            updatedCount++;
+          }
+        } else {
+          staffDatabase.push({
+            id: "usr_" + Date.now() + "_" + Math.random().toString(36).substring(2, 6),
+            empId: item.empId,
+            name: item.name,
+            department: item.department,
+            role: item.role,
+            email: item.email,
+            pinHash: item.pinHash,
+            status: item.status
+          });
+          addedCount++;
+        }
       });
+
       savePersistedData();
+
+      // Batch Upsert to Supabase
+      if (supabaseClient) {
+        try {
+          const payload = staffDatabase.map(s => ({
+            id: s.id,
+            emp_id: s.empId,
+            name: s.name,
+            department: s.department,
+            role: s.role,
+            email: s.email,
+            pin_hash: s.pinHash,
+            status: s.status
+          }));
+          await supabaseClient.from('staff').upsert(payload, { onConflict: 'id' });
+        } catch (err) {
+          console.warn("Supabase batch sync notice:", err);
+        }
+      }
+
+      recordAuditLog("EXCEL_IMPORT", "Staff Roster", `Imported ${addedCount} new, updated ${updatedCount} faculty records`);
       playTone('SUCCESS');
-      showToast("Leave request submitted for approval.", "success");
-      closeLeaveApplyModal();
-      renderAdminLeaveTable();
-      document.getElementById("staff-leave-status-widget").innerHTML = `<span class="text-amber-700 font-semibold">Active: Pending Leave Approval</span>`;
+      showToast(`Import completed! Added: ${addedCount}, Updated: ${updatedCount}`, "success");
+      closeImportStaffModal();
+      renderStaffDirectoryTable();
+      renderLiveAttendanceTable();
+      updateKPICards();
+
+      const sel = document.getElementById("correction-staff-select");
+      if (sel) sel.innerHTML = staffDatabase.map(s => `<option value="${s.id}">${s.name} (${s.empId})</option>`).join('');
     }
 
     function exportStaffCredentialsWithPIN() {
