@@ -119,7 +119,7 @@
       <!-- Brand & Official Logo -->
       <div class="flex items-center space-x-2.5 sm:space-x-3">
         <div class="relative w-9 h-9 sm:w-11 sm:h-11 rounded-full bg-white p-0.5 shadow flex items-center justify-center overflow-hidden border border-emerald-400/40 flex-shrink-0">
-          <img src="logo 2.jpg" alt="Ashiana Public School Logo" 
+          <img src="logo 2.png" alt="Ashiana Public School Logo" 
                onerror="this.style.display='none'; this.nextElementSibling.classList.remove('hidden');" 
                class="w-full h-full object-cover rounded-full">
           <svg class="w-full h-full hidden" viewBox="0 0 200 200" fill="none" xmlns="http://www.w3.org/2000/svg">
@@ -182,7 +182,7 @@
     <div class="flex items-center space-x-2 max-w-7xl mx-auto w-full">
       <span class="w-2 h-2 rounded-full bg-ashiana-green animate-pulse flex-shrink-0"></span>
       <span id="banner-status-text" class="truncate">
-        <strong>Ashiana Faculty Attendance:</strong> Shift <strong>07:40 AM – 02:30 PM</strong>. Fast 1-Tap QR Scan enabled.
+        <strong>Ashiana Faculty Attendance:</strong> Shift <strong>07:40 AM – 02:30 PM</strong>. Secure QR + 4-digit PIN verification enabled.
       </span>
     </div>
   </div>
@@ -197,7 +197,7 @@
     <div id="auth-gateway-view" class="w-full max-w-md bg-white rounded-3xl shadow-xl border border-slate-200 overflow-hidden my-auto">
       <div class="bg-gradient-to-br from-emerald-950 via-[#064E3B] to-emerald-900 p-6 text-white text-center relative overflow-hidden">
         <div class="w-16 h-16 sm:w-20 sm:h-20 mx-auto mb-3 rounded-full bg-white p-1 shadow-lg border-2 border-emerald-400/50 flex items-center justify-center overflow-hidden">
-          <img src="logo 2.jpg" alt="Ashiana Public School" 
+          <img src="logo 2.png" alt="Ashiana Public School" 
                onerror="this.style.display='none'; this.nextElementSibling.classList.remove('hidden');" 
                class="w-full h-full object-cover rounded-full">
           <svg class="w-full h-full hidden" viewBox="0 0 200 200" fill="none" xmlns="http://www.w3.org/2000/svg">
@@ -232,12 +232,12 @@
         <!-- TEACHER LOGIN FORM -->
         <form id="teacher-login-form" onsubmit="handleTeacherLogin(event)" class="space-y-3.5">
           <div>
-            <label class="block text-xs font-bold text-slate-700 mb-1">Employee ID or Registered Email</label>
+            <label class="block text-xs font-bold text-slate-700 mb-1">Registered Staff Email</label>
             <div class="relative">
               <div class="absolute inset-y-0 left-0 pl-3.5 flex items-center pointer-events-none text-slate-400">
                 <i data-lucide="id-card" class="w-4 h-4 text-ashiana-green"></i>
               </div>
-              <input type="text" id="teacher-login-id" required placeholder="e.g. APS-104 or email" class="w-full text-xs pl-10 pr-3.5 py-2.5 sm:py-3 bg-slate-50 border border-slate-200 rounded-xl focus:ring-2 focus:ring-ashiana-green focus:outline-none focus:bg-white font-medium">
+              <input type="text" id="teacher-login-id" required placeholder="e.g. teacher@ashianapublicschool.com" class="w-full text-xs pl-10 pr-3.5 py-2.5 sm:py-3 bg-slate-50 border border-slate-200 rounded-xl focus:ring-2 focus:ring-ashiana-green focus:outline-none focus:bg-white font-medium">
             </div>
           </div>
 
@@ -268,7 +268,7 @@
           </div>
 
           <div>
-            <label class="block text-xs font-bold text-slate-700 mb-1">Admin Username / Email</label>
+            <label class="block text-xs font-bold text-slate-700 mb-1">Administrator Email</label>
             <div class="relative">
               <div class="absolute inset-y-0 left-0 pl-3.5 flex items-center pointer-events-none text-slate-400">
                 <i data-lucide="user" class="w-4 h-4 text-ashiana-green"></i>
@@ -377,7 +377,7 @@
           <div class="bg-gradient-to-br from-emerald-50 to-green-50/80 rounded-2xl p-4 border border-emerald-200 shadow-sm text-center">
             <div class="mb-2.5">
               <span class="text-[10px] font-bold text-ashiana-green uppercase tracking-wider block">Instant QR Attendance</span>
-              <p class="text-[11px] text-slate-500 mt-0.5">Simply scan school QR code — PIN not required!</p>
+              <p class="text-[11px] text-slate-500 mt-0.5">Scan the school QR code, then enter your 4-digit PIN.</p>
             </div>
 
             <button id="btn-mark-attendance" onclick="openPunchModal()" class="w-full py-3.5 bg-gradient-to-r from-ashiana-green via-[#08693A] to-emerald-900 hover:from-[#08693A] hover:to-[#054625] text-white rounded-2xl font-extrabold text-sm sm:text-base tracking-wide flex items-center justify-center space-x-2 shadow-lg shadow-emerald-700/30 active:scale-[0.98] transition-all border-b-2 border-ashiana-red">
@@ -639,7 +639,7 @@
       <div id="admin-tab-qr" class="hidden space-y-3">
         <div class="max-w-md mx-auto bg-white rounded-3xl border border-slate-200 shadow-xl overflow-hidden text-center p-6">
           <div class="w-16 h-16 mx-auto mb-2 rounded-full bg-white p-1 shadow border-2 border-emerald-500 flex items-center justify-center overflow-hidden">
-            <img src="logo 2.jpg" alt="Ashiana Public School" 
+            <img src="logo 2.png" alt="Ashiana Public School" 
                  onerror="this.style.display='none'; this.nextElementSibling.classList.remove('hidden');" 
                  class="w-full h-full object-cover rounded-full">
             <svg class="w-full h-full hidden" viewBox="0 0 200 200" fill="none" xmlns="http://www.w3.org/2000/svg">
@@ -670,7 +670,7 @@
               <span id="qr-station-date" class="font-mono text-ashiana-green">Today</span>
             </div>
             <p class="text-[10px] text-slate-500 text-left">
-              Teachers can point their smartphone camera to instantly mark PUNCH IN or PUNCH OUT. No PIN entry required on scan!
+              Scan the active school QR code and verify with your personal 4-digit PIN. QR codes expire after 60 seconds.
             </p>
           </div>
 
@@ -701,9 +701,9 @@
                 <i data-lucide="file-spreadsheet" class="w-3.5 h-3.5"></i>
                 <span>Import Excel</span>
               </button>
-              <button onclick="exportStaffCredentialsWithPIN()" class="px-3 py-2 bg-emerald-950 hover:bg-black text-white text-xs font-bold rounded-xl flex items-center space-x-1.5 shadow border-b-2 border-ashiana-red">
+              <button onclick="exportLiveToCSV()" class="px-3 py-2 bg-emerald-950 hover:bg-black text-white text-xs font-bold rounded-xl flex items-center space-x-1.5 shadow border-b-2 border-ashiana-red">
                 <i data-lucide="key" class="w-3.5 h-3.5 text-amber-300"></i>
-                <span>Export PINs (CSV)</span>
+                <span>Export Staff Data (CSV)</span>
               </button>
               <button onclick="openBulkDeleteStaffModal()" class="px-3 py-2 bg-rose-700 hover:bg-rose-800 text-white text-xs font-bold rounded-xl flex items-center space-x-1.5 shadow transition-all active:scale-95 border-b-2 border-rose-950" title="Select All for Delete Multiple Staff">
                 <i data-lucide="user-minus" class="w-3.5 h-3.5"></i>
@@ -721,7 +721,7 @@
                   <th class="py-2 px-3">Department</th>
                   <th class="py-2 px-3">Role</th>
                   <th class="py-2 px-3">Email</th>
-                  <th class="py-2 px-3 text-center">PIN</th>
+                  
                   <th class="py-2 px-3">Status</th>
                   <th class="py-2 px-3 text-center">Actions</th>
                 </tr>
@@ -934,7 +934,7 @@
                 <i data-lucide="refresh-cw" class="w-3.5 h-3.5"></i>
                 <span>Refresh Report</span>
               </button>
-              <button onclick="seedSampleMonthlyAttendanceData()" class="px-3 py-2 bg-slate-100 hover:bg-slate-200 text-slate-700 rounded-xl text-xs font-semibold flex items-center space-x-1 transition-colors" title="Populate sample punches for earlier days of this month to preview monthly reports">
+              <button onclick="showToast('Sample data generation is disabled in production.','info')" class="px-3 py-2 bg-slate-100 hover:bg-slate-200 text-slate-700 rounded-xl text-xs font-semibold flex items-center space-x-1 transition-colors" title="Populate sample punches for earlier days of this month to preview monthly reports">
                 <i data-lucide="sparkles" class="w-3.5 h-3.5 text-amber-500"></i>
                 <span class="hidden sm:inline">Seed Sample Month Punches</span>
               </button>
@@ -1029,7 +1029,7 @@
     <div class="border-b-2 border-emerald-900 pb-3 mb-4 flex items-center justify-between">
       <div class="flex items-center space-x-3">
         <div class="w-14 h-14 rounded-full border border-emerald-700 p-0.5">
-          <img src="logo 2.jpg" alt="Ashiana Public School" class="w-full h-full object-cover rounded-full" onerror="this.src='https://placehold.co/100x100/0A7E46/ffffff?text=APS'">
+          <img src="logo 2.png" alt="Ashiana Public School" class="w-full h-full object-cover rounded-full" onerror="this.src='https://placehold.co/100x100/0A7E46/ffffff?text=APS'">
         </div>
         <div>
           <h1 class="text-xl font-bold font-serif text-slate-900 leading-tight">ASHIANA PUBLIC SCHOOL</h1>
@@ -1109,7 +1109,13 @@
         </div>
 
         <div id="scanner-status-text" class="text-center text-xs text-slate-600 font-medium">
-          Align the Daily QR Station code inside the viewfinder to mark attendance automatically.
+          Align the active Daily QR Station code inside the viewfinder.
+        </div>
+
+        <div id="attendance-pin-step" class="hidden space-y-2 p-3 bg-emerald-50 border border-emerald-200 rounded-2xl">
+          <label class="block text-[11px] font-bold text-emerald-950">Enter your 4-digit Attendance PIN</label>
+          <input id="scan-attendance-pin" type="password" inputmode="numeric" maxlength="4" pattern="[0-9]{4}" placeholder="••••" class="w-full text-center text-lg tracking-[0.45em] font-bold font-mono bg-white border border-emerald-200 rounded-xl py-2.5 focus:outline-none focus:ring-2 focus:ring-ashiana-green">
+          <button type="button" onclick="submitScannedAttendance()" class="w-full py-2.5 bg-ashiana-green text-white rounded-xl text-xs font-bold">Verify PIN & Mark Attendance</button>
         </div>
 
         <div class="flex items-center space-x-2 pt-1">
@@ -1238,7 +1244,7 @@
           </div>
           <div>
             <label class="block text-[11px] font-bold text-slate-700 mb-1">Initial 4-Digit PIN *</label>
-            <input type="password" maxlength="4" pattern="[0-9]{4}" id="add-staff-pin" required value="1234" class="w-full text-xs p-2 bg-slate-50 border border-slate-200 rounded-xl font-mono tracking-widest text-center font-bold">
+            <input type="password" maxlength="4" pattern="[0-9]{4}" id="add-staff-pin" required class="w-full text-xs p-2 bg-slate-50 border border-slate-200 rounded-xl font-mono tracking-widest text-center font-bold">
           </div>
         </div>
 
@@ -1653,6 +1659,9 @@
     let currentAuthUser = null;
     let currentStaffId = null;
     let currentPortal = "staff";
+    let supabaseAuthUser = null;
+    let pendingQRToken = null;
+    let qrAutoRefreshInterval = null;
 
     // Staff Directory Selection State
     let selectedStaffIds = new Set();
@@ -1673,96 +1682,53 @@
       });
     }
 
-    function getTodayDailyToken(dateStr) {
-      const storageKey = 'aps_daily_qr_token_' + dateStr;
-      let token = localStorage.getItem(storageKey);
-      if (!token) {
-        token = "APS-DAY-" + dateStr.replace(/-/g, '') + "-" + Math.random().toString(36).substring(2, 8).toUpperCase();
-        localStorage.setItem(storageKey, token);
-      }
-      return token;
-    }
+    // QR sessions are generated server-side by Supabase Edge Functions.
+    let activeQRSession = { token: "", date: systemConfig.currentAttendanceDate, validUntil: null };
 
-    let activeQRSession = {
-      token: getTodayDailyToken(systemConfig.currentAttendanceDate),
-      date: systemConfig.currentAttendanceDate,
-      validUntil: "End of Today"
-    };
+    // Staff records are loaded only from Supabase after authentication.
 
-    // Baseline Faculty Data for Ashiana Public School
-    function getBaselineFacultyData() {
-      const baseline = [
-        { id: "usr_101", empId: "APS-101", name: "Mrs. Monika Sharma", role: "Principal", department: "Administration", email: "principal@ashianapublicschool.com", pinHash: "1234", status: "ACTIVE" },
-        { id: "usr_102", empId: "APS-102", name: "Ms. Kavita Chhabra", role: "Vice Principal & Coordinator", department: "Administration", email: "kavita.chhabra@ashianapublicschool.com", pinHash: "1234", status: "ACTIVE" },
-        { id: "usr_103", empId: "APS-103", name: "Ms. Saloni Varma", role: "Office Coordinator", department: "Administration", email: "saloni.varma@ashianapublicschool.com", pinHash: "1234", status: "ACTIVE" },
-        { id: "usr_104", empId: "APS-104", name: "Ms. Jyotsna Leekha", role: "TGT Science & Mathematics", department: "Science & Mathematics", email: "jyotsna.leekha@ashianapublicschool.com", pinHash: "1234", status: "ACTIVE" },
-        { id: "usr_105", empId: "APS-105", name: "Ms. Shally Vij", role: "TGT Hindi & Sanskrit", department: "Languages & Literature", email: "shally.vij@ashianapublicschool.com", pinHash: "1234", status: "ACTIVE" },
-        { id: "usr_106", empId: "APS-106", name: "Ms. Deepali Pathak", role: "TGT Mathematics", department: "Science & Mathematics", email: "deepali.pathak@ashianapublicschool.com", pinHash: "1234", status: "ACTIVE" },
-        { id: "usr_107", empId: "APS-107", name: "Ms. Ambika Handoo Sharma", role: "PGT Computer Science", department: "Information Technology", email: "ambika.handoo@ashianapublicschool.com", pinHash: "1234", status: "ACTIVE" },
-        { id: "usr_108", empId: "APS-108", name: "Ms. Ramandeep Kaur", role: "TGT Punjabi", department: "Languages & Literature", email: "ramandeep.kaur@ashianapublicschool.com", pinHash: "1234", status: "ACTIVE" },
-        { id: "usr_109", empId: "APS-109", name: "Ms. Savleen Chahal", role: "TGT English", department: "Languages & Literature", email: "savleen.chahal@ashianapublicschool.com", pinHash: "1234", status: "ACTIVE" },
-        { id: "usr_110", empId: "APS-110", name: "Ms. Anita Kashyap", role: "TGT Social Science", department: "Languages & Literature", email: "anita.kashyap@ashianapublicschool.com", pinHash: "1234", status: "ACTIVE" },
-        { id: "usr_111", empId: "APS-111", name: "Ms. Alka Bhalla", role: "TGT Science", department: "Science & Mathematics", email: "alka.bhalla@ashianapublicschool.com", pinHash: "1234", status: "ACTIVE" },
-        { id: "usr_112", empId: "APS-112", name: "Ms. Nitika Sihota", role: "PGT Physics", department: "Science & Mathematics", email: "nitika.sihota@ashianapublicschool.com", pinHash: "1234", status: "ACTIVE" },
-        { id: "usr_113", empId: "APS-113", name: "Ms. Renu Devgun", role: "TGT English", department: "Languages & Literature", email: "renu.devgun@ashianapublicschool.com", pinHash: "1234", status: "ACTIVE" },
-        { id: "usr_114", empId: "APS-114", name: "Ms. Anupama Rana", role: "TGT Science & Biology", department: "Science & Mathematics", email: "anupama.rana@ashianapublicschool.com", pinHash: "1234", status: "ACTIVE" },
-        { id: "usr_115", empId: "APS-115", name: "Ms. Shweta Arora", role: "TGT Mathematics", department: "Science & Mathematics", email: "shweta.arora@ashianapublicschool.com", pinHash: "1234", status: "ACTIVE" },
-        { id: "usr_116", empId: "APS-116", name: "Ms. Dharaa Sharma", role: "PRT English", department: "Primary Wing (PRT)", email: "dharaa.sharma@ashianapublicschool.com", pinHash: "1234", status: "ACTIVE" },
-        { id: "usr_117", empId: "APS-117", name: "Ms. Shruti Narula", role: "PRT Mathematics", department: "Primary Wing (PRT)", email: "shruti.narula@ashianapublicschool.com", pinHash: "1234", status: "ACTIVE" },
-        { id: "usr_118", empId: "APS-118", name: "Ms. Harpreet Kaur", role: "PRT Punjabi", department: "Primary Wing (PRT)", email: "harpreet.kaur@ashianapublicschool.com", pinHash: "1234", status: "ACTIVE" },
-        { id: "usr_119", empId: "APS-119", name: "Ms. Sushma Sajwan", role: "PRT Hindi", department: "Primary Wing (PRT)", email: "sushma.sajwan@ashianapublicschool.com", pinHash: "1234", status: "ACTIVE" },
-        { id: "usr_120", empId: "APS-120", name: "Ms. Lata Rani", role: "PRT EVS & Science", department: "Primary Wing (PRT)", email: "lata.rani@ashianapublicschool.com", pinHash: "1234", status: "ACTIVE" },
-        { id: "usr_121", empId: "APS-121", name: "Ms. Upasna Kapuria", role: "PRT Art & Craft", department: "Arts, Music & Dance", email: "upasna.kapuria@ashianapublicschool.com", pinHash: "1234", status: "ACTIVE" },
-        { id: "usr_122", empId: "APS-122", name: "Ms. Amita Arora", role: "Kindergarten Coordinator", department: "Kindergarten Wing", email: "amita.arora@ashianapublicschool.com", pinHash: "1234", status: "ACTIVE" },
-        { id: "usr_123", empId: "APS-123", name: "Ms. Shikha Gupta", role: "Pre-Primary Teacher", department: "Kindergarten Wing", email: "shikha.gupta@ashianapublicschool.com", pinHash: "1234", status: "ACTIVE" },
-        { id: "usr_124", empId: "APS-124", name: "Ms. Artti Prashar", role: "Pre-Primary Teacher", department: "Kindergarten Wing", email: "artti.prashar@ashianapublicschool.com", pinHash: "1234", status: "ACTIVE" },
-        { id: "usr_125", empId: "APS-125", name: "Ms. Manpreet Kaur", role: "Pre-Primary Teacher", department: "Kindergarten Wing", email: "manpreet.k@ashianapublicschool.com", pinHash: "1234", status: "ACTIVE" },
-        { id: "usr_126", empId: "APS-126", name: "Ms. Neenu Mahajan", role: "Pre-Primary Teacher", department: "Kindergarten Wing", email: "neenu.mahajan@ashianapublicschool.com", pinHash: "1234", status: "ACTIVE" },
-        { id: "usr_127", empId: "APS-127", name: "Ms. Abhilasha Gulati", role: "Pre-Primary Teacher", department: "Kindergarten Wing", email: "abhilasha.gulati@ashianapublicschool.com", pinHash: "1234", status: "ACTIVE" },
-        { id: "usr_128", empId: "APS-128", name: "Ms. Simranjeet Kaur", role: "PRT Social Studies", department: "Primary Wing (PRT)", email: "simranjeet.k@ashianapublicschool.com", pinHash: "1234", status: "ACTIVE" },
-        { id: "usr_129", empId: "APS-129", name: "Ms. Pooja Mehra", role: "PRT Science", department: "Primary Wing (PRT)", email: "pooja.mehra@ashianapublicschool.com", pinHash: "1234", status: "ACTIVE" },
-        { id: "usr_130", empId: "APS-130", name: "Ms. Ritu Sharma", role: "PRT Hindi", department: "Primary Wing (PRT)", email: "ritu.sharma@ashianapublicschool.com", pinHash: "1234", status: "ACTIVE" },
-        { id: "usr_135", empId: "APS-135", name: "Ms. Vandana Thakur", role: "Special Educator & Counsellor", department: "Student Support", email: "vandana.thakur@ashianapublicschool.com", pinHash: "1234", status: "ACTIVE" },
-        { id: "usr_136", empId: "APS-136", name: "Ms. Sheela Jaswal", role: "Chief Librarian", department: "Administration", email: "sheela.jaswal@ashianapublicschool.com", pinHash: "1234", status: "ACTIVE" },
-        { id: "usr_137", empId: "APS-137", name: "Mr. Amit Kumar", role: "PET & Sports Head", department: "Physical Education", email: "amit.kumar@ashianapublicschool.com", pinHash: "1234", status: "ACTIVE" },
-        { id: "usr_138", empId: "APS-138", name: "Mr. Manjeet Singh", role: "Taekwondo Coach", department: "Physical Education", email: "manjeet.singh@ashianapublicschool.com", pinHash: "1234", status: "ACTIVE" }
-      ];
-      return baseline;
-    }
-
-    // Check if WebSockets are permitted in the current runtime environment
-    function checkWebSocketSupport() {
-      try {
-        if (typeof WebSocket === "undefined") return false;
-        const testWs = new WebSocket("wss://localhost:0");
-        testWs.close();
-        return true;
-      } catch (err) {
-        return false;
-      }
-    }
-
-    // Initialize Supabase Client with Dual Auto-Sync Engine
     function initSupabase() {
-      if (window.supabase && window.supabase.createClient) {
-        try {
-          supabaseClient = window.supabase.createClient(DEFAULT_SUPABASE_URL, DEFAULT_SUPABASE_ANON_KEY);
-          isCloudConnected = true;
-          updateCloudBadge(true);
-          
-          if (checkWebSocketSupport()) {
-            listenToRealtimePunches();
-          } else {
-            console.info("WebSockets restricted in current sandbox. Utilizing continuous HTTP polling sync.");
+      if (!(window.supabase && window.supabase.createClient)) return;
+      try {
+        supabaseClient = window.supabase.createClient(DEFAULT_SUPABASE_URL, DEFAULT_SUPABASE_ANON_KEY, {
+          auth: { persistSession: true, autoRefreshToken: true, detectSessionInUrl: true }
+        });
+        isCloudConnected = true;
+        updateCloudBadge(true);
+        supabaseClient.auth.getSession().then(({ data }) => {
+          supabaseAuthUser = data.session?.user || null;
+          if (supabaseAuthUser) restoreAuthenticatedUserFromAuth();
+        });
+        supabaseClient.auth.onAuthStateChange((_event, session) => {
+          supabaseAuthUser = session?.user || null;
+          if (!supabaseAuthUser && currentAuthUser) {
+            currentAuthUser = null; currentStaffId = null;
+            sessionStorage.removeItem(STORAGE_KEY_CURRENT_USER);
+            applyAuthenticatedUI();
           }
-          
-          startBackgroundPolling();
-        } catch (e) {
-          console.warn("Supabase init error:", e);
-          isCloudConnected = false;
-          updateCloudBadge(false);
-        }
+        });
+      } catch (e) {
+        console.warn("Supabase init error:", e);
+        isCloudConnected = false; updateCloudBadge(false);
       }
+    }
+
+    async function restoreAuthenticatedUserFromAuth() {
+      if (!supabaseClient || !supabaseAuthUser) return;
+      const email = (supabaseAuthUser.email || '').toLowerCase();
+      const { data: admin } = await supabaseClient.from('admin_users').select('email,role,active').eq('email', email).eq('active', true).maybeSingle();
+      if (admin) {
+        currentAuthUser = { type:'ADMIN', username: email, role: admin.role };
+        currentStaffId = null;
+      } else {
+        const { data: staff } = await supabaseClient.from('staff').select('id,emp_id,name,department,role,email,status').ilike('email', email).eq('status','ACTIVE').maybeSingle();
+        if (!staff) { await supabaseClient.auth.signOut(); return; }
+        const mapped = { id:staff.id, empId:staff.emp_id, name:staff.name, department:staff.department, role:staff.role, email:staff.email, status:staff.status };
+        currentAuthUser = { type:'STAFF', staffRecord:mapped }; currentStaffId = staff.id;
+      }
+      sessionStorage.setItem(STORAGE_KEY_CURRENT_USER, JSON.stringify(currentAuthUser));
+      await syncAllDataFromSupabase(false);
+      applyAuthenticatedUI();
     }
 
     function updateCloudBadge(connected) {
@@ -1795,7 +1761,7 @@
         // 1. SYNC STAFF TABLE (Accounts, Names, Roles, Updated PINs)
         const { data: remoteStaff, error: staffErr } = await supabaseClient
           .from('staff')
-          .select('*')
+          .select('id,emp_id,name,department,role,email,status')
           .order('name', { ascending: true });
 
         if (staffErr) {
@@ -1811,7 +1777,7 @@
               department: s.department,
               role: s.role,
               email: s.email,
-              pinHash: (s.pin_hash || s.pinHash || "1234").toString(),
+              pinHash: "",
               status: s.status || "ACTIVE"
             };
             remoteMap.set(mapped.id, mapped);
@@ -1821,15 +1787,14 @@
           if (remoteStaff.length !== staffDatabase.length || 
               remoteStaff.some(s => {
                 const loc = staffDatabase.find(x => x.id === s.id);
-                return !loc || loc.pinHash !== (s.pin_hash || s.pinHash) || loc.name !== s.name || loc.status !== s.status;
+                return !loc || loc.name !== s.name || loc.status !== s.status;
               })) {
             staffDatabase = Array.from(remoteMap.values());
             anyChange = true;
           }
-        } else if (remoteStaff && remoteStaff.length === 0 && staffDatabase.length > 0) {
-          // If remote cloud database is completely empty on first run, auto-seed baseline staff
-          console.info("Supabase staff table is empty. Auto-seeding baseline roster to cloud...");
-          await syncAllToSupabase();
+        } else if (remoteStaff && remoteStaff.length === 0) {
+          staffDatabase = [];
+          anyChange = true;
         }
 
         // 2. SYNC ATTENDANCE PUNCHES (All dates so history and reports work on any device)
@@ -1854,7 +1819,7 @@
                 empId: rp.emp_id,
                 attendanceDate: rp.attendance_date,
                 type: rp.type,
-                timestamp: rp.timestamp,
+                timestamp: normalizePunchTimestamp(rp.timestamp),
                 method: rp.method || "QR_CAMERA"
               });
               anyChange = true;
@@ -1992,29 +1957,22 @@
     async function loadPersistedData() {
       try {
         const savedStaff = localStorage.getItem(STORAGE_KEY_STAFF);
-        staffDatabase = savedStaff ? JSON.parse(savedStaff) : getBaselineFacultyData();
+        staffDatabase = savedStaff ? JSON.parse(savedStaff) : [];
 
         const savedPunches = localStorage.getItem(STORAGE_KEY_PUNCHES);
         punchLedger = savedPunches ? JSON.parse(savedPunches) : [];
 
         const savedLeave = localStorage.getItem(STORAGE_KEY_LEAVE);
-        leaveRequests = savedLeave ? JSON.parse(savedLeave) : [
-          { id: "lev_1", staffId: "usr_111", staffName: "Ms. Alka Bhalla", type: "Medical Leave", from: systemConfig.currentAttendanceDate, to: systemConfig.currentAttendanceDate, reason: "Viral fever", status: "APPROVED" },
-          { id: "lev_2", staffId: "usr_123", staffName: "Ms. Shikha Gupta", type: "Casual Leave", from: systemConfig.currentAttendanceDate, to: systemConfig.currentAttendanceDate, reason: "Family event", status: "APPROVED" }
-        ];
+        leaveRequests = savedLeave ? JSON.parse(savedLeave) : [];
 
         const savedAudit = localStorage.getItem(STORAGE_KEY_AUDIT);
         auditLogs = savedAudit ? JSON.parse(savedAudit) : [
           { id: "aud_1", timestamp: new Date().toLocaleString(), actor: "System Engine", action: "SYSTEM_INIT", entity: "School Calendar", details: "Shift 07:40 AM – 02:30 PM initialized." }
         ];
 
-        const savedUser = sessionStorage.getItem(STORAGE_KEY_CURRENT_USER);
-        if (savedUser) {
-          currentAuthUser = JSON.parse(savedUser);
-          currentStaffId = currentAuthUser.staffRecord?.id || staffDatabase[0]?.id || "usr_101";
-        }
+
       } catch (e) {
-        staffDatabase = getBaselineFacultyData();
+        staffDatabase = [];
       }
 
       // Initial immediate cloud sync across devices
@@ -2069,7 +2027,6 @@
           department: staff.department,
           role: staff.role,
           email: staff.email,
-          pin_hash: staff.pinHash,
           status: staff.status
         }], { onConflict: 'id' });
       } catch (err) {
@@ -2091,7 +2048,6 @@
           department: s.department,
           role: s.role,
           email: s.email,
-          pin_hash: s.pinHash,
           status: s.status
         }));
         const { error } = await supabaseClient.from('staff').upsert(payload, { onConflict: 'id' });
@@ -2131,120 +2087,40 @@
 
     async function handleTeacherLogin(event) {
       event.preventDefault();
-      const idVal = (document.getElementById("teacher-login-id")?.value || "").trim().toLowerCase();
-      const pinVal = (document.getElementById("teacher-login-pin")?.value || "").trim();
-
-      // 1. Try local match
-      let matched = staffDatabase.find(s => 
-        (s.empId && s.empId.toLowerCase() === idVal) || 
-        (s.email && s.email.toLowerCase() === idVal)
-      );
-
-      // 2. Fallback: If not found in local memory, check live Supabase database directly!
-      if (!matched && supabaseClient) {
-        try {
-          const { data: remoteMatch, error } = await supabaseClient
-            .from('staff')
-            .select('*')
-            .or(`emp_id.ilike.${idVal},email.ilike.${idVal}`);
-
-          if (!error && remoteMatch && remoteMatch.length > 0) {
-            const rm = remoteMatch[0];
-            matched = {
-              id: rm.id,
-              empId: rm.emp_id || rm.empId,
-              name: rm.name,
-              department: rm.department,
-              role: rm.role,
-              email: rm.email,
-              pinHash: (rm.pin_hash || rm.pinHash || "1234").toString(),
-              status: rm.status || "ACTIVE"
-            };
-            staffDatabase.push(matched);
-            savePersistedData();
-          }
-        } catch (err) {
-          console.warn("Direct Supabase login query:", err);
-        }
-      }
-
-      if (!matched) {
-        playTone('ERROR');
-        showToast("Employee ID or email not found. Please contact administration.", "error");
-        return;
-      }
-
-      if (matched.status !== "ACTIVE") {
-        playTone('ERROR');
-        showToast("Account is inactive. Contact office.", "error");
-        return;
-      }
-
-      // 3. Verify PIN (with live Supabase fallback in case PIN was changed on another device)
-      if (matched.pinHash !== pinVal) {
-        if (supabaseClient) {
-          try {
-            const { data: livePinCheck } = await supabaseClient
-              .from('staff')
-              .select('pin_hash')
-              .eq('id', matched.id)
-              .single();
-
-            if (livePinCheck && livePinCheck.pin_hash === pinVal) {
-              matched.pinHash = livePinCheck.pin_hash;
-              savePersistedData();
-            } else {
-              playTone('ERROR');
-              showToast("Incorrect PIN. Sign in failed.", "error");
-              return;
-            }
-          } catch (e) {
-            playTone('ERROR');
-            showToast("Incorrect PIN. Sign in failed.", "error");
-            return;
-          }
-        } else {
-          playTone('ERROR');
-          showToast("Incorrect PIN. Sign in failed.", "error");
-          return;
-        }
-      }
-
-      currentAuthUser = { type: 'STAFF', staffRecord: matched };
-      currentStaffId = matched.id;
-      sessionStorage.setItem(STORAGE_KEY_CURRENT_USER, JSON.stringify(currentAuthUser));
-
-      playTone('SUCCESS');
-      showToast(`Welcome, ${matched.name}!`, "success");
-      applyAuthenticatedUI();
+      if (!supabaseClient) { showToast("Cloud service is unavailable.", "error"); return; }
+      const email = (document.getElementById("teacher-login-id")?.value || "").trim().toLowerCase();
+      const pin = (document.getElementById("teacher-login-pin")?.value || "").trim();
+      if (email === 'rajkumargaur54@gmail.com') { showToast("This email is configured as the Administrator account. Use the Administrator tab to sign in.", "info"); return; }
+      if (!email || !/^\d{4}$/.test(pin)) { showToast("Enter your registered email and 4-digit PIN.", "error"); return; }
+      const { data, error } = await supabaseClient.auth.signInWithPassword({ email, password: pin });
+      if (error || !data.user) { playTone('ERROR'); showToast(error?.message || "Invalid email or PIN.", "error"); return; }
+      supabaseAuthUser = data.user;
+      await restoreAuthenticatedUserFromAuth();
+      playTone('SUCCESS'); showToast(`Welcome, ${currentAuthUser?.staffRecord?.name || 'Staff'}!`, "success");
     }
 
-    function handleAdminLogin(event) {
+    async function handleAdminLogin(event) {
       event.preventDefault();
-      const userVal = (document.getElementById("admin-login-user")?.value || "").trim().toLowerCase();
-      const passVal = (document.getElementById("admin-login-pass")?.value || "").trim();
-
-      if ((userVal === "admin@ashianapublicschool.com" || userVal === "admin") && passVal === "admin123") {
-        currentAuthUser = { type: 'ADMIN', username: "Administrator (Principal Office)" };
-        currentStaffId = staffDatabase[0]?.id || "usr_101";
-        sessionStorage.setItem(STORAGE_KEY_CURRENT_USER, JSON.stringify(currentAuthUser));
-
-        recordAuditLog("ADMIN_LOGIN", "Security Gateway", "Administrator signed in to console.");
-        playTone('SUCCESS');
-        showToast("Administrator signed in successfully.", "success");
-        applyAuthenticatedUI();
-      } else {
-        playTone('ERROR');
-        showToast("Invalid admin credentials.", "error");
-      }
+      if (!supabaseClient) { showToast("Cloud service is unavailable.", "error"); return; }
+      const email = (document.getElementById("admin-login-user")?.value || "").trim().toLowerCase();
+      const pass = (document.getElementById("admin-login-pass")?.value || "").trim();
+      const { data, error } = await supabaseClient.auth.signInWithPassword({ email, password: pass });
+      if (error || !data.user) { playTone('ERROR'); showToast("Invalid administrator credentials.", "error"); return; }
+      supabaseAuthUser = data.user;
+      const { data: admin } = await supabaseClient.from('admin_users').select('email,role,active').eq('email', email).eq('active', true).maybeSingle();
+      if (!admin) { await supabaseClient.auth.signOut(); playTone('ERROR'); showToast("This account is not authorized as an administrator.", "error"); return; }
+      currentAuthUser = { type:'ADMIN', username: email, role: admin.role }; currentStaffId = null;
+      sessionStorage.setItem(STORAGE_KEY_CURRENT_USER, JSON.stringify(currentAuthUser));
+      await syncAllDataFromSupabase(false); applyAuthenticatedUI();
+      recordAuditLog("ADMIN_LOGIN", "Security Gateway", "Administrator signed in to console.");
+      playTone('SUCCESS'); showToast("Administrator signed in successfully.", "success");
     }
 
-    function handleLogout() {
-      currentAuthUser = null;
-      currentStaffId = null;
+    async function handleLogout() {
+      if (supabaseClient) await supabaseClient.auth.signOut();
+      currentAuthUser = null; currentStaffId = null; supabaseAuthUser = null;
       sessionStorage.removeItem(STORAGE_KEY_CURRENT_USER);
-      showToast("Signed out safely.", "info");
-      applyAuthenticatedUI();
+      showToast("Signed out safely.", "info"); applyAuthenticatedUI();
     }
 
     function applyAuthenticatedUI() {
@@ -2313,6 +2189,14 @@
     }
 
     // Core Attendance Calculations
+    function normalizePunchTimestamp(value) {
+      if (!value) return "";
+      const text = String(value);
+      if (/^\d{2}:\d{2}$/.test(text)) return text;
+      const d = new Date(text);
+      return isNaN(d.getTime()) ? text.substring(0,5) : d.toLocaleTimeString('en-IN',{hour:'2-digit',minute:'2-digit',hour12:false});
+    }
+
     function getTodayPunches(staffId) {
       return punchLedger
         .filter(p => p.staffId === staffId && p.attendanceDate === systemConfig.currentAttendanceDate)
@@ -2375,124 +2259,70 @@
     }
 
     // =========================================================================
-    // CAMERA & 1-STEP DIRECT ATTENDANCE PUNCHING (NO PIN REQUIRED ON SCAN)
+    // CAMERA + QR + 4-DIGIT PIN ATTENDANCE
     // =========================================================================
     async function startCameraScanner() {
       if (typeof Html5Qrcode === "undefined") return;
       await stopCameraScanner();
-
       const isSecure = location.protocol === 'https:' || location.hostname === 'localhost' || location.hostname === '127.0.0.1';
-      if (!isSecure) {
-        document.getElementById("scanner-status-text").innerHTML = `<span class="text-ashiana-red font-bold">HTTPS Required for Camera!</span><br><span class="text-[10px] text-slate-500">Tap "Simulate QR Detected" to test below.</span>`;
-        return;
-      }
-
+      if (!isSecure) { document.getElementById("scanner-status-text").innerHTML = '<span class="text-ashiana-red font-bold">HTTPS Required for Camera.</span>'; return; }
       try {
         html5QrScannerInstance = new Html5Qrcode("scanner-reader");
-        await html5QrScannerInstance.start(
-          { facingMode: currentCameraFacingMode },
-          { fps: 15, qrbox: { width: 200, height: 200 } },
-          (decoded) => onQRCodeDetected(decoded),
-          () => {}
-        );
+        await html5QrScannerInstance.start({ facingMode: currentCameraFacingMode }, { fps: 15, qrbox: { width: 200, height: 200 } }, (decoded) => onQRCodeDetected(decoded), () => {});
         isScannerRunning = true;
-      } catch (err) {
-        document.getElementById("scanner-status-text").innerHTML = `<span class="text-ashiana-red font-bold">Camera Blocked.</span><br><span class="text-[10px] text-slate-500">Allow permissions or tap Simulate QR Detected.</span>`;
-      }
+      } catch (err) { document.getElementById("scanner-status-text").innerHTML = '<span class="text-ashiana-red font-bold">Camera unavailable.</span><br><span class="text-[10px] text-slate-500">Allow camera permission and try again.</span>'; }
     }
 
     async function stopCameraScanner() {
-      if (html5QrScannerInstance && isScannerRunning) {
-        try {
-          await html5QrScannerInstance.stop();
-          html5QrScannerInstance.clear();
-        } catch (e) {}
-        isScannerRunning = false;
-      }
+      if (html5QrScannerInstance && isScannerRunning) { try { await html5QrScannerInstance.stop(); html5QrScannerInstance.clear(); } catch (e) {} isScannerRunning = false; }
     }
-
-    async function toggleCameraFacingMode() {
-      currentCameraFacingMode = currentCameraFacingMode === "environment" ? "user" : "environment";
-      await startCameraScanner();
-    }
+    async function toggleCameraFacingMode() { currentCameraFacingMode = currentCameraFacingMode === "environment" ? "user" : "environment"; await startCameraScanner(); }
 
     async function onQRCodeDetected(decodedText) {
       await stopCameraScanner();
-      await executeDirectPunch();
+      try {
+        let parsed = JSON.parse(decodedText);
+        pendingQRToken = String(parsed.token || parsed.qr_token || '');
+      } catch { pendingQRToken = String(decodedText || '').trim(); }
+      if (!pendingQRToken) { showToast("Invalid QR code.", "error"); return; }
+      document.getElementById('attendance-pin-step')?.classList.remove('hidden');
+      document.getElementById('scanner-status-text').innerHTML = '<span class="text-emerald-700 font-bold">QR detected.</span> Enter your 4-digit PIN to verify.';
+      setTimeout(() => document.getElementById('scan-attendance-pin')?.focus(), 50);
     }
 
     function handleSimulateScanSuccess() {
-      onQRCodeDetected(activeQRSession.token);
+      if (!activeQRSession.token) { showToast("No active QR session. Ask the admin to generate the QR.", "error"); return; }
+      onQRCodeDetected(JSON.stringify({ school:"ASHIANA_PUBLIC_SCHOOL", date:activeQRSession.date, token:activeQRSession.token }));
     }
 
     function openPunchModal() {
       if (!currentStaffId) return;
+      pendingQRToken = null;
+      document.getElementById('attendance-pin-step')?.classList.add('hidden');
+      document.getElementById('scan-attendance-pin').value = '';
       document.getElementById("modal-punch").classList.remove("hidden");
       if (window.lucide) lucide.createIcons();
       setTimeout(startCameraScanner, 150);
     }
+    async function closePunchModal() { await stopCameraScanner(); pendingQRToken=null; document.getElementById("modal-punch").classList.add("hidden"); }
 
-    async function closePunchModal() {
-      await stopCameraScanner();
-      document.getElementById("modal-punch").classList.add("hidden");
-    }
-
-    // Direct 1-Tap Attendance Punch upon scanning QR (PIN completely bypassed)
-    async function executeDirectPunch() {
-      const staff = staffDatabase.find(s => s.id === currentStaffId);
-      if (!staff) {
-        showToast("Error: No faculty account active.", "error");
+    async function submitScannedAttendance() {
+      const pin = (document.getElementById('scan-attendance-pin')?.value || '').trim();
+      if (!pendingQRToken || !/^\d{4}$/.test(pin)) { showToast("Enter the 4-digit PIN.", "error"); return; }
+      if (!supabaseClient) { showToast("Cloud service is unavailable.", "error"); return; }
+      const { data, error } = await supabaseClient.functions.invoke('verify-attendance', { body:{ qr_token:pendingQRToken, pin } });
+      if (error || !data?.success) {
+        const msg = data?.error || error?.message || 'Attendance verification failed.';
+        showToast(msg === 'INVALID_PIN' ? 'Incorrect attendance PIN.' : msg === 'INVALID_OR_EXPIRED_QR' ? 'QR expired. Please scan the current school QR.' : msg, 'error');
         return;
       }
-
-      const d = new Date();
-      const nowClock = `${d.getHours().toString().padStart(2, '0')}:${d.getMinutes().toString().padStart(2, '0')}`;
-      const recent = getTodayPunches(currentStaffId);
-      const nextType = recent.length % 2 === 0 ? "IN" : "OUT";
-      const newPunchId = generateUUID();
-
-      const newRecord = {
-        id: newPunchId,
-        staffId: staff.id,
-        staffName: staff.name,
-        empId: staff.empId,
-        attendanceDate: systemConfig.currentAttendanceDate,
-        type: nextType,
-        timestamp: nowClock,
-        method: "QR_CAMERA"
-      };
-
-      punchLedger.push(newRecord);
+      const punch = data.punch;
+      const localTimestamp = new Date(punch.timestamp).toLocaleTimeString('en-IN',{hour:'2-digit',minute:'2-digit',hour12:false});
+      punchLedger.push({ id:punch.id, staffId:punch.staff_id, staffName:punch.staff_name, empId:punch.emp_id, attendanceDate:punch.attendance_date, type:punch.type, timestamp:localTimestamp, method:punch.method });
       savePersistedData();
-
-      // Cloud Persistence: Guarantee staff exists in Supabase BEFORE inserting punch
-      if (supabaseClient) {
-        try {
-          await ensureStaffExistsInSupabase(staff);
-          const { error: insertErr } = await supabaseClient.from('attendance_punches').insert([{
-            id: newPunchId,
-            staff_id: staff.id,
-            staff_name: staff.name,
-            emp_id: staff.empId,
-            attendance_date: systemConfig.currentAttendanceDate,
-            type: nextType,
-            timestamp: nowClock,
-            method: "QR_CAMERA"
-          }]);
-          if (insertErr) {
-            console.warn("Supabase punch insert notice:", insertErr);
-          }
-        } catch (e) {
-          console.warn("Cloud persistence execution error:", e);
-        }
-      }
-
-      playTone('SUCCESS');
-      await closePunchModal();
-      showToast(`PUNCH ${nextType} recorded successfully at ${nowClock}!`, "success");
-      refreshStaffUI();
-      renderLiveAttendanceTable();
-      updateKPICards();
+      playTone('SUCCESS'); await closePunchModal();
+      showToast(`${punch.type === 'IN' ? 'PUNCH IN' : 'PUNCH OUT'} recorded successfully at ${localTimestamp}.`, 'success');
+      refreshStaffUI(); renderLiveAttendanceTable(); updateKPICards();
     }
 
     // Staff Mobile Tab Switching (Punch vs History)
@@ -2797,7 +2627,7 @@
             <td class="py-2 px-3 text-slate-600">${s.department}</td>
             <td class="py-2 px-3 text-slate-600">${s.role}</td>
             <td class="py-2 px-3 font-mono text-[10px] text-slate-500">${s.email}</td>
-            <td class="py-2 px-3 text-center"><span class="px-1.5 py-0.5 rounded font-mono font-bold text-[10px] bg-emerald-50 text-ashiana-green border border-emerald-300">${s.pinHash}</span></td>
+            <td class="py-2 px-3 text-center"><span class="px-1.5 py-0.5 rounded font-bold text-[10px] bg-slate-100 text-slate-500 border border-slate-200">Protected</span></td>
             <td class="py-2 px-3"><span class="px-2 py-0.5 rounded-full text-[9px] font-bold ${s.status === 'ACTIVE' ? 'bg-emerald-100 text-emerald-800' : 'bg-rose-100 text-rose-800'}">${s.status}</span></td>
             <td class="py-2 px-3 text-center">
               <div class="flex items-center justify-center space-x-1.5">
@@ -3068,40 +2898,21 @@
     }
 
     function renderQRCode() {
-      const container = document.getElementById("qr-code-canvas-container");
-      if (!container) return;
+      const container = document.getElementById("qr-code-canvas-container"); if (!container) return;
       container.innerHTML = "";
-      if (typeof QRCode !== "undefined") {
-        new QRCode(container, {
-          text: JSON.stringify({ 
-            school: "ASHIANA_PUBLIC_SCHOOL", 
-            date: activeQRSession.date,
-            token: activeQRSession.token 
-          }),
-          width: 180,
-          height: 180,
-          colorDark: "#064E3B",
-          colorLight: "#ffffff"
-        });
-      }
-      const tokenPreview = document.getElementById("qr-token-preview");
-      if (tokenPreview) tokenPreview.innerText = activeQRSession.token;
-
-      const stationDate = document.getElementById("qr-station-date");
-      if (stationDate) {
-        const dateObj = new Date();
-        stationDate.innerText = dateObj.toLocaleDateString('en-US', { day: 'numeric', month: 'long', year: 'numeric' });
-      }
+      if (!activeQRSession.token) { container.innerHTML = '<div class="text-xs text-slate-400 p-6">Generate an active QR session.</div>'; return; }
+      if (typeof QRCode !== "undefined") new QRCode(container,{text:JSON.stringify({school:"ASHIANA_PUBLIC_SCHOOL",date:activeQRSession.date,token:activeQRSession.token}),width:180,height:180,colorDark:"#064E3B",colorLight:"#ffffff"});
+      const tokenPreview=document.getElementById("qr-token-preview"); if(tokenPreview) tokenPreview.innerText=activeQRSession.token.substring(0,16)+"…";
+      const stationDate=document.getElementById("qr-station-date"); if(stationDate) stationDate.innerText=new Date().toLocaleDateString('en-IN',{day:'numeric',month:'long',year:'numeric'});
+      const valid=document.getElementById('qr-valid-day-text'); if(valid) valid.innerText=activeQRSession.validUntil ? `Expires: ${new Date(activeQRSession.validUntil).toLocaleTimeString('en-IN')}` : '60-second secure session';
     }
 
-    function rotateQRSession() {
-      const today = systemConfig.currentAttendanceDate;
-      const newToken = "APS-DAY-" + today.replace(/-/g, '') + "-" + Math.random().toString(36).substring(2, 8).toUpperCase();
-      localStorage.setItem('aps_daily_qr_token_' + today, newToken);
-      activeQRSession.token = newToken;
-      activeQRSession.date = today;
-      renderQRCode();
-      showToast("Today's Daily QR refreshed.", "info");
+    async function rotateQRSession() {
+      if (!supabaseClient) { showToast("Cloud service is unavailable.", "error"); return; }
+      const { data, error } = await supabaseClient.functions.invoke('generate-attendance-qr', { body:{} });
+      if (error || !data?.success) { showToast(error?.message || data?.error || 'Could not generate QR.', 'error'); return; }
+      activeQRSession = { token:data.qr.token, date:data.qr.attendance_date, validUntil:data.qr.expires_at };
+      renderQRCode(); showToast("New secure 60-second QR generated.", "success");
     }
 
     function renderAuditLogs() {
@@ -3144,7 +2955,12 @@
           }
         }
       });
-      if (tab === 'qr') renderQRCode();
+      if (qrAutoRefreshInterval) { clearInterval(qrAutoRefreshInterval); qrAutoRefreshInterval = null; }
+      if (tab === 'qr') {
+        renderQRCode();
+        if (!activeQRSession.token || (activeQRSession.validUntil && new Date(activeQRSession.validUntil) <= new Date())) rotateQRSession();
+        qrAutoRefreshInterval = setInterval(() => { if (currentAuthUser?.type === 'ADMIN' && currentPortal === 'admin') rotateQRSession(); }, 50000);
+      }
       if (tab === 'reports') runAdminReportGeneration();
       if (window.lucide) lucide.createIcons();
     }
@@ -3945,27 +3761,25 @@
       const confirmPin = document.getElementById("change-pin-confirm").value.trim();
 
       const staff = staffDatabase.find(s => s.id === currentStaffId);
-      if (!staff || staff.pinHash !== current) {
-        playTone('ERROR');
-        showToast("Current PIN is incorrect.", "error");
-        return;
-      }
+      if (!staff || !supabaseClient) { showToast("Staff account is unavailable.", "error"); return; }
+      const { data: currentPinOk } = await supabaseClient.rpc('verify_staff_pin', { p_staff_id: staff.id, p_pin: current });
+      if (currentPinOk !== true) { playTone('ERROR'); showToast("Current PIN is incorrect.", "error"); return; }
       if (newPin !== confirmPin || !/^\d{4}$/.test(newPin)) {
         playTone('ERROR');
         showToast("New PIN must be 4 digits and match confirm.", "error");
         return;
       }
 
-      staff.pinHash = newPin;
+      staff.pinHash = "";
       if (currentAuthUser && currentAuthUser.staffRecord) {
-        currentAuthUser.staffRecord.pinHash = newPin;
+        currentAuthUser.staffRecord.pinHash = "";
         sessionStorage.setItem(STORAGE_KEY_CURRENT_USER, JSON.stringify(currentAuthUser));
       }
       savePersistedData();
 
       if (supabaseClient) {
         try {
-          await supabaseClient.from('staff').update({ pin_hash: newPin }).eq('id', staff.id);
+          await supabaseClient.rpc('set_staff_pin', { p_staff_id: staff.id, p_pin: newPin });
         } catch (e) {
           console.warn("Supabase pin update error:", e);
         }
@@ -4027,7 +3841,7 @@
       if (nameInput) nameInput.value = "";
       if (roleInput) roleInput.value = "";
       if (emailInput) emailInput.value = "";
-      if (pinInput) pinInput.value = "1234";
+      if (pinInput) pinInput.value = "";
 
       document.getElementById("admin-add-staff-modal")?.classList.remove("hidden");
       if (window.lucide) lucide.createIcons();
@@ -4058,7 +3872,7 @@
         department,
         role,
         email,
-        pinHash: pin,
+        pinHash: "",
         status: "ACTIVE"
       };
 
@@ -4067,6 +3881,7 @@
 
       if (supabaseClient) {
         await ensureStaffExistsInSupabase(newStaff);
+        await supabaseClient.rpc('set_staff_pin', { p_staff_id:newStaff.id, p_pin:pin });
       }
 
       recordAuditLog("STAFF_ENROLLED", name, `Enrolled new faculty ${empId} (${role})`);
@@ -4171,13 +3986,13 @@
         return;
       }
 
-      staff.pinHash = newPin;
+      staff.pinHash = "";
       savePersistedData();
 
       // Sync with Supabase
       if (supabaseClient) {
         try {
-          await supabaseClient.from('staff').update({ pin_hash: newPin }).eq('id', staff.id);
+          await supabaseClient.rpc('set_staff_pin', { p_staff_id: staff.id, p_pin: newPin });
         } catch (e) {
           console.warn("Supabase PIN reset error:", e);
         }
@@ -4407,7 +4222,7 @@
             "Department": "Science & Mathematics",
             "Designation": "PGT Chemistry",
             "Official Email": "rajiv.varma@ashianapublicschool.com",
-            "Attendance PIN": "1234",
+            "Attendance PIN": "",
             "Status": "ACTIVE"
           },
           {
@@ -4416,7 +4231,7 @@
             "Department": "Languages & Literature",
             "Designation": "TGT English",
             "Official Email": "ananya.sen@ashianapublicschool.com",
-            "Attendance PIN": "1234",
+            "Attendance PIN": "",
             "Status": "ACTIVE"
           },
           {
@@ -4425,7 +4240,7 @@
             "Department": "Primary Wing (PRT)",
             "Designation": "PRT Mathematics",
             "Official Email": "sunita.rawat@ashianapublicschool.com",
-            "Attendance PIN": "1234",
+            "Attendance PIN": "",
             "Status": "ACTIVE"
           }
         ];
@@ -4518,9 +4333,9 @@
 
             let pin = (
               norm["attendancepin"] || norm["pin"] || norm["passcode"] || norm["password"] ||
-              row["Attendance PIN"] || row["PIN"] || row["Pin"] || "1234"
+              row["Attendance PIN"] || row["PIN"] || row["Pin"] || ""
             ).toString().trim();
-            if (pin.length < 4) pin = pin.padStart(4, '0');
+            if (!/^\d{4}$/.test(pin)) pin = "";
 
             const statusRaw = (norm["status"] || row["Status"] || "ACTIVE").toString().trim().toUpperCase();
             const status = statusRaw === "INACTIVE" ? "INACTIVE" : "ACTIVE";
@@ -4532,7 +4347,7 @@
                 department,
                 role,
                 email,
-                pinHash: pin.substring(0, 4),
+                pinHash: "",
                 status
               });
             }
@@ -4557,7 +4372,7 @@
                 <td class="py-1 px-2 font-sans font-bold text-slate-800">${r.name}</td>
                 <td class="py-1 px-2 font-sans">${r.department}</td>
                 <td class="py-1 px-2 font-sans">${r.role}</td>
-                <td class="py-1 px-2 text-center">${r.pinHash}</td>
+                <td class="py-1 px-2 text-center text-slate-400">Protected</td>
               </tr>
             `).join('');
           }
@@ -4619,7 +4434,7 @@
             staffDatabase[existingIdx].department = item.department;
             staffDatabase[existingIdx].role = item.role;
             staffDatabase[existingIdx].email = item.email;
-            staffDatabase[existingIdx].pinHash = item.pinHash;
+            staffDatabase[existingIdx].pinHash = "";
             staffDatabase[existingIdx].status = item.status;
             if (remoteId) staffDatabase[existingIdx].id = remoteId;
             updatedCount++;
@@ -4632,7 +4447,7 @@
             department: item.department,
             role: item.role,
             email: item.email,
-            pinHash: item.pinHash,
+            pinHash: "",
             status: item.status
           });
           addedCount++;
@@ -4651,7 +4466,6 @@
             department: s.department,
             role: s.role,
             email: s.email,
-            pin_hash: s.pinHash,
             status: s.status
           }));
 
@@ -4662,6 +4476,12 @@
             if (upsertErr) {
               console.warn("Primary key upsert fallback to emp_id:", upsertErr);
               await supabaseClient.from('staff').upsert(chunk, { onConflict: 'emp_id' });
+            }
+          }
+          for (const item of parsedExcelStaffRows) {
+            if (/^\d{4}$/.test(item.pinHash || "")) {
+              const target = staffDatabase.find(x => x.empId.toUpperCase() === item.empId.toUpperCase());
+              if (target) await supabaseClient.rpc('set_staff_pin', { p_staff_id: target.id, p_pin: item.pinHash });
             }
           }
         } catch (err) {
@@ -4684,16 +4504,16 @@
     }
 
     function exportStaffCredentialsWithPIN() {
-      let csv = "Employee ID,Staff Name,Department,Role,Email,Attendance PIN,Status\n";
+      let csv = "Employee ID,Staff Name,Department,Role,Email,Status\n";
       staffDatabase.forEach(s => {
-        csv += `"${s.empId}","${s.name}","${s.department}","${s.role}","${s.email}","${s.pinHash}","${s.status}"\n`;
+        csv += `"${s.empId}","${s.name}","${s.department}","${s.role}","${s.email}","${s.status}"\n`;
       });
       const blob = new Blob([csv], { type: "text/csv" });
       const a = document.createElement("a");
       a.href = URL.createObjectURL(blob);
-      a.download = `Ashiana_Staff_PIN_Credentials_${systemConfig.currentAttendanceDate}.csv`;
+      a.download = `Ashiana_Staff_Directory_${systemConfig.currentAttendanceDate}.csv`;
       a.click();
-      showToast("Staff PIN credentials CSV exported.", "success");
+      showToast("Staff directory CSV exported without PINs.", "success");
     }
 
     function exportLiveToCSV() {
@@ -4746,6 +4566,9 @@
       });
       savePersistedData();
 
+      if (supabaseClient) {
+        supabaseClient.from('attendance_punches').insert([{id:newId,staff_id:staff.id,staff_name:staff.name,emp_id:staff.empId,attendance_date:systemConfig.currentAttendanceDate,type,timestamp:time,method:'MANUAL_ADMIN'}]).then(({error}) => { if (error) console.warn('Manual correction cloud sync:', error); });
+      }
       recordAuditLog("MANUAL_CORRECTION", staff.name, `Manually forced ${type} at ${time}. Reason: "${reason}"`);
       playTone('SUCCESS');
       showToast(`Manual ${type} recorded for ${staff.name}.`, "success");
@@ -4769,9 +4592,8 @@
         const todayStr = d.toISOString().split('T')[0];
         if (activeQRSession.date !== todayStr) {
           systemConfig.currentAttendanceDate = todayStr;
-          activeQRSession.date = todayStr;
-          activeQRSession.token = getTodayDailyToken(todayStr);
-          renderQRCode();
+          activeQRSession = { token:"", date:todayStr, validUntil:null };
+          if (currentAuthUser?.type === 'ADMIN' && currentPortal === 'admin') renderQRCode();
         }
       }, 1000);
     }
@@ -4786,7 +4608,6 @@
 
       startLiveClocks();
       applyAuthenticatedUI();
-      renderQRCode();
       if (window.lucide) lucide.createIcons();
     };
   </script>
