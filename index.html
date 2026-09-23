@@ -3981,7 +3981,54 @@
     // ==========================================
     // ADMIN: ADD, EDIT, DELETE & RESET PIN
     // ==========================================
+    function getNextEmployeeId() {
+      let maxNumber = 100;
+      let prefix = "APS-";
+
+      if (staffDatabase && staffDatabase.length > 0) {
+        staffDatabase.forEach(s => {
+          if (!s.empId) return;
+          // Match patterns like "APS-138", "APS138", or custom prefixes
+          const match = s.empId.match(/^([A-Za-z]+-?)(\d+)$/);
+          if (match) {
+            if (match[1]) prefix = match[1].toUpperCase();
+            const num = parseInt(match[2], 10);
+            if (!isNaN(num) && num > maxNumber) {
+              maxNumber = num;
+            }
+          } else {
+            // General fallback: scan any trailing numeric digits
+            const digits = s.empId.match(/\d+/g);
+            if (digits && digits.length > 0) {
+              const num = parseInt(digits[digits.length - 1], 10);
+              if (!isNaN(num) && num > maxNumber) {
+                maxNumber = num;
+              }
+            }
+          }
+        });
+      }
+
+      return `${prefix}${maxNumber + 1}`;
+    }
+
     function openAddStaffModal() {
+      // Auto-populate the next sequential Employee ID
+      const empIdInput = document.getElementById("add-staff-empid");
+      if (empIdInput) {
+        empIdInput.value = getNextEmployeeId();
+      }
+
+      // Reset other form inputs to defaults
+      const nameInput = document.getElementById("add-staff-name");
+      const roleInput = document.getElementById("add-staff-role");
+      const emailInput = document.getElementById("add-staff-email");
+      const pinInput = document.getElementById("add-staff-pin");
+      if (nameInput) nameInput.value = "";
+      if (roleInput) roleInput.value = "";
+      if (emailInput) emailInput.value = "";
+      if (pinInput) pinInput.value = "1234";
+
       document.getElementById("admin-add-staff-modal")?.classList.remove("hidden");
       if (window.lucide) lucide.createIcons();
     }
