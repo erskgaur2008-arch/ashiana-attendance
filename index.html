@@ -4294,14 +4294,30 @@
       if (button) { button.disabled = true; button.classList.add('opacity-60', 'cursor-not-allowed'); }
 
       try {
-        const { data, error } = await supabaseClient.rpc('set_staff_pin', {
-          p_staff_id: staff.id,
-          p_pin: newPin
+        const { data: sessionData, error: sessionError } = await supabaseClient.auth.getSession();
+        if (sessionError) throw sessionError;
+        const accessToken = sessionData?.session?.access_token;
+        if (!accessToken) throw new Error("Administrator session expired. Please sign in again.");
+
+        const response = await fetch(`${DEFAULT_SUPABASE_URL}/functions/v1/reset-staff-pin`, {
+          method: 'POST',
+          headers: {
+            'Content-Type': 'application/json',
+            'Authorization': `Bearer ${accessToken}`,
+            'apikey': DEFAULT_SUPABASE_ANON_KEY
+          },
+          body: JSON.stringify({
+            staff_id: staff.id,
+            pin: newPin
+          })
         });
 
-        if (error) throw error;
-        if (data !== true) {
-          throw new Error("PIN reset was not authorized or the staff account is inactive.");
+        const result = await response.json().catch(() => ({}));
+        if (!response.ok) {
+          throw new Error(result?.error || `PIN reset failed (${response.status}).`);
+        }
+        if (result?.success !== true) {
+          throw new Error(result?.error || "PIN reset was not completed.");
         }
 
         // Never store or display the plaintext PIN in localStorage.
