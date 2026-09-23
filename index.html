@@ -1662,6 +1662,17 @@
     let lastGeneratedReportData = [];
     let lastGeneratedReportColumns = [];
 
+    // Universally Unique Identifier generator (compatible with both UUID & TEXT columns)
+    function generateUUID() {
+      if (typeof crypto !== 'undefined' && crypto.randomUUID) {
+        return crypto.randomUUID();
+      }
+      return 'xxxxxxxx-xxxx-4xxx-yxxx-xxxxxxxxxxxx'.replace(/[xy]/g, function(c) {
+        const r = Math.random() * 16 | 0, v = c === 'x' ? r : (r & 0x3 | 0x8);
+        return v.toString(16);
+      });
+    }
+
     function getTodayDailyToken(dateStr) {
       const storageKey = 'aps_daily_qr_token_' + dateStr;
       let token = localStorage.getItem(storageKey);
@@ -1723,7 +1734,6 @@
     function checkWebSocketSupport() {
       try {
         if (typeof WebSocket === "undefined") return false;
-        // Test instantiation: sandboxed iframes (Canvas) throw SecurityError synchronously
         const testWs = new WebSocket("wss://localhost:0");
         testWs.close();
         return true;
@@ -1740,11 +1750,10 @@
           isCloudConnected = true;
           updateCloudBadge(true);
           
-          // Only attempt WebSocket subscriptions if environment security allows it
           if (checkWebSocketSupport()) {
             listenToRealtimePunches();
           } else {
-            console.info("WebSockets restricted in current iframe sandbox. Utilizing high-frequency HTTP polling sync.");
+            console.info("WebSockets restricted in current sandbox. Utilizing continuous HTTP polling sync.");
           }
           
           startBackgroundPolling();
@@ -1763,33 +1772,80 @@
       if (label) label.innerText = connected ? "Cloud Live" : "Local Mode";
     }
 
-    // Background Delta Polling ensures sync works even if Realtime WebSockets aren't enabled in Supabase dashboard
+    // Background Delta Polling ensures sync works across all devices & browsers
     function startBackgroundPolling() {
       if (autoPollingInterval) clearInterval(autoPollingInterval);
       autoPollingInterval = setInterval(() => {
-        pollLatestPunches(false);
+        syncAllDataFromSupabase(false);
       }, 5000);
     }
 
-    async function pollLatestPunches(notifyManual = false) {
-      if (!supabaseClient) return;
-      try {
-        const { data: remotePunches, error } = await supabaseClient
-          .from('attendance_punches')
-          .select('*')
-          .eq('attendance_date', systemConfig.currentAttendanceDate)
-          .order('timestamp', { ascending: true });
+    // =========================================================================
+    // 🌐 COMPREHENSIVE MULTI-DEVICE CLOUD SYNCHRONIZATION ENGINE
+    // =========================================================================
+    async function syncAllDataFromSupabase(notifyManual = false) {
+      if (!supabaseClient) {
+        if (notifyManual) showToast("Database client not ready.", "error");
+        return;
+      }
 
-        if (error) {
-          console.warn("Supabase poll notice:", error);
-          if (notifyManual) showToast("Cloud Sync: " + error.message, "error");
-          return;
+      let anyChange = false;
+
+      try {
+        // 1. SYNC STAFF TABLE (Accounts, Names, Roles, Updated PINs)
+        const { data: remoteStaff, error: staffErr } = await supabaseClient
+          .from('staff')
+          .select('*')
+          .order('name', { ascending: true });
+
+        if (staffErr) {
+          console.warn("Supabase staff sync notice:", staffErr);
+        } else if (remoteStaff && remoteStaff.length > 0) {
+          // Compare remote staff with local staff
+          const remoteMap = new Map();
+          remoteStaff.forEach(s => {
+            const mapped = {
+              id: s.id,
+              empId: s.emp_id || s.empId,
+              name: s.name,
+              department: s.department,
+              role: s.role,
+              email: s.email,
+              pinHash: (s.pin_hash || s.pinHash || "1234").toString(),
+              status: s.status || "ACTIVE"
+            };
+            remoteMap.set(mapped.id, mapped);
+          });
+
+          // Check if differences exist
+          if (remoteStaff.length !== staffDatabase.length || 
+              remoteStaff.some(s => {
+                const loc = staffDatabase.find(x => x.id === s.id);
+                return !loc || loc.pinHash !== (s.pin_hash || s.pinHash) || loc.name !== s.name || loc.status !== s.status;
+              })) {
+            staffDatabase = Array.from(remoteMap.values());
+            anyChange = true;
+          }
+        } else if (remoteStaff && remoteStaff.length === 0 && staffDatabase.length > 0) {
+          // If remote cloud database is completely empty on first run, auto-seed baseline staff
+          console.info("Supabase staff table is empty. Auto-seeding baseline roster to cloud...");
+          await syncAllToSupabase();
         }
 
-        if (remotePunches && remotePunches.length > 0) {
-          let hasNewPunches = false;
+        // 2. SYNC ATTENDANCE PUNCHES (All dates so history and reports work on any device)
+        const { data: remotePunches, error: punchErr } = await supabaseClient
+          .from('attendance_punches')
+          .select('*')
+          .order('created_at', { ascending: true });
+
+        if (punchErr) {
+          console.warn("Supabase punches sync notice:", punchErr);
+        } else if (remotePunches) {
           remotePunches.forEach(rp => {
-            const exists = punchLedger.some(p => p.id === rp.id || (p.staffId === rp.staff_id && p.timestamp === rp.timestamp && p.type === rp.type));
+            const exists = punchLedger.some(p => 
+              p.id === rp.id || 
+              (p.staffId === rp.staff_id && p.attendanceDate === rp.attendance_date && p.timestamp === rp.timestamp && p.type === rp.type)
+            );
             if (!exists) {
               punchLedger.push({
                 id: rp.id,
@@ -1801,26 +1857,72 @@
                 timestamp: rp.timestamp,
                 method: rp.method || "QR_CAMERA"
               });
-              hasNewPunches = true;
+              anyChange = true;
             }
           });
+        }
 
-          if (hasNewPunches) {
-            savePersistedData();
-            renderLiveAttendanceTable();
-            updateKPICards();
-            if (currentStaffId) refreshStaffUI();
+        // 3. SYNC LEAVE REQUESTS
+        const { data: remoteLeaves, error: leaveErr } = await supabaseClient
+          .from('leave_requests')
+          .select('*')
+          .order('created_at', { ascending: false });
+
+        if (leaveErr) {
+          console.warn("Supabase leaves sync notice:", leaveErr);
+        } else if (remoteLeaves) {
+          remoteLeaves.forEach(rl => {
+            const idx = leaveRequests.findIndex(l => l.id === rl.id);
+            const mappedLeave = {
+              id: rl.id,
+              staffId: rl.staff_id,
+              staffName: rl.staff_name,
+              type: rl.type,
+              from: rl.from_date,
+              to: rl.to_date,
+              reason: rl.reason,
+              status: rl.status || "PENDING"
+            };
+            if (idx === -1) {
+              leaveRequests.unshift(mappedLeave);
+              anyChange = true;
+            } else if (leaveRequests[idx].status !== mappedLeave.status) {
+              leaveRequests[idx].status = mappedLeave.status;
+              anyChange = true;
+            }
+          });
+        }
+
+        if (anyChange) {
+          savePersistedData();
+          renderLiveAttendanceTable();
+          renderStaffDirectoryTable();
+          renderAdminLeaveTable();
+          updateKPICards();
+          if (currentStaffId) {
+            refreshStaffUI();
+            if (typeof currentStaffTab !== 'undefined' && currentStaffTab === 'history') {
+              renderStaffHistory();
+            }
+          }
+          if (notifyManual) {
             playTone('SUCCESS');
-            showToast("New punches synchronized from cloud.", "info");
-          } else if (notifyManual) {
-            showToast("Cloud sync verified. All devices up to date.", "success");
+            showToast("Cloud synchronization complete. All records up to date!", "success");
           }
         } else if (notifyManual) {
-          showToast("Cloud connected. No remote punches recorded today.", "info");
+          showToast("Cloud database verified. Everything is already up to date.", "info");
         }
+
+        updateCloudBadge(true);
       } catch (err) {
-        console.warn("Background poll error:", err);
+        console.warn("Global sync error:", err);
+        if (notifyManual) showToast("Sync error: " + err.message, "error");
       }
+    }
+
+    // Alias for backward-compatible call in force-sync button
+    async function pollLatestPunches(notifyManual = false) {
+      await syncAllDataFromSupabase(notifyManual);
     }
 
     // Audio Feedback
@@ -1886,7 +1988,7 @@
       }, 3200);
     }
 
-    // Load Data
+    // Load Data with Cloud Priming
     async function loadPersistedData() {
       try {
         const savedStaff = localStorage.getItem(STORAGE_KEY_STAFF);
@@ -1915,8 +2017,8 @@
         staffDatabase = getBaselineFacultyData();
       }
 
-      // Initial sync check
-      await pollLatestPunches(false);
+      // Initial immediate cloud sync across devices
+      await syncAllDataFromSupabase(false);
     }
 
     function savePersistedData() {
@@ -1928,10 +2030,9 @@
       } catch (e) {}
     }
 
-    // WebSockets Real-Time Sync Channel
+    // WebSockets Real-Time Sync Channel for Live Tables
     function listenToRealtimePunches() {
-      if (!supabaseClient) return;
-      if (!checkWebSocketSupport()) return;
+      if (!supabaseClient || !checkWebSocketSupport()) return;
 
       try {
         if (realtimeChannel) {
@@ -1939,31 +2040,18 @@
         }
 
         realtimeChannel = supabaseClient
-          .channel('public:attendance_punches')
-          .on('postgres_changes', { event: 'INSERT', schema: 'public', table: 'attendance_punches' }, payload => {
-            const newPunch = payload.new;
-            if (!newPunch) return;
-            if (!punchLedger.some(p => p.id === newPunch.id)) {
-              punchLedger.push({
-                id: newPunch.id,
-                staffId: newPunch.staff_id,
-                staffName: newPunch.staff_name,
-                empId: newPunch.emp_id,
-                attendanceDate: newPunch.attendance_date,
-                type: newPunch.type,
-                timestamp: newPunch.timestamp,
-                method: newPunch.method || "QR_CAMERA"
-              });
-              savePersistedData();
-              playTone('SUCCESS');
-              showToast(`${newPunch.staff_name} marked PUNCH ${newPunch.type}`, "info");
-              renderLiveAttendanceTable();
-              updateKPICards();
-              if (currentStaffId === newPunch.staff_id) refreshStaffUI();
-            }
+          .channel('public:db_sync_channel')
+          .on('postgres_changes', { event: '*', schema: 'public', table: 'attendance_punches' }, payload => {
+            syncAllDataFromSupabase(false);
+          })
+          .on('postgres_changes', { event: '*', schema: 'public', table: 'staff' }, payload => {
+            syncAllDataFromSupabase(false);
+          })
+          .on('postgres_changes', { event: '*', schema: 'public', table: 'leave_requests' }, payload => {
+            syncAllDataFromSupabase(false);
           })
           .subscribe((status, err) => {
-            if (err) console.warn("Realtime notice:", err);
+            if (err) console.warn("Realtime subscription notice:", err);
           });
       } catch (err) {
         console.warn("Realtime WebSocket bypassed safely:", err);
@@ -2009,13 +2097,13 @@
         const { error } = await supabaseClient.from('staff').upsert(payload, { onConflict: 'id' });
         if (error) throw error;
         playTone('SUCCESS');
-        showToast("All 70+ faculty records seeded to Supabase!", "success");
+        showToast("All faculty records seeded to Supabase!", "success");
       } catch (e) {
         showToast("Cloud sync failed: " + e.message, "error");
       }
     }
 
-    // Authentication Handlers
+    // Authentication Handlers with Live Multi-Device Fallback
     function switchLoginTab(tab) {
       const btnTeacher = document.getElementById("btn-login-tab-teacher");
       const btnAdmin = document.getElementById("btn-login-tab-admin");
@@ -2041,26 +2129,85 @@
       if (input) input.type = input.type === 'password' ? 'text' : 'password';
     }
 
-    function handleTeacherLogin(event) {
+    async function handleTeacherLogin(event) {
       event.preventDefault();
       const idVal = (document.getElementById("teacher-login-id")?.value || "").trim().toLowerCase();
       const pinVal = (document.getElementById("teacher-login-pin")?.value || "").trim();
 
-      const matched = staffDatabase.find(s => s.empId.toLowerCase() === idVal || s.email.toLowerCase() === idVal);
+      // 1. Try local match
+      let matched = staffDatabase.find(s => 
+        (s.empId && s.empId.toLowerCase() === idVal) || 
+        (s.email && s.email.toLowerCase() === idVal)
+      );
+
+      // 2. Fallback: If not found in local memory, check live Supabase database directly!
+      if (!matched && supabaseClient) {
+        try {
+          const { data: remoteMatch, error } = await supabaseClient
+            .from('staff')
+            .select('*')
+            .or(`emp_id.ilike.${idVal},email.ilike.${idVal}`);
+
+          if (!error && remoteMatch && remoteMatch.length > 0) {
+            const rm = remoteMatch[0];
+            matched = {
+              id: rm.id,
+              empId: rm.emp_id || rm.empId,
+              name: rm.name,
+              department: rm.department,
+              role: rm.role,
+              email: rm.email,
+              pinHash: (rm.pin_hash || rm.pinHash || "1234").toString(),
+              status: rm.status || "ACTIVE"
+            };
+            staffDatabase.push(matched);
+            savePersistedData();
+          }
+        } catch (err) {
+          console.warn("Direct Supabase login query:", err);
+        }
+      }
+
       if (!matched) {
         playTone('ERROR');
-        showToast("Employee ID or email not found.", "error");
+        showToast("Employee ID or email not found. Please contact administration.", "error");
         return;
       }
+
       if (matched.status !== "ACTIVE") {
         playTone('ERROR');
         showToast("Account is inactive. Contact office.", "error");
         return;
       }
+
+      // 3. Verify PIN (with live Supabase fallback in case PIN was changed on another device)
       if (matched.pinHash !== pinVal) {
-        playTone('ERROR');
-        showToast("Incorrect PIN. Sign in failed.", "error");
-        return;
+        if (supabaseClient) {
+          try {
+            const { data: livePinCheck } = await supabaseClient
+              .from('staff')
+              .select('pin_hash')
+              .eq('id', matched.id)
+              .single();
+
+            if (livePinCheck && livePinCheck.pin_hash === pinVal) {
+              matched.pinHash = livePinCheck.pin_hash;
+              savePersistedData();
+            } else {
+              playTone('ERROR');
+              showToast("Incorrect PIN. Sign in failed.", "error");
+              return;
+            }
+          } catch (e) {
+            playTone('ERROR');
+            showToast("Incorrect PIN. Sign in failed.", "error");
+            return;
+          }
+        } else {
+          playTone('ERROR');
+          showToast("Incorrect PIN. Sign in failed.", "error");
+          return;
+        }
       }
 
       currentAuthUser = { type: 'STAFF', staffRecord: matched };
@@ -2302,7 +2449,7 @@
       const nowClock = `${d.getHours().toString().padStart(2, '0')}:${d.getMinutes().toString().padStart(2, '0')}`;
       const recent = getTodayPunches(currentStaffId);
       const nextType = recent.length % 2 === 0 ? "IN" : "OUT";
-      const newPunchId = "pch_" + Date.now();
+      const newPunchId = generateUUID();
 
       const newRecord = {
         id: newPunchId,
@@ -2318,10 +2465,11 @@
       punchLedger.push(newRecord);
       savePersistedData();
 
-      // Cloud Persistence: Upsert staff first, then write punch
+      // Cloud Persistence: Guarantee staff exists in Supabase BEFORE inserting punch
       if (supabaseClient) {
-        ensureStaffExistsInSupabase(staff).then(() => {
-          supabaseClient.from('attendance_punches').insert([{
+        try {
+          await ensureStaffExistsInSupabase(staff);
+          const { error: insertErr } = await supabaseClient.from('attendance_punches').insert([{
             id: newPunchId,
             staff_id: staff.id,
             staff_name: staff.name,
@@ -2330,10 +2478,13 @@
             type: nextType,
             timestamp: nowClock,
             method: "QR_CAMERA"
-          }]).then(({ error }) => {
-            if (error) console.warn("Supabase punch insert notice:", error);
-          });
-        });
+          }]);
+          if (insertErr) {
+            console.warn("Supabase punch insert notice:", insertErr);
+          }
+        } catch (e) {
+          console.warn("Cloud persistence execution error:", e);
+        }
       }
 
       playTone('SUCCESS');
@@ -2852,14 +3003,14 @@
       }
     }
 
-    function quickTestPunch(staffId) {
+    async function quickTestPunch(staffId) {
       const staff = staffDatabase.find(s => s.id === staffId);
       if (!staff) return;
       const recent = getTodayPunches(staffId);
       const nextType = recent.length % 2 === 0 ? "IN" : "OUT";
       const d = new Date();
       const time = `${d.getHours().toString().padStart(2, '0')}:${d.getMinutes().toString().padStart(2, '0')}`;
-      const newPunchId = "pch_" + Date.now();
+      const newPunchId = generateUUID();
 
       punchLedger.push({
         id: newPunchId,
@@ -2874,8 +3025,9 @@
       savePersistedData();
 
       if (supabaseClient) {
-        ensureStaffExistsInSupabase(staff).then(() => {
-          supabaseClient.from('attendance_punches').insert([{
+        try {
+          await ensureStaffExistsInSupabase(staff);
+          await supabaseClient.from('attendance_punches').insert([{
             id: newPunchId,
             staff_id: staff.id,
             staff_name: staff.name,
@@ -2884,8 +3036,10 @@
             type: nextType,
             timestamp: time,
             method: "ADMIN_QUICK"
-          }]).then(() => {});
-        });
+          }]);
+        } catch (e) {
+          console.warn("Quick punch cloud sync error:", e);
+        }
       }
 
       playTone('SUCCESS');
@@ -4184,7 +4338,10 @@
       const previewCont = document.getElementById("excel-preview-container");
       if (previewCont) previewCont.classList.add("hidden");
       const btnConfirm = document.getElementById("btn-confirm-excel-import");
-      if (btnConfirm) btnConfirm.disabled = true;
+      if (btnConfirm) {
+        btnConfirm.disabled = true;
+        btnConfirm.innerHTML = `<i data-lucide="check" class="w-3.5 h-3.5"></i><span>Import to Roster & Cloud</span>`;
+      }
 
       document.getElementById("admin-import-staff-modal")?.classList.remove("hidden");
       if (window.lucide) lucide.createIcons();
@@ -4280,14 +4437,46 @@
           parsedExcelStaffRows = [];
 
           jsonRows.forEach(row => {
-            const empId = (row["Employee ID"] || row["Emp ID"] || row["EmpId"] || row["empid"] || "").toString().trim().toUpperCase();
-            const name = (row["Full Name"] || row["Name"] || row["Faculty Name"] || "").toString().trim();
-            const department = (row["Department"] || row["Dept"] || "Academic Wing").toString().trim();
-            const role = (row["Designation"] || row["Role"] || "Teacher").toString().trim();
-            const email = (row["Official Email"] || row["Email"] || `${empId.toLowerCase()}@ashianapublicschool.com`).toString().trim().toLowerCase();
-            let pin = (row["Attendance PIN"] || row["PIN"] || row["Pin"] || "1234").toString().trim();
+            // Robust column name normalization: removes extra spaces, hyphens, and lowercase
+            const norm = {};
+            Object.keys(row).forEach(k => {
+              const cleanKey = k.trim().toLowerCase().replace(/[^a-z0-9]/g, '');
+              norm[cleanKey] = row[k];
+            });
+
+            const empId = (
+              norm["employeeid"] || norm["empid"] || norm["id"] || norm["empno"] || norm["facultyid"] ||
+              row["Employee ID"] || row["Emp ID"] || row["EmpId"] || row["empid"] || ""
+            ).toString().trim().toUpperCase();
+
+            const name = (
+              norm["fullname"] || norm["name"] || norm["facultyname"] || norm["staffname"] || norm["teachername"] ||
+              row["Full Name"] || row["Name"] || row["Faculty Name"] || ""
+            ).toString().trim();
+
+            const department = (
+              norm["department"] || norm["dept"] || norm["wing"] ||
+              row["Department"] || row["Dept"] || "Academic Wing"
+            ).toString().trim();
+
+            const role = (
+              norm["designation"] || norm["role"] || norm["post"] ||
+              row["Designation"] || row["Role"] || "Teacher"
+            ).toString().trim();
+
+            const email = (
+              norm["officialemail"] || norm["email"] || norm["mail"] || norm["emailid"] ||
+              row["Official Email"] || row["Email"] || `${empId.toLowerCase()}@ashianapublicschool.com`
+            ).toString().trim().toLowerCase();
+
+            let pin = (
+              norm["attendancepin"] || norm["pin"] || norm["passcode"] || norm["password"] ||
+              row["Attendance PIN"] || row["PIN"] || row["Pin"] || "1234"
+            ).toString().trim();
             if (pin.length < 4) pin = pin.padStart(4, '0');
-            const status = ((row["Status"] || "ACTIVE").toString().trim().toUpperCase() === "INACTIVE") ? "INACTIVE" : "ACTIVE";
+
+            const statusRaw = (norm["status"] || row["Status"] || "ACTIVE").toString().trim().toUpperCase();
+            const status = statusRaw === "INACTIVE" ? "INACTIVE" : "ACTIVE";
 
             if (empId && name) {
               parsedExcelStaffRows.push({
@@ -4344,12 +4533,39 @@
         return;
       }
 
+      const btnConfirm = document.getElementById("btn-confirm-excel-import");
+      if (btnConfirm) {
+        btnConfirm.disabled = true;
+        btnConfirm.innerHTML = `<i data-lucide="loader" class="w-3.5 h-3.5 animate-spin"></i><span>Syncing to Supabase...</span>`;
+        if (window.lucide) lucide.createIcons();
+      }
+
+      showToast(`Importing and syncing ${parsedExcelStaffRows.length} staff records to Supabase...`, "info");
+
       const updateExisting = document.getElementById("excel-update-existing-checkbox")?.checked ?? true;
       let addedCount = 0;
       let updatedCount = 0;
 
+      // 1. Pre-fetch existing remote staff to preserve UUID/id and avoid unique constraint conflicts
+      let remoteMap = new Map();
+      if (supabaseClient) {
+        try {
+          const { data: remoteExisting } = await supabaseClient.from('staff').select('id, emp_id');
+          if (remoteExisting) {
+            remoteExisting.forEach(r => {
+              if (r.emp_id) remoteMap.set(r.emp_id.toUpperCase(), r.id);
+            });
+          }
+        } catch (e) {
+          console.warn("Pre-fetch remote staff notice:", e);
+        }
+      }
+
+      // 2. Merge parsed rows into local memory with consistent IDs
       parsedExcelStaffRows.forEach(item => {
         const existingIdx = staffDatabase.findIndex(s => s.empId.toUpperCase() === item.empId.toUpperCase());
+        const remoteId = remoteMap.get(item.empId.toUpperCase());
+
         if (existingIdx !== -1) {
           if (updateExisting) {
             staffDatabase[existingIdx].name = item.name;
@@ -4358,11 +4574,12 @@
             staffDatabase[existingIdx].email = item.email;
             staffDatabase[existingIdx].pinHash = item.pinHash;
             staffDatabase[existingIdx].status = item.status;
+            if (remoteId) staffDatabase[existingIdx].id = remoteId;
             updatedCount++;
           }
         } else {
           staffDatabase.push({
-            id: "usr_" + Date.now() + "_" + Math.random().toString(36).substring(2, 6),
+            id: remoteId || ("usr_" + Date.now() + "_" + Math.random().toString(36).substring(2, 7)),
             empId: item.empId,
             name: item.name,
             department: item.department,
@@ -4377,7 +4594,7 @@
 
       savePersistedData();
 
-      // Batch Upsert to Supabase
+      // 3. Batch upsert into Supabase PostgreSQL (chunks of 30)
       if (supabaseClient) {
         try {
           const payload = staffDatabase.map(s => ({
@@ -4390,15 +4607,26 @@
             pin_hash: s.pinHash,
             status: s.status
           }));
-          await supabaseClient.from('staff').upsert(payload, { onConflict: 'id' });
+
+          const chunkSize = 30;
+          for (let i = 0; i < payload.length; i += chunkSize) {
+            const chunk = payload.slice(i, i + chunkSize);
+            const { error: upsertErr } = await supabaseClient.from('staff').upsert(chunk, { onConflict: 'id' });
+            if (upsertErr) {
+              console.warn("Primary key upsert fallback to emp_id:", upsertErr);
+              await supabaseClient.from('staff').upsert(chunk, { onConflict: 'emp_id' });
+            }
+          }
         } catch (err) {
           console.warn("Supabase batch sync notice:", err);
+          showToast("Local saved, cloud notice: " + err.message, "error");
         }
       }
 
-      recordAuditLog("EXCEL_IMPORT", "Staff Roster", `Imported ${addedCount} new, updated ${updatedCount} faculty records`);
+      recordAuditLog("EXCEL_IMPORT", "Staff Roster", `Imported ${addedCount} new, updated ${updatedCount} faculty records from Excel`);
       playTone('SUCCESS');
-      showToast(`Import completed! Added: ${addedCount}, Updated: ${updatedCount}`, "success");
+      showToast(`Import successful! ${addedCount} added, ${updatedCount} updated & synced to Supabase!`, "success");
+      
       closeImportStaffModal();
       renderStaffDirectoryTable();
       renderLiveAttendanceTable();
