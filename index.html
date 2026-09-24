@@ -119,7 +119,7 @@
       <!-- Brand & Official Logo -->
       <div class="flex items-center space-x-2.5 sm:space-x-3">
         <div class="relative w-9 h-9 sm:w-11 sm:h-11 rounded-full bg-white p-0.5 shadow flex items-center justify-center overflow-hidden border border-emerald-400/40 flex-shrink-0">
-          <img src="logo 2.jpg" alt="Ashiana Public School Logo" 
+          <img src="logo 2.png" alt="Ashiana Public School Logo" 
                onerror="this.style.display='none'; this.nextElementSibling.classList.remove('hidden');" 
                class="w-full h-full object-cover rounded-full">
           <svg class="w-full h-full hidden" viewBox="0 0 200 200" fill="none" xmlns="http://www.w3.org/2000/svg">
@@ -182,7 +182,7 @@
     <div class="flex items-center space-x-2 max-w-7xl mx-auto w-full">
       <span class="w-2 h-2 rounded-full bg-ashiana-green animate-pulse flex-shrink-0"></span>
       <span id="banner-status-text" class="truncate">
-        <strong>Ashiana Faculty Attendance:</strong> Shift <strong>07:40 AM – 02:30 PM</strong>. Fast 1-Tap QR Scan enabled.
+        <strong>Ashiana Faculty Attendance:</strong> Shift <strong>07:40 AM – 02:30 PM</strong>. QR + 4-Digit PIN verification enabled.
       </span>
     </div>
   </div>
@@ -197,7 +197,7 @@
     <div id="auth-gateway-view" class="w-full max-w-md bg-white rounded-3xl shadow-xl border border-slate-200 overflow-hidden my-auto">
       <div class="bg-gradient-to-br from-emerald-950 via-[#064E3B] to-emerald-900 p-6 text-white text-center relative overflow-hidden">
         <div class="w-16 h-16 sm:w-20 sm:h-20 mx-auto mb-3 rounded-full bg-white p-1 shadow-lg border-2 border-emerald-400/50 flex items-center justify-center overflow-hidden">
-          <img src="logo 2.jpg" alt="Ashiana Public School" 
+          <img src="logo 2.png" alt="Ashiana Public School" 
                onerror="this.style.display='none'; this.nextElementSibling.classList.remove('hidden');" 
                class="w-full h-full object-cover rounded-full">
           <svg class="w-full h-full hidden" viewBox="0 0 200 200" fill="none" xmlns="http://www.w3.org/2000/svg">
@@ -273,7 +273,7 @@
               <div class="absolute inset-y-0 left-0 pl-3.5 flex items-center pointer-events-none text-slate-400">
                 <i data-lucide="user" class="w-4 h-4 text-ashiana-green"></i>
               </div>
-              <input type="text" id="admin-login-user" required placeholder="Enter admin username or email" class="w-full text-xs pl-10 pr-3.5 py-2.5 sm:py-3 bg-slate-50 border border-slate-200 rounded-xl focus:ring-2 focus:ring-ashiana-green focus:outline-none focus:bg-white font-medium">
+              <input type="text" id="admin-login-user" required placeholder="Administrator email" class="w-full text-xs pl-10 pr-3.5 py-2.5 sm:py-3 bg-slate-50 border border-slate-200 rounded-xl focus:ring-2 focus:ring-ashiana-green focus:outline-none focus:bg-white font-medium">
             </div>
           </div>
 
@@ -283,7 +283,7 @@
               <div class="absolute inset-y-0 left-0 pl-3.5 flex items-center pointer-events-none text-slate-400">
                 <i data-lucide="key" class="w-4 h-4 text-ashiana-green"></i>
               </div>
-              <input type="password" id="admin-login-pass" required placeholder="Enter administrator password" class="w-full text-xs pl-10 pr-10 py-2.5 sm:py-3 bg-slate-50 border border-slate-200 rounded-xl focus:ring-2 focus:ring-ashiana-green focus:outline-none focus:bg-white font-medium">
+              <input type="password" id="admin-login-pass" required placeholder="Supabase Auth password" class="w-full text-xs pl-10 pr-10 py-2.5 sm:py-3 bg-slate-50 border border-slate-200 rounded-xl focus:ring-2 focus:ring-ashiana-green focus:outline-none focus:bg-white font-medium">
               <button type="button" onclick="togglePinVisibility('admin-login-pass')" class="absolute inset-y-0 right-0 pr-3.5 flex items-center text-slate-400 hover:text-slate-600">
                 <i data-lucide="eye" class="w-4 h-4"></i>
               </button>
@@ -377,7 +377,7 @@
           <div class="bg-gradient-to-br from-emerald-50 to-green-50/80 rounded-2xl p-4 border border-emerald-200 shadow-sm text-center">
             <div class="mb-2.5">
               <span class="text-[10px] font-bold text-ashiana-green uppercase tracking-wider block">Instant QR Attendance</span>
-              <p class="text-[11px] text-slate-500 mt-0.5">Simply scan school QR code — PIN not required!</p>
+              <p class="text-[11px] text-slate-500 mt-0.5">Scan the school QR, then enter your 4-digit PIN.</p>
             </div>
 
             <button id="btn-mark-attendance" onclick="openPunchModal()" class="w-full py-3.5 bg-gradient-to-r from-ashiana-green via-[#08693A] to-emerald-900 hover:from-[#08693A] hover:to-[#054625] text-white rounded-2xl font-extrabold text-sm sm:text-base tracking-wide flex items-center justify-center space-x-2 shadow-lg shadow-emerald-700/30 active:scale-[0.98] transition-all border-b-2 border-ashiana-red">
@@ -639,7 +639,7 @@
       <div id="admin-tab-qr" class="hidden space-y-3">
         <div class="max-w-md mx-auto bg-white rounded-3xl border border-slate-200 shadow-xl overflow-hidden text-center p-6">
           <div class="w-16 h-16 mx-auto mb-2 rounded-full bg-white p-1 shadow border-2 border-emerald-500 flex items-center justify-center overflow-hidden">
-            <img src="logo 2.jpg" alt="Ashiana Public School" 
+            <img src="logo 2.png" alt="Ashiana Public School" 
                  onerror="this.style.display='none'; this.nextElementSibling.classList.remove('hidden');" 
                  class="w-full h-full object-cover rounded-full">
             <svg class="w-full h-full hidden" viewBox="0 0 200 200" fill="none" xmlns="http://www.w3.org/2000/svg">
@@ -670,7 +670,7 @@
               <span id="qr-station-date" class="font-mono text-ashiana-green">Today</span>
             </div>
             <p class="text-[10px] text-slate-500 text-left">
-              Staff scan the live QR and then verify with their 4-digit Attendance PIN. Each QR is valid for 60 seconds.
+              Teachers scan the school QR and then verify with their personal 4-digit PIN before PUNCH IN / PUNCH OUT.
             </p>
           </div>
 
@@ -1029,7 +1029,7 @@
     <div class="border-b-2 border-emerald-900 pb-3 mb-4 flex items-center justify-between">
       <div class="flex items-center space-x-3">
         <div class="w-14 h-14 rounded-full border border-emerald-700 p-0.5">
-          <img src="logo 2.jpg" alt="Ashiana Public School" class="w-full h-full object-cover rounded-full" onerror="this.src='https://placehold.co/100x100/0A7E46/ffffff?text=APS'">
+          <img src="logo 2.png" alt="Ashiana Public School" class="w-full h-full object-cover rounded-full" onerror="this.src='https://placehold.co/100x100/0A7E46/ffffff?text=APS'">
         </div>
         <div>
           <h1 class="text-xl font-bold font-serif text-slate-900 leading-tight">ASHIANA PUBLIC SCHOOL</h1>
@@ -1109,7 +1109,20 @@
         </div>
 
         <div id="scanner-status-text" class="text-center text-xs text-slate-600 font-medium">
-          Align the Daily QR Station code inside the viewfinder to mark attendance automatically.
+          Scan the Daily QR Station code, then enter your 4-digit attendance PIN.
+        </div>
+
+        <div id="scanner-pin-panel" class="hidden space-y-2 p-3 bg-emerald-50 border border-emerald-200 rounded-2xl">
+          <label class="block text-[11px] font-bold text-emerald-950 text-center">Confirm your 4-Digit Attendance PIN</label>
+          <div class="relative">
+            <input type="password" maxlength="4" inputmode="numeric" pattern="[0-9]{4}" id="scanner-attendance-pin" placeholder="••••" class="w-full text-sm p-2.5 pr-10 bg-white border border-emerald-300 rounded-xl font-mono tracking-[0.45em] text-center font-bold focus:ring-2 focus:ring-ashiana-green focus:outline-none">
+            <button type="button" onclick="togglePinVisibility('scanner-attendance-pin')" class="absolute inset-y-0 right-0 pr-3 flex items-center text-slate-400">
+              <i data-lucide="eye" class="w-4 h-4"></i>
+            </button>
+          </div>
+          <button type="button" onclick="submitScannedAttendancePIN()" class="w-full py-2.5 bg-ashiana-green hover:bg-[#08693A] text-white rounded-xl text-xs font-bold shadow">
+            Verify PIN & Mark Attendance
+          </button>
         </div>
 
         <div class="flex items-center space-x-2 pt-1">
@@ -1238,7 +1251,7 @@
           </div>
           <div>
             <label class="block text-[11px] font-bold text-slate-700 mb-1">Initial 4-Digit PIN *</label>
-            <input type="password" maxlength="4" pattern="[0-9]{4}" id="add-staff-pin" required value="1234" class="w-full text-xs p-2 bg-slate-50 border border-slate-200 rounded-xl font-mono tracking-widest text-center font-bold">
+            <input type="password" maxlength="4" pattern="[0-9]{4}" id="add-staff-pin" required value="" class="w-full text-xs p-2 bg-slate-50 border border-slate-200 rounded-xl font-mono tracking-widest text-center font-bold">
           </div>
         </div>
 
@@ -1377,13 +1390,8 @@
         </div>
         <div>
           <label class="block text-[11px] font-bold text-slate-700 mb-1">New 4-Digit Attendance PIN *</label>
-          <input type="password" maxlength="4" inputmode="numeric" autocomplete="new-password" pattern="[0-9]{4}" id="reset-pin-new-value" required placeholder="••••" class="w-full text-xs p-2.5 bg-slate-50 border border-slate-200 rounded-xl font-mono tracking-widest text-center text-sm font-bold focus:ring-2 focus:ring-ashiana-green">
+          <input type="password" maxlength="4" pattern="[0-9]{4}" id="reset-pin-new-value" required placeholder="••••" class="w-full text-xs p-2.5 bg-slate-50 border border-slate-200 rounded-xl font-mono tracking-widest text-center text-sm font-bold focus:ring-2 focus:ring-ashiana-green">
         </div>
-        <div>
-          <label class="block text-[11px] font-bold text-slate-700 mb-1">Confirm New PIN *</label>
-          <input type="password" maxlength="4" inputmode="numeric" autocomplete="new-password" pattern="[0-9]{4}" id="reset-pin-confirm-value" required placeholder="••••" class="w-full text-xs p-2.5 bg-slate-50 border border-slate-200 rounded-xl font-mono tracking-widest text-center text-sm font-bold focus:ring-2 focus:ring-ashiana-green">
-        </div>
-        <p class="text-[10px] text-slate-500 bg-amber-50 border border-amber-200 rounded-xl p-2">The PIN is securely hashed in Supabase and synchronized with the staff login. The existing PIN is never displayed.</p>
         <div class="pt-2 flex items-center justify-end space-x-2">
           <button type="button" onclick="closeResetPinModal()" class="px-3.5 py-2 bg-slate-100 hover:bg-slate-200 text-slate-700 rounded-xl text-xs font-bold">Cancel</button>
           <button type="submit" class="px-4 py-2 bg-amber-600 hover:bg-amber-700 text-white rounded-xl text-xs font-bold flex items-center space-x-1.5 shadow">
@@ -1697,40 +1705,40 @@
     // Baseline Faculty Data for Ashiana Public School
     function getBaselineFacultyData() {
       const baseline = [
-        { id: "usr_101", empId: "APS-101", name: "Mrs. Monika Sharma", role: "Principal", department: "Administration", email: "principal@ashianapublicschool.com", pinHash: "1234", status: "ACTIVE" },
-        { id: "usr_102", empId: "APS-102", name: "Ms. Kavita Chhabra", role: "Vice Principal & Coordinator", department: "Administration", email: "kavita.chhabra@ashianapublicschool.com", pinHash: "1234", status: "ACTIVE" },
-        { id: "usr_103", empId: "APS-103", name: "Ms. Saloni Varma", role: "Office Coordinator", department: "Administration", email: "saloni.varma@ashianapublicschool.com", pinHash: "1234", status: "ACTIVE" },
-        { id: "usr_104", empId: "APS-104", name: "Ms. Jyotsna Leekha", role: "TGT Science & Mathematics", department: "Science & Mathematics", email: "jyotsna.leekha@ashianapublicschool.com", pinHash: "1234", status: "ACTIVE" },
-        { id: "usr_105", empId: "APS-105", name: "Ms. Shally Vij", role: "TGT Hindi & Sanskrit", department: "Languages & Literature", email: "shally.vij@ashianapublicschool.com", pinHash: "1234", status: "ACTIVE" },
-        { id: "usr_106", empId: "APS-106", name: "Ms. Deepali Pathak", role: "TGT Mathematics", department: "Science & Mathematics", email: "deepali.pathak@ashianapublicschool.com", pinHash: "1234", status: "ACTIVE" },
-        { id: "usr_107", empId: "APS-107", name: "Ms. Ambika Handoo Sharma", role: "PGT Computer Science", department: "Information Technology", email: "ambika.handoo@ashianapublicschool.com", pinHash: "1234", status: "ACTIVE" },
-        { id: "usr_108", empId: "APS-108", name: "Ms. Ramandeep Kaur", role: "TGT Punjabi", department: "Languages & Literature", email: "ramandeep.kaur@ashianapublicschool.com", pinHash: "1234", status: "ACTIVE" },
-        { id: "usr_109", empId: "APS-109", name: "Ms. Savleen Chahal", role: "TGT English", department: "Languages & Literature", email: "savleen.chahal@ashianapublicschool.com", pinHash: "1234", status: "ACTIVE" },
-        { id: "usr_110", empId: "APS-110", name: "Ms. Anita Kashyap", role: "TGT Social Science", department: "Languages & Literature", email: "anita.kashyap@ashianapublicschool.com", pinHash: "1234", status: "ACTIVE" },
-        { id: "usr_111", empId: "APS-111", name: "Ms. Alka Bhalla", role: "TGT Science", department: "Science & Mathematics", email: "alka.bhalla@ashianapublicschool.com", pinHash: "1234", status: "ACTIVE" },
-        { id: "usr_112", empId: "APS-112", name: "Ms. Nitika Sihota", role: "PGT Physics", department: "Science & Mathematics", email: "nitika.sihota@ashianapublicschool.com", pinHash: "1234", status: "ACTIVE" },
-        { id: "usr_113", empId: "APS-113", name: "Ms. Renu Devgun", role: "TGT English", department: "Languages & Literature", email: "renu.devgun@ashianapublicschool.com", pinHash: "1234", status: "ACTIVE" },
-        { id: "usr_114", empId: "APS-114", name: "Ms. Anupama Rana", role: "TGT Science & Biology", department: "Science & Mathematics", email: "anupama.rana@ashianapublicschool.com", pinHash: "1234", status: "ACTIVE" },
-        { id: "usr_115", empId: "APS-115", name: "Ms. Shweta Arora", role: "TGT Mathematics", department: "Science & Mathematics", email: "shweta.arora@ashianapublicschool.com", pinHash: "1234", status: "ACTIVE" },
-        { id: "usr_116", empId: "APS-116", name: "Ms. Dharaa Sharma", role: "PRT English", department: "Primary Wing (PRT)", email: "dharaa.sharma@ashianapublicschool.com", pinHash: "1234", status: "ACTIVE" },
-        { id: "usr_117", empId: "APS-117", name: "Ms. Shruti Narula", role: "PRT Mathematics", department: "Primary Wing (PRT)", email: "shruti.narula@ashianapublicschool.com", pinHash: "1234", status: "ACTIVE" },
-        { id: "usr_118", empId: "APS-118", name: "Ms. Harpreet Kaur", role: "PRT Punjabi", department: "Primary Wing (PRT)", email: "harpreet.kaur@ashianapublicschool.com", pinHash: "1234", status: "ACTIVE" },
-        { id: "usr_119", empId: "APS-119", name: "Ms. Sushma Sajwan", role: "PRT Hindi", department: "Primary Wing (PRT)", email: "sushma.sajwan@ashianapublicschool.com", pinHash: "1234", status: "ACTIVE" },
-        { id: "usr_120", empId: "APS-120", name: "Ms. Lata Rani", role: "PRT EVS & Science", department: "Primary Wing (PRT)", email: "lata.rani@ashianapublicschool.com", pinHash: "1234", status: "ACTIVE" },
-        { id: "usr_121", empId: "APS-121", name: "Ms. Upasna Kapuria", role: "PRT Art & Craft", department: "Arts, Music & Dance", email: "upasna.kapuria@ashianapublicschool.com", pinHash: "1234", status: "ACTIVE" },
-        { id: "usr_122", empId: "APS-122", name: "Ms. Amita Arora", role: "Kindergarten Coordinator", department: "Kindergarten Wing", email: "amita.arora@ashianapublicschool.com", pinHash: "1234", status: "ACTIVE" },
-        { id: "usr_123", empId: "APS-123", name: "Ms. Shikha Gupta", role: "Pre-Primary Teacher", department: "Kindergarten Wing", email: "shikha.gupta@ashianapublicschool.com", pinHash: "1234", status: "ACTIVE" },
-        { id: "usr_124", empId: "APS-124", name: "Ms. Artti Prashar", role: "Pre-Primary Teacher", department: "Kindergarten Wing", email: "artti.prashar@ashianapublicschool.com", pinHash: "1234", status: "ACTIVE" },
-        { id: "usr_125", empId: "APS-125", name: "Ms. Manpreet Kaur", role: "Pre-Primary Teacher", department: "Kindergarten Wing", email: "manpreet.k@ashianapublicschool.com", pinHash: "1234", status: "ACTIVE" },
-        { id: "usr_126", empId: "APS-126", name: "Ms. Neenu Mahajan", role: "Pre-Primary Teacher", department: "Kindergarten Wing", email: "neenu.mahajan@ashianapublicschool.com", pinHash: "1234", status: "ACTIVE" },
-        { id: "usr_127", empId: "APS-127", name: "Ms. Abhilasha Gulati", role: "Pre-Primary Teacher", department: "Kindergarten Wing", email: "abhilasha.gulati@ashianapublicschool.com", pinHash: "1234", status: "ACTIVE" },
-        { id: "usr_128", empId: "APS-128", name: "Ms. Simranjeet Kaur", role: "PRT Social Studies", department: "Primary Wing (PRT)", email: "simranjeet.k@ashianapublicschool.com", pinHash: "1234", status: "ACTIVE" },
-        { id: "usr_129", empId: "APS-129", name: "Ms. Pooja Mehra", role: "PRT Science", department: "Primary Wing (PRT)", email: "pooja.mehra@ashianapublicschool.com", pinHash: "1234", status: "ACTIVE" },
-        { id: "usr_130", empId: "APS-130", name: "Ms. Ritu Sharma", role: "PRT Hindi", department: "Primary Wing (PRT)", email: "ritu.sharma@ashianapublicschool.com", pinHash: "1234", status: "ACTIVE" },
-        { id: "usr_135", empId: "APS-135", name: "Ms. Vandana Thakur", role: "Special Educator & Counsellor", department: "Student Support", email: "vandana.thakur@ashianapublicschool.com", pinHash: "1234", status: "ACTIVE" },
-        { id: "usr_136", empId: "APS-136", name: "Ms. Sheela Jaswal", role: "Chief Librarian", department: "Administration", email: "sheela.jaswal@ashianapublicschool.com", pinHash: "1234", status: "ACTIVE" },
-        { id: "usr_137", empId: "APS-137", name: "Mr. Amit Kumar", role: "PET & Sports Head", department: "Physical Education", email: "amit.kumar@ashianapublicschool.com", pinHash: "1234", status: "ACTIVE" },
-        { id: "usr_138", empId: "APS-138", name: "Mr. Manjeet Singh", role: "Taekwondo Coach", department: "Physical Education", email: "manjeet.singh@ashianapublicschool.com", pinHash: "1234", status: "ACTIVE" }
+        { id: "usr_101", empId: "APS-101", name: "Mrs. Monika Sharma", role: "Principal", department: "Administration", email: "principal@ashianapublicschool.com", pinHash: "", status: "ACTIVE" },
+        { id: "usr_102", empId: "APS-102", name: "Ms. Kavita Chhabra", role: "Vice Principal & Coordinator", department: "Administration", email: "kavita.chhabra@ashianapublicschool.com", pinHash: "", status: "ACTIVE" },
+        { id: "usr_103", empId: "APS-103", name: "Ms. Saloni Varma", role: "Office Coordinator", department: "Administration", email: "saloni.varma@ashianapublicschool.com", pinHash: "", status: "ACTIVE" },
+        { id: "usr_104", empId: "APS-104", name: "Ms. Jyotsna Leekha", role: "TGT Science & Mathematics", department: "Science & Mathematics", email: "jyotsna.leekha@ashianapublicschool.com", pinHash: "", status: "ACTIVE" },
+        { id: "usr_105", empId: "APS-105", name: "Ms. Shally Vij", role: "TGT Hindi & Sanskrit", department: "Languages & Literature", email: "shally.vij@ashianapublicschool.com", pinHash: "", status: "ACTIVE" },
+        { id: "usr_106", empId: "APS-106", name: "Ms. Deepali Pathak", role: "TGT Mathematics", department: "Science & Mathematics", email: "deepali.pathak@ashianapublicschool.com", pinHash: "", status: "ACTIVE" },
+        { id: "usr_107", empId: "APS-107", name: "Ms. Ambika Handoo Sharma", role: "PGT Computer Science", department: "Information Technology", email: "ambika.handoo@ashianapublicschool.com", pinHash: "", status: "ACTIVE" },
+        { id: "usr_108", empId: "APS-108", name: "Ms. Ramandeep Kaur", role: "TGT Punjabi", department: "Languages & Literature", email: "ramandeep.kaur@ashianapublicschool.com", pinHash: "", status: "ACTIVE" },
+        { id: "usr_109", empId: "APS-109", name: "Ms. Savleen Chahal", role: "TGT English", department: "Languages & Literature", email: "savleen.chahal@ashianapublicschool.com", pinHash: "", status: "ACTIVE" },
+        { id: "usr_110", empId: "APS-110", name: "Ms. Anita Kashyap", role: "TGT Social Science", department: "Languages & Literature", email: "anita.kashyap@ashianapublicschool.com", pinHash: "", status: "ACTIVE" },
+        { id: "usr_111", empId: "APS-111", name: "Ms. Alka Bhalla", role: "TGT Science", department: "Science & Mathematics", email: "alka.bhalla@ashianapublicschool.com", pinHash: "", status: "ACTIVE" },
+        { id: "usr_112", empId: "APS-112", name: "Ms. Nitika Sihota", role: "PGT Physics", department: "Science & Mathematics", email: "nitika.sihota@ashianapublicschool.com", pinHash: "", status: "ACTIVE" },
+        { id: "usr_113", empId: "APS-113", name: "Ms. Renu Devgun", role: "TGT English", department: "Languages & Literature", email: "renu.devgun@ashianapublicschool.com", pinHash: "", status: "ACTIVE" },
+        { id: "usr_114", empId: "APS-114", name: "Ms. Anupama Rana", role: "TGT Science & Biology", department: "Science & Mathematics", email: "anupama.rana@ashianapublicschool.com", pinHash: "", status: "ACTIVE" },
+        { id: "usr_115", empId: "APS-115", name: "Ms. Shweta Arora", role: "TGT Mathematics", department: "Science & Mathematics", email: "shweta.arora@ashianapublicschool.com", pinHash: "", status: "ACTIVE" },
+        { id: "usr_116", empId: "APS-116", name: "Ms. Dharaa Sharma", role: "PRT English", department: "Primary Wing (PRT)", email: "dharaa.sharma@ashianapublicschool.com", pinHash: "", status: "ACTIVE" },
+        { id: "usr_117", empId: "APS-117", name: "Ms. Shruti Narula", role: "PRT Mathematics", department: "Primary Wing (PRT)", email: "shruti.narula@ashianapublicschool.com", pinHash: "", status: "ACTIVE" },
+        { id: "usr_118", empId: "APS-118", name: "Ms. Harpreet Kaur", role: "PRT Punjabi", department: "Primary Wing (PRT)", email: "harpreet.kaur@ashianapublicschool.com", pinHash: "", status: "ACTIVE" },
+        { id: "usr_119", empId: "APS-119", name: "Ms. Sushma Sajwan", role: "PRT Hindi", department: "Primary Wing (PRT)", email: "sushma.sajwan@ashianapublicschool.com", pinHash: "", status: "ACTIVE" },
+        { id: "usr_120", empId: "APS-120", name: "Ms. Lata Rani", role: "PRT EVS & Science", department: "Primary Wing (PRT)", email: "lata.rani@ashianapublicschool.com", pinHash: "", status: "ACTIVE" },
+        { id: "usr_121", empId: "APS-121", name: "Ms. Upasna Kapuria", role: "PRT Art & Craft", department: "Arts, Music & Dance", email: "upasna.kapuria@ashianapublicschool.com", pinHash: "", status: "ACTIVE" },
+        { id: "usr_122", empId: "APS-122", name: "Ms. Amita Arora", role: "Kindergarten Coordinator", department: "Kindergarten Wing", email: "amita.arora@ashianapublicschool.com", pinHash: "", status: "ACTIVE" },
+        { id: "usr_123", empId: "APS-123", name: "Ms. Shikha Gupta", role: "Pre-Primary Teacher", department: "Kindergarten Wing", email: "shikha.gupta@ashianapublicschool.com", pinHash: "", status: "ACTIVE" },
+        { id: "usr_124", empId: "APS-124", name: "Ms. Artti Prashar", role: "Pre-Primary Teacher", department: "Kindergarten Wing", email: "artti.prashar@ashianapublicschool.com", pinHash: "", status: "ACTIVE" },
+        { id: "usr_125", empId: "APS-125", name: "Ms. Manpreet Kaur", role: "Pre-Primary Teacher", department: "Kindergarten Wing", email: "manpreet.k@ashianapublicschool.com", pinHash: "", status: "ACTIVE" },
+        { id: "usr_126", empId: "APS-126", name: "Ms. Neenu Mahajan", role: "Pre-Primary Teacher", department: "Kindergarten Wing", email: "neenu.mahajan@ashianapublicschool.com", pinHash: "", status: "ACTIVE" },
+        { id: "usr_127", empId: "APS-127", name: "Ms. Abhilasha Gulati", role: "Pre-Primary Teacher", department: "Kindergarten Wing", email: "abhilasha.gulati@ashianapublicschool.com", pinHash: "", status: "ACTIVE" },
+        { id: "usr_128", empId: "APS-128", name: "Ms. Simranjeet Kaur", role: "PRT Social Studies", department: "Primary Wing (PRT)", email: "simranjeet.k@ashianapublicschool.com", pinHash: "", status: "ACTIVE" },
+        { id: "usr_129", empId: "APS-129", name: "Ms. Pooja Mehra", role: "PRT Science", department: "Primary Wing (PRT)", email: "pooja.mehra@ashianapublicschool.com", pinHash: "", status: "ACTIVE" },
+        { id: "usr_130", empId: "APS-130", name: "Ms. Ritu Sharma", role: "PRT Hindi", department: "Primary Wing (PRT)", email: "ritu.sharma@ashianapublicschool.com", pinHash: "", status: "ACTIVE" },
+        { id: "usr_135", empId: "APS-135", name: "Ms. Vandana Thakur", role: "Special Educator & Counsellor", department: "Student Support", email: "vandana.thakur@ashianapublicschool.com", pinHash: "", status: "ACTIVE" },
+        { id: "usr_136", empId: "APS-136", name: "Ms. Sheela Jaswal", role: "Chief Librarian", department: "Administration", email: "sheela.jaswal@ashianapublicschool.com", pinHash: "", status: "ACTIVE" },
+        { id: "usr_137", empId: "APS-137", name: "Mr. Amit Kumar", role: "PET & Sports Head", department: "Physical Education", email: "amit.kumar@ashianapublicschool.com", pinHash: "", status: "ACTIVE" },
+        { id: "usr_138", empId: "APS-138", name: "Mr. Manjeet Singh", role: "Taekwondo Coach", department: "Physical Education", email: "manjeet.singh@ashianapublicschool.com", pinHash: "", status: "ACTIVE" }
       ];
       return baseline;
     }
@@ -1797,12 +1805,6 @@
       let anyChange = false;
 
       try {
-        const { data: sessionData } = await supabaseClient.auth.getSession();
-        if (!sessionData?.session) {
-          updateCloudBadge(false);
-          return;
-        }
-
         // 1. SYNC STAFF TABLE (Accounts, Names, Roles, Updated PINs)
         const { data: remoteStaff, error: staffErr } = await supabaseClient
           .from('staff')
@@ -1822,7 +1824,7 @@
               department: s.department,
               role: s.role,
               email: s.email,
-              pinHash: (s.pin_hash || s.pinHash || "1234").toString(),
+              pinHash: "",
               status: s.status || "ACTIVE"
             };
             remoteMap.set(mapped.id, mapped);
@@ -1832,14 +1834,15 @@
           if (remoteStaff.length !== staffDatabase.length || 
               remoteStaff.some(s => {
                 const loc = staffDatabase.find(x => x.id === s.id);
-                return !loc || loc.pinHash !== (s.pin_hash || s.pinHash) || loc.name !== s.name || loc.status !== s.status;
+                return !loc || loc.name !== s.name || loc.status !== s.status || loc.email !== s.email;
               })) {
             staffDatabase = Array.from(remoteMap.values());
             anyChange = true;
           }
-        } else if (remoteStaff && remoteStaff.length === 0) {
-          // Never seed the production database with demo/baseline credentials.
-          console.info("Supabase staff table is empty; waiting for administrator enrollment.");
+        } else if (remoteStaff && remoteStaff.length === 0 && staffDatabase.length > 0) {
+          // If remote cloud database is completely empty on first run, auto-seed baseline staff
+          console.info("Supabase staff table is empty. Auto-seeding baseline roster to cloud...");
+          await syncAllToSupabase();
         }
 
         // 2. SYNC ATTENDANCE PUNCHES (All dates so history and reports work on any device)
@@ -2002,7 +2005,7 @@
     async function loadPersistedData() {
       try {
         const savedStaff = localStorage.getItem(STORAGE_KEY_STAFF);
-        staffDatabase = savedStaff ? JSON.parse(savedStaff) : [];
+        staffDatabase = savedStaff ? JSON.parse(savedStaff) : getBaselineFacultyData();
 
         const savedPunches = localStorage.getItem(STORAGE_KEY_PUNCHES);
         punchLedger = savedPunches ? JSON.parse(savedPunches) : [];
@@ -2018,10 +2021,11 @@
           { id: "aud_1", timestamp: new Date().toLocaleString(), actor: "System Engine", action: "SYSTEM_INIT", entity: "School Calendar", details: "Shift 07:40 AM – 02:30 PM initialized." }
         ];
 
-        // Supabase Auth is the source of truth for the signed-in session.
-        // Do not restore a locally forged administrator/staff session.
-        currentAuthUser = null;
-        currentStaffId = null;
+        const savedUser = sessionStorage.getItem(STORAGE_KEY_CURRENT_USER);
+        if (savedUser) {
+          currentAuthUser = JSON.parse(savedUser);
+          currentStaffId = currentAuthUser.staffRecord?.id || staffDatabase[0]?.id || "usr_101";
+        }
       } catch (e) {
         staffDatabase = getBaselineFacultyData();
       }
@@ -2067,47 +2071,32 @@
       }
     }
 
-    // Auto-upsert staff row to avoid foreign-key rejections
+    // Staff rows are provisioned server-side. This helper only verifies the
+    // row exists; it never writes or exposes a PIN/hash from the browser.
     async function ensureStaffExistsInSupabase(staff) {
       if (!supabaseClient || !staff) return false;
-      try {
-        const { error } = await supabaseClient.from('staff').upsert([{
-          id: staff.id,
-          emp_id: staff.empId,
-          name: staff.name,
-          department: staff.department,
-          role: staff.role,
-          email: staff.email,
-          status: staff.status
-        }], { onConflict: 'id' });
-        if (error) throw error;
-        return true;
-      } catch (err) {
-        console.warn("Staff upsert notice:", err);
-        return false;
-      }
+      const { data, error } = await supabaseClient.from('staff').select('id').eq('id', staff.id).maybeSingle();
+      if (error) throw error;
+      if (!data) throw new Error('Staff profile is missing from Supabase.');
+      return true;
     }
 
     async function syncAllToSupabase() {
-      if (!supabaseClient) {
-        showToast("Supabase client not initialized.", "error");
+      if (!supabaseClient || currentAuthUser?.type !== 'ADMIN') {
+        showToast("Administrator cloud session is required for roster sync.", "error");
         return;
       }
-      showToast("Uploading faculty roster to Supabase PostgreSQL...", "info");
+      showToast("Synchronizing faculty roster without exposing PINs...", "info");
       try {
-        const payload = staffDatabase.map(s => ({
-          id: s.id,
-          emp_id: s.empId,
-          name: s.name,
-          department: s.department,
-          role: s.role,
-          email: s.email,
-          status: s.status
-        }));
-        const { error } = await supabaseClient.from('staff').upsert(payload, { onConflict: 'id' });
-        if (error) throw error;
+        for (const s of staffDatabase) {
+          const { error } = await supabaseClient.from('staff').update({
+            emp_id: s.empId, name: s.name, department: s.department,
+            role: s.role, email: s.email, status: s.status
+          }).eq('id', s.id);
+          if (error) throw error;
+        }
         playTone('SUCCESS');
-        showToast("All faculty records seeded to Supabase!", "success");
+        showToast("Faculty roster synchronized. PINs were left untouched.", "success");
       } catch (e) {
         showToast("Cloud sync failed: " + e.message, "error");
       }
@@ -2141,75 +2130,91 @@
 
     async function handleTeacherLogin(event) {
       event.preventDefault();
-      const email = (document.getElementById("teacher-login-id")?.value || "").trim().toLowerCase();
-      const pin = (document.getElementById("teacher-login-pin")?.value || "").trim();
+      const idVal = normalizeLoginId(document.getElementById("teacher-login-id")?.value);
+      const pinVal = (document.getElementById("teacher-login-pin")?.value || "").trim();
 
-      if (!email || !/^\d{4}$/.test(pin) || !supabaseClient) {
-        playTone('ERROR');
-        showToast("Enter your registered email and 4-digit PIN.", "error");
+      if (!idVal || !/^\d{4}$/.test(pinVal)) {
+        showToast("Enter your Employee ID/email and exactly 4 digits.", "error");
+        return;
+      }
+      if (!supabaseClient) {
+        showToast("Cloud authentication is unavailable. Please try again.", "error");
         return;
       }
 
       try {
-        // The 4-digit staff PIN is also the staff Auth password in the current deployment.
-        const { data, error } = await supabaseClient.auth.signInWithPassword({
-          email,
-          password: pin
+        showToast("Verifying staff PIN securely...", "info");
+
+        // The Edge Function verifies the 4-digit PIN against bcrypt and, when
+        // needed, migrates/repairs the Auth password to the derived credential.
+        const loginResult = await invokeVerifyAttendance({
+          action: "staff_login",
+          login_id: idVal,
+          pin: pinVal
         });
-        if (error) throw error;
 
-        const authEmail = data.user?.email?.toLowerCase();
-        const { data: staffRow, error: staffErr } = await supabaseClient
-          .from('staff')
-          .select('id, emp_id, name, department, role, email, status')
-          .eq('email', authEmail)
-          .maybeSingle();
-
-        if (staffErr) throw staffErr;
-        if (!staffRow) {
-          await supabaseClient.auth.signOut();
-          throw new Error("No registered staff record was found for this login.");
+        if (!loginResult?.success || !loginResult?.staff?.email || !loginResult?.staff?.id) {
+          throw new Error("Staff authentication failed.");
         }
-        if (staffRow.status !== 'ACTIVE') {
-          await supabaseClient.auth.signOut();
-          throw new Error("Account is inactive. Contact office.");
+
+        const authPassword = deriveStaffAuthPassword(loginResult.staff.id, pinVal);
+        const { data: authData, error: authError } = await supabaseClient.auth.signInWithPassword({
+          email: loginResult.staff.email,
+          password: authPassword
+        });
+        if (authError || !authData?.user) {
+          throw new Error(authError?.message || "Supabase Auth sign-in failed.");
         }
 
         const matched = {
-          id: staffRow.id,
-          empId: staffRow.emp_id,
-          name: staffRow.name,
-          department: staffRow.department,
-          role: staffRow.role,
-          email: staffRow.email,
+          id: loginResult.staff.id,
+          empId: loginResult.staff.emp_id,
+          name: loginResult.staff.name,
+          department: loginResult.staff.department,
+          role: loginResult.staff.role,
+          email: loginResult.staff.email,
           pinHash: "",
-          status: staffRow.status
+          status: loginResult.staff.status || "ACTIVE"
         };
+        const idx = staffDatabase.findIndex(s => s.id === matched.id);
+        if (idx >= 0) staffDatabase[idx] = { ...staffDatabase[idx], ...matched };
+        else staffDatabase.push(matched);
+        savePersistedData();
 
         currentAuthUser = { type: 'STAFF', staffRecord: matched };
         currentStaffId = matched.id;
         sessionStorage.setItem(STORAGE_KEY_CURRENT_USER, JSON.stringify(currentAuthUser));
 
         await syncAllDataFromSupabase(false);
-        recordAuditLog("STAFF_LOGIN", matched.name, "Staff signed in successfully.");
         playTone('SUCCESS');
         showToast(`Welcome, ${matched.name}!`, "success");
         applyAuthenticatedUI();
-      } catch (e) {
-        console.error("Staff login error:", e);
+      } catch (err) {
         playTone('ERROR');
-        showToast(e?.message || "Invalid email or PIN.", "error");
+        const msg = String(err?.message || err);
+        if (msg.includes('RATE_LIMIT')) {
+          showToast("Too many PIN attempts. Please wait a few minutes and try again.", "error");
+        } else if (msg.includes('INVALID_PIN') || msg.includes('STAFF_NOT_FOUND')) {
+          showToast("Incorrect Employee ID/email or PIN.", "error");
+        } else if (msg.includes('ADMIN_ACCOUNT')) {
+          showToast("Use the Administrator login for this account.", "error");
+        } else {
+          showToast("Staff sign-in failed: " + msg, "error");
+        }
       }
     }
 
     async function handleAdminLogin(event) {
       event.preventDefault();
-      const userVal = (document.getElementById("admin-login-user")?.value || "").trim().toLowerCase();
+      const userVal = normalizeLoginId(document.getElementById("admin-login-user")?.value);
       const passVal = (document.getElementById("admin-login-pass")?.value || "").trim();
 
-      if (!userVal || !passVal || !supabaseClient) {
-        playTone('ERROR');
-        showToast("Enter your administrator email and password.", "error");
+      if (!userVal || !passVal) {
+        showToast("Enter the administrator email and password.", "error");
+        return;
+      }
+      if (!supabaseClient) {
+        showToast("Cloud authentication is unavailable.", "error");
         return;
       }
 
@@ -2218,48 +2223,35 @@
           email: userVal,
           password: passVal
         });
-        if (error) throw error;
+        if (error || !data?.user) throw new Error(error?.message || "Administrator sign-in failed.");
 
-        const authEmail = data.user?.email?.toLowerCase();
-        const { data: adminRow, error: adminErr } = await supabaseClient
+        const { data: adminRow, error: adminError } = await supabaseClient
           .from('admin_users')
-          .select('email, role, active')
-          .eq('email', authEmail)
+          .select('email,role,active')
+          .eq('email', userVal)
           .eq('active', true)
           .maybeSingle();
-
-        if (adminErr) throw adminErr;
-        if (!adminRow) {
+        if (adminError || !adminRow) {
           await supabaseClient.auth.signOut();
-          throw new Error("This Auth account is not registered as an active administrator.");
+          throw new Error("Administrator account is not authorized.");
         }
 
-        currentAuthUser = {
-          type: 'ADMIN',
-          username: authEmail,
-          role: adminRow.role || 'ADMIN'
-        };
+        currentAuthUser = { type: 'ADMIN', username: userVal, role: adminRow.role };
         currentStaffId = null;
         sessionStorage.setItem(STORAGE_KEY_CURRENT_USER, JSON.stringify(currentAuthUser));
-
         await syncAllDataFromSupabase(false);
         recordAuditLog("ADMIN_LOGIN", "Security Gateway", "Administrator signed in to console.");
         playTone('SUCCESS');
         showToast("Administrator signed in successfully.", "success");
         applyAuthenticatedUI();
-      } catch (e) {
-        console.error("Admin login error:", e);
+      } catch (err) {
         playTone('ERROR');
-        showToast(e?.message || "Invalid administrator credentials.", "error");
+        showToast("Administrator sign-in failed: " + (err?.message || err), "error");
       }
     }
 
     async function handleLogout() {
-      try {
-        if (supabaseClient) await supabaseClient.auth.signOut();
-      } catch (e) {
-        console.warn("Supabase sign-out notice:", e);
-      }
+      try { if (supabaseClient) await supabaseClient.auth.signOut(); } catch (e) {}
       currentAuthUser = null;
       currentStaffId = null;
       sessionStorage.removeItem(STORAGE_KEY_CURRENT_USER);
@@ -2395,18 +2387,18 @@
     }
 
     // =========================================================================
-    // CAMERA & 1-STEP DIRECT ATTENDANCE PUNCHING (NO PIN REQUIRED ON SCAN)
+    // CAMERA + QR TOKEN + 4-DIGIT PIN ATTENDANCE
     // =========================================================================
+    let pendingScannedQR = null;
+
     async function startCameraScanner() {
       if (typeof Html5Qrcode === "undefined") return;
       await stopCameraScanner();
-
       const isSecure = location.protocol === 'https:' || location.hostname === 'localhost' || location.hostname === '127.0.0.1';
       if (!isSecure) {
-        document.getElementById("scanner-status-text").innerHTML = `<span class="text-ashiana-red font-bold">HTTPS Required for Camera!</span><br><span class="text-[10px] text-slate-500">Tap "Simulate QR Detected" to test below.</span>`;
+        document.getElementById("scanner-status-text").innerHTML = `<span class="text-ashiana-red font-bold">HTTPS Required for Camera!</span>`;
         return;
       }
-
       try {
         html5QrScannerInstance = new Html5Qrcode("scanner-reader");
         await html5QrScannerInstance.start(
@@ -2417,16 +2409,13 @@
         );
         isScannerRunning = true;
       } catch (err) {
-        document.getElementById("scanner-status-text").innerHTML = `<span class="text-ashiana-red font-bold">Camera Blocked.</span><br><span class="text-[10px] text-slate-500">Allow permissions or tap Simulate QR Detected.</span>`;
+        document.getElementById("scanner-status-text").innerHTML = `<span class="text-ashiana-red font-bold">Camera Blocked.</span><br><span class="text-[10px] text-slate-500">Allow camera access and try again.</span>`;
       }
     }
 
     async function stopCameraScanner() {
       if (html5QrScannerInstance && isScannerRunning) {
-        try {
-          await html5QrScannerInstance.stop();
-          html5QrScannerInstance.clear();
-        } catch (e) {}
+        try { await html5QrScannerInstance.stop(); html5QrScannerInstance.clear(); } catch (e) {}
         isScannerRunning = false;
       }
     }
@@ -2436,17 +2425,45 @@
       await startCameraScanner();
     }
 
+    function parseAttendanceQR(decodedText) {
+      try {
+        const obj = JSON.parse(decodedText);
+        if (obj && obj.token) return { token: String(obj.token), date: obj.date || null };
+      } catch (_) {}
+      const raw = String(decodedText || '').trim();
+      if (/^[a-f0-9]{40,}$/i.test(raw)) return { token: raw, date: null };
+      return null;
+    }
+
     async function onQRCodeDetected(decodedText) {
       await stopCameraScanner();
-      await executeDirectPunch(decodedText);
+      const parsed = parseAttendanceQR(decodedText);
+      if (!parsed) {
+        showToast("Invalid Ashiana attendance QR code.", "error");
+        setTimeout(startCameraScanner, 500);
+        return;
+      }
+      pendingScannedQR = parsed;
+      const pinPanel = document.getElementById('scanner-pin-panel');
+      const pinInput = document.getElementById('scanner-attendance-pin');
+      if (pinPanel) pinPanel.classList.remove('hidden');
+      if (pinInput) { pinInput.value = ''; pinInput.focus(); }
+      const status = document.getElementById('scanner-status-text');
+      if (status) status.innerHTML = `<span class="text-ashiana-green font-bold">QR verified.</span><br>Enter your 4-digit PIN to continue.`;
+      if (window.lucide) lucide.createIcons();
     }
 
     function handleSimulateScanSuccess() {
-      onQRCodeDetected(JSON.stringify({ school: "ASHIANA_PUBLIC_SCHOOL", date: activeQRSession.date, token: activeQRSession.token }));
+      const payload = JSON.stringify({ school: "ASHIANA_PUBLIC_SCHOOL", date: activeQRSession.date, token: activeQRSession.token });
+      onQRCodeDetected(payload);
     }
 
     function openPunchModal() {
       if (!currentStaffId) return;
+      pendingScannedQR = null;
+      document.getElementById('scanner-pin-panel')?.classList.add('hidden');
+      const pinInput = document.getElementById('scanner-attendance-pin');
+      if (pinInput) pinInput.value = '';
       document.getElementById("modal-punch").classList.remove("hidden");
       if (window.lucide) lucide.createIcons();
       setTimeout(startCameraScanner, 150);
@@ -2454,64 +2471,51 @@
 
     async function closePunchModal() {
       await stopCameraScanner();
+      pendingScannedQR = null;
+      document.getElementById('scanner-pin-panel')?.classList.add('hidden');
       document.getElementById("modal-punch").classList.add("hidden");
     }
 
-    // QR attendance verification. The Supabase Edge Function validates the QR token,
-    // authenticated staff identity, 4-digit PIN, date, expiry and duplicate debounce.
-    async function executeDirectPunch(decodedText = "") {
-      if (!currentStaffId || currentAuthUser?.type !== 'STAFF' || !supabaseClient) {
-        showToast("Please sign in as staff first.", "error");
+    async function submitScannedAttendancePIN() {
+      const pin = document.getElementById('scanner-attendance-pin')?.value.trim() || '';
+      if (!/^\d{4}$/.test(pin)) {
+        showToast("Enter exactly 4 digits.", "error");
         return;
       }
-
-      let qrToken = "";
+      if (!pendingScannedQR?.token) {
+        showToast("Please scan the school QR code first.", "error");
+        return;
+      }
       try {
-        const payload = JSON.parse(decodedText || "{}");
-        qrToken = payload.token || "";
-      } catch (e) {
-        qrToken = decodedText || "";
-      }
-
-      if (!qrToken) {
-        showToast("Invalid school QR code.", "error");
-        return;
-      }
-
-      const pin = window.prompt("Enter your 4-digit Attendance PIN to verify this scan:", "");
-      if (!/^\d{4}$/.test(pin || "")) {
-        showToast("A valid 4-digit PIN is required.", "error");
-        return;
-      }
-
-      try {
-        const { data: sessionData } = await supabaseClient.auth.getSession();
-        const accessToken = sessionData?.session?.access_token;
-        if (!accessToken) throw new Error("Staff session expired. Please sign in again.");
-
-        const response = await fetch(`${DEFAULT_SUPABASE_URL}/functions/v1/verify-attendance`, {
-          method: 'POST',
-          headers: {
-            'Content-Type': 'application/json',
-            'Authorization': `Bearer ${accessToken}`,
-            'apikey': DEFAULT_SUPABASE_ANON_KEY
-          },
-          body: JSON.stringify({ token: qrToken, pin })
+        const result = await invokeVerifyAttendance({
+          action: 'attendance',
+          qr_token: pendingScannedQR.token,
+          pin
         });
-        const result = await response.json().catch(() => ({}));
-        if (!response.ok) throw new Error(result?.error || result?.message || `Attendance verification failed (${response.status}).`);
+        const punch = result?.punch;
+        if (!punch) throw new Error("Attendance response was incomplete.");
 
-        await syncAllDataFromSupabase(false);
+        const localRecord = {
+          id: punch.id, staffId: punch.staff_id, staffName: punch.staff_name, empId: punch.emp_id,
+          attendanceDate: punch.attendance_date, type: punch.type,
+          timestamp: punch.timestamp, method: punch.method || 'QR+PIN'
+        };
+        punchLedger = punchLedger.filter(p => p.id !== localRecord.id);
+        punchLedger.push(localRecord);
+        savePersistedData();
         playTone('SUCCESS');
         await closePunchModal();
-        showToast(`PUNCH ${result?.punch?.type || 'recorded'} recorded successfully!`, "success");
+        showToast(result.message || `PUNCH ${localRecord.type} recorded successfully.`, "success");
         refreshStaffUI();
         renderLiveAttendanceTable();
         updateKPICards();
       } catch (e) {
-        console.error("Attendance verification error:", e);
         playTone('ERROR');
-        showToast(e?.message || "Attendance verification failed.", "error");
+        const msg = String(e?.message || e);
+        if (msg.includes('INVALID_OR_EXPIRED_QR')) showToast("QR expired. Please scan the latest school QR.", "error");
+        else if (msg.includes('INVALID_PIN')) showToast("Incorrect PIN. Attendance was not marked.", "error");
+        else if (msg.includes('DUPLICATE_SCAN')) showToast("Please wait 30 seconds before scanning again.", "error");
+        else showToast("Attendance verification failed: " + msg, "error");
       }
     }
 
@@ -2817,7 +2821,7 @@
             <td class="py-2 px-3 text-slate-600">${s.department}</td>
             <td class="py-2 px-3 text-slate-600">${s.role}</td>
             <td class="py-2 px-3 font-mono text-[10px] text-slate-500">${s.email}</td>
-            <td class="py-2 px-3 text-center"><span class="px-1.5 py-0.5 rounded font-mono font-bold text-[10px] bg-emerald-50 text-ashiana-green border border-emerald-300" title="PIN is hidden for security">••••</span></td>
+            <td class="py-2 px-3 text-center"><span class="px-1.5 py-0.5 rounded font-mono font-bold text-[10px] bg-emerald-50 text-ashiana-green border border-emerald-300">${s.pinHash ? "••••" : "••••"}</span></td>
             <td class="py-2 px-3"><span class="px-2 py-0.5 rounded-full text-[9px] font-bold ${s.status === 'ACTIVE' ? 'bg-emerald-100 text-emerald-800' : 'bg-rose-100 text-rose-800'}">${s.status}</span></td>
             <td class="py-2 px-3 text-center">
               <div class="flex items-center justify-center space-x-1.5">
@@ -2827,9 +2831,8 @@
                 <button onclick="openEditStaffModal('${s.id}')" title="Edit Faculty" class="p-1 text-slate-600 hover:text-ashiana-green hover:bg-emerald-50 rounded-lg transition-colors">
                   <i data-lucide="edit-3" class="w-3.5 h-3.5"></i>
                 </button>
-                <button onclick="openResetPinModal('${s.id}')" title="Reset Staff PIN" class="px-2 py-1 text-amber-700 hover:text-white hover:bg-amber-600 bg-amber-50 border border-amber-200 rounded-lg transition-colors text-[9px] font-bold flex items-center space-x-1">
-                  <i data-lucide="key-round" class="w-3.5 h-3.5"></i>
-                  <span>Reset PIN</span>
+                <button onclick="openResetPinModal('${s.id}')" title="Reset PIN" class="p-1 text-amber-600 hover:text-amber-800 hover:bg-amber-50 rounded-lg transition-colors">
+                  <i data-lucide="key" class="w-3.5 h-3.5"></i>
                 </button>
                 <button onclick="openDeleteStaffModal('${s.id}')" title="Delete Faculty" class="p-1 text-slate-400 hover:text-ashiana-red hover:bg-rose-50 rounded-lg transition-colors">
                   <i data-lucide="trash-2" class="w-3.5 h-3.5"></i>
@@ -3092,73 +3095,51 @@
       const container = document.getElementById("qr-code-canvas-container");
       if (!container) return;
       container.innerHTML = "";
-
-      // Use a direct QR image endpoint so the QR remains visible even if the
-      // optional QRCode.js CDN is blocked or fails to load on GitHub Pages.
-      // The QR payload contains only the short-lived attendance token/date;
-      // the token is still validated server-side by verify-attendance.
       const payload = JSON.stringify({
         school: "ASHIANA_PUBLIC_SCHOOL",
         date: activeQRSession.date,
         token: activeQRSession.token
       });
-      const qrUrl = `https://api.qrserver.com/v1/create-qr-code/?size=180x180&margin=8&data=${encodeURIComponent(payload)}`;
-      const img = document.createElement("img");
-      img.src = qrUrl;
-      img.width = 180;
-      img.height = 180;
-      img.alt = "Daily Ashiana Public School attendance QR code";
-      img.className = "block w-[180px] h-[180px] mx-auto rounded-lg";
-      img.referrerPolicy = "no-referrer";
-      img.onerror = () => {
-        container.innerHTML = '<div class="text-center text-red-600 text-sm font-semibold p-4">QR image could not load. Check the station internet connection and refresh.</div>';
-      };
+      const img = document.createElement('img');
+      img.alt = 'Ashiana Public School attendance QR';
+      img.width = 180; img.height = 180;
+      img.className = 'w-[180px] h-[180px]';
+      img.src = 'https://api.qrserver.com/v1/create-qr-code/?size=180x180&margin=8&data=' + encodeURIComponent(payload);
       container.appendChild(img);
 
       const tokenPreview = document.getElementById("qr-token-preview");
-      if (tokenPreview) tokenPreview.innerText = activeQRSession.token;
-
+      if (tokenPreview) tokenPreview.innerText = activeQRSession.token || 'NOT_GENERATED';
       const stationDate = document.getElementById("qr-station-date");
-      if (stationDate) {
-        const dateObj = new Date();
-        stationDate.innerText = dateObj.toLocaleDateString('en-US', { day: 'numeric', month: 'long', year: 'numeric' });
+      if (stationDate) stationDate.innerText = new Date().toLocaleDateString('en-US', { day: 'numeric', month: 'long', year: 'numeric' });
+      const expiryText = document.getElementById('qr-valid-day-text');
+      if (expiryText) {
+        if (activeQRSession.expiresAt) {
+          expiryText.innerText = `Valid for 60 seconds • Expires ${new Date(activeQRSession.expiresAt).toLocaleTimeString('en-US')}`;
+        } else {
+          expiryText.innerText = 'Generate a live QR session';
+        }
+      }
+    }
+
+    async function loadAdminQRSession() {
+      if (!supabaseClient || currentAuthUser?.type !== 'ADMIN') return;
+      try {
+        const result = await invokeAdminFunction('generate-attendance-qr', {});
+        activeQRSession = {
+          token: result.qr.token,
+          date: result.qr.attendance_date,
+          expiresAt: result.qr.expires_at
+        };
+        systemConfig.currentAttendanceDate = result.qr.attendance_date;
+        renderQRCode();
+      } catch (e) {
+        showToast('Unable to generate live attendance QR: ' + (e?.message || e), 'error');
       }
     }
 
     async function rotateQRSession() {
-      if (currentAuthUser?.type !== 'ADMIN' || !supabaseClient) {
-        showToast("Administrator authentication is required to generate the QR.", "error");
-        return;
-      }
-
-      try {
-        const { data: sessionData } = await supabaseClient.auth.getSession();
-        const accessToken = sessionData?.session?.access_token;
-        if (!accessToken) throw new Error("Administrator session expired. Please sign in again.");
-
-        const response = await fetch(`${DEFAULT_SUPABASE_URL}/functions/v1/generate-attendance-qr`, {
-          method: 'POST',
-          headers: {
-            'Content-Type': 'application/json',
-            'Authorization': `Bearer ${accessToken}`,
-            'apikey': DEFAULT_SUPABASE_ANON_KEY
-          }
-        });
-        const result = await response.json().catch(() => ({}));
-        if (!response.ok) throw new Error(result?.error || `QR generation failed (${response.status}).`);
-
-        activeQRSession.token = result.qr.token;
-        activeQRSession.date = result.qr.attendance_date;
-        activeQRSession.validUntil = result.qr.expires_at;
-        renderQRCode();
-        const validText = document.getElementById('qr-valid-day-text');
-        if (validText) validText.innerText = `Valid for 60 seconds • Expires ${new Date(result.qr.expires_at).toLocaleTimeString()}`;
-        showToast("New 60-second attendance QR generated.", "success");
-      } catch (e) {
-        console.error("QR generation error:", e);
-        playTone('ERROR');
-        showToast("QR generation failed: " + (e?.message || "Unknown error"), "error");
-      }
+      await loadAdminQRSession();
+      if (activeQRSession.token) showToast("Live attendance QR regenerated. It expires in 60 seconds.", "info");
     }
 
     function renderAuditLogs() {
@@ -3201,7 +3182,7 @@
           }
         }
       });
-      if (tab === 'qr') renderQRCode();
+      if (tab === 'qr') { renderQRCode(); loadAdminQRSession(); }
       if (tab === 'reports') runAdminReportGeneration();
       if (window.lucide) lucide.createIcons();
     }
@@ -4000,58 +3981,41 @@
       const current = document.getElementById("change-pin-current").value.trim();
       const newPin = document.getElementById("change-pin-new").value.trim();
       const confirmPin = document.getElementById("change-pin-confirm").value.trim();
-
       const staff = staffDatabase.find(s => s.id === currentStaffId);
-      if (!staff || currentAuthUser?.type !== 'STAFF' || !supabaseClient) {
-        showToast("Staff authentication is required.", "error");
+      if (!staff || !supabaseClient) {
+        showToast("Staff session is not ready.", "error");
         return;
       }
       if (!/^\d{4}$/.test(current)) {
-        showToast("Current PIN must be exactly 4 digits.", "error");
+        showToast("Current PIN must be 4 digits.", "error");
         return;
       }
-      if (!/^\d{4}$/.test(newPin) || newPin !== confirmPin) {
-        playTone('ERROR');
+      if (newPin !== confirmPin || !/^\d{4}$/.test(newPin)) {
         showToast("New PIN must be 4 digits and match confirm.", "error");
         return;
       }
 
       try {
-        const { data: verified, error: verifyError } = await supabaseClient.rpc('verify_staff_pin', {
-          p_staff_id: staff.id,
-          p_pin: current
-        });
-        if (verifyError) throw verifyError;
-        if (verified !== true) {
-          playTone('ERROR');
-          showToast("Current PIN is incorrect.", "error");
-          return;
-        }
+        const { data: currentOk, error: currentErr } = await supabaseClient
+          .rpc('verify_staff_pin_internal', { p_staff_id: staff.id, p_pin: current });
+        if (currentErr || currentOk !== true) throw new Error("Current PIN is incorrect.");
 
-        const { data: changed, error: changeError } = await supabaseClient.rpc('set_staff_pin', {
-          p_staff_id: staff.id,
-          p_pin: newPin
-        });
-        if (changeError) throw changeError;
-        if (changed !== true) throw new Error("PIN change was not authorized.");
+        const { data: changed, error: pinErr } = await supabaseClient
+          .rpc('set_staff_pin', { p_staff_id: staff.id, p_pin: newPin });
+        if (pinErr || changed !== true) throw new Error(pinErr?.message || "PIN update failed.");
 
-        // Never persist the plaintext PIN in the browser.
-        staff.pinHash = "";
-        if (currentAuthUser && currentAuthUser.staffRecord) {
-          currentAuthUser.staffRecord.pinHash = "";
-          sessionStorage.setItem(STORAGE_KEY_CURRENT_USER, JSON.stringify(currentAuthUser));
-        }
-        savePersistedData();
+        const authPassword = deriveStaffAuthPassword(staff.id, newPin);
+        const { error: authErr } = await supabaseClient.auth.updateUser({ password: authPassword });
+        if (authErr) throw authErr;
 
         recordAuditLog("PIN_CHANGE", staff.name, "Staff changed personal attendance PIN");
         playTone('SUCCESS');
-        showToast("PIN updated successfully and synced to your login!", "success");
+        showToast("PIN updated successfully and synced securely!", "success");
         closeStaffProfileModal();
         renderStaffDirectoryTable();
       } catch (e) {
-        console.error("Supabase staff PIN change error:", e);
         playTone('ERROR');
-        showToast("PIN change failed: " + (e?.message || "Unknown error"), "error");
+        showToast(e?.message || "PIN update failed.", "error");
       }
     }
 
@@ -4104,7 +4068,7 @@
       if (nameInput) nameInput.value = "";
       if (roleInput) roleInput.value = "";
       if (emailInput) emailInput.value = "";
-      if (pinInput) pinInput.value = "1234";
+      if (pinInput) pinInput.value = "";
 
       document.getElementById("admin-add-staff-modal")?.classList.remove("hidden");
       if (window.lucide) lucide.createIcons();
@@ -4123,52 +4087,46 @@
       const email = document.getElementById("add-staff-email").value.trim().toLowerCase();
       const pin = document.getElementById("add-staff-pin").value.trim();
 
-      if (staffDatabase.some(s => s.empId.toUpperCase() === empId)) {
+      if (!/^\d{4}$/.test(pin)) {
+        showToast("Staff PIN must be exactly 4 digits.", "error");
+        return;
+      }
+      if (!email.includes('@')) {
+        showToast("Enter a valid staff email address.", "error");
+        return;
+      }
+      if (staffDatabase.some(s => s.empId && s.empId.toUpperCase() === empId)) {
         showToast("Employee ID already exists.", "error");
         return;
       }
 
-      const newStaff = {
-        id: "usr_" + Date.now(),
-        empId,
-        name,
-        department,
-        role,
-        email,
-        pinHash: pin,
-        status: "ACTIVE"
-      };
-
-      staffDatabase.push(newStaff);
-      savePersistedData();
-
-      if (supabaseClient) {
-        const inserted = await ensureStaffExistsInSupabase(newStaff);
-        if (!inserted) {
-          showToast("Staff record could not be saved to Supabase.", "error");
-          return;
-        }
-        const { data: pinSet, error: pinError } = await supabaseClient.rpc('set_staff_pin', {
-          p_staff_id: newStaff.id,
-          p_pin: pin
+      try {
+        const result = await invokeAdminFunction('reset-staff-pin', {
+          mode: 'create_staff',
+          staff: {
+            emp_id: empId, name, department, role, email, status: 'ACTIVE'
+          },
+          pin
         });
-        if (pinError || pinSet !== true) {
-          showToast("Staff was created, but the PIN could not be securely set. Use Reset PIN.", "error");
-          return;
-        }
-        newStaff.pinHash = "";
+        const newStaff = {
+          id: result.staff.id, empId, name, department, role, email, pinHash: "", status: 'ACTIVE'
+        };
+        staffDatabase.push(newStaff);
         savePersistedData();
+
+        recordAuditLog("STAFF_ENROLLED", name, `Enrolled new faculty ${empId} (${role})`);
+        playTone('SUCCESS');
+        showToast(`Faculty ${name} enrolled successfully with a secure 4-digit PIN!`, "success");
+        closeAddStaffModal();
+        renderStaffDirectoryTable();
+        updateKPICards();
+
+        const sel = document.getElementById("correction-staff-select");
+        if (sel) sel.innerHTML = staffDatabase.map(s => `<option value="${s.id}">${s.name} (${s.empId})</option>`).join('');
+      } catch (e) {
+        playTone('ERROR');
+        showToast("Staff creation failed: " + (e?.message || e), "error");
       }
-
-      recordAuditLog("STAFF_ENROLLED", name, `Enrolled new faculty ${empId} (${role})`);
-      playTone('SUCCESS');
-      showToast(`Faculty ${name} enrolled successfully!`, "success");
-      closeAddStaffModal();
-      renderStaffDirectoryTable();
-      updateKPICards();
-
-      const sel = document.getElementById("correction-staff-select");
-      if (sel) sel.innerHTML = staffDatabase.map(s => `<option value="${s.id}">${s.name} (${s.empId})</option>`).join('');
     }
 
     function openEditStaffModal(staffId) {
@@ -4234,10 +4192,6 @@
     }
 
     function openResetPinModal(staffId) {
-      if (currentAuthUser?.type !== 'ADMIN') {
-        showToast("Administrator authentication required.", "error");
-        return;
-      }
       const staff = staffDatabase.find(s => s.id === staffId);
       if (!staff) return;
 
@@ -4245,96 +4199,39 @@
       document.getElementById("reset-pin-staff-name").innerText = staff.name;
       document.getElementById("reset-pin-staff-empid").innerText = staff.empId;
       document.getElementById("reset-pin-new-value").value = "";
-      document.getElementById("reset-pin-confirm-value").value = "";
 
       document.getElementById("admin-reset-pin-modal")?.classList.remove("hidden");
-      setTimeout(() => document.getElementById("reset-pin-new-value")?.focus(), 50);
       if (window.lucide) lucide.createIcons();
     }
 
     function closeResetPinModal() {
       document.getElementById("admin-reset-pin-modal")?.classList.add("hidden");
-      const newPin = document.getElementById("reset-pin-new-value");
-      const confirmPin = document.getElementById("reset-pin-confirm-value");
-      if (newPin) newPin.value = "";
-      if (confirmPin) confirmPin.value = "";
     }
 
     async function handleResetPinSubmit(event) {
       event.preventDefault();
-
-      if (currentAuthUser?.type !== 'ADMIN') {
-        showToast("Administrator authentication required.", "error");
-        return;
-      }
-      if (!supabaseClient) {
-        showToast("Cloud database is not connected.", "error");
-        return;
-      }
-
       const staffId = document.getElementById("reset-pin-staff-id").value;
       const staff = staffDatabase.find(s => s.id === staffId);
-      if (!staff) {
-        showToast("Staff member not found.", "error");
-        return;
-      }
+      if (!staff) return;
 
       const newPin = document.getElementById("reset-pin-new-value").value.trim();
-      const confirmPin = document.getElementById("reset-pin-confirm-value").value.trim();
       if (!/^\d{4}$/.test(newPin)) {
         showToast("PIN must be exactly 4 digits.", "error");
         return;
       }
-      if (newPin !== confirmPin) {
-        showToast("PIN confirmation does not match.", "error");
-        return;
-      }
-
-      const button = event.submitter;
-      if (button) { button.disabled = true; button.classList.add('opacity-60', 'cursor-not-allowed'); }
 
       try {
-        const { data: sessionData, error: sessionError } = await supabaseClient.auth.getSession();
-        if (sessionError) throw sessionError;
-        const accessToken = sessionData?.session?.access_token;
-        if (!accessToken) throw new Error("Administrator session expired. Please sign in again.");
-
-        const response = await fetch(`${DEFAULT_SUPABASE_URL}/functions/v1/reset-staff-pin`, {
-          method: 'POST',
-          headers: {
-            'Content-Type': 'application/json',
-            'Authorization': `Bearer ${accessToken}`,
-            'apikey': DEFAULT_SUPABASE_ANON_KEY
-          },
-          body: JSON.stringify({
-            staff_id: staff.id,
-            pin: newPin
-          })
-        });
-
-        const result = await response.json().catch(() => ({}));
-        if (!response.ok) {
-          throw new Error(result?.error || `PIN reset failed (${response.status}).`);
-        }
-        if (result?.success !== true) {
-          throw new Error(result?.error || "PIN reset was not completed.");
-        }
-
-        // Never store or display the plaintext PIN in localStorage.
+        const result = await invokeAdminFunction('reset-staff-pin', { staff_id: staff.id, pin: newPin });
         staff.pinHash = "";
         savePersistedData();
-
-        recordAuditLog("ADMIN_PIN_RESET", staff.name, `Administrator reset the attendance PIN for ${staff.empId}`);
+        recordAuditLog("ADMIN_PIN_RESET", staff.name, `Administrator reset PIN for ${staff.empId}`);
         playTone('SUCCESS');
-        showToast(`New PIN saved for ${staff.name}.`, "success");
+        showToast(`PIN reset successfully for ${staff.name}.`, "success");
         closeResetPinModal();
         renderStaffDirectoryTable();
       } catch (e) {
-        console.error("Supabase PIN reset error:", e);
         playTone('ERROR');
-        showToast("PIN reset failed: " + (e?.message || "Unknown error"), "error");
-      } finally {
-        if (button) { button.disabled = false; button.classList.remove('opacity-60', 'cursor-not-allowed'); }
+        showToast("PIN reset failed: " + (e?.message || e), "error");
       }
     }
 
@@ -4555,7 +4452,7 @@
             "Department": "Science & Mathematics",
             "Designation": "PGT Chemistry",
             "Official Email": "rajiv.varma@ashianapublicschool.com",
-            "Attendance PIN": "1234",
+            "Attendance PIN": "Managed securely",
             "Status": "ACTIVE"
           },
           {
@@ -4564,7 +4461,7 @@
             "Department": "Languages & Literature",
             "Designation": "TGT English",
             "Official Email": "ananya.sen@ashianapublicschool.com",
-            "Attendance PIN": "1234",
+            "Attendance PIN": "Managed securely",
             "Status": "ACTIVE"
           },
           {
@@ -4573,7 +4470,7 @@
             "Department": "Primary Wing (PRT)",
             "Designation": "PRT Mathematics",
             "Official Email": "sunita.rawat@ashianapublicschool.com",
-            "Attendance PIN": "1234",
+            "Attendance PIN": "Managed securely",
             "Status": "ACTIVE"
           }
         ];
@@ -4666,7 +4563,7 @@
 
             let pin = (
               norm["attendancepin"] || norm["pin"] || norm["passcode"] || norm["password"] ||
-              row["Attendance PIN"] || row["PIN"] || row["Pin"] || "1234"
+              row["Attendance PIN"] || row["PIN"] || row["Pin"] || ""
             ).toString().trim();
             if (pin.length < 4) pin = pin.padStart(4, '0');
 
@@ -4727,121 +4624,110 @@
         showToast("No records to import.", "error");
         return;
       }
+      if (!supabaseClient || currentAuthUser?.type !== 'ADMIN') {
+        showToast("Administrator cloud session is required for import.", "error");
+        return;
+      }
 
       const btnConfirm = document.getElementById("btn-confirm-excel-import");
       if (btnConfirm) {
         btnConfirm.disabled = true;
-        btnConfirm.innerHTML = `<i data-lucide="loader" class="w-3.5 h-3.5 animate-spin"></i><span>Syncing to Supabase...</span>`;
+        btnConfirm.innerHTML = `<i data-lucide="loader" class="w-3.5 h-3.5 animate-spin"></i><span>Syncing securely...</span>`;
         if (window.lucide) lucide.createIcons();
       }
 
-      showToast(`Importing and syncing ${parsedExcelStaffRows.length} staff records to Supabase...`, "info");
+      try {
+        const updateExisting = document.getElementById("excel-update-existing-checkbox")?.checked ?? true;
+        let addedCount = 0;
+        let updatedCount = 0;
 
-      const updateExisting = document.getElementById("excel-update-existing-checkbox")?.checked ?? true;
-      let addedCount = 0;
-      let updatedCount = 0;
+        const { data: remoteExisting, error: remoteErr } = await supabaseClient
+          .from('staff').select('id,emp_id,email,status');
+        if (remoteErr) throw remoteErr;
+        const remoteMap = new Map((remoteExisting || []).map(r => [String(r.emp_id || '').toUpperCase(), r]));
 
-      // 1. Pre-fetch existing remote staff to preserve UUID/id and avoid unique constraint conflicts
-      let remoteMap = new Map();
-      if (supabaseClient) {
-        try {
-          const { data: remoteExisting } = await supabaseClient.from('staff').select('id, emp_id');
-          if (remoteExisting) {
-            remoteExisting.forEach(r => {
-              if (r.emp_id) remoteMap.set(r.emp_id.toUpperCase(), r.id);
-            });
-          }
-        } catch (e) {
-          console.warn("Pre-fetch remote staff notice:", e);
-        }
-      }
+        for (const item of parsedExcelStaffRows) {
+          const existing = remoteMap.get(item.empId.toUpperCase());
 
-      // 2. Merge parsed rows into local memory with consistent IDs
-      parsedExcelStaffRows.forEach(item => {
-        const existingIdx = staffDatabase.findIndex(s => s.empId.toUpperCase() === item.empId.toUpperCase());
-        const remoteId = remoteMap.get(item.empId.toUpperCase());
+          if (existing) {
+            if (!updateExisting) continue;
 
-        if (existingIdx !== -1) {
-          if (updateExisting) {
-            staffDatabase[existingIdx].name = item.name;
-            staffDatabase[existingIdx].department = item.department;
-            staffDatabase[existingIdx].role = item.role;
-            staffDatabase[existingIdx].email = item.email;
-            staffDatabase[existingIdx].pinHash = item.pinHash;
-            staffDatabase[existingIdx].status = item.status;
-            if (remoteId) staffDatabase[existingIdx].id = remoteId;
-            updatedCount++;
-          }
-        } else {
-          staffDatabase.push({
-            id: remoteId || ("usr_" + Date.now() + "_" + Math.random().toString(36).substring(2, 7)),
-            empId: item.empId,
-            name: item.name,
-            department: item.department,
-            role: item.role,
-            email: item.email,
-            pinHash: item.pinHash,
-            status: item.status
-          });
-          addedCount++;
-        }
-      });
+            const { error: updateErr } = await supabaseClient.from('staff').update({
+              name: item.name,
+              department: item.department,
+              role: item.role,
+              email: item.email,
+              status: item.status
+            }).eq('id', existing.id);
+            if (updateErr) throw updateErr;
 
-      savePersistedData();
+            const localIdx = staffDatabase.findIndex(s => s.id === existing.id || s.empId?.toUpperCase() === item.empId.toUpperCase());
+            const local = {
+              id: existing.id, empId: item.empId, name: item.name, department: item.department,
+              role: item.role, email: item.email, pinHash: "", status: item.status
+            };
+            if (localIdx >= 0) staffDatabase[localIdx] = { ...staffDatabase[localIdx], ...local };
+            else staffDatabase.push(local);
 
-      // 3. Batch upsert into Supabase PostgreSQL (chunks of 30)
-      if (supabaseClient) {
-        try {
-          const payload = staffDatabase.map(s => ({
-            id: s.id,
-            emp_id: s.empId,
-            name: s.name,
-            department: s.department,
-            role: s.role,
-            email: s.email,
-            pin_hash: s.pinHash,
-            status: s.status
-          }));
-
-          const chunkSize = 30;
-          for (let i = 0; i < payload.length; i += chunkSize) {
-            const chunk = payload.slice(i, i + chunkSize);
-            const { error: upsertErr } = await supabaseClient.from('staff').upsert(chunk, { onConflict: 'id' });
-            if (upsertErr) {
-              console.warn("Primary key upsert fallback to emp_id:", upsertErr);
-              await supabaseClient.from('staff').upsert(chunk, { onConflict: 'emp_id' });
+            // If a PIN was supplied, securely replace both the bcrypt PIN and Auth password.
+            if (/^\d{4}$/.test(item.pinHash) && item.status === 'ACTIVE') {
+              await invokeAdminFunction('reset-staff-pin', { staff_id: existing.id, pin: item.pinHash });
             }
+            updatedCount++;
+          } else {
+            if (!/^\d{4}$/.test(item.pinHash)) {
+              throw new Error(`A 4-digit Attendance PIN is required for new staff ${item.empId}.`);
+            }
+            const result = await invokeAdminFunction('reset-staff-pin', {
+              mode: 'create_staff',
+              staff: {
+                emp_id: item.empId, name: item.name, department: item.department,
+                role: item.role, email: item.email, status: item.status
+              },
+              pin: item.pinHash
+            });
+            staffDatabase.push({
+              id: result.staff.id, empId: item.empId, name: item.name, department: item.department,
+              role: item.role, email: item.email, pinHash: "", status: item.status
+            });
+            addedCount++;
           }
-        } catch (err) {
-          console.warn("Supabase batch sync notice:", err);
-          showToast("Local saved, cloud notice: " + err.message, "error");
+        }
+
+        savePersistedData();
+        recordAuditLog("EXCEL_IMPORT", "Staff Roster", `Imported ${addedCount} new, updated ${updatedCount} faculty records from Excel`);
+        playTone('SUCCESS');
+        showToast(`Import successful! ${addedCount} added, ${updatedCount} updated with secure PIN handling.`, "success");
+
+        closeImportStaffModal();
+        renderStaffDirectoryTable();
+        renderLiveAttendanceTable();
+        updateKPICards();
+        const sel = document.getElementById("correction-staff-select");
+        if (sel) sel.innerHTML = staffDatabase.map(s => `<option value="${s.id}">${s.name} (${s.empId})</option>`).join('');
+      } catch (err) {
+        console.error("Secure Excel import error:", err);
+        showToast("Import stopped: " + (err?.message || err), "error");
+      } finally {
+        if (btnConfirm) {
+          btnConfirm.disabled = false;
+          btnConfirm.innerHTML = `<i data-lucide="upload-cloud" class="w-3.5 h-3.5"></i><span>Import & Sync Staff</span>`;
+          if (window.lucide) lucide.createIcons();
         }
       }
-
-      recordAuditLog("EXCEL_IMPORT", "Staff Roster", `Imported ${addedCount} new, updated ${updatedCount} faculty records from Excel`);
-      playTone('SUCCESS');
-      showToast(`Import successful! ${addedCount} added, ${updatedCount} updated & synced to Supabase!`, "success");
-      
-      closeImportStaffModal();
-      renderStaffDirectoryTable();
-      renderLiveAttendanceTable();
-      updateKPICards();
-
-      const sel = document.getElementById("correction-staff-select");
-      if (sel) sel.innerHTML = staffDatabase.map(s => `<option value="${s.id}">${s.name} (${s.empId})</option>`).join('');
     }
 
     function exportStaffCredentialsWithPIN() {
-      let csv = "Employee ID,Staff Name,Department,Role,Email,PIN Status,Status\n";
+      let csv = "Employee ID,Staff Name,Department,Role,Email,Attendance PIN,Status\n";
       staffDatabase.forEach(s => {
-        csv += `"${s.empId}","${s.name}","${s.department}","${s.role}","${s.email}","Set / hidden","${s.status}"\n`;
+        csv += `"${s.empId}","${s.name}","${s.department}","${s.role}","${s.email}","Managed securely","${s.status}"\n`;
       });
       const blob = new Blob([csv], { type: "text/csv" });
       const a = document.createElement("a");
       a.href = URL.createObjectURL(blob);
-      a.download = `Ashiana_Staff_Credentials_${systemConfig.currentAttendanceDate}.csv`;
+      a.download = `Ashiana_Staff_PIN_Credentials_${systemConfig.currentAttendanceDate}.csv`;
       a.click();
-      showToast("Staff credential list exported without PIN values.", "success");
+      showToast("Staff PIN credentials CSV exported.", "success");
     }
 
     function exportLiveToCSV() {
@@ -4918,61 +4804,24 @@
         if (activeQRSession.date !== todayStr) {
           systemConfig.currentAttendanceDate = todayStr;
           activeQRSession.date = todayStr;
-          activeQRSession.token = getTodayDailyToken(todayStr);
+          activeQRSession.token = '';
+          activeQRSession.expiresAt = null;
           renderQRCode();
+          if (currentAuthUser?.type === 'ADMIN') loadAdminQRSession();
         }
       }, 1000);
     }
 
     // App Initialization
-    async function restoreSupabaseSession() {
-      if (!supabaseClient) return;
-      try {
-        const { data: sessionData, error: sessionErr } = await supabaseClient.auth.getSession();
-        if (sessionErr) throw sessionErr;
-        const user = sessionData?.session?.user;
-        if (!user?.email) return;
-
-        const email = user.email.toLowerCase();
-        const { data: adminRow } = await supabaseClient
-          .from('admin_users')
-          .select('email, role, active')
-          .eq('email', email)
-          .eq('active', true)
-          .maybeSingle();
-
-        if (adminRow) {
-          currentAuthUser = { type: 'ADMIN', username: email, role: adminRow.role || 'ADMIN' };
-          currentStaffId = null;
-          sessionStorage.setItem(STORAGE_KEY_CURRENT_USER, JSON.stringify(currentAuthUser));
-          return;
-        }
-
-        const { data: staffRow } = await supabaseClient
-          .from('staff')
-          .select('id, emp_id, name, department, role, email, status')
-          .eq('email', email)
-          .maybeSingle();
-
-        if (staffRow && staffRow.status === 'ACTIVE') {
-          const staffRecord = {
-            id: staffRow.id, empId: staffRow.emp_id, name: staffRow.name,
-            department: staffRow.department, role: staffRow.role, email: staffRow.email,
-            pinHash: "", status: staffRow.status
-          };
-          currentAuthUser = { type: 'STAFF', staffRecord };
-          currentStaffId = staffRecord.id;
-          sessionStorage.setItem(STORAGE_KEY_CURRENT_USER, JSON.stringify(currentAuthUser));
-        }
-      } catch (e) {
-        console.warn("Supabase session restore notice:", e);
-      }
-    }
-
     window.onload = async function() {
       initSupabase();
-      await restoreSupabaseSession();
       await loadPersistedData();
+      const restored = await restoreSupabaseSession();
+      if (!restored) {
+        currentAuthUser = null;
+        currentStaffId = null;
+        sessionStorage.removeItem(STORAGE_KEY_CURRENT_USER);
+      }
 
       const sel = document.getElementById("correction-staff-select");
       if (sel) sel.innerHTML = staffDatabase.map(s => `<option value="${s.id}">${s.name} (${s.empId})</option>`).join('');
@@ -4980,6 +4829,7 @@
       startLiveClocks();
       applyAuthenticatedUI();
       renderQRCode();
+      if (currentAuthUser?.type === 'ADMIN') await loadAdminQRSession();
       if (window.lucide) lucide.createIcons();
     };
   </script>
