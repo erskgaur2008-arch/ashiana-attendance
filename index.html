@@ -1909,6 +1909,11 @@
         return;
       }
 
+      // Never attempt roster writes or cloud bootstrap while nobody is signed in.
+      // Staff sessions may only read their own RLS-visible records.
+      const sessionUser = currentAuthUser;
+      if (!sessionUser) return;
+
       let anyChange = false;
 
       try {
@@ -1947,9 +1952,9 @@
             anyChange = true;
           }
         } else if (remoteStaff && remoteStaff.length === 0 && staffDatabase.length > 0) {
-          // If remote cloud database is completely empty on first run, auto-seed baseline staff
-          console.info("Supabase staff table is empty. Auto-seeding baseline roster to cloud...");
-          await syncAllToSupabase();
+          // Do not auto-seed or write the roster from a browser session.
+          // The roster is authoritative in Supabase and is managed by the Admin portal.
+          console.info("Supabase staff query returned no visible rows; no automatic roster write performed.");
         }
 
         // 2. SYNC ATTENDANCE PUNCHES (All dates so history and reports work on any device)
@@ -4930,7 +4935,9 @@
         currentStaffId = null;
         sessionStorage.removeItem(STORAGE_KEY_CURRENT_USER);
       }
-      await syncAllDataFromSupabase(false);
+      // Only authenticated users should perform cloud reads. This prevents a
+      // fresh public landing page from trying to perform an administrator roster sync.
+      if (currentAuthUser) await syncAllDataFromSupabase(false);
 
       const sel = document.getElementById("correction-staff-select");
       if (sel) sel.innerHTML = staffDatabase.map(s => `<option value="${s.id}">${s.name} (${s.empId})</option>`).join('');
