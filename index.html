@@ -1755,6 +1755,113 @@
       }
     }
 
+    // =====================================================================
+    // Secure authentication helpers
+    // =====================================================================
+    function normalizeLoginId(value) {
+      return String(value || '').trim();
+    }
+
+    // The 4-digit PIN remains the user's credential. Supabase Auth receives
+    // only this deterministic, policy-compliant derived password.
+    function deriveStaffAuthPassword(staffId, pin) {
+      return `EduPunch!$${String(staffId)}!${String(pin)}`;
+    }
+
+    async function invokeVerifyAttendance(body) {
+      if (!supabaseClient) throw new Error('Supabase client is not initialized.');
+      const { data, error } = await supabaseClient.functions.invoke('verify-attendance', { body });
+      if (error) {
+        let message = error.message || 'Authentication request failed.';
+        try {
+          if (error.context) {
+            const response = error.context;
+            const payload = await response.clone().json();
+            message = payload?.error || payload?.message || message;
+          }
+        } catch (_) {}
+        throw new Error(message);
+      }
+      if (data?.error) throw new Error(data.error);
+      return data;
+    }
+
+    async function invokeAdminFunction(functionName, body) {
+      if (!supabaseClient) throw new Error('Supabase client is not initialized.');
+      const { data, error } = await supabaseClient.functions.invoke(functionName, { body });
+      if (error) {
+        let message = error.message || 'Server request failed.';
+        try {
+          if (error.context) {
+            const response = error.context;
+            const payload = await response.clone().json();
+            message = payload?.error || payload?.message || message;
+          }
+        } catch (_) {}
+        throw new Error(message);
+      }
+      if (data?.error) throw new Error(data.error);
+      return data;
+    }
+
+    async function restoreSupabaseSession() {
+      if (!supabaseClient) return false;
+      try {
+        const { data: sessionData } = await supabaseClient.auth.getSession();
+        const session = sessionData?.session;
+        const user = session?.user;
+        if (!user?.email) return false;
+
+        const email = user.email.trim().toLowerCase();
+        const { data: adminRow, error: adminError } = await supabaseClient
+          .from('admin_users')
+          .select('email,role,active')
+          .eq('email', email)
+          .eq('active', true)
+          .maybeSingle();
+
+        if (!adminError && adminRow) {
+          currentAuthUser = { type: 'ADMIN', username: email, role: adminRow.role };
+          currentStaffId = null;
+          sessionStorage.setItem(STORAGE_KEY_CURRENT_USER, JSON.stringify(currentAuthUser));
+          return true;
+        }
+
+        const { data: staff, error: staffError } = await supabaseClient
+          .from('staff')
+          .select('id,emp_id,name,department,role,email,status')
+          .ilike('email', email)
+          .eq('status', 'ACTIVE')
+          .maybeSingle();
+
+        if (staffError || !staff) {
+          await supabaseClient.auth.signOut();
+          return false;
+        }
+
+        const staffRecord = {
+          id: staff.id,
+          empId: staff.emp_id,
+          name: staff.name,
+          department: staff.department,
+          role: staff.role,
+          email: staff.email,
+          pinHash: '',
+          status: staff.status || 'ACTIVE'
+        };
+        currentAuthUser = { type: 'STAFF', staffRecord };
+        currentStaffId = staff.id;
+        sessionStorage.setItem(STORAGE_KEY_CURRENT_USER, JSON.stringify(currentAuthUser));
+        return true;
+      } catch (e) {
+        console.warn('Supabase session restore failed:', e);
+        currentAuthUser = null;
+        currentStaffId = null;
+        sessionStorage.removeItem(STORAGE_KEY_CURRENT_USER);
+        return false;
+      }
+    }
+
     // Initialize Supabase Client with Dual Auto-Sync Engine
     function initSupabase() {
       if (window.supabase && window.supabase.createClient) {
@@ -2030,8 +2137,9 @@
         staffDatabase = getBaselineFacultyData();
       }
 
-      // Initial immediate cloud sync across devices
-      await syncAllDataFromSupabase(false);
+      // Cloud sync is started by window.onload after the real Supabase session
+      // has been restored. This prevents stale local session data from opening
+      // a portal before Auth has been validated.
     }
 
     function savePersistedData() {
@@ -4822,6 +4930,7 @@
         currentStaffId = null;
         sessionStorage.removeItem(STORAGE_KEY_CURRENT_USER);
       }
+      await syncAllDataFromSupabase(false);
 
       const sel = document.getElementById("correction-staff-select");
       if (sel) sel.innerHTML = staffDatabase.map(s => `<option value="${s.id}">${s.name} (${s.empId})</option>`).join('');
