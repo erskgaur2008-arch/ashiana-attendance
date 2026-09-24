@@ -677,7 +677,7 @@
           <div class="flex items-center justify-center space-x-2">
             <button onclick="rotateQRSession()" class="px-3.5 py-2 bg-ashiana-green hover:bg-[#08693A] text-white rounded-xl text-xs font-bold flex items-center space-x-1.5 shadow">
               <i data-lucide="refresh-cw" class="w-3.5 h-3.5"></i>
-              <span>Regenerate Today's Daily QR</span>
+              <span>Load Today's Daily QR</span>
             </button>
           </div>
         </div>
@@ -1635,9 +1635,9 @@
       schoolScheduleStart: "07:40",
       schoolScheduleEnd: "14:30",
       lateGraceMinutes: 10,
-      qrExpirySeconds: 60,
+      qrExpirySeconds: 86400,
       duplicateDebounceSeconds: 30,
-      currentAttendanceDate: new Date().toISOString().split('T')[0]
+      currentAttendanceDate: new Intl.DateTimeFormat('en-CA', { timeZone: 'Asia/Kolkata', year: 'numeric', month: '2-digit', day: '2-digit' }).format(new Date())
     };
 
     // Storage Keys
@@ -3226,10 +3226,10 @@
       if (stationDate) stationDate.innerText = new Date().toLocaleDateString('en-US', { day: 'numeric', month: 'long', year: 'numeric' });
       const expiryText = document.getElementById('qr-valid-day-text');
       if (expiryText) {
-        if (activeQRSession.expiresAt) {
-          expiryText.innerText = `Valid for 60 seconds • Expires ${new Date(activeQRSession.expiresAt).toLocaleTimeString('en-US')}`;
+        if (activeQRSession.token && activeQRSession.date) {
+          expiryText.innerText = `Valid for the entire school day • ${activeQRSession.date} • Expires at 11:59 PM IST`;
         } else {
-          expiryText.innerText = 'Generate a live QR session';
+          expiryText.innerText = "Load today's QR session";
         }
       }
     }
@@ -3252,7 +3252,7 @@
 
     async function rotateQRSession() {
       await loadAdminQRSession();
-      if (activeQRSession.token) showToast("Live attendance QR regenerated. It expires in 60 seconds.", "info");
+      if (activeQRSession.token) showToast("Today's attendance QR loaded. The same QR remains valid for the whole school day.", "info");
     }
 
     function renderAuditLogs() {
@@ -4912,13 +4912,14 @@
         if (cG) cG.innerText = tStr;
         if (dG) dG.innerText = dStr;
 
-        // Midnight rollover to refresh daily QR session
-        const todayStr = d.toISOString().split('T')[0];
+        // Midnight rollover using India time. A new QR is created automatically
+        // on the next school day; today's QR remains valid until 11:59 PM IST.
+        const todayStr = new Intl.DateTimeFormat('en-CA', {
+          timeZone: 'Asia/Kolkata', year: 'numeric', month: '2-digit', day: '2-digit'
+        }).format(d);
         if (activeQRSession.date !== todayStr) {
           systemConfig.currentAttendanceDate = todayStr;
-          activeQRSession.date = todayStr;
-          activeQRSession.token = '';
-          activeQRSession.expiresAt = null;
+          activeQRSession = { token: '', date: todayStr, validUntil: 'End of Today' };
           renderQRCode();
           if (currentAuthUser?.type === 'ADMIN') loadAdminQRSession();
         }
