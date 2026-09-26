@@ -2567,13 +2567,45 @@
       await startCameraScanner();
     }
 
+    function getIndiaTodayDate() {
+      return new Intl.DateTimeFormat("en-CA", {
+        timeZone: "Asia/Kolkata",
+        year: "numeric",
+        month: "2-digit",
+        day: "2-digit"
+      }).format(new Date());
+    }
+
     function parseAttendanceQR(decodedText) {
-      try {
-        const obj = JSON.parse(decodedText);
-        if (obj && obj.token) return { token: String(obj.token), date: obj.date || null };
-      } catch (_) {}
       const raw = String(decodedText || '').trim();
-      if (/^[a-f0-9]{40,}$/i.test(raw)) return { token: raw, date: null };
+      if (!raw) return null;
+
+      // Daily QR payloads are JSON and must identify Ashiana Public School.
+      // Reject another school's QR or a QR from a different attendance date
+      // before asking the staff member for their PIN.
+      try {
+        const obj = JSON.parse(raw);
+        const token = String(obj?.token || '').trim();
+        const school = String(obj?.school || '').trim().toUpperCase();
+        const date = String(obj?.date || '').trim();
+
+        if (
+          school !== "ASHIANA_PUBLIC_SCHOOL" ||
+          !/^[a-f0-9]{64}$/i.test(token) ||
+          !/^\\d{4}-\\d{2}-\\d{2}$/.test(date) ||
+          date !== getIndiaTodayDate()
+        ) {
+          return null;
+        }
+
+        return { token, date, school };
+      } catch (_) {}
+
+      // Keep support for a raw token only when it is a current-format token.
+      // A raw token has no date, so the server remains the final authority.
+      if (/^[a-f0-9]{64}$/i.test(raw)) {
+        return { token: raw, date: null, school: "ASHIANA_PUBLIC_SCHOOL" };
+      }
       return null;
     }
 
@@ -2581,7 +2613,7 @@
       await stopCameraScanner();
       const parsed = parseAttendanceQR(decodedText);
       if (!parsed) {
-        showToast("Invalid Ashiana attendance QR code.", "error");
+        showToast("Invalid or expired Daily QR. Scan today's Ashiana school QR.", "error");
         setTimeout(startCameraScanner, 500);
         return;
       }
