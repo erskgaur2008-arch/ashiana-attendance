@@ -2452,6 +2452,8 @@
         navName.innerText = "Principal Office";
         navRole.innerText = "Administrator";
         switchPortal('admin');
+        updateAdminDashboardDate();
+        if (window.lucide) lucide.createIcons();
       } else {
         const s = currentAuthUser.staffRecord;
         const initials = s.name.replace(/^(Mrs\.|Ms\.|Mr\.)\s*/, '').split(' ').map(n => n[0]).join('').substring(0, 2);
