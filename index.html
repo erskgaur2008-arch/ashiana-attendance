@@ -92,6 +92,24 @@
       }
     }
 
+    /* Modern Admin Dashboard */
+    .admin-dashboard-shell{max-width:1440px;margin:0 auto}
+    .admin-dashboard-header{position:relative;display:flex;align-items:center;justify-content:space-between;gap:18px;padding:20px 22px;border-radius:24px;background:linear-gradient(135deg,#022c22 0%,#064e3b 58%,#0a7e46 100%);color:#fff;box-shadow:0 18px 45px rgba(2,44,34,.18);overflow:hidden}
+    .admin-dashboard-header:after{content:"";position:absolute;width:240px;height:240px;border-radius:50%;right:-80px;top:-120px;background:rgba(255,255,255,.08)}
+    .admin-dashboard-brand{display:flex;align-items:center;gap:13px;min-width:0;position:relative;z-index:1}
+    .admin-dashboard-logo{width:52px;height:52px;border-radius:16px;background:#fff;display:flex;align-items:center;justify-content:center;overflow:hidden;box-shadow:0 6px 18px rgba(0,0,0,.15);flex:0 0 52px}
+    .admin-dashboard-logo img{width:100%;height:100%;object-fit:cover}.admin-dashboard-logo span{font-size:24px;font-weight:900;color:#064e3b}
+    .admin-kicker{font-size:9px;font-weight:900;letter-spacing:.15em;color:#a7f3d0}
+    .admin-dashboard-brand h1{font-size:24px;line-height:1.1;font-weight:900;margin:3px 0;letter-spacing:-.03em}.admin-dashboard-brand p{font-size:11px;color:#d1fae5;margin:0}
+    .admin-dashboard-actions{display:flex;align-items:center;gap:7px;position:relative;z-index:1}
+    .admin-live-pill{display:flex;align-items:center;gap:5px;padding:8px 10px;border:1px solid rgba(167,243,208,.22);background:rgba(255,255,255,.08);border-radius:12px}.admin-live-pill span{width:7px;height:7px;border-radius:50%;background:#34d399;box-shadow:0 0 0 4px rgba(52,211,153,.12);animation:pulse 1.8s infinite}.admin-live-pill strong{font-size:9px;color:#a7f3d0}.admin-live-pill small{font-size:9px;color:#d1fae5}
+    .admin-header-action{display:flex;align-items:center;gap:5px;padding:9px 11px;border:1px solid rgba(255,255,255,.18);border-radius:11px;background:rgba(255,255,255,.08);color:#fff;font-size:10px;font-weight:800;transition:.15s}.admin-header-action:hover{background:rgba(255,255,255,.16);transform:translateY(-1px)}.admin-header-action svg{width:14px;height:14px}.admin-logout-action{border-color:rgba(252,165,165,.28);color:#fecaca}
+    .admin-quick-actions{display:grid;grid-template-columns:repeat(6,1fr);gap:8px}.admin-quick-actions button{display:flex;align-items:center;justify-content:center;gap:7px;padding:11px 8px;border:1px solid #e2e8f0;border-radius:14px;background:#fff;color:#334155;font-size:11px;font-weight:800;box-shadow:0 3px 12px rgba(15,23,42,.04);transition:.15s}.admin-quick-actions button:hover{border-color:#86efac;background:#f0fdf4;color:#047857;transform:translateY(-1px)}.admin-quick-actions svg{width:15px;height:15px;color:#087e46}
+    #admin-portal-view>.grid.grid-cols-2>div{transition:transform .15s,box-shadow .15s;border-radius:17px}#admin-portal-view>.grid.grid-cols-2>div:hover{transform:translateY(-2px);box-shadow:0 10px 25px rgba(15,23,42,.08)}
+    #admin-portal-view>div.bg-white.rounded-2xl.p-1\\.5{position:sticky;top:8px;z-index:20;backdrop-filter:blur(10px);background:rgba(255,255,255,.92)}
+    @media(max-width:800px){.admin-dashboard-header{padding:16px;border-radius:19px}.admin-dashboard-brand h1{font-size:20px}.admin-dashboard-actions{gap:5px}.admin-live-pill small{display:none}.admin-header-action{padding:8px}.admin-header-action span{display:none}.admin-quick-actions{grid-template-columns:repeat(3,1fr)}}
+    @media(max-width:480px){.admin-dashboard-header{align-items:flex-start}.admin-dashboard-logo{width:43px;height:43px;flex-basis:43px;border-radius:13px}.admin-dashboard-brand h1{font-size:17px}.admin-dashboard-brand p{font-size:9px}.admin-kicker{font-size:7px}.admin-live-pill{display:none}.admin-dashboard-actions{margin-left:auto}.admin-header-action{padding:8px}.admin-quick-actions{grid-template-columns:repeat(2,1fr)}.admin-quick-actions button{padding:10px 6px;font-size:10px}}
+    
     /* Print styling for official school reports */
     @media print {
       body * {
@@ -530,8 +548,37 @@
     </div>
 
     <!-- 3. ADMINISTRATOR PORTAL -->
-    <div id="admin-portal-view" class="hidden flex-col w-full space-y-4">
+    <div id="admin-portal-view" class="hidden flex-col w-full space-y-4 admin-dashboard-shell">
       
+      <!-- Modern Admin Header -->
+      <div class="admin-dashboard-header">
+        <div class="admin-dashboard-brand">
+          <div class="admin-dashboard-logo">
+            <img src="logo 2.png" alt="Ashiana Public School" onerror="this.style.display='none';this.nextElementSibling.classList.remove('hidden');">
+            <span class="hidden">A</span>
+          </div>
+          <div>
+            <span class="admin-kicker">ASHIANA PUBLIC SCHOOL</span>
+            <h1>Attendance Command Center</h1>
+            <p>Live staff attendance • <span id="admin-dashboard-date">Today</span></p>
+          </div>
+        </div>
+        <div class="admin-dashboard-actions">
+          <div class="admin-live-pill"><span></span><strong>LIVE</strong><small>Cloud Sync</small></div>
+          <button onclick="pollLatestPunches(true)" class="admin-header-action" title="Sync now"><i data-lucide="refresh-cw"></i><span>Sync</span></button>
+          <button onclick="handleLogout()" class="admin-header-action admin-logout-action" title="Sign out"><i data-lucide="log-out"></i><span>Sign Out</span></button>
+        </div>
+      </div>
+
+      <div class="admin-quick-actions">
+        <button onclick="switchAdminTab('live')"><i data-lucide="radio"></i><span>Live Attendance</span></button>
+        <button onclick="switchAdminTab('qr')"><i data-lucide="qr-code"></i><span>Daily QR</span></button>
+        <button onclick="switchAdminTab('directory')"><i data-lucide="users"></i><span>Faculty</span></button>
+        <button onclick="switchAdminTab('reports')"><i data-lucide="file-spreadsheet"></i><span>Reports</span></button>
+        <button onclick="switchAdminTab('leave')"><i data-lucide="calendar-check"></i><span>Leaves</span></button>
+        <button onclick="switchAdminTab('corrections')"><i data-lucide="file-pen"></i><span>Corrections</span></button>
+      </div>
+
       <!-- Top KPI Row -->
       <div class="grid grid-cols-2 sm:grid-cols-3 lg:grid-cols-6 gap-2 sm:gap-3">
         <div class="bg-white p-3 sm:p-4 rounded-2xl border border-slate-200 shadow-sm border-t-4 border-t-ashiana-green">
@@ -3306,6 +3353,11 @@
       });
       savePersistedData();
       renderAuditLogs();
+    }
+
+    function updateAdminDashboardDate() {
+      const el = document.getElementById("admin-dashboard-date");
+      if (el) el.textContent = new Date().toLocaleDateString("en-IN", { weekday: "long", day: "numeric", month: "short", year: "numeric" });
     }
 
     function switchAdminTab(tab) {
