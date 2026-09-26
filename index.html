@@ -1996,26 +1996,23 @@
         if (leaveErr) {
           console.warn("Supabase leaves sync notice:", leaveErr);
         } else if (remoteLeaves) {
-          remoteLeaves.forEach(rl => {
-            const idx = leaveRequests.findIndex(l => l.id === rl.id);
-            const mappedLeave = {
-              id: rl.id,
-              staffId: rl.staff_id,
-              staffName: rl.staff_name,
-              type: rl.type,
-              from: rl.from_date,
-              to: rl.to_date,
-              reason: rl.reason,
-              status: rl.status || "PENDING"
-            };
-            if (idx === -1) {
-              leaveRequests.unshift(mappedLeave);
-              anyChange = true;
-            } else if (leaveRequests[idx].status !== mappedLeave.status) {
-              leaveRequests[idx].status = mappedLeave.status;
-              anyChange = true;
-            }
-          });
+          // Supabase is the authoritative source for leave data. Replace the
+          // local cache instead of merging it, so deleted/expired/demo leave
+          // records cannot keep appearing on the Admin dashboard.
+          const mappedLeaves = remoteLeaves.map(rl => ({
+            id: rl.id,
+            staffId: rl.staff_id,
+            staffName: rl.staff_name,
+            type: rl.type,
+            from: rl.from_date,
+            to: rl.to_date,
+            reason: rl.reason,
+            status: rl.status || "PENDING"
+          }));
+          if (JSON.stringify(leaveRequests) !== JSON.stringify(mappedLeaves)) {
+            leaveRequests = mappedLeaves;
+            anyChange = true;
+          }
         }
 
         if (anyChange) {
@@ -2123,10 +2120,9 @@
         punchLedger = savedPunches ? JSON.parse(savedPunches) : [];
 
         const savedLeave = localStorage.getItem(STORAGE_KEY_LEAVE);
-        leaveRequests = savedLeave ? JSON.parse(savedLeave) : [
-          { id: "lev_1", staffId: "usr_111", staffName: "Ms. Alka Bhalla", type: "Medical Leave", from: systemConfig.currentAttendanceDate, to: systemConfig.currentAttendanceDate, reason: "Viral fever", status: "APPROVED" },
-          { id: "lev_2", staffId: "usr_123", staffName: "Ms. Shikha Gupta", type: "Casual Leave", from: systemConfig.currentAttendanceDate, to: systemConfig.currentAttendanceDate, reason: "Family event", status: "APPROVED" }
-        ];
+        // Never seed fake leave records. Cloud sync will replace this cache
+        // with the actual Supabase leave_requests rows after authentication.
+        leaveRequests = savedLeave ? JSON.parse(savedLeave) : [];
 
         const savedAudit = localStorage.getItem(STORAGE_KEY_AUDIT);
         auditLogs = savedAudit ? JSON.parse(savedAudit) : [
@@ -2479,7 +2475,13 @@
         }
       }
 
-      const leave = leaveRequests.find(l => l.staffId === staffId && l.status === 'APPROVED');
+      const today = systemConfig.currentAttendanceDate;
+      const leave = leaveRequests.find(l =>
+        l.staffId === staffId &&
+        l.status === 'APPROVED' &&
+        l.from <= today &&
+        l.to >= today
+      );
       if (leave && punches.length === 0) currentStatus = "ON LEAVE";
 
       const nextPunchType = punches.length % 2 === 0 ? "IN" : "OUT";
@@ -3200,7 +3202,11 @@
       document.getElementById("kpi-present-today").innerText = present;
       document.getElementById("kpi-currently-working").innerText = working;
       document.getElementById("kpi-late-today").innerText = late;
-      document.getElementById("kpi-on-leave").innerText = leaveRequests.filter(l => l.status === 'APPROVED').length;
+      const today = systemConfig.currentAttendanceDate;
+      const activeLeaveStaffIds = new Set(leaveRequests
+        .filter(l => l.status === 'APPROVED' && l.from <= today && l.to >= today)
+        .map(l => l.staffId));
+      document.getElementById("kpi-on-leave").innerText = activeLeaveStaffIds.size;
       document.getElementById("kpi-total-hours").innerText = fmtMins(totalWork);
     }
 
@@ -4921,6 +4927,7 @@
           systemConfig.currentAttendanceDate = todayStr;
           activeQRSession = { token: '', date: todayStr, validUntil: 'End of Today' };
           renderQRCode();
+          updateKPICards();
           if (currentAuthUser?.type === 'ADMIN') loadAdminQRSession();
         }
       }, 1000);
