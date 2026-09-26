@@ -2403,7 +2403,10 @@
           if (window.lucide) lucide.createIcons();
         }
 
-        const { error } = await supabaseClient.auth.resetPasswordForEmail(email);
+        const recoveryRedirect = window.location.origin + window.location.pathname;
+        const { error } = await supabaseClient.auth.resetPasswordForEmail(email, {
+          redirectTo: recoveryRedirect
+        });
         if (error) throw error;
 
         showToast('If this email is registered, a secure PIN reset link has been sent.', 'success');
