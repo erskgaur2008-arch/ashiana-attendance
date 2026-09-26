@@ -92,6 +92,14 @@
       }
     }
 
+    /* Modern Teacher / Staff Dashboard */
+    .staff-dashboard-shell{width:100%;max-width:980px;margin:0 auto}
+    .staff-dashboard-card{min-height:calc(100vh - 118px);max-height:calc(100vh - 78px);box-shadow:0 24px 60px rgba(15,23,42,.12)}
+    .staff-dashboard-scroll{scrollbar-width:thin;scrollbar-color:#cbd5e1 transparent}
+    .staff-dashboard-scroll::-webkit-scrollbar{width:5px}.staff-dashboard-scroll::-webkit-scrollbar-thumb{background:#cbd5e1;border-radius:99px}
+    @media(max-width:640px){.staff-dashboard-shell{max-width:100%}.staff-dashboard-card{min-height:calc(100vh - 82px);max-height:none;border-radius:22px}.staff-dashboard-content{padding:12px}.staff-dashboard-card .staff-action-card{padding:14px}}
+    @media(min-width:641px){.staff-dashboard-card{border-radius:28px}.staff-dashboard-content{padding:18px}.staff-dashboard-card .staff-action-card{padding:20px}}
+
     /* Modern Admin Dashboard */
     .admin-dashboard-shell{max-width:1440px;margin:0 auto}
     .admin-dashboard-header{position:relative;display:flex;align-items:center;justify-content:space-between;gap:18px;padding:20px 22px;border-radius:24px;background:linear-gradient(135deg,#022c22 0%,#064e3b 58%,#0a7e46 100%);color:#fff;box-shadow:0 18px 45px rgba(2,44,34,.18);overflow:hidden}
@@ -327,12 +335,12 @@
     </div>
 
     <!-- 2. STAFF MOBILE PORTAL (RESPONSIVE MOBILE FIRST) -->
-    <div id="staff-portal-view" class="hidden flex-col items-center w-full max-w-md mx-auto">
+    <div id="staff-portal-view" class="hidden flex-col items-center staff-dashboard-shell">
       
-      <div class="w-full bg-white rounded-3xl shadow-xl border border-slate-200 overflow-hidden flex flex-col min-h-[580px]">
+      <div class="w-full bg-white staff-dashboard-card border border-slate-200 overflow-hidden flex flex-col">
         
         <!-- Staff Header Bar -->
-        <div class="bg-gradient-to-b from-emerald-950 to-[#064E3B] text-white p-4 border-b-2 border-ashiana-red">
+        <div class="staff-dashboard-header bg-gradient-to-br from-emerald-950 via-[#064E3B] to-[#087443] text-white p-4 sm:p-5 border-b-2 border-ashiana-red sticky top-0 z-10">
           <div class="flex items-center justify-between">
             <div class="flex items-center space-x-3">
               <div id="staff-avatar-circle" class="w-11 h-11 rounded-2xl bg-emerald-500/20 border border-emerald-400/40 flex items-center justify-center font-bold text-sm text-emerald-100 shadow-inner">
@@ -358,7 +366,7 @@
         </div>
 
         <!-- TAB 1: TODAY'S PUNCH DASHBOARD BODY -->
-        <div id="staff-tab-punch" class="flex-1 overflow-y-auto hide-scrollbar p-3.5 space-y-3">
+        <div id="staff-tab-punch" class="staff-dashboard-scroll staff-dashboard-content flex-1 overflow-y-auto hide-scrollbar space-y-3">
           
           <!-- Shift Overview Card -->
           <div class="bg-white rounded-2xl p-3.5 shadow-sm border border-slate-200/80">
@@ -398,7 +406,7 @@
           </div>
 
           <!-- PRIMARY ACTION BUTTON: MARK ATTENDANCE -->
-          <div class="bg-gradient-to-br from-emerald-50 to-green-50/80 rounded-2xl p-4 border border-emerald-200 shadow-sm text-center">
+          <div class="staff-action-card bg-gradient-to-br from-emerald-50 to-green-50/80 rounded-2xl p-4 border border-emerald-200 shadow-sm text-center">
             <div class="mb-2.5">
               <span class="text-[10px] font-bold text-ashiana-green uppercase tracking-wider block">Instant QR Attendance</span>
               <p class="text-[11px] text-slate-500 mt-0.5">Scan the school QR, then enter your 4-digit PIN.</p>
@@ -453,7 +461,7 @@
         </div>
 
         <!-- TAB 2: COMPLETE STAFF ATTENDANCE HISTORY VIEW -->
-        <div id="staff-tab-history" class="hidden flex-1 overflow-y-auto hide-scrollbar p-3.5 space-y-3">
+        <div id="staff-tab-history" class="staff-dashboard-scroll staff-dashboard-content hidden flex-1 overflow-y-auto hide-scrollbar space-y-3">
           
           <!-- Month & Filter Selector Card -->
           <div class="bg-white rounded-2xl p-3 shadow-sm border border-slate-200/80 space-y-2.5">
