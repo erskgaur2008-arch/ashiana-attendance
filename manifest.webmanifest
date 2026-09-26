@@ -1,0 +1,21 @@
+{
+  "name": "Ashiana Public School Attendance",
+  "short_name": "Ashiana Attendance",
+  "start_url": "./",
+  "display": "standalone",
+  "background_color": "#064E3B",
+  "theme_color": "#064E3B",
+  "description": "Staff attendance system for Ashiana Public School",
+  "icons": [
+    {
+      "src": "logo 2.png",
+      "sizes": "192x192",
+      "type": "image/png"
+    },
+    {
+      "src": "logo 2.png",
+      "sizes": "512x512",
+      "type": "image/png"
+    }
+  ]
+}
