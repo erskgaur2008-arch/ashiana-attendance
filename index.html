@@ -290,7 +290,7 @@
             <i data-lucide="log-in" class="w-4 h-4"></i>
             <span>Sign In to Staff App</span>
           </button>
-          <button type="button" onclick="showToast('Please contact the school administrator to reset your attendance PIN.', 'info')" class="w-full py-2.5 mt-1 bg-red-50 hover:bg-red-100 border border-red-200 text-red-600 hover:text-red-700 font-bold rounded-xl text-xs flex items-center justify-center space-x-2 active:scale-[0.99] transition-all">
+          <button type="button" onclick="openStaffPinResetModal()" class="w-full py-2.5 mt-1 bg-red-50 hover:bg-red-100 border border-red-200 text-red-600 hover:text-red-700 font-bold rounded-xl text-xs flex items-center justify-center space-x-2 active:scale-[0.99] transition-all">
             <i data-lucide="key-round" class="w-4 h-4"></i>
             <span>Reset PIN</span>
           </button>
@@ -1655,6 +1655,68 @@
     </div>
   </div>
 
+  <!-- STAFF SELF-SERVICE PIN RESET MODAL -->
+  <div id="staff-pin-reset-modal" class="hidden fixed inset-0 z-[80] bg-slate-950/70 backdrop-blur-sm p-4 flex items-center justify-center">
+    <div class="w-full max-w-md bg-white rounded-3xl shadow-2xl border border-slate-200 overflow-hidden">
+      <div class="bg-gradient-to-r from-red-700 to-red-600 px-5 py-4 text-white flex items-center justify-between">
+        <div>
+          <p class="text-[10px] uppercase tracking-[0.18em] font-black text-red-100">Staff Security</p>
+          <h3 class="text-lg font-extrabold">Reset Attendance PIN</h3>
+        </div>
+        <button type="button" onclick="closeStaffPinResetModal()" class="w-9 h-9 rounded-xl bg-white/10 hover:bg-white/20 flex items-center justify-center">
+          <i data-lucide="x" class="w-4 h-4"></i>
+        </button>
+      </div>
+
+      <div class="p-5 sm:p-6">
+        <div id="staff-pin-reset-request-step">
+          <div class="p-3 bg-red-50 border border-red-100 rounded-2xl mb-4 text-xs text-red-800">
+            <div class="flex gap-2">
+              <i data-lucide="shield-check" class="w-4 h-4 flex-shrink-0 mt-0.5"></i>
+              <p>Enter your <strong>registered staff email</strong>. A secure Supabase password-reset link will be sent to that email.</p>
+            </div>
+          </div>
+          <form onsubmit="requestStaffPinReset(event)" class="space-y-4">
+            <div>
+              <label class="block text-xs font-bold text-slate-700 mb-1">Registered Staff Email</label>
+              <input id="staff-pin-reset-email" type="email" required autocomplete="email" placeholder="name@ashianapublicschool.com"
+                class="w-full text-xs px-3.5 py-3 bg-slate-50 border border-slate-200 rounded-xl focus:ring-2 focus:ring-red-500 focus:outline-none focus:bg-white font-medium">
+            </div>
+            <button id="staff-pin-reset-send-btn" type="submit" class="w-full py-3 bg-red-600 hover:bg-red-700 text-white font-bold rounded-xl text-xs flex items-center justify-center gap-2 shadow-lg shadow-red-700/20 active:scale-[0.99] transition-all">
+              <i data-lucide="mail" class="w-4 h-4"></i>
+              <span>Send Secure Reset Link</span>
+            </button>
+          </form>
+        </div>
+
+        <div id="staff-pin-reset-change-step" class="hidden">
+          <div class="p-3 bg-emerald-50 border border-emerald-100 rounded-2xl mb-4 text-xs text-emerald-800">
+            <div class="flex gap-2">
+              <i data-lucide="badge-check" class="w-4 h-4 flex-shrink-0 mt-0.5"></i>
+              <p>Email verification completed. Choose your new <strong>4-digit attendance PIN</strong>.</p>
+            </div>
+          </div>
+          <form onsubmit="submitStaffPinReset(event)" class="space-y-4">
+            <div>
+              <label class="block text-xs font-bold text-slate-700 mb-1">New 4-Digit PIN</label>
+              <input id="staff-pin-reset-new" type="password" inputmode="numeric" maxlength="4" pattern="[0-9]{4}" required autocomplete="new-password" placeholder="••••"
+                class="w-full text-sm px-3.5 py-3 bg-slate-50 border border-slate-200 rounded-xl focus:ring-2 focus:ring-red-500 focus:outline-none focus:bg-white font-mono tracking-[0.4em] font-bold">
+            </div>
+            <div>
+              <label class="block text-xs font-bold text-slate-700 mb-1">Confirm New PIN</label>
+              <input id="staff-pin-reset-confirm" type="password" inputmode="numeric" maxlength="4" pattern="[0-9]{4}" required autocomplete="new-password" placeholder="••••"
+                class="w-full text-sm px-3.5 py-3 bg-slate-50 border border-slate-200 rounded-xl focus:ring-2 focus:ring-red-500 focus:outline-none focus:bg-white font-mono tracking-[0.4em] font-bold">
+            </div>
+            <button id="staff-pin-reset-save-btn" type="submit" class="w-full py-3 bg-red-600 hover:bg-red-700 text-white font-bold rounded-xl text-xs flex items-center justify-center gap-2 shadow-lg shadow-red-700/20 active:scale-[0.99] transition-all">
+              <i data-lucide="key-round" class="w-4 h-4"></i>
+              <span>Save New PIN</span>
+            </button>
+          </form>
+        </div>
+      </div>
+    </div>
+  </div>
+
   <!-- JAVASCRIPT ENGINE -->
   <script>
     // =========================================================================
@@ -1900,6 +1962,16 @@
       if (window.supabase && window.supabase.createClient) {
         try {
           supabaseClient = window.supabase.createClient(DEFAULT_SUPABASE_URL, DEFAULT_SUPABASE_ANON_KEY);
+
+          // Listen for Supabase's secure password-recovery redirect.
+          // The recovery session is used only to authorize the PIN change.
+          supabaseClient.auth.onAuthStateChange((event, session) => {
+            if (event === 'PASSWORD_RECOVERY' && session?.user?.email) {
+              window.staffPinRecoveryActive = true;
+              openStaffPinResetModal(true, session.user.email);
+            }
+          });
+
           isCloudConnected = true;
           updateCloudBadge(true);
           
@@ -2272,6 +2344,139 @@
     function togglePinVisibility(id) {
       const input = document.getElementById(id);
       if (input) input.type = input.type === 'password' ? 'text' : 'password';
+    }
+
+    // =========================================================================
+    // 🔐 STAFF SELF-SERVICE PIN RESET
+    // Email recovery proves control of the registered staff email. The
+    // reset-staff-pin Edge Function then updates the bcrypt PIN and the
+    // derived Supabase Auth password together.
+    // =========================================================================
+    function openStaffPinResetModal(recoveryMode = false, recoveryEmail = '') {
+      const modal = document.getElementById('staff-pin-reset-modal');
+      if (!modal) return;
+
+      const requestStep = document.getElementById('staff-pin-reset-request-step');
+      const changeStep = document.getElementById('staff-pin-reset-change-step');
+      const emailInput = document.getElementById('staff-pin-reset-email');
+      const newInput = document.getElementById('staff-pin-reset-new');
+      const confirmInput = document.getElementById('staff-pin-reset-confirm');
+
+      if (recoveryMode) {
+        requestStep?.classList.add('hidden');
+        changeStep?.classList.remove('hidden');
+        if (emailInput && recoveryEmail) emailInput.value = recoveryEmail;
+        if (newInput) newInput.value = '';
+        if (confirmInput) confirmInput.value = '';
+      } else {
+        requestStep?.classList.remove('hidden');
+        changeStep?.classList.add('hidden');
+        if (emailInput) emailInput.value = '';
+      }
+
+      modal.classList.remove('hidden');
+      if (window.lucide) lucide.createIcons();
+    }
+
+    function closeStaffPinResetModal() {
+      document.getElementById('staff-pin-reset-modal')?.classList.add('hidden');
+    }
+
+    async function requestStaffPinReset(event) {
+      event.preventDefault();
+      const email = (document.getElementById('staff-pin-reset-email')?.value || '').trim().toLowerCase();
+      const btn = document.getElementById('staff-pin-reset-send-btn');
+
+      if (!email || !email.includes('@')) {
+        showToast('Enter your registered staff email address.', 'error');
+        return;
+      }
+      if (!supabaseClient) {
+        showToast('Cloud authentication is unavailable. Please try again.', 'error');
+        return;
+      }
+
+      try {
+        if (btn) {
+          btn.disabled = true;
+          btn.innerHTML = '<i data-lucide="loader" class="w-4 h-4 animate-spin"></i><span>Sending Secure Link...</span>';
+          if (window.lucide) lucide.createIcons();
+        }
+
+        const { error } = await supabaseClient.auth.resetPasswordForEmail(email);
+        if (error) throw error;
+
+        showToast('If this email is registered, a secure PIN reset link has been sent.', 'success');
+        document.getElementById('staff-pin-reset-request-step')?.classList.add('hidden');
+        document.getElementById('staff-pin-reset-change-step')?.classList.add('hidden');
+      } catch (err) {
+        showToast('Unable to send reset link: ' + (err?.message || err), 'error');
+      } finally {
+        if (btn) {
+          btn.disabled = false;
+          btn.innerHTML = '<i data-lucide="mail" class="w-4 h-4"></i><span>Send Secure Reset Link</span>';
+          if (window.lucide) lucide.createIcons();
+        }
+      }
+    }
+
+    async function submitStaffPinReset(event) {
+      event.preventDefault();
+      const newPin = (document.getElementById('staff-pin-reset-new')?.value || '').trim();
+      const confirmPin = (document.getElementById('staff-pin-reset-confirm')?.value || '').trim();
+      const btn = document.getElementById('staff-pin-reset-save-btn');
+
+      if (!/^\d{4}$/.test(newPin)) {
+        showToast('New PIN must be exactly 4 digits.', 'error');
+        return;
+      }
+      if (newPin !== confirmPin) {
+        showToast('New PIN and confirmation do not match.', 'error');
+        return;
+      }
+      if (!supabaseClient) {
+        showToast('Cloud authentication is unavailable.', 'error');
+        return;
+      }
+
+      try {
+        if (btn) {
+          btn.disabled = true;
+          btn.innerHTML = '<i data-lucide="loader" class="w-4 h-4 animate-spin"></i><span>Updating PIN...</span>';
+          if (window.lucide) lucide.createIcons();
+        }
+
+        const result = await invokeAdminFunction('reset-staff-pin', {
+          mode: 'self_reset_pin',
+          pin: newPin
+        });
+
+        if (!result?.success) throw new Error(result?.error || 'PIN update failed.');
+
+        await supabaseClient.auth.signOut();
+        window.staffPinRecoveryActive = false;
+        closeStaffPinResetModal();
+
+        const pinInput = document.getElementById('teacher-login-pin');
+        if (pinInput) pinInput.value = newPin;
+
+        playTone('SUCCESS');
+        showToast('PIN changed successfully. You can now sign in with your new PIN.', 'success');
+      } catch (err) {
+        playTone('ERROR');
+        const msg = String(err?.message || err);
+        if (msg.includes('INVALID_OR_EXPIRED') || msg.includes('AUTHENTICATION')) {
+          showToast('The reset link has expired or is invalid. Please request a new one.', 'error');
+        } else {
+          showToast('PIN reset failed: ' + msg, 'error');
+        }
+      } finally {
+        if (btn) {
+          btn.disabled = false;
+          btn.innerHTML = '<i data-lucide="key-round" class="w-4 h-4"></i><span>Save New PIN</span>';
+          if (window.lucide) lucide.createIcons();
+        }
+      }
     }
 
     async function handleTeacherLogin(event) {
