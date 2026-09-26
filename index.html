@@ -1925,6 +1925,7 @@
       let anyChange = false;
 
       try {
+        updateCloudBadge(true, "Syncing…");
         // 1. SYNC STAFF TABLE (Accounts, Names, Roles, Updated PINs)
         const { data: remoteStaff, error: staffErr } = await supabaseClient
           .from('staff')
@@ -2043,9 +2044,10 @@
           showToast("Cloud database verified. Everything is already up to date.", "info");
         }
 
-        updateCloudBadge(true);
+        updateCloudBadge(true, "Cloud Live");
       } catch (err) {
         console.warn("Global sync error:", err);
+        updateCloudBadge(false, "Sync Error");
         if (notifyManual) showToast("Sync error: " + err.message, "error");
       }
     }
