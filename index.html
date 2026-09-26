@@ -3227,20 +3227,29 @@
         date: activeQRSession.date,
         token: activeQRSession.token
       });
-      const img = document.createElement('img');
-      img.alt = 'Ashiana Public School attendance QR';
-      img.width = 180; img.height = 180;
-      img.className = 'w-[180px] h-[180px]';
-      img.src = 'data:image/svg+xml;charset=utf-8,' + encodeURIComponent(
-          '<svg xmlns="http://www.w3.org/2000/svg" width="180" height="180"><rect width="100%" height="100%" fill="white"/><text x="90" y="86" text-anchor="middle" font-family="sans-serif" font-size="13" fill="#064E3B">Ashiana Attendance</text><text x="90" y="105" text-anchor="middle" font-family="monospace" font-size="9" fill="#022C22">Scan from staff app</text></svg>'
-        );
-      container.appendChild(img);
+
+      const qrHost = document.createElement("div");
+      qrHost.className = "w-[180px] h-[180px] bg-white p-2 rounded-xl flex items-center justify-center";
+      container.appendChild(qrHost);
+
+      if (typeof QRCode === "function") {
+        new QRCode(qrHost, {
+          text: payload,
+          width: 164,
+          height: 164,
+          colorDark: "#022C22",
+          colorLight: "#FFFFFF",
+          correctLevel: QRCode.CorrectLevel.M
+        });
+      } else {
+        qrHost.innerHTML = '<div class="text-center text-xs font-semibold text-rose-600 p-3">QR library unavailable. Please refresh the page.</div>';
+      }
 
       const tokenPreview = document.getElementById("qr-token-preview");
-      if (tokenPreview) tokenPreview.innerText = activeQRSession.token || 'NOT_GENERATED';
+      if (tokenPreview) tokenPreview.innerText = activeQRSession.token || "NOT_GENERATED";
       const stationDate = document.getElementById("qr-station-date");
-      if (stationDate) stationDate.innerText = new Date().toLocaleDateString('en-US', { day: 'numeric', month: 'long', year: 'numeric' });
-      const expiryText = document.getElementById('qr-valid-day-text');
+      if (stationDate) stationDate.innerText = new Date().toLocaleDateString("en-US", { day: "numeric", month: "long", year: "numeric" });
+      const expiryText = document.getElementById("qr-valid-day-text");
       if (expiryText) {
         if (activeQRSession.token && activeQRSession.date) {
           expiryText.innerText = `Valid for the entire school day • ${activeQRSession.date} • Expires at 11:59 PM IST`;
