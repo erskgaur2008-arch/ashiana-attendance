@@ -3442,6 +3442,7 @@
       }
 
       const photo = String(staff.avatarUrl || staff.avatar_url || '').trim();
+      const logoUrl = new URL('logo 2.png', window.location.href).href;
       const photoHtml = photo
         ? `<img src="${escapeIdCardHtml(photo)}" alt="Staff Photo">`
         : `<div class="photo-fallback">${escapeIdCardHtml(getStaffInitials(staff.name))}</div>`;
@@ -3485,7 +3486,8 @@
     content:""; position:absolute; width:38mm; height:18mm; right:-13mm; bottom:-8mm;
     background:rgba(255,255,255,.08); border-radius:50%;
   }
-  .school { position:relative; z-index:1; text-align:center; }
+  .school { position:relative; z-index:1; text-align:center; padding-top:1mm; }
+  .school-logo { width:8mm; height:8mm; object-fit:contain; background:#fff; border-radius:50%; padding:.5mm; margin-bottom:1mm; }
   .school-name { font-size: 4.2mm; line-height:1.05; font-weight:900; letter-spacing:.3mm; }
   .school-sub { font-size: 2.25mm; margin-top:1.2mm; font-weight:700; letter-spacing:.15mm; }
   .school-line { height:.35mm; background:#f59e0b; margin:1.7mm 8mm 1.1mm; }
@@ -3520,6 +3522,7 @@
   <div class="card">
     <div class="top">
       <div class="school">
+        <img class="school-logo" src="${escapeIdCardHtml(logoUrl)}" alt="Ashiana Public School">
         <div class="school-name">ASHIANA PUBLIC SCHOOL</div>
         <div class="school-sub">SECTOR 46-A, CHANDIGARH</div>
         <div class="school-line"></div>
