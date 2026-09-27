@@ -3541,7 +3541,7 @@ body{font-family:Arial,Helvetica,sans-serif;}
 .school-line{height:.28mm;background:#ef3340;margin:.7mm 8mm .55mm;width:calc(100% - 16mm);}
 .card-title{font-size:1.65mm;font-weight:800;letter-spacing:.32mm;}
 .photo-wrap{flex:0 0 24mm;width:24mm;height:24mm;margin:-1mm auto 0;position:relative;z-index:2;background:#fff;border:.65mm solid #fff;box-shadow:0 1mm 2.5mm rgba(0,0,0,.25);}
-.photo-wrap img,.photo-fallback{width:100%;height:100%;object-fit:cover;display:block;}
+.photo-wrap img,.photo-fallback{width:100%;height:100%;object-fit:contain;object-position:center center;display:block;background:#e5e7eb;}
 .photo-fallback{display:flex;align-items:center;justify-content:center;background:#d1fae5;color:#08693a;font-size:7mm;font-weight:900;}
 .name-band{flex:0 0 8mm;min-height:8mm;background:#064e3b;color:#fff;padding:1.3mm 2mm 1mm;text-align:center;}
 .name{font-size:3.05mm;line-height:1.05;font-weight:900;text-transform:uppercase;letter-spacing:.12mm;white-space:nowrap;overflow:hidden;text-overflow:ellipsis;}
@@ -3899,7 +3899,7 @@ window.addEventListener('load',async function(){
     position:relative; z-index:2; background:#fff; border:.65mm solid #fff;
     box-shadow:0 1mm 2.5mm rgba(0,0,0,.25);
   }
-  .photo-wrap img, .photo-fallback { width:100%; height:100%; object-fit:cover; display:block; }
+  .photo-wrap img, .photo-fallback { width:100%; height:100%; object-fit:contain; object-position:center center; display:block; background:#e5e7eb; }
   .photo-fallback { display:flex; align-items:center; justify-content:center; background:#d1fae5; color:#08693a; font-size:7mm; font-weight:900; }
 
   .name-band {
