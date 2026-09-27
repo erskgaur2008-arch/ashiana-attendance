@@ -3521,12 +3521,15 @@
     content:""; position:absolute; width:38mm; height:18mm; right:-13mm; bottom:-8mm;
     background:rgba(255,255,255,.08); border-radius:50%;
   }
-  .school { position:relative; z-index:1; text-align:center; }
-  .school-logo { width:6.5mm; height:6.5mm; object-fit:contain; background:#fff; border-radius:50%; padding:.35mm; margin-bottom:.5mm; }
-  .school-name { font-size: 3.7mm; line-height:1.02; font-weight:900; letter-spacing:.25mm; }
-  .school-sub { font-size: 2.05mm; margin-top:.7mm; font-weight:700; letter-spacing:.12mm; }
-  .school-line { height:.3mm; background:#f59e0b; margin:1mm 9mm .8mm; }
-  .card-title { font-size:2.15mm; font-weight:800; letter-spacing:.45mm; }
+  .school { position:relative; z-index:1; text-align:left; padding:1.5mm 2mm 0 3mm; display:flex; align-items:center; gap:2mm; }
+  .school-logo { width:10mm; height:10mm; flex:0 0 10mm; object-fit:contain; background:#fff; border-radius:1.2mm; padding:.5mm; }
+  .school-copy { min-width:0; flex:1; }
+  .school-name { font-size: 3.25mm; line-height:1.05; font-weight:900; letter-spacing:.15mm; white-space:nowrap; }
+  .school-sub { font-size: 1.9mm; line-height:1.05; margin-top:.8mm; font-weight:800; letter-spacing:.08mm; white-space:nowrap; }
+  .school-phone { font-size: 1.7mm; line-height:1.05; margin-top:.65mm; font-weight:700; white-space:nowrap; }
+  .school-aff { font-size: 1.45mm; line-height:1.05; margin-top:.55mm; font-weight:700; white-space:nowrap; }
+  .school-line { height:.3mm; background:#ef3340; margin:1.1mm 0 .8mm; width:100%; }
+  .card-title { font-size:1.75mm; font-weight:800; letter-spacing:.35mm; }
 
   .photo-wrap {
     flex: 0 0 24mm; width: 24mm; height: 24mm; margin: -1mm auto 0;
@@ -3578,10 +3581,14 @@
     <div class="top">
       <div class="school">
         <img class="school-logo" src="${escapeIdCardHtml(logoUrl)}" alt="Ashiana Public School">
-        <div class="school-name">ASHIANA PUBLIC SCHOOL</div>
-        <div class="school-sub">SECTOR 46-A, CHANDIGARH</div>
-        <div class="school-line"></div>
-        <div class="card-title">STAFF IDENTITY CARD</div>
+        <div class="school-copy">
+          <div class="school-name">ASHIANA PUBLIC SCHOOL</div>
+          <div class="school-sub">SECTOR 46-CHANDIGARH</div>
+          <div class="school-phone">PHONE: +91-9872500460</div>
+          <div class="school-aff">Affiliated to CBSE | Affiliation No. 2630065</div>
+          <div class="school-line"></div>
+          <div class="card-title">STAFF IDENTITY CARD</div>
+        </div>
       </div>
     </div>
     <div class="photo-wrap">${photoHtml}</div>
