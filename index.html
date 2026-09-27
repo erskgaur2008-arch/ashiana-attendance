@@ -198,6 +198,19 @@
       #staff-id-card-preview { flex-shrink:0; }
     }
 
+    #staff-id-card-preview {
+      display:flex;
+      align-items:center;
+      justify-content:center;
+      width:54mm;
+      height:85.6mm;
+      flex:0 0 auto;
+      transform-origin:center center;
+    }
+    #staff-id-card-preview-modal .staff-id-preview-card {
+      flex:0 0 54mm;
+    }
+
 </style>
 </head>
 <body class="bg-slate-100 text-slate-800 antialiased min-h-screen min-h-screen-safe flex flex-col selection:bg-emerald-600 selection:text-white">
@@ -3936,6 +3949,30 @@ window.addEventListener('load',async function(){
       modal.classList.remove("hidden");
       modal.classList.add("flex");
       document.body.classList.add("overflow-hidden");
+
+      const scaleStaffIdCardPreview = () => {
+        const card = preview.querySelector(".staff-id-preview-card");
+        if (!card) return;
+
+        const vw = window.innerWidth;
+        const vh = window.innerHeight;
+        const availableW = Math.max(240, vw - 24);
+        const availableH = Math.max(360, vh - 70);
+
+        // Keep the original 54:85.6 ratio and enlarge as much as the screen allows.
+        const scale = Math.min(
+          availableW / card.offsetWidth,
+          availableH / card.offsetHeight
+        );
+
+        card.style.transform = `scale(${scale})`;
+        preview.style.width = `${card.offsetWidth * scale}px`;
+        preview.style.height = `${card.offsetHeight * scale}px`;
+      };
+
+      requestAnimationFrame(scaleStaffIdCardPreview);
+      window.setTimeout(scaleStaffIdCardPreview, 120);
+
       if (window.lucide) lucide.createIcons();
     }
 
@@ -3946,6 +3983,13 @@ window.addEventListener('load',async function(){
       modal.classList.add("hidden");
       modal.classList.remove("flex");
       document.body.classList.remove("overflow-hidden");
+      const preview = document.getElementById("staff-id-card-preview");
+      const card = preview ? preview.querySelector(".staff-id-preview-card") : null;
+      if (card) card.style.transform = "";
+      if (preview) {
+        preview.style.width = "54mm";
+        preview.style.height = "85.6mm";
+      }
     }
 
     async function printStaffIdCard(staffId, options = {}) {
