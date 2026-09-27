@@ -5407,11 +5407,6 @@ window.addEventListener('load',async function(){
         return;
       }
 
-      if (newDob && newValidThru && newValidThru < newDob) {
-        showToast("Valid-through date cannot be earlier than date of birth.", "error");
-        return;
-      }
-
       try {
         if (!supabaseClient) throw new Error("Cloud database is unavailable.");
 
