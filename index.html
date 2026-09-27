@@ -3524,7 +3524,7 @@ window.addEventListener('load',async function(){
   await Promise.all(imgs.map(img=>img.complete?Promise.resolve():new Promise(res=>{img.onload=res;img.onerror=res;})));
   setTimeout(()=>window.print(),900);
 });
-</script></body></html>`);
+<\/script></body></html>`);
       win.document.close();
     }
 
