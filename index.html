@@ -4358,7 +4358,9 @@
       document.getElementById("staff-profile-modal")?.classList.add("hidden");
     }
 
-    // Staff self-service update Name & Email
+    // Staff self-service update: name only.
+    // Email is the Supabase Auth identity and must be changed by an administrator
+    // through the secure email-sync Edge Function.
     async function handleUpdateStaffProfile(event) {
       event.preventDefault();
       const staff = staffDatabase.find(s => s.id === currentStaffId);
@@ -4366,38 +4368,46 @@
 
       const newName = document.getElementById("profile-edit-name").value.trim();
       const newEmail = document.getElementById("profile-edit-email").value.trim().toLowerCase();
+      const currentEmail = String(staff.email || '').trim().toLowerCase();
 
       if (!newName || !newEmail) {
         showToast("Name and email cannot be blank.", "error");
         return;
       }
 
-      staff.name = newName;
-      staff.email = newEmail;
-      if (currentAuthUser && currentAuthUser.staffRecord) {
-        currentAuthUser.staffRecord.name = newName;
-        currentAuthUser.staffRecord.email = newEmail;
-        sessionStorage.setItem(STORAGE_KEY_CURRENT_USER, JSON.stringify(currentAuthUser));
+      if (newEmail !== currentEmail) {
+        showToast("Login email changes must be made by an administrator so your Auth account stays synchronized.", "error");
+        return;
       }
-      savePersistedData();
 
-      // Cloud Sync
-      if (supabaseClient) {
-        try {
-          await supabaseClient.from('staff').update({
-            name: newName,
-            email: newEmail
-          }).eq('id', staff.id);
-        } catch (e) {
-          console.warn("Supabase staff update error:", e);
+      try {
+        if (!supabaseClient) throw new Error("Cloud database is unavailable.");
+
+        const { error } = await supabaseClient
+          .from('staff')
+          .update({ name: newName })
+          .eq('id', staff.id);
+
+        if (error) throw error;
+
+        staff.name = newName;
+        if (currentAuthUser?.staffRecord) {
+          currentAuthUser.staffRecord.name = newName;
+          sessionStorage.setItem(STORAGE_KEY_CURRENT_USER, JSON.stringify(currentAuthUser));
         }
-      }
+        savePersistedData();
 
-      recordAuditLog("PROFILE_UPDATE", staff.name, `Updated profile name to ${newName} and email to ${newEmail}`);
-      playTone('SUCCESS');
-      showToast("Profile details updated and synced to database!", "success");
-      applyAuthenticatedUI();
-      renderStaffDirectoryTable();
+        recordAuditLog("PROFILE_UPDATE", staff.name, `Updated profile name to ${newName}`);
+        playTone('SUCCESS');
+        showToast("Profile name updated successfully!", "success");
+        closeStaffProfileModal();
+        applyAuthenticatedUI();
+        renderStaffDirectoryTable();
+      } catch (e) {
+        console.error("Supabase staff profile update error:", e);
+        playTone('ERROR');
+        showToast("Profile update failed: " + (e?.message || e), "error");
+      }
     }
 
     // Staff self-service change PIN
@@ -4576,6 +4586,12 @@
 
     async function handleEditStaffSubmit(event) {
       event.preventDefault();
+
+      if (!supabaseClient || currentAuthUser?.type !== 'ADMIN') {
+        showToast("Administrator cloud session is required to edit staff.", "error");
+        return;
+      }
+
       const staffId = document.getElementById("edit-staff-id").value;
       const staff = staffDatabase.find(s => s.id === staffId);
       if (!staff) return;
@@ -4585,35 +4601,59 @@
       const role = document.getElementById("edit-staff-role").value.trim();
       const email = document.getElementById("edit-staff-email").value.trim().toLowerCase();
       const status = document.getElementById("edit-staff-status").value;
+      const oldEmail = String(staff.email || '').trim().toLowerCase();
+      const emailChanged = email !== oldEmail;
 
-      staff.name = name;
-      staff.department = department;
-      staff.role = role;
-      staff.email = email;
-      staff.status = status;
-      savePersistedData();
-
-      // Sync with Supabase
-      if (supabaseClient) {
-        try {
-          await supabaseClient.from('staff').update({
-            name,
-            department,
-            role,
-            email,
-            status
-          }).eq('id', staff.id);
-        } catch (e) {
-          console.warn("Supabase edit staff error:", e);
-        }
+      if (!name || !email || !email.includes('@')) {
+        showToast("Enter a valid staff name and email address.", "error");
+        return;
       }
 
-      recordAuditLog("STAFF_EDIT", name, `Updated details for ${staff.empId}`);
-      playTone('SUCCESS');
-      showToast(`Faculty ${name} updated and synced!`, "success");
-      closeEditStaffModal();
-      renderStaffDirectoryTable();
-      renderLiveAttendanceTable();
+      try {
+        // Email changes must update both public.staff and Supabase Auth.
+        // The Edge Function performs the Auth update and rolls back the DB
+        // email if the Auth operation fails.
+        if (emailChanged) {
+          await invokeAdminFunction('reset-staff-pin', {
+            mode: 'update_staff_email',
+            staff_id: staff.id,
+            email
+          });
+        }
+
+        const updatePayload = {
+          name,
+          department,
+          role,
+          status
+        };
+
+        const { error } = await supabaseClient
+          .from('staff')
+          .update(updatePayload)
+          .eq('id', staff.id);
+
+        if (error) throw error;
+
+        Object.assign(staff, { name, department, role, email, status });
+        savePersistedData();
+
+        if (currentAuthUser?.type === 'STAFF' && currentAuthUser.staffRecord?.id === staff.id) {
+          currentAuthUser.staffRecord = { ...currentAuthUser.staffRecord, name, department, role, email, status };
+          sessionStorage.setItem(STORAGE_KEY_CURRENT_USER, JSON.stringify(currentAuthUser));
+        }
+
+        recordAuditLog("STAFF_EDIT", name, `Updated details for ${staff.empId}`);
+        playTone('SUCCESS');
+        showToast(`Faculty ${name} updated and synced!`, "success");
+        closeEditStaffModal();
+        renderStaffDirectoryTable();
+        renderLiveAttendanceTable();
+      } catch (e) {
+        console.error("Supabase edit staff error:", e);
+        playTone('ERROR');
+        showToast("Faculty update failed: " + (e?.message || e), "error");
+      }
     }
 
     function openResetPinModal(staffId) {
