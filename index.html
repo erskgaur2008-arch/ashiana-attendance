@@ -2618,17 +2618,23 @@
       const staffPortal = document.getElementById("staff-portal-view");
       const adminPortal = document.getElementById("admin-portal-view");
       const sessionControls = document.getElementById("authenticated-session-controls");
+      const globalHeader = document.getElementById("global-header");
 
       if (!currentAuthUser) {
         authGateway.classList.remove("hidden");
         staffPortal.classList.add("hidden");
         adminPortal.classList.add("hidden");
         sessionControls.classList.add("hidden");
+        // Show the public/login header again after logout.
+        globalHeader?.classList.remove("hidden");
         return;
       }
 
       authGateway.classList.add("hidden");
       sessionControls.classList.remove("hidden");
+      // The dashboard has its own header, so hide the public/global header
+      // after authentication to avoid duplicated navigation and save screen space.
+      globalHeader?.classList.add("hidden");
 
       const navAvatar = document.getElementById("nav-user-avatar");
       const navName = document.getElementById("nav-user-name");
