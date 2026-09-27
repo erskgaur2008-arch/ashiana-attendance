@@ -22,15 +22,6 @@
   <!-- Lucide Icons CDN -->
   <script src="https://unpkg.com/lucide@latest"></script>
   
-  <!-- SheetJS for Excel and CSV parsing -->
-  <script src="https://cdn.jsdelivr.net/npm/xlsx@0.18.5/dist/xlsx.full.min.js"></script>
-
-  <!-- QRCode.js for client-side QR generation -->
-  <script src="https://cdnjs.cloudflare.com/ajax/libs/qrcodejs/1.0.0/qrcode.min.js"></script>
-
-  <!-- HTML5 QR Code Scanner Library for real camera scanning -->
-  <script src="https://unpkg.com/html5-qrcode@2.3.8/html5-qrcode.min.js"></script>
-
   <!-- Supabase JS Client (v2) for PostgreSQL Cloud Sync -->
   <script src="https://cdn.jsdelivr.net/npm/@supabase/supabase-js@2"></script>
 
@@ -2094,6 +2085,60 @@
       }
     }
 
+    // Lazy-load heavy optional libraries only when their feature is opened.
+    const lazyLibraryPromises = {};
+
+    function loadOptionalLibrary(key, src, globalName) {
+      if (window[globalName]) return Promise.resolve(window[globalName]);
+      if (lazyLibraryPromises[key]) return lazyLibraryPromises[key];
+
+      lazyLibraryPromises[key] = new Promise((resolve, reject) => {
+        const existing = document.querySelector(`script[data-lazy-lib="${key}"]`);
+        if (existing) {
+          existing.addEventListener("load", () => resolve(window[globalName]));
+          existing.addEventListener("error", reject);
+          return;
+        }
+
+        const script = document.createElement("script");
+        script.src = src;
+        script.async = true;
+        script.dataset.lazyLib = key;
+        script.onload = () => resolve(window[globalName]);
+        script.onerror = () => {
+          delete lazyLibraryPromises[key];
+          reject(new Error(`Unable to load ${key} library`));
+        };
+        document.head.appendChild(script);
+      });
+
+      return lazyLibraryPromises[key];
+    }
+
+    function ensureQRCodeLibrary() {
+      return loadOptionalLibrary(
+        "qrcode",
+        "https://cdnjs.cloudflare.com/ajax/libs/qrcodejs/1.0.0/qrcode.min.js",
+        "QRCode"
+      );
+    }
+
+    function ensureExcelLibrary() {
+      return loadOptionalLibrary(
+        "xlsx",
+        "https://cdn.jsdelivr.net/npm/xlsx@0.18.5/dist/xlsx.full.min.js",
+        "XLSX"
+      );
+    }
+
+    function ensureScannerLibrary() {
+      return loadOptionalLibrary(
+        "html5-qrcode",
+        "https://unpkg.com/html5-qrcode@2.3.8/html5-qrcode.min.js",
+        "Html5Qrcode"
+      );
+    }
+
     // Initialize Supabase Client with Dual Auto-Sync Engine
     function initSupabase() {
       if (window.supabase && window.supabase.createClient) {
@@ -2112,13 +2157,13 @@
           isCloudConnected = true;
           updateCloudBadge(true);
           
-          if (checkWebSocketSupport()) {
+          const realtimeAvailable = checkWebSocketSupport();
+          if (realtimeAvailable) {
             listenToRealtimePunches();
           } else {
-            console.info("WebSockets restricted in current sandbox. Utilizing continuous HTTP polling sync.");
+            console.info("WebSockets restricted in current sandbox. Using 30-second HTTP fallback sync.");
+            startBackgroundPolling();
           }
-          
-          startBackgroundPolling();
         } catch (e) {
           console.warn("Supabase init error:", e);
           isCloudConnected = false;
@@ -2141,7 +2186,7 @@
       if (autoPollingInterval) clearInterval(autoPollingInterval);
       autoPollingInterval = setInterval(() => {
         syncAllDataFromSupabase(false);
-      }, 5000);
+      }, 30000);
     }
 
     // =========================================================================
@@ -2905,6 +2950,13 @@
     let pendingScannedQR = null;
 
     async function startCameraScanner() {
+      try {
+        await ensureScannerLibrary();
+      } catch (e) {
+        const status = document.getElementById("scanner-status-text");
+        if (status) status.innerHTML = '<span class="text-ashiana-red font-bold">Scanner library could not be loaded.</span>';
+        return;
+      }
       if (typeof Html5Qrcode === "undefined") return;
       await stopCameraScanner();
       const isSecure = location.protocol === 'https:' || location.hostname === 'localhost' || location.hostname === '127.0.0.1';
@@ -3936,6 +3988,9 @@ window.addEventListener('load',async function(){
         </div>`;
 
       const qrBox = document.getElementById("staff-preview-qr");
+      try {
+        await ensureQRCodeLibrary();
+      } catch (e) {}
       if (qrBox && typeof QRCode !== "undefined") {
         qrBox.innerHTML = "";
         new QRCode(qrBox, {
@@ -4269,9 +4324,17 @@ window.addEventListener('load',async function(){
       document.getElementById("kpi-total-hours").innerText = fmtMins(totalWork);
     }
 
-    function renderQRCode() {
+    async function renderQRCode() {
       const container = document.getElementById("qr-code-canvas-container");
       if (!container) return;
+
+      try {
+        await ensureQRCodeLibrary();
+      } catch (e) {
+        const qrHost = document.getElementById("qr-code-canvas-container");
+        if (qrHost) qrHost.innerHTML = '<div class="text-center text-xs font-semibold text-rose-600 p-3">QR library unavailable. Please try again.</div>';
+        return;
+      }
       container.innerHTML = "";
       const payload = JSON.stringify({
         school: "ASHIANA_PUBLIC_SCHOOL",
@@ -5861,9 +5924,16 @@ window.addEventListener('load',async function(){
       }
     }
 
-    function handleFacultyExcelUpload(event) {
+    async function handleFacultyExcelUpload(event) {
       const file = event.target.files?.[0];
       if (!file) return;
+
+      try {
+        await ensureExcelLibrary();
+      } catch (e) {
+        showToast("Excel library could not be loaded. Please try again.", "error");
+        return;
+      }
 
       const reader = new FileReader();
       reader.onload = function(e) {
@@ -6177,17 +6247,18 @@ window.addEventListener('load',async function(){
         currentStaffId = null;
         sessionStorage.removeItem(STORAGE_KEY_CURRENT_USER);
       }
-      // Only authenticated users should perform cloud reads. This prevents a
-      // fresh public landing page from trying to perform an administrator roster sync.
-      if (currentAuthUser) await syncAllDataFromSupabase(false);
+      // Start cloud synchronization in the background so the local UI becomes
+      // interactive immediately. Supabase remains the authoritative source.
+      if (currentAuthUser) syncAllDataFromSupabase(false);
 
       const sel = document.getElementById("correction-staff-select");
       if (sel) sel.innerHTML = staffDatabase.map(s => `<option value="${s.id}">${s.name} (${s.empId})</option>`).join('');
 
       startLiveClocks();
       applyAuthenticatedUI();
-      renderQRCode();
-      if (currentAuthUser?.type === 'ADMIN') await loadAdminQRSession();
+      if (currentAuthUser?.type === 'ADMIN') {
+        loadAdminQRSession();
+      }
       if (window.lucide) lucide.createIcons();
     };
   </script>
