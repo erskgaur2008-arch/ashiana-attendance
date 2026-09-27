@@ -1206,11 +1206,11 @@
           </div>
         </div>
 
-        <!-- FORM 1: UPDATE PROFILE NAME & EMAIL -->
+        <!-- FORM 1: STAFF SELF-SERVICE PROFILE -->
         <form id="staff-edit-profile-form" onsubmit="handleUpdateStaffProfile(event)" class="space-y-2.5 p-3 bg-slate-50/70 rounded-2xl border border-slate-200">
           <div class="flex items-center space-x-1.5 border-b border-slate-200 pb-1.5">
             <i data-lucide="user-pen" class="w-3.5 h-3.5 text-ashiana-green"></i>
-            <h5 class="text-xs font-bold text-slate-800">Edit Profile Details</h5>
+            <h5 class="text-xs font-bold text-slate-800">Edit My Profile</h5>
           </div>
 
           <div>
@@ -1218,9 +1218,31 @@
             <input type="text" id="profile-edit-name" required class="w-full text-xs p-2 bg-white border border-slate-200 rounded-xl focus:ring-2 focus:ring-ashiana-green font-medium">
           </div>
 
+          <div class="grid grid-cols-2 gap-2">
+            <div>
+              <label class="block text-[10px] font-bold text-slate-600 mb-0.5">Gender</label>
+              <select id="profile-edit-gender" class="w-full text-xs p-2 bg-white border border-slate-200 rounded-xl focus:ring-2 focus:ring-ashiana-green">
+                <option value="">Select</option>
+                <option value="MALE">Male</option>
+                <option value="FEMALE">Female</option>
+                <option value="OTHER">Other</option>
+              </select>
+            </div>
+            <div>
+              <label class="block text-[10px] font-bold text-slate-600 mb-0.5">Date of Birth</label>
+              <input type="date" id="profile-edit-dob" class="w-full text-xs p-2 bg-white border border-slate-200 rounded-xl focus:ring-2 focus:ring-ashiana-green">
+            </div>
+          </div>
+
           <div>
-            <label class="block text-[10px] font-bold text-slate-600 mb-0.5">Registered Email</label>
-            <input type="email" id="profile-edit-email" required class="w-full text-xs p-2 bg-white border border-slate-200 rounded-xl focus:ring-2 focus:ring-ashiana-green font-mono">
+            <label class="block text-[10px] font-bold text-slate-600 mb-0.5">ID Card Valid Through</label>
+            <input type="date" id="profile-edit-valid-thru" class="w-full text-xs p-2 bg-white border border-slate-200 rounded-xl focus:ring-2 focus:ring-ashiana-green">
+          </div>
+
+          <div>
+            <label class="block text-[10px] font-bold text-slate-600 mb-0.5">Registered Login Email</label>
+            <input type="email" id="profile-edit-email" readonly required class="w-full text-xs p-2 bg-slate-100 border border-slate-200 rounded-xl font-mono text-slate-500">
+            <p class="text-[9px] text-slate-400 mt-1">Login email changes are handled by an administrator to keep the Auth account synchronized.</p>
           </div>
 
           <button type="submit" class="w-full py-2 bg-slate-800 hover:bg-black text-white rounded-xl text-xs font-bold flex items-center justify-center space-x-1.5 shadow">
@@ -1929,7 +1951,7 @@
 
         const { data: staff, error: staffError } = await supabaseClient
           .from('staff')
-          .select('id,emp_id,name,department,role,email,status,avatar_url')
+          .select('id,emp_id,name,department,role,email,status,avatar_url,gender,dob,valid_thru')
           .ilike('email', email)
           .eq('status', 'ACTIVE')
           .maybeSingle();
@@ -1947,6 +1969,9 @@
           role: staff.role,
           email: staff.email,
           avatarUrl: staff.avatar_url || '',
+          gender: staff.gender || '',
+          dob: staff.dob || '',
+          validThru: staff.valid_thru || '',
           pinHash: '',
           status: staff.status || 'ACTIVE'
         };
@@ -2051,6 +2076,9 @@
               role: s.role,
               email: s.email,
               avatarUrl: s.avatar_url || '',
+              gender: s.gender || '',
+              dob: s.dob || '',
+              validThru: s.valid_thru || '',
               pinHash: "",
               status: s.status || "ACTIVE"
             };
@@ -2535,6 +2563,9 @@
           role: loginResult.staff.role,
           email: loginResult.staff.email,
           avatarUrl: loginResult.staff.avatar_url || '',
+          gender: loginResult.staff.gender || '',
+          dob: loginResult.staff.dob || '',
+          validThru: loginResult.staff.valid_thru || '',
           pinHash: "",
           status: loginResult.staff.status || "ACTIVE"
         };
@@ -3452,7 +3483,10 @@
         employee_id: staff.empId || "",
         name: staff.name || "",
         role: staff.role || "",
-        department: staff.department || ""
+        department: staff.department || "",
+        gender: staff.gender || "",
+        dob: staff.dob || "",
+        valid_thru: staff.validThru || staff.valid_thru || ""
       });
 
       const win = window.open("", "_blank", "width=700,height=900");
@@ -3536,9 +3570,9 @@
     </div>
     <div class="details">
       <div class="row"><div class="label">Employee ID</div><div class="value">${escapeIdCardHtml(staff.empId || "—")}</div></div>
-      <div class="row"><div class="label">Department</div><div class="value">${escapeIdCardHtml(staff.department || "—")}</div></div>
-      <div class="row"><div class="label">Email</div><div class="value">${escapeIdCardHtml(staff.email || "—")}</div></div>
-      <div class="row"><div class="label">Status</div><div class="value">${escapeIdCardHtml(staff.status || "ACTIVE")}</div></div>
+      <div class="row"><div class="label">Gender</div><div class="value">${escapeIdCardHtml(staff.gender || "—")}</div></div>
+      <div class="row"><div class="label">DOB</div><div class="value">${escapeIdCardHtml(staff.dob || "—")}</div></div>
+      <div class="row"><div class="label">Valid Thru</div><div class="value">${escapeIdCardHtml(staff.validThru || staff.valid_thru || "—")}</div></div>
     </div>
     <div class="qr-area">
       <div class="valid">Property of<br><b>Ashiana Public School</b><br>Sector 46-A, Chandigarh<br>Scan to verify staff identity</div>
@@ -4587,8 +4621,14 @@
 
         const nameInp = document.getElementById("profile-edit-name");
         const emailInp = document.getElementById("profile-edit-email");
-        if (nameInp) nameInp.value = staff.name;
-        if (emailInp) emailInp.value = staff.email;
+        const genderInp = document.getElementById("profile-edit-gender");
+        const dobInp = document.getElementById("profile-edit-dob");
+        const validThruInp = document.getElementById("profile-edit-valid-thru");
+        if (nameInp) nameInp.value = staff.name || '';
+        if (emailInp) emailInp.value = staff.email || '';
+        if (genderInp) genderInp.value = staff.gender || '';
+        if (dobInp) dobInp.value = staff.dob || '';
+        if (validThruInp) validThruInp.value = staff.validThru || '';
       }
       document.getElementById("staff-profile-modal")?.classList.remove("hidden");
       if (window.lucide) lucide.createIcons();
@@ -4598,25 +4638,26 @@
       document.getElementById("staff-profile-modal")?.classList.add("hidden");
     }
 
-    // Staff self-service update: name only.
-    // Email is the Supabase Auth identity and must be changed by an administrator
-    // through the secure email-sync Edge Function.
+    // Staff self-service profile update.
+    // Staff may update their own profile fields, but the login email remains
+    // administrator-controlled so Supabase Auth and public.staff stay synchronized.
     async function handleUpdateStaffProfile(event) {
       event.preventDefault();
       const staff = staffDatabase.find(s => s.id === currentStaffId);
       if (!staff) return;
 
       const newName = document.getElementById("profile-edit-name").value.trim();
-      const newEmail = document.getElementById("profile-edit-email").value.trim().toLowerCase();
-      const currentEmail = String(staff.email || '').trim().toLowerCase();
+      const newGender = document.getElementById("profile-edit-gender").value;
+      const newDob = document.getElementById("profile-edit-dob").value || null;
+      const newValidThru = document.getElementById("profile-edit-valid-thru").value || null;
 
-      if (!newName || !newEmail) {
-        showToast("Name and email cannot be blank.", "error");
+      if (!newName) {
+        showToast("Full name cannot be blank.", "error");
         return;
       }
 
-      if (newEmail !== currentEmail) {
-        showToast("Login email changes must be made by an administrator so your Auth account stays synchronized.", "error");
+      if (newDob && newValidThru && newValidThru < newDob) {
+        showToast("Valid-through date cannot be earlier than date of birth.", "error");
         return;
       }
 
@@ -4625,21 +4666,38 @@
 
         const { error } = await supabaseClient
           .from('staff')
-          .update({ name: newName })
+          .update({
+            name: newName,
+            gender: newGender || null,
+            dob: newDob,
+            valid_thru: newValidThru
+          })
           .eq('id', staff.id);
 
         if (error) throw error;
 
-        staff.name = newName;
+        Object.assign(staff, {
+          name: newName,
+          gender: newGender,
+          dob: newDob || '',
+          validThru: newValidThru || ''
+        });
+
         if (currentAuthUser?.staffRecord) {
-          currentAuthUser.staffRecord.name = newName;
+          currentAuthUser.staffRecord = {
+            ...currentAuthUser.staffRecord,
+            name: newName,
+            gender: newGender,
+            dob: newDob || '',
+            validThru: newValidThru || ''
+          };
           sessionStorage.setItem(STORAGE_KEY_CURRENT_USER, JSON.stringify(currentAuthUser));
         }
-        savePersistedData();
 
-        recordAuditLog("PROFILE_UPDATE", staff.name, `Updated profile name to ${newName}`);
+        savePersistedData();
+        recordAuditLog("PROFILE_UPDATE", staff.name, "Updated personal profile details");
         playTone('SUCCESS');
-        showToast("Profile name updated successfully!", "success");
+        showToast("Profile details updated successfully!", "success");
         closeStaffProfileModal();
         applyAuthenticatedUI();
         renderStaffDirectoryTable();
