@@ -1333,7 +1333,8 @@
 
           <div>
             <label class="block text-[10px] font-bold text-slate-600 mb-0.5">ID Card Valid Through</label>
-            <input type="date" id="profile-edit-valid-thru" class="w-full text-xs p-2 bg-white border border-slate-200 rounded-xl focus:ring-2 focus:ring-ashiana-green">
+            <input type="date" id="profile-edit-valid-thru" readonly aria-readonly="true" class="w-full text-xs p-2 bg-slate-100 border border-slate-200 rounded-xl font-medium text-slate-500 cursor-not-allowed">
+            <p class="text-[9px] text-slate-400 mt-1">Managed by the school administrator.</p>
           </div>
 
           <div class="grid grid-cols-2 gap-2">
@@ -2001,6 +2002,34 @@
     // =====================================================================
     function normalizeLoginId(value) {
       return String(value || '').trim();
+    }
+
+    // Valid Through is inclusive: the ID remains valid on the date shown.
+    // Blank Valid Through means no expiry has been configured.
+    function getIndiaTodayDateString() {
+      return new Intl.DateTimeFormat('en-CA', {
+        timeZone: 'Asia/Kolkata',
+        year: 'numeric',
+        month: '2-digit',
+        day: '2-digit'
+      }).format(new Date());
+    }
+
+    function isStaffIdExpired(staff) {
+      const validThru = String(staff?.validThru || staff?.valid_thru || '').trim();
+      return !!validThru && validThru < getIndiaTodayDateString();
+    }
+
+    function formatValidThruDate(value) {
+      if (!value) return 'Not set';
+      const date = new Date(value + 'T00:00:00');
+      if (Number.isNaN(date.getTime())) return value;
+      return date.toLocaleDateString('en-IN', {
+        timeZone: 'Asia/Kolkata',
+        day: '2-digit',
+        month: 'long',
+        year: 'numeric'
+      });
     }
 
     // The 4-digit PIN remains the user's credential. Supabase Auth receives
@@ -2741,6 +2770,8 @@
           gender: loginResult.staff.gender || '',
           dob: loginResult.staff.dob || '',
           validThru: loginResult.staff.valid_thru || '',
+          phone: loginResult.staff.phone || '',
+          address: loginResult.staff.address || '',
           pinHash: "",
           status: loginResult.staff.status || "ACTIVE"
         };
@@ -2762,6 +2793,8 @@
         const msg = String(err?.message || err);
         if (msg.includes('RATE_LIMIT')) {
           showToast("Too many PIN attempts. Please wait a few minutes and try again.", "error");
+        } else if (msg.includes('ID_CARD_EXPIRED')) {
+          showToast("ID CARD EXPIRED. Your Valid Thru date has passed. Please contact the school administrator for renewal.", "error");
         } else if (msg.includes('INVALID_PIN') || msg.includes('STAFF_NOT_FOUND')) {
           showToast("Incorrect Employee ID/email or PIN.", "error");
         } else if (msg.includes('ADMIN_ACCOUNT')) {
@@ -3081,6 +3114,11 @@
 
     function openPunchModal() {
       if (!currentStaffId) return;
+      const staff = staffDatabase.find(s => s.id === currentStaffId) || currentAuthUser?.staffRecord;
+      if (isStaffIdExpired(staff)) {
+        showToast(`ID CARD EXPIRED. Valid Through: ${formatValidThruDate(staff.validThru)}. Please contact the school administrator for renewal.`, "error");
+        return;
+      }
       pendingScannedQR = null;
       document.getElementById('scanner-pin-panel')?.classList.add('hidden');
       const pinInput = document.getElementById('scanner-attendance-pin');
@@ -3133,7 +3171,8 @@
       } catch (e) {
         playTone('ERROR');
         const msg = String(e?.message || e);
-        if (msg.includes('INVALID_OR_EXPIRED_QR')) showToast("QR expired. Please scan the latest school QR.", "error");
+        if (msg.includes('ID_CARD_EXPIRED')) showToast("ID CARD EXPIRED. Your Valid Thru date has passed. Please contact the school administrator for renewal.", "error");
+        else if (msg.includes('INVALID_OR_EXPIRED_QR')) showToast("QR expired. Please scan the latest school QR.", "error");
         else if (msg.includes('INVALID_PIN')) showToast("Incorrect PIN. Attendance was not marked.", "error");
         else if (msg.includes('DUPLICATE_SCAN')) showToast("Please wait 30 seconds before scanning again.", "error");
         else showToast("Attendance verification failed: " + msg, "error");
@@ -3357,6 +3396,29 @@
 
       renderStaffAvatar("staff-avatar-circle", staff);
       refreshStaffIdCardWidget();
+
+      const expired = isStaffIdExpired(staff);
+      const attendanceButton = document.getElementById("btn-mark-attendance");
+      if (attendanceButton) {
+        attendanceButton.disabled = expired;
+        attendanceButton.classList.toggle("opacity-50", expired);
+        attendanceButton.classList.toggle("cursor-not-allowed", expired);
+        attendanceButton.title = expired
+          ? `ID card expired on ${formatValidThruDate(staff.validThru)}. Contact the school administrator.`
+          : "Scan the school QR to mark attendance";
+        const label = attendanceButton.querySelector("span");
+        if (label) label.textContent = expired ? "ID CARD EXPIRED" : "MARK ATTENDANCE";
+      }
+
+      const idStatus = document.getElementById("staff-id-card-status");
+      if (idStatus) {
+        idStatus.innerText = expired
+          ? `ID card expired on ${formatValidThruDate(staff.validThru)}. Renewal required.`
+          : (staff.validThru ? `Valid through ${formatValidThruDate(staff.validThru)}` : "No expiry date configured");
+        idStatus.className = expired
+          ? "text-[10px] text-red-600 font-semibold mt-1"
+          : "text-[10px] text-slate-500 mt-1";
+      }
 
       const badge = document.getElementById("staff-badge-status");
       if (stats.currentStatus === 'WORKING') {
@@ -5325,8 +5387,8 @@ window.addEventListener('load',async function(){
     }
 
     // Staff self-service profile update.
-    // Staff may update their own profile fields, but the login email remains
-    // administrator-controlled so Supabase Auth and public.staff stay synchronized.
+    // Staff may update personal details, but Valid Through and login email remain
+    // administrator-controlled so ID validity and Auth stay synchronized.
     async function handleUpdateStaffProfile(event) {
       event.preventDefault();
       const staff = staffDatabase.find(s => s.id === currentStaffId);
@@ -5335,7 +5397,8 @@ window.addEventListener('load',async function(){
       const newName = document.getElementById("profile-edit-name").value.trim();
       const newGender = document.getElementById("profile-edit-gender").value;
       const newDob = document.getElementById("profile-edit-dob").value || null;
-      const newValidThru = document.getElementById("profile-edit-valid-thru").value || null;
+      // Valid Through is administrator-controlled and intentionally cannot be
+      // changed by staff from this form.
       const newPhone = document.getElementById("profile-edit-phone").value.trim();
       const newAddress = document.getElementById("profile-edit-address").value.trim();
 
@@ -5358,7 +5421,6 @@ window.addEventListener('load',async function(){
             name: newName,
             gender: newGender || null,
             dob: newDob,
-            valid_thru: newValidThru,
             phone: newPhone || null,
             address: newAddress || null
           })
@@ -5370,7 +5432,6 @@ window.addEventListener('load',async function(){
           name: newName,
           gender: newGender,
           dob: newDob || '',
-          validThru: newValidThru || '',
           phone: newPhone,
           address: newAddress
         });
@@ -5381,7 +5442,6 @@ window.addEventListener('load',async function(){
             name: newName,
             gender: newGender,
             dob: newDob || '',
-            validThru: newValidThru || '',
             phone: newPhone,
             address: newAddress
           };
