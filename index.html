@@ -409,9 +409,12 @@
         <div class="staff-dashboard-header bg-gradient-to-br from-emerald-950 via-[#064E3B] to-[#087443] text-white p-4 sm:p-5 border-b-2 border-ashiana-red sticky top-0 z-10">
           <div class="flex items-center justify-between">
             <div class="flex items-center space-x-3">
-              <div id="staff-avatar-circle" class="w-11 h-11 rounded-2xl bg-emerald-500/20 border border-emerald-400/40 flex items-center justify-center font-bold text-sm text-emerald-100 shadow-inner overflow-hidden">
+              <button id="staff-avatar-circle" type="button" onclick="viewMyStaffIdCard()" class="relative w-11 h-11 rounded-2xl bg-emerald-500/20 border border-emerald-400/40 flex items-center justify-center font-bold text-sm text-emerald-100 shadow-inner overflow-hidden group cursor-pointer focus:outline-none focus:ring-2 focus:ring-emerald-300" title="View My Staff ID Card" aria-label="View My Staff ID Card">
                 AP
-              </div>
+                <span class="absolute inset-0 bg-black/45 opacity-0 group-hover:opacity-100 group-focus:opacity-100 transition-opacity flex items-center justify-center">
+                  <i data-lucide="contact" class="w-4 h-4 text-white"></i>
+                </span>
+              </button>
               <div class="min-w-0">
                 <h3 id="staff-header-name" class="font-bold text-sm text-white leading-tight truncate">Faculty Member</h3>
                 <p id="staff-header-role" class="text-[11px] text-emerald-200 truncate">Teacher • APS-101</p>
@@ -524,6 +527,7 @@
                 <i data-lucide="eye" class="w-3.5 h-3.5"></i><span>View ID Card</span>
               </button>
             </div>
+            <p class="text-[9px] text-slate-400 mt-2">You can also tap your profile photo at the top to preview your issued ID card.</p>
           </div>
 
           <!-- STAFF ID CARD PREVIEW MODAL -->
