@@ -140,7 +140,65 @@
         display: none !important;
       }
     }
-  </style>
+      /* Staff ID card: fixed physical-card proportions, never a mobile/reflow layout */
+    .staff-id-preview-card {
+      width: 54mm;
+      height: 85.6mm;
+      min-width: 54mm;
+      min-height: 85.6mm;
+      max-width: none;
+      max-height: none;
+      overflow: hidden;
+      display: flex;
+      flex-direction: column;
+      position: relative;
+      background: #fff;
+      border: .35mm solid #cbd5e1;
+      border-radius: 3mm;
+      box-shadow: 0 2mm 8mm rgba(0,0,0,.30);
+      font-family: Arial, Helvetica, sans-serif;
+      color: #111827;
+      flex-shrink: 0;
+      transform-origin: center center;
+    }
+    .staff-id-preview-card .id-top {
+      flex: 0 0 19mm;
+      height: 19mm;
+      padding: 1.5mm 3mm 1mm;
+      color:#fff;
+      background:linear-gradient(145deg,#063f32,#075b46 62%,#0a7655);
+      position:relative;
+      overflow:hidden;
+    }
+    .staff-id-preview-card .id-school{text-align:center;position:relative;z-index:1;padding:0 1mm;}
+    .staff-id-preview-card .id-logo{width:6.5mm;height:6.5mm;object-fit:contain;background:#fff;border-radius:50%;padding:.35mm;display:block;margin:0 auto .45mm;}
+    .staff-id-preview-card .id-school-name{font-size:2.7mm;line-height:1.05;font-weight:900;white-space:nowrap;}
+    .staff-id-preview-card .id-school-sub{font-size:1.65mm;line-height:1.05;margin-top:.4mm;font-weight:800;white-space:nowrap;}
+    .staff-id-preview-card .id-school-phone{font-size:1.5mm;line-height:1.05;margin-top:.35mm;font-weight:700;white-space:nowrap;}
+    .staff-id-preview-card .id-school-aff{font-size:1.25mm;line-height:1.05;margin-top:.3mm;font-weight:700;white-space:nowrap;}
+    .staff-id-preview-card .id-red-line{height:.25mm;background:#ef3340;margin:.55mm 8mm .35mm;}
+    .staff-id-preview-card .id-title{font-size:1.5mm;font-weight:800;letter-spacing:.28mm;}
+    .staff-id-preview-card .id-photo-wrap{flex:0 0 30mm;width:24mm;height:30mm;margin:-1mm auto 0;background:#fff;border:.65mm solid #fff;box-shadow:0 1mm 2.5mm rgba(0,0,0,.25);position:relative;z-index:2;}
+    .staff-id-preview-card .id-photo-wrap img,.staff-id-preview-card .photo-fallback{width:100%;height:100%;object-fit:cover;object-position:center;display:block;background:#e5e7eb;}
+    .staff-id-preview-card .photo-fallback{display:flex;align-items:center;justify-content:center;color:#08693a;font-size:7mm;font-weight:900;}
+    .staff-id-preview-card .id-name-band{flex:0 0 7mm;min-height:7mm;background:#064e3b;color:#fff;padding:1mm 2mm .7mm;text-align:center;}
+    .staff-id-preview-card .id-name{font-size:2.8mm;line-height:1.05;font-weight:900;text-transform:uppercase;white-space:nowrap;overflow:hidden;text-overflow:ellipsis;}
+    .staff-id-preview-card .id-role{font-size:2mm;line-height:1.05;margin-top:.45mm;font-weight:700;white-space:nowrap;overflow:hidden;text-overflow:ellipsis;}
+    .staff-id-preview-card .id-details{flex:0 0 15mm;height:15mm;padding:1.2mm 3mm .4mm;background:#fff;}
+    .staff-id-preview-card .id-row{display:flex;align-items:center;height:3.25mm;font-size:1.95mm;line-height:1;}
+    .staff-id-preview-card .id-row span{flex:0 0 16mm;color:#64748b;font-weight:700;}
+    .staff-id-preview-card .id-row b{flex:1;min-width:0;overflow:hidden;white-space:nowrap;text-overflow:ellipsis;}
+    .staff-id-preview-card .id-qr-area{flex:0 0 12mm;height:12mm;margin:0 3mm;border-top:.25mm solid #e2e8f0;padding-top:1mm;display:flex;align-items:center;justify-content:space-between;}
+    .staff-id-preview-card .id-valid{font-size:1.55mm;color:#64748b;line-height:1.25;max-width:31mm;}
+    .staff-id-preview-card .id-qrcode{width:11mm;height:11mm;flex:0 0 11mm;}
+    .staff-id-preview-card .id-qrcode img,.staff-id-preview-card .id-qrcode canvas{width:11mm!important;height:11mm!important;display:block;}
+    .staff-id-preview-card .id-footer{flex:1 1 auto;min-height:1.5mm;text-align:center;font-size:1.25mm;line-height:1.2;color:#94a3b8;padding-top:.2mm;}
+    @media (max-width: 480px) {
+      #staff-id-card-preview-modal { overflow:auto; }
+      #staff-id-card-preview { flex-shrink:0; }
+    }
+
+</style>
 </head>
 <body class="bg-slate-100 text-slate-800 antialiased min-h-screen min-h-screen-safe flex flex-col selection:bg-emerald-600 selection:text-white">
 
@@ -461,6 +519,17 @@
                 class="flex-shrink-0 px-3 py-1.5 rounded-xl bg-slate-200 text-slate-400 text-[10px] font-bold flex items-center space-x-1.5">
                 <i data-lucide="eye" class="w-3.5 h-3.5"></i><span>View ID Card</span>
               </button>
+            </div>
+          </div>
+
+          <!-- STAFF ID CARD PREVIEW MODAL -->
+          <div id="staff-id-card-preview-modal" class="hidden fixed inset-0 z-[100] bg-black/70 backdrop-blur-sm items-center justify-center p-4" onclick="closeStaffIdCardPreview(event)">
+            <div class="relative flex flex-col items-center max-h-[95vh]" onclick="event.stopPropagation()">
+              <button type="button" onclick="closeStaffIdCardPreview()" class="absolute -top-3 -right-3 z-10 w-9 h-9 rounded-full bg-white text-slate-700 shadow-lg flex items-center justify-center hover:bg-slate-100" aria-label="Close">
+                <i data-lucide="x" class="w-5 h-5"></i>
+              </button>
+              <div class="text-white text-xs font-bold mb-2 bg-black/40 px-3 py-1 rounded-full">My Staff ID Card</div>
+              <div id="staff-id-card-preview" class="bg-white shadow-2xl"></div>
             </div>
           </div>
 
@@ -3788,12 +3857,95 @@ window.addEventListener('load',async function(){
 
     async function viewMyStaffIdCard() {
       if (!currentStaffId) return;
+
       const issued = await getMyStaffIdCardIssued();
       if (!issued) {
         showToast("Your ID card has not been generated by the administrator yet.", "error");
         return;
       }
-      await printStaffIdCard(currentStaffId, { markGenerated: false, autoPrint: false });
+
+      const staff = staffDatabase.find(s => s.id === currentStaffId);
+      if (!staff) {
+        showToast("Your staff record could not be loaded.", "error");
+        return;
+      }
+
+      const modal = document.getElementById("staff-id-card-preview-modal");
+      const preview = document.getElementById("staff-id-card-preview");
+      if (!modal || !preview) return;
+
+      const photo = String(staff.avatarUrl || staff.avatar_url || '').trim();
+      const logoUrl = new URL('logo 2.png', window.location.href).href;
+      const photoHtml = photo
+        ? `<img src="${escapeIdCardHtml(photo)}" alt="Staff Photo">`
+        : `<div class="photo-fallback">${escapeIdCardHtml(getStaffInitials(staff.name))}</div>`;
+
+      const qrPayload = JSON.stringify({
+        school: "ASHIANA_PUBLIC_SCHOOL",
+        employee_id: staff.empId || "",
+        name: staff.name || "",
+        role: staff.role || "",
+        department: staff.department || "",
+        gender: staff.gender || "",
+        dob: staff.dob || "",
+        valid_thru: staff.validThru || staff.valid_thru || ""
+      });
+
+      preview.innerHTML = `
+        <div class="staff-id-preview-card">
+          <div class="id-top">
+            <div class="id-school">
+              <img class="id-logo" src="${escapeIdCardHtml(logoUrl)}" alt="Ashiana Public School">
+              <div class="id-school-name">ASHIANA PUBLIC SCHOOL</div>
+              <div class="id-school-sub">SECTOR 46-CHANDIGARH</div>
+              <div class="id-school-phone">PHONE: +91-9872500460</div>
+              <div class="id-school-aff">Affiliated to CBSE | Affiliation No. 2630065</div>
+              <div class="id-red-line"></div>
+              <div class="id-title">STAFF IDENTITY CARD</div>
+            </div>
+          </div>
+          <div class="id-photo-wrap">${photoHtml}</div>
+          <div class="id-name-band">
+            <div class="id-name">${escapeIdCardHtml(staff.name || "STAFF MEMBER")}</div>
+            <div class="id-role">${escapeIdCardHtml(staff.role || "STAFF")} • ${escapeIdCardHtml(staff.department || "School")}</div>
+          </div>
+          <div class="id-details">
+            <div class="id-row"><span>Employee ID</span><b>${escapeIdCardHtml(staff.empId || "—")}</b></div>
+            <div class="id-row"><span>Gender</span><b>${escapeIdCardHtml(staff.gender || "—")}</b></div>
+            <div class="id-row"><span>DOB</span><b>${escapeIdCardHtml(staff.dob || "—")}</b></div>
+            <div class="id-row"><span>Valid Thru</span><b>${escapeIdCardHtml(staff.validThru || staff.valid_thru || "—")}</b></div>
+          </div>
+          <div class="id-qr-area">
+            <div class="id-valid">Property of<br><strong>Ashiana Public School</strong><br>Sector 46-A, Chandigarh<br>Scan to verify staff identity</div>
+            <div id="staff-preview-qr" class="id-qrcode"></div>
+          </div>
+          <div class="id-footer">Authorized Staff Identification • Ashiana Public School</div>
+        </div>`;
+
+      const qrBox = document.getElementById("staff-preview-qr");
+      if (qrBox && typeof QRCode !== "undefined") {
+        qrBox.innerHTML = "";
+        new QRCode(qrBox, {
+          text: qrPayload,
+          width: 90,
+          height: 90,
+          correctLevel: QRCode.CorrectLevel.M
+        });
+      }
+
+      modal.classList.remove("hidden");
+      modal.classList.add("flex");
+      document.body.classList.add("overflow-hidden");
+      if (window.lucide) lucide.createIcons();
+    }
+
+    function closeStaffIdCardPreview(event) {
+      if (event && event.target && event.target.id !== "staff-id-card-preview-modal") return;
+      const modal = document.getElementById("staff-id-card-preview-modal");
+      if (!modal) return;
+      modal.classList.add("hidden");
+      modal.classList.remove("flex");
+      document.body.classList.remove("overflow-hidden");
     }
 
     async function printStaffIdCard(staffId, options = {}) {
