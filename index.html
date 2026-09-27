@@ -737,6 +737,10 @@
                 <i data-lucide="key" class="w-3.5 h-3.5 text-amber-300"></i>
                 <span>Export PINs (CSV)</span>
               </button>
+              <button onclick="openBulkIdCardModal()" class="px-3 py-2 bg-blue-700 hover:bg-blue-800 text-white text-xs font-bold rounded-xl flex items-center space-x-1.5 shadow transition-all active:scale-95 border-b-2 border-blue-950" title="Generate selected staff ID cards on A4">
+                <i data-lucide="contact-round" class="w-3.5 h-3.5"></i>
+                <span>Bulk ID Cards (A4)</span>
+              </button>
               <button onclick="openBulkDeleteStaffModal()" class="px-3 py-2 bg-rose-700 hover:bg-rose-800 text-white text-xs font-bold rounded-xl flex items-center space-x-1.5 shadow transition-all active:scale-95 border-b-2 border-rose-950" title="Select All for Delete Multiple Staff">
                 <i data-lucide="user-minus" class="w-3.5 h-3.5"></i>
                 <span>Select All for Delete Multiple Staff</span>
@@ -748,6 +752,9 @@
             <table class="w-full text-left text-xs text-slate-600">
               <thead class="bg-slate-50 text-slate-500 font-bold uppercase text-[10px] tracking-wider border-b border-slate-200">
                 <tr>
+                  <th class="py-2 px-2 text-center">
+                    <input type="checkbox" id="staff-directory-select-all" onchange="toggleAllStaffIdCards(this.checked)" class="w-3.5 h-3.5 accent-emerald-700" title="Select all staff">
+                  </th>
                   <th class="py-2 px-3">Emp ID</th>
                   <th class="py-2 px-3">Name</th>
                   <th class="py-2 px-3">Department</th>
@@ -3250,6 +3257,9 @@
       tbody.innerHTML = staffDatabase.map(s => {
         return `
           <tr class="hover:bg-slate-50 transition-colors">
+            <td class="py-2 px-2 text-center">
+              <input type="checkbox" class="staff-id-card-check w-3.5 h-3.5 accent-emerald-700" data-staff-id="${s.id}" onchange="updateBulkIdCardSelection()" title="Select for ID card">
+            </td>
             <td class="py-2 px-3 font-mono font-bold text-ashiana-green text-xs">${s.empId}</td>
             <td class="py-2 px-3 font-bold text-slate-800">
               <div>${s.name}</div>
@@ -3286,6 +3296,210 @@
         `;
       }).join('');
       if (window.lucide) lucide.createIcons();
+    }
+
+    // Bulk ID card selection / A4 printing
+    let bulkIdCardSelectedIds = new Set();
+
+    function updateBulkIdCardSelection() {
+      document.querySelectorAll('.staff-id-card-check').forEach(cb => {
+        if (cb.checked) bulkIdCardSelectedIds.add(cb.dataset.staffId);
+        else bulkIdCardSelectedIds.delete(cb.dataset.staffId);
+      });
+      const all = staffDatabase.length > 0 && staffDatabase.every(s => bulkIdCardSelectedIds.has(s.id));
+      const master = document.getElementById('staff-directory-select-all');
+      if (master) {
+        master.checked = all;
+        master.indeterminate = !all && bulkIdCardSelectedIds.size > 0;
+      }
+    }
+
+    function toggleAllStaffIdCards(checked) {
+      if (checked) staffDatabase.forEach(s => bulkIdCardSelectedIds.add(s.id));
+      else bulkIdCardSelectedIds.clear();
+      document.querySelectorAll('.staff-id-card-check').forEach(cb => cb.checked = checked);
+      updateBulkIdCardSelection();
+    }
+
+    function openBulkIdCardModal() {
+      if (!staffDatabase.length) {
+        showToast("No staff records available.", "error");
+        return;
+      }
+
+      const useSelection = bulkIdCardSelectedIds.size > 0;
+      const list = staffDatabase.map(s => {
+        const checked = useSelection ? bulkIdCardSelectedIds.has(s.id) : true;
+        return `
+          <label class="flex items-center gap-2 px-2 py-1.5 rounded-lg hover:bg-slate-50 border-b border-slate-100 cursor-pointer">
+            <input type="checkbox" class="bulk-id-modal-check w-3.5 h-3.5 accent-emerald-700" data-staff-id="${escapeIdCardHtml(s.id)}" ${checked ? "checked" : ""}>
+            <span class="font-mono text-[10px] text-emerald-700 w-20">${escapeIdCardHtml(s.empId || "")}</span>
+            <span class="text-xs font-semibold text-slate-700">${escapeIdCardHtml(s.name || "")}</span>
+            <span class="text-[10px] text-slate-400 ml-auto">${escapeIdCardHtml(s.role || "")}</span>
+          </label>`;
+      }).join('');
+
+      const modal = document.createElement('div');
+      modal.id = 'bulk-id-card-modal';
+      modal.className = 'fixed inset-0 z-[120] bg-slate-950/60 backdrop-blur-sm flex items-center justify-center p-4';
+      modal.innerHTML = `
+        <div class="bg-white w-full max-w-xl rounded-2xl shadow-2xl border border-slate-200 overflow-hidden">
+          <div class="px-4 py-3 bg-emerald-950 text-white flex items-center justify-between">
+            <div>
+              <h3 class="font-bold text-sm">Bulk Staff ID Cards — A4</h3>
+              <p class="text-[10px] text-emerald-100">9 cards per A4 page • 3 columns × 3 rows • 54 × 85.6 mm</p>
+            </div>
+            <button onclick="document.getElementById('bulk-id-card-modal')?.remove()" class="text-white/80 hover:text-white text-xl leading-none">×</button>
+          </div>
+          <div class="p-3 border-b border-slate-200 flex items-center gap-2">
+            <button type="button" onclick="document.querySelectorAll('.bulk-id-modal-check').forEach(x=>x.checked=true)" class="px-2.5 py-1.5 bg-emerald-50 text-emerald-800 rounded-lg text-[10px] font-bold">Select All</button>
+            <button type="button" onclick="document.querySelectorAll('.bulk-id-modal-check').forEach(x=>x.checked=false)" class="px-2.5 py-1.5 bg-slate-100 text-slate-700 rounded-lg text-[10px] font-bold">Clear All</button>
+            <span class="ml-auto text-[10px] text-slate-500">Choose staff to print</span>
+          </div>
+          <div class="max-h-[55vh] overflow-y-auto p-2">${list}</div>
+          <div class="p-3 bg-slate-50 border-t border-slate-200 flex justify-end gap-2">
+            <button onclick="document.getElementById('bulk-id-card-modal')?.remove()" class="px-3 py-2 rounded-xl bg-white border border-slate-200 text-xs font-bold text-slate-600">Cancel</button>
+            <button onclick="printSelectedStaffIdCardsFromModal()" class="px-4 py-2 rounded-xl bg-ashiana-green hover:bg-[#08693A] text-white text-xs font-bold shadow flex items-center gap-1.5">
+              <i data-lucide="printer" class="w-3.5 h-3.5"></i><span>Print A4 ID Cards</span>
+            </button>
+          </div>
+        </div>`;
+      document.body.appendChild(modal);
+      if (window.lucide) lucide.createIcons();
+    }
+
+    function printSelectedStaffIdCardsFromModal() {
+      const ids = Array.from(document.querySelectorAll('.bulk-id-modal-check:checked')).map(x => x.dataset.staffId);
+      if (!ids.length) {
+        showToast("Select at least one staff member.", "error");
+        return;
+      }
+      bulkIdCardSelectedIds = new Set(ids);
+      document.getElementById('bulk-id-card-modal')?.remove();
+      printBulkStaffIdCards(ids);
+    }
+
+    function makeBulkIdCardHtml(staff, logoUrl, index) {
+      const photo = String(staff.avatarUrl || staff.avatar_url || '').trim();
+      const photoHtml = photo
+        ? `<img class="photo-img" src="${escapeIdCardHtml(photo)}" alt="Staff Photo">`
+        : `<div class="photo-fallback">${escapeIdCardHtml(getStaffInitials(staff.name))}</div>`;
+      return `
+        <div class="card">
+          <div class="top">
+            <div class="school">
+              <img class="school-logo" src="${escapeIdCardHtml(logoUrl)}" alt="Ashiana Public School">
+              <div class="school-copy">
+                <div class="school-name">ASHIANA PUBLIC SCHOOL</div>
+                <div class="school-sub">SECTOR 46-CHANDIGARH</div>
+                <div class="school-phone">PHONE: +91-9872500460</div>
+                <div class="school-aff">Affiliated to CBSE | Affiliation No. 2630065</div>
+                <div class="school-line"></div>
+                <div class="card-title">STAFF IDENTITY CARD</div>
+              </div>
+            </div>
+          </div>
+          <div class="photo-wrap">${photoHtml}</div>
+          <div class="name-band">
+            <div class="name">${escapeIdCardHtml(staff.name || "STAFF MEMBER")}</div>
+            <div class="role">${escapeIdCardHtml(staff.role || "STAFF")} • ${escapeIdCardHtml(staff.department || "School")}</div>
+          </div>
+          <div class="details">
+            <div class="row"><div class="label">Employee ID</div><div class="value">${escapeIdCardHtml(staff.empId || "—")}</div></div>
+            <div class="row"><div class="label">Gender</div><div class="value">${escapeIdCardHtml(staff.gender || "—")}</div></div>
+            <div class="row"><div class="label">DOB</div><div class="value">${escapeIdCardHtml(staff.dob || "—")}</div></div>
+            <div class="row"><div class="label">Valid Thru</div><div class="value">${escapeIdCardHtml(staff.validThru || staff.valid_thru || "—")}</div></div>
+          </div>
+          <div class="qr-area">
+            <div class="valid">Property of<br><b>Ashiana Public School</b><br>Sector 46-A, Chandigarh<br>Scan to verify staff identity</div>
+            <div class="qrcode" id="bulk-qr-${index}"></div>
+          </div>
+          <div class="footer">Authorized Staff Identification • Ashiana Public School</div>
+        </div>`;
+    }
+
+    function printBulkStaffIdCards(staffIds) {
+      const selectedStaff = staffIds.map(id => staffDatabase.find(s => s.id === id)).filter(Boolean);
+      if (!selectedStaff.length) {
+        showToast("No valid staff records selected.", "error");
+        return;
+      }
+
+      const win = window.open("", "_blank", "width=1000,height=900");
+      if (!win) {
+        showToast("Please allow pop-ups to print the A4 ID cards.", "error");
+        return;
+      }
+
+      const logoUrl = new URL('logo 2.png', window.location.href).href;
+      const cards = selectedStaff.map((s, i) => makeBulkIdCardHtml(s, logoUrl, i));
+      const pages = [];
+      for (let i = 0; i < cards.length; i += 9) {
+        pages.push(`<div class="page">${cards.slice(i, i + 9).join('')}</div>`);
+      }
+
+      const qrItems = selectedStaff.map((s, i) => ({
+        i,
+        payload: {
+          school: "ASHIANA_PUBLIC_SCHOOL",
+          employee_id: s.empId || "",
+          name: s.name || "",
+          role: s.role || "",
+          department: s.department || "",
+          gender: s.gender || "",
+          dob: s.dob || "",
+          valid_thru: s.validThru || s.valid_thru || ""
+        }
+      }));
+
+      win.document.write(`<!doctype html><html><head><meta charset="utf-8"><title>Ashiana Staff ID Cards - A4</title>
+<style>
+@page { size:A4 portrait; margin:0; }
+*{box-sizing:border-box;}
+html,body{margin:0;padding:0;background:#e5e7eb;}
+body{font-family:Arial,Helvetica,sans-serif;}
+.page{width:210mm;height:297mm;background:#fff;display:grid;grid-template-columns:repeat(3,54mm);grid-template-rows:repeat(3,85.6mm);column-gap:3mm;row-gap:3mm;align-content:center;justify-content:center;page-break-after:always;break-after:page;}
+.page:last-child{page-break-after:auto;break-after:auto;}
+.card{width:54mm;height:85.6mm;overflow:hidden;display:flex;flex-direction:column;position:relative;background:#fff;border:.35mm solid #cbd5e1;border-radius:3mm;}
+.top{flex:0 0 22mm;height:22mm;padding:2mm 3mm 1.5mm;color:#fff;background:linear-gradient(145deg,#063f32,#075b46 62%,#0a7655);position:relative;overflow:hidden;}
+.top:after{content:"";position:absolute;width:38mm;height:18mm;right:-13mm;bottom:-8mm;background:rgba(255,255,255,.08);border-radius:50%;}
+.school{position:relative;z-index:1;text-align:center;padding:1mm 2.5mm 0;width:100%;}
+.school-logo{width:6.5mm;height:6.5mm;object-fit:contain;background:#fff;border-radius:50%;padding:.35mm;display:block;margin:0 auto .65mm;}
+.school-copy{width:100%;}
+.school-name{font-size:2.85mm;line-height:1.05;font-weight:900;letter-spacing:.08mm;white-space:nowrap;}
+.school-sub{font-size:1.75mm;line-height:1.05;margin-top:.55mm;font-weight:800;letter-spacing:.06mm;white-space:nowrap;}
+.school-phone{font-size:1.6mm;line-height:1.05;margin-top:.45mm;font-weight:700;white-space:nowrap;}
+.school-aff{font-size:1.35mm;line-height:1.05;margin-top:.4mm;font-weight:700;white-space:nowrap;}
+.school-line{height:.28mm;background:#ef3340;margin:.7mm 8mm .55mm;width:calc(100% - 16mm);}
+.card-title{font-size:1.65mm;font-weight:800;letter-spacing:.32mm;}
+.photo-wrap{flex:0 0 24mm;width:24mm;height:24mm;margin:-1mm auto 0;position:relative;z-index:2;background:#fff;border:.65mm solid #fff;box-shadow:0 1mm 2.5mm rgba(0,0,0,.25);}
+.photo-wrap img,.photo-fallback{width:100%;height:100%;object-fit:cover;display:block;}
+.photo-fallback{display:flex;align-items:center;justify-content:center;background:#d1fae5;color:#08693a;font-size:7mm;font-weight:900;}
+.name-band{flex:0 0 8mm;min-height:8mm;background:#064e3b;color:#fff;padding:1.3mm 2mm 1mm;text-align:center;}
+.name{font-size:3.05mm;line-height:1.05;font-weight:900;text-transform:uppercase;letter-spacing:.12mm;white-space:nowrap;overflow:hidden;text-overflow:ellipsis;}
+.role{font-size:2.15mm;line-height:1.05;margin-top:.7mm;font-weight:700;white-space:nowrap;overflow:hidden;text-overflow:ellipsis;}
+.details{flex:0 0 17.5mm;height:17.5mm;padding:1.6mm 3mm .5mm;background:#fff;}
+.row{display:flex;align-items:center;height:3.65mm;margin:0;font-size:2.05mm;line-height:1;}
+.label{flex:0 0 16mm;color:#64748b;font-weight:700;}
+.value{flex:1;min-width:0;color:#111827;font-weight:800;overflow:hidden;white-space:nowrap;text-overflow:ellipsis;}
+.qr-area{flex:0 0 13mm;height:13mm;margin:0 3mm;border-top:.25mm solid #e2e8f0;padding-top:1.1mm;display:flex;align-items:center;justify-content:space-between;}
+.valid{font-size:1.65mm;color:#64748b;line-height:1.25;max-width:31mm;}
+.qrcode{width:11mm;height:11mm;flex:0 0 11mm;}
+.qrcode img,.qrcode canvas{width:11mm!important;height:11mm!important;display:block;}
+.footer{flex:1 1 auto;min-height:1.5mm;text-align:center;font-size:1.35mm;line-height:1.2;color:#94a3b8;padding-top:.2mm;}
+@media print{html,body{background:#fff}.page{margin:0}.card{box-shadow:none;}}
+</style></head><body>${pages.join('')}
+<script src="https://cdnjs.cloudflare.com/ajax/libs/qrcodejs/1.0.0/qrcode.min.js"></script>
+<script>
+const qrItems=${JSON.stringify(qrItems)};
+window.addEventListener('load',async function(){
+  try{qrItems.forEach(x=>new QRCode(document.getElementById('bulk-qr-'+x.i),{text:JSON.stringify(x.payload),width:160,height:160,correctLevel:QRCode.CorrectLevel.M}));}catch(e){}
+  const imgs=Array.from(document.images);
+  await Promise.all(imgs.map(img=>img.complete?Promise.resolve():new Promise(res=>{img.onload=res;img.onerror=res;})));
+  setTimeout(()=>window.print(),900);
+});
+</script></body></html>`);
+      win.document.close();
     }
 
     // Modal state for bulk deletion
