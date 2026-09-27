@@ -2710,6 +2710,7 @@
         navRole.innerText = "Administrator";
         switchPortal('admin');
         updateAdminDashboardDate();
+        loadAdminStaffDirectoryFromSupabase(false);
         if (window.lucide) lucide.createIcons();
       } else {
         const s = currentAuthUser.staffRecord;
@@ -3314,6 +3315,47 @@
         `;
       }).join('');
       if (window.lucide) lucide.createIcons();
+    }
+
+    async function loadAdminStaffDirectoryFromSupabase(showError = false) {
+      if (!supabaseClient || currentAuthUser?.type !== 'ADMIN') return false;
+
+      try {
+        const { data, error } = await supabaseClient
+          .from('staff')
+          .select('*')
+          .order('name', { ascending: true });
+
+        if (error) throw error;
+
+        if (Array.isArray(data)) {
+          staffDatabase = data.map(s => ({
+            id: s.id,
+            empId: s.emp_id || s.empId || '',
+            name: s.name || '',
+            department: s.department || '',
+            role: s.role || '',
+            email: s.email || '',
+            avatarUrl: s.avatar_url || '',
+            gender: s.gender || '',
+            dob: s.dob || '',
+            validThru: s.valid_thru || '',
+            pinHash: '',
+            status: s.status || 'ACTIVE'
+          }));
+
+          savePersistedData();
+          renderStaffDirectoryTable();
+          renderLiveAttendanceTable();
+          updateKPICards();
+          return true;
+        }
+      } catch (e) {
+        console.warn("Admin staff directory cloud load error:", e);
+        if (showError) showToast("Could not load staff directory from cloud: " + (e.message || e), "error");
+      }
+
+      return false;
     }
 
     // Bulk ID card selection / A4 printing
@@ -4144,6 +4186,9 @@ window.addEventListener('load',async function(){
         }
       });
 
+      if (tab === 'directory' && currentAuthUser?.type === 'ADMIN') {
+        loadAdminStaffDirectoryFromSupabase(true);
+      }
       if (tab === 'qr') {
         renderQRCode();
         loadAdminQRSession();
