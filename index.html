@@ -836,6 +836,8 @@
                   <th class="py-2 px-3">Department</th>
                   <th class="py-2 px-3">Role</th>
                   <th class="py-2 px-3">Email</th>
+                  <th class="py-2 px-3">Address</th>
+                  <th class="py-2 px-3">Valid Thru</th>
                   <th class="py-2 px-3 text-center">PIN</th>
                   <th class="py-2 px-3">Status</th>
                   <th class="py-2 px-3 text-center">Actions</th>
@@ -1398,7 +1400,7 @@
         </button>
       </div>
 
-      <form onsubmit="handleAddStaffSubmit(event)" class="p-4 space-y-3">
+      <form onsubmit="handleAddStaffSubmit(event)" class="p-4 space-y-3 max-h-[82vh] overflow-y-auto hide-scrollbar">
         <div class="grid grid-cols-2 gap-2">
           <div>
             <label class="block text-[11px] font-bold text-slate-700 mb-1">Employee ID *</label>
@@ -1440,6 +1442,23 @@
           <label class="block text-[11px] font-bold text-slate-700 mb-1">Official Email *</label>
           <input type="email" id="add-staff-email" required placeholder="faculty@ashianapublicschool.com" class="w-full text-xs p-2 bg-slate-50 border border-slate-200 rounded-xl font-mono">
         </div>
+        
+        <div class="grid grid-cols-2 gap-2">
+          <div>
+            <label class="block text-[11px] font-bold text-slate-700 mb-1">Phone</label>
+            <input type="tel" id="add-staff-phone" inputmode="tel" maxlength="15" placeholder="Phone number" class="w-full text-xs p-2 bg-slate-50 border border-slate-200 rounded-xl">
+          </div>
+          <div>
+            <label class="block text-[11px] font-bold text-slate-700 mb-1">Address</label>
+            <input type="text" id="add-staff-address" maxlength="250" placeholder="Residential address" class="w-full text-xs p-2 bg-slate-50 border border-slate-200 rounded-xl">
+          </div>
+        </div>
+
+        <div>
+          <label class="block text-[11px] font-bold text-slate-700 mb-1">ID Card Valid Thru *</label>
+          <input type="date" id="add-staff-valid-thru" required class="w-full text-xs p-2 bg-slate-50 border border-slate-200 rounded-xl font-mono">
+          <p class="text-[9px] text-slate-400 mt-1">Required when enrolling a new staff member.</p>
+        </div>
 
         <div class="pt-2 flex items-center justify-end space-x-2">
           <button type="button" onclick="closeAddStaffModal()" class="px-3.5 py-2 bg-slate-100 hover:bg-slate-200 text-slate-700 rounded-xl text-xs font-bold">Cancel</button>
@@ -1465,7 +1484,7 @@
         </button>
       </div>
 
-      <form onsubmit="handleEditStaffSubmit(event)" class="p-4 space-y-3">
+      <form onsubmit="handleEditStaffSubmit(event)" class="p-4 space-y-3 max-h-[82vh] overflow-y-auto hide-scrollbar">
         <input type="hidden" id="edit-staff-id">
 
         <div class="grid grid-cols-2 gap-2">
@@ -1522,6 +1541,12 @@
             <label class="block text-[11px] font-bold text-slate-700 mb-1">Address</label>
             <input type="text" id="edit-staff-address" maxlength="250" placeholder="Residential address" class="w-full text-xs p-2 bg-slate-50 border border-slate-200 rounded-xl">
           </div>
+        </div>
+        
+        <div>
+          <label class="block text-[11px] font-bold text-slate-700 mb-1">ID Card Valid Thru *</label>
+          <input type="date" id="edit-staff-valid-thru" required class="w-full text-xs p-2 bg-slate-50 border border-slate-200 rounded-xl font-mono">
+          <p class="text-[9px] text-slate-400 mt-1">Managed by administrator. Staff cannot change this date.</p>
         </div>
 
         <div class="pt-2 flex items-center justify-end space-x-2">
@@ -3493,6 +3518,8 @@
             <td class="py-2 px-3 text-slate-600">${s.department}</td>
             <td class="py-2 px-3 text-slate-600">${s.role}</td>
             <td class="py-2 px-3 font-mono text-[10px] text-slate-500">${s.email}</td>
+            <td class="py-2 px-3 text-slate-600 max-w-[220px] truncate" title="${escapeIdCardHtml(s.address || "")}">${escapeIdCardHtml(s.address || "—")}</td>
+            <td class="py-2 px-3 font-mono text-[10px] ${isStaffIdExpired(s) ? 'text-rose-600 font-bold' : 'text-slate-500'}">${escapeIdCardHtml(formatValidThruDate(s.validThru || s.valid_thru) || "—")}</td>
             <td class="py-2 px-3 text-center"><span class="px-1.5 py-0.5 rounded font-mono font-bold text-[10px] bg-emerald-50 text-ashiana-green border border-emerald-300">${s.pinHash ? "••••" : "••••"}</span></td>
             <td class="py-2 px-3"><span class="px-2 py-0.5 rounded-full text-[9px] font-bold ${s.status === 'ACTIVE' ? 'bg-emerald-100 text-emerald-800' : 'bg-rose-100 text-rose-800'}">${s.status}</span></td>
             <td class="py-2 px-3 text-center">
@@ -5553,6 +5580,9 @@ window.addEventListener('load',async function(){
       const department = document.getElementById("add-staff-department").value;
       const role = document.getElementById("add-staff-role").value.trim();
       const email = document.getElementById("add-staff-email").value.trim().toLowerCase();
+      const phone = document.getElementById("add-staff-phone").value.trim();
+      const address = document.getElementById("add-staff-address").value.trim();
+      const validThru = document.getElementById("add-staff-valid-thru").value;
       const pin = document.getElementById("add-staff-pin").value.trim();
 
       if (!/^\d{4}$/.test(pin)) {
@@ -5561,6 +5591,10 @@ window.addEventListener('load',async function(){
       }
       if (!email.includes('@')) {
         showToast("Enter a valid staff email address.", "error");
+        return;
+      }
+      if (!validThru) {
+        showToast("Please select the ID card Valid Thru date.", "error");
         return;
       }
       if (staffDatabase.some(s => s.empId && s.empId.toUpperCase() === empId)) {
@@ -5576,8 +5610,19 @@ window.addEventListener('load',async function(){
           },
           pin
         });
+        const { error: profileError } = await supabaseClient
+          .from('staff')
+          .update({
+            phone: phone || null,
+            address: address || null,
+            valid_thru: validThru
+          })
+          .eq('id', result.staff.id);
+        if (profileError) throw profileError;
+
         const newStaff = {
-          id: result.staff.id, empId, name, department, role, email, phone: "", address: "", pinHash: "", status: 'ACTIVE'
+          id: result.staff.id, empId, name, department, role, email,
+          phone, address, validThru, pinHash: "", status: 'ACTIVE'
         };
         staffDatabase.push(newStaff);
         savePersistedData();
@@ -5609,6 +5654,7 @@ window.addEventListener('load',async function(){
       document.getElementById("edit-staff-email").value = staff.email;
       document.getElementById("edit-staff-phone").value = staff.phone || staff.mobile || staff.mobileNumber || "";
       document.getElementById("edit-staff-address").value = staff.address || staff.residentialAddress || "";
+      document.getElementById("edit-staff-valid-thru").value = staff.validThru || staff.valid_thru || "";
       document.getElementById("edit-staff-status").value = staff.status || "ACTIVE";
 
       document.getElementById("admin-edit-staff-modal")?.classList.remove("hidden");
@@ -5638,11 +5684,16 @@ window.addEventListener('load',async function(){
       const status = document.getElementById("edit-staff-status").value;
       const phone = document.getElementById("edit-staff-phone").value.trim();
       const address = document.getElementById("edit-staff-address").value.trim();
+      const validThru = document.getElementById("edit-staff-valid-thru").value;
       const oldEmail = String(staff.email || '').trim().toLowerCase();
       const emailChanged = email !== oldEmail;
 
       if (!name || !email || !email.includes('@')) {
         showToast("Enter a valid staff name and email address.", "error");
+        return;
+      }
+      if (!validThru) {
+        showToast("Please select the ID card Valid Thru date.", "error");
         return;
       }
 
@@ -5664,7 +5715,8 @@ window.addEventListener('load',async function(){
           role,
           status,
           phone: phone || null,
-          address: address || null
+          address: address || null,
+          valid_thru: validThru
         };
 
         const { error } = await supabaseClient
@@ -5674,11 +5726,11 @@ window.addEventListener('load',async function(){
 
         if (error) throw error;
 
-        Object.assign(staff, { name, department, role, email, status, phone, address });
+        Object.assign(staff, { name, department, role, email, status, phone, address, validThru });
         savePersistedData();
 
         if (currentAuthUser?.type === 'STAFF' && currentAuthUser.staffRecord?.id === staff.id) {
-          currentAuthUser.staffRecord = { ...currentAuthUser.staffRecord, name, department, role, email, status, phone, address };
+          currentAuthUser.staffRecord = { ...currentAuthUser.staffRecord, name, department, role, email, status, phone, address, validThru };
           sessionStorage.setItem(STORAGE_KEY_CURRENT_USER, JSON.stringify(currentAuthUser));
         }
 
