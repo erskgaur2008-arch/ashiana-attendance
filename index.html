@@ -3505,14 +3505,15 @@
   * { box-sizing: border-box; }
   html, body { margin: 0; padding: 0; background: #e5e7eb; }
   body { font-family: Arial, Helvetica, sans-serif; }
-  .sheet { width: 54mm; min-height: 85.6mm; margin: 12mm auto; }
+  .sheet { width: 54mm; height: 85.6mm; margin: 12mm auto; }
   .card {
-    width: 54mm; height: 85.6mm; overflow: hidden; position: relative;
-    background: #fff; border: 0.35mm solid #cbd5e1; border-radius: 3mm;
+    width: 54mm; height: 85.6mm; overflow: hidden;
+    display: flex; flex-direction: column; position: relative;
+    background: #fff; border: .35mm solid #cbd5e1; border-radius: 3mm;
     box-shadow: 0 2mm 6mm rgba(0,0,0,.18);
   }
   .top {
-    height: 29mm; padding: 3.2mm 3mm 2mm; color: #fff;
+    flex: 0 0 22mm; height: 22mm; padding: 2mm 3mm 1.5mm; color: #fff;
     background: linear-gradient(145deg,#063f32,#075b46 62%,#0a7655);
     position: relative; overflow: hidden;
   }
@@ -3520,30 +3521,50 @@
     content:""; position:absolute; width:38mm; height:18mm; right:-13mm; bottom:-8mm;
     background:rgba(255,255,255,.08); border-radius:50%;
   }
-  .school { position:relative; z-index:1; text-align:center; padding-top:1mm; }
-  .school-logo { width:8mm; height:8mm; object-fit:contain; background:#fff; border-radius:50%; padding:.5mm; margin-bottom:1mm; }
-  .school-name { font-size: 4.2mm; line-height:1.05; font-weight:900; letter-spacing:.3mm; }
-  .school-sub { font-size: 2.25mm; margin-top:1.2mm; font-weight:700; letter-spacing:.15mm; }
-  .school-line { height:.35mm; background:#f59e0b; margin:1.7mm 8mm 1.1mm; }
-  .card-title { font-size:2.4mm; font-weight:800; letter-spacing:.55mm; }
+  .school { position:relative; z-index:1; text-align:center; }
+  .school-logo { width:6.5mm; height:6.5mm; object-fit:contain; background:#fff; border-radius:50%; padding:.35mm; margin-bottom:.5mm; }
+  .school-name { font-size: 3.7mm; line-height:1.02; font-weight:900; letter-spacing:.25mm; }
+  .school-sub { font-size: 2.05mm; margin-top:.7mm; font-weight:700; letter-spacing:.12mm; }
+  .school-line { height:.3mm; background:#f59e0b; margin:1mm 9mm .8mm; }
+  .card-title { font-size:2.15mm; font-weight:800; letter-spacing:.45mm; }
+
   .photo-wrap {
-    width: 27mm; height: 32mm; margin: -1.5mm auto 0; position:relative; z-index:2;
-    background:#fff; border:.7mm solid #fff; box-shadow:0 1mm 3mm rgba(0,0,0,.25);
+    flex: 0 0 24mm; width: 24mm; height: 24mm; margin: -1mm auto 0;
+    position:relative; z-index:2; background:#fff; border:.65mm solid #fff;
+    box-shadow:0 1mm 2.5mm rgba(0,0,0,.25);
   }
   .photo-wrap img, .photo-fallback { width:100%; height:100%; object-fit:cover; display:block; }
-  .photo-fallback { display:flex; align-items:center; justify-content:center; background:#d1fae5; color:#08693a; font-size:9mm; font-weight:900; }
-  .name-band { margin-top:-.5mm; background:#064e3b; color:#fff; padding:2.2mm 2mm 1.6mm; text-align:center; }
-  .name { font-size:3.55mm; font-weight:900; text-transform:uppercase; letter-spacing:.18mm; white-space:nowrap; overflow:hidden; text-overflow:ellipsis; }
-  .role { font-size:2.65mm; margin-top:1mm; font-weight:700; }
-  .details { padding:2.2mm 3mm 0; }
-  .row { display:flex; margin-bottom:1.45mm; font-size:2.35mm; line-height:1.1; }
-  .label { width:17mm; color:#64748b; font-weight:700; }
-  .value { flex:1; color:#111827; font-weight:800; overflow:hidden; white-space:nowrap; text-overflow:ellipsis; }
-  .qr-area { position:absolute; left:3mm; right:3mm; bottom:2.5mm; height:15mm; border-top:.25mm solid #e2e8f0; padding-top:1.7mm; display:flex; align-items:center; justify-content:space-between; }
-  .valid { font-size:2mm; color:#64748b; line-height:1.45; max-width:29mm; }
-  #qrcode { width:12.5mm; height:12.5mm; }
-  #qrcode img, #qrcode canvas { width:12.5mm !important; height:12.5mm !important; }
-  .footer { position:absolute; bottom:.7mm; left:0; right:0; text-align:center; font-size:1.55mm; color:#94a3b8; }
+  .photo-fallback { display:flex; align-items:center; justify-content:center; background:#d1fae5; color:#08693a; font-size:7mm; font-weight:900; }
+
+  .name-band {
+    flex: 0 0 8mm; min-height:8mm; background:#064e3b; color:#fff;
+    padding:1.3mm 2mm 1mm; text-align:center;
+  }
+  .name { font-size:3.05mm; line-height:1.05; font-weight:900; text-transform:uppercase; letter-spacing:.12mm; white-space:nowrap; overflow:hidden; text-overflow:ellipsis; }
+  .role { font-size:2.15mm; line-height:1.05; margin-top:.7mm; font-weight:700; white-space:nowrap; overflow:hidden; text-overflow:ellipsis; }
+
+  .details {
+    flex: 0 0 17.5mm; height:17.5mm; padding:1.6mm 3mm .5mm;
+    background:#fff;
+  }
+  .row { display:flex; align-items:center; height:3.65mm; margin:0; font-size:2.05mm; line-height:1; }
+  .label { flex:0 0 16mm; color:#64748b; font-weight:700; }
+  .value { flex:1; min-width:0; color:#111827; font-weight:800; overflow:hidden; white-space:nowrap; text-overflow:ellipsis; }
+
+  .qr-area {
+    flex: 0 0 13mm; height:13mm; margin:0 3mm;
+    border-top:.25mm solid #e2e8f0; padding-top:1.1mm;
+    display:flex; align-items:center; justify-content:space-between;
+  }
+  .valid { font-size:1.65mm; color:#64748b; line-height:1.25; max-width:31mm; }
+  #qrcode { width:11mm; height:11mm; flex:0 0 11mm; }
+  #qrcode img, #qrcode canvas { width:11mm !important; height:11mm !important; display:block; }
+
+  .footer {
+    flex:1 1 auto; min-height:1.5mm; text-align:center;
+    font-size:1.35mm; line-height:1.2; color:#94a3b8; padding-top:.2mm;
+  }
+
   @media print {
     html, body { background:#fff; }
     .sheet { margin:0; }
