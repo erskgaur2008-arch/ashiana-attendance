@@ -175,8 +175,8 @@
     .staff-id-preview-card .id-name-band{flex:0 0 7mm;min-height:7mm;background:#064e3b;color:#fff;padding:1mm 2mm .7mm;text-align:center;}
     .staff-id-preview-card .id-name{font-size:2.8mm;line-height:1.05;font-weight:900;text-transform:uppercase;white-space:nowrap;overflow:hidden;text-overflow:ellipsis;}
     .staff-id-preview-card .id-role{font-size:2mm;line-height:1.05;margin-top:.45mm;font-weight:700;white-space:nowrap;overflow:hidden;text-overflow:ellipsis;}
-    .staff-id-preview-card .id-details{flex:0 0 15mm;height:15mm;padding:1.2mm 3mm .4mm;background:#fff;}
-    .staff-id-preview-card .id-row{display:flex;align-items:center;height:3.25mm;font-size:1.95mm;line-height:1;}
+    .staff-id-preview-card .id-details{flex:0 0 18mm;height:18mm;padding:1mm 3mm .3mm;background:#fff;}
+    .staff-id-preview-card .id-row{display:flex;align-items:center;height:2.75mm;font-size:1.8mm;line-height:1;}
     .staff-id-preview-card .id-row span{flex:0 0 16mm;color:#64748b;font-weight:700;}
     .staff-id-preview-card .id-row b{flex:1;min-width:0;overflow:hidden;white-space:nowrap;text-overflow:ellipsis;}
     .staff-id-preview-card .id-qr-area{flex:0 0 12mm;height:12mm;margin:0 3mm;border-top:.25mm solid #e2e8f0;padding-top:1mm;display:flex;align-items:center;justify-content:space-between;}
@@ -3602,7 +3602,9 @@
             <div class="row"><div class="label">Employee ID</div><div class="value">${escapeIdCardHtml(staff.empId || "—")}</div></div>
             <div class="row"><div class="label">Gender</div><div class="value">${escapeIdCardHtml(staff.gender || "—")}</div></div>
             <div class="row"><div class="label">DOB</div><div class="value">${escapeIdCardHtml(staff.dob || "—")}</div></div>
-            <div class="row"><div class="label">Valid Thru</div><div class="value">${escapeIdCardHtml(staff.validThru || staff.valid_thru || "—")}</div></div>
+            <div class="row"><div class="label">Valid Thru</div><div class="value">${escapeIdCardHtml(staff.validThru || staff.valid_thru || "—")}</div></div>      <div class="row"><div class="label">Phone</div><div class="value">${escapeIdCardHtml(staff.phone || staff.mobile || staff.mobileNumber || "—")}</div></div>
+      <div class="row"><div class="label">Address</div><div class="value">${escapeIdCardHtml(staff.address || staff.residentialAddress || "—")}</div></div>            <div class="row"><div class="label">Phone</div><div class="value">${escapeIdCardHtml(staff.phone || staff.mobile || staff.mobileNumber || "—")}</div></div>
+            <div class="row"><div class="label">Address</div><div class="value">${escapeIdCardHtml(staff.address || staff.residentialAddress || "—")}</div></div>
           </div>
           <div class="qr-area">
             <div class="valid">Property of<br><b>Ashiana Public School</b><br>Sector 46-A, Chandigarh<br>Scan to verify staff identity</div>
@@ -3680,8 +3682,8 @@ body{font-family:Arial,Helvetica,sans-serif;}
 .name-band{flex:0 0 7mm;min-height:7mm;background:#064e3b;color:#fff;padding:1.3mm 2mm 1mm;text-align:center;}
 .name{font-size:3.05mm;line-height:1.05;font-weight:900;text-transform:uppercase;letter-spacing:.12mm;white-space:nowrap;overflow:hidden;text-overflow:ellipsis;}
 .role{font-size:2.15mm;line-height:1.05;margin-top:.7mm;font-weight:700;white-space:nowrap;overflow:hidden;text-overflow:ellipsis;}
-.details{flex:0 0 15mm;height:15mm;padding:1.2mm 3mm .4mm;background:#fff;}
-.row{display:flex;align-items:center;height:3.25mm;margin:0;font-size:2.05mm;line-height:1;}
+.details{flex:0 0 18mm;height:18mm;padding:1mm 3mm .3mm;background:#fff;}
+.row{display:flex;align-items:center;height:2.75mm;margin:0;font-size:1.9mm;line-height:1;}
 .label{flex:0 0 16mm;color:#64748b;font-weight:700;}
 .value{flex:1;min-width:0;color:#111827;font-weight:800;overflow:hidden;white-space:nowrap;text-overflow:ellipsis;}
 .qr-area{flex:0 0 12mm;height:12mm;margin:0 3mm;border-top:.25mm solid #e2e8f0;padding-top:1.1mm;display:flex;align-items:center;justify-content:space-between;}
@@ -3978,7 +3980,8 @@ window.addEventListener('load',async function(){
             <div class="id-row"><span>Employee ID</span><b>${escapeIdCardHtml(staff.empId || "—")}</b></div>
             <div class="id-row"><span>Gender</span><b>${escapeIdCardHtml(staff.gender || "—")}</b></div>
             <div class="id-row"><span>DOB</span><b>${escapeIdCardHtml(staff.dob || "—")}</b></div>
-            <div class="id-row"><span>Valid Thru</span><b>${escapeIdCardHtml(staff.validThru || staff.valid_thru || "—")}</b></div>
+            <div class="id-row"><span>Valid Thru</span><b>${escapeIdCardHtml(staff.validThru || staff.valid_thru || "—")}</b></div>            <div class="id-row"><span>Phone</span><b>${escapeIdCardHtml(staff.phone || staff.mobile || staff.mobileNumber || "—")}</b></div>
+            <div class="id-row"><span>Address</span><b>${escapeIdCardHtml(staff.address || staff.residentialAddress || "—")}</b></div>
           </div>
           <div class="id-qr-area">
             <div class="id-valid">Property of<br><strong>Ashiana Public School</strong><br>Sector 46-A, Chandigarh<br>Scan to verify staff identity</div>
