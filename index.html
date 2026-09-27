@@ -447,6 +447,23 @@
             </div>
           </div>
 
+          <!-- MY STAFF ID CARD -->
+          <div class="bg-white rounded-2xl p-3.5 shadow-sm border border-slate-200/80">
+            <div class="flex items-center justify-between gap-3">
+              <div class="min-w-0">
+                <h4 class="text-xs font-bold text-slate-800 flex items-center space-x-1.5">
+                  <i data-lucide="contact" class="w-3.5 h-3.5 text-ashiana-green"></i>
+                  <span>My Staff ID Card</span>
+                </h4>
+                <p id="staff-id-card-status" class="text-[10px] text-slate-500 mt-1">Checking ID card status…</p>
+              </div>
+              <button id="staff-id-card-view-btn" type="button" onclick="viewMyStaffIdCard()" disabled
+                class="flex-shrink-0 px-3 py-1.5 rounded-xl bg-slate-200 text-slate-400 text-[10px] font-bold flex items-center space-x-1.5">
+                <i data-lucide="eye" class="w-3.5 h-3.5"></i><span>View ID Card</span>
+              </button>
+            </div>
+          </div>
+
           <!-- Leave Application Card -->
           <div class="bg-white rounded-2xl p-3.5 shadow-sm border border-slate-200/80">
             <div class="flex items-center justify-between mb-1.5">
@@ -3180,6 +3197,7 @@
       document.getElementById("staff-header-email").innerText = staff.email;
 
       renderStaffAvatar("staff-avatar-circle", staff);
+      refreshStaffIdCardWidget();
 
       const badge = document.getElementById("staff-badge-status");
       if (stats.currentStatus === 'WORKING') {
@@ -3272,7 +3290,7 @@
             <td class="py-2 px-3"><span class="px-2 py-0.5 rounded-full text-[9px] font-bold ${s.status === 'ACTIVE' ? 'bg-emerald-100 text-emerald-800' : 'bg-rose-100 text-rose-800'}">${s.status}</span></td>
             <td class="py-2 px-3 text-center">
               <div class="flex items-center justify-center space-x-1.5">
-                <button onclick="printStaffIdCard('${s.id}')" title="Print Staff ID Card" class="p-1 text-blue-600 hover:text-blue-800 hover:bg-blue-50 rounded-lg transition-colors">
+                <button onclick="printStaffIdCard('${s.id}', { markGenerated: true, autoPrint: true })" title="Generate / Print Staff ID Card" class="p-1 text-blue-600 hover:text-blue-800 hover:bg-blue-50 rounded-lg transition-colors">
                   <i data-lucide="contact" class="w-3.5 h-3.5"></i>
                 </button>
                 <button onclick="jumpToStaffReport('${s.id}')" title="View Dossier Report" class="p-1 text-slate-600 hover:text-ashiana-green hover:bg-emerald-50 rounded-lg transition-colors">
@@ -3418,10 +3436,18 @@
         </div>`;
     }
 
-    function printBulkStaffIdCards(staffIds) {
+    async function printBulkStaffIdCards(staffIds) {
       const selectedStaff = staffIds.map(id => staffDatabase.find(s => s.id === id)).filter(Boolean);
       if (!selectedStaff.length) {
         showToast("No valid staff records selected.", "error");
+        return;
+      }
+
+      try {
+        await markStaffIdCardsGenerated(selectedStaff.map(s => s.id));
+      } catch (e) {
+        console.error("Bulk ID card generation error:", e);
+        showToast("Could not record ID card generation: " + (e.message || e), "error");
         return;
       }
 
@@ -3679,11 +3705,70 @@ window.addEventListener('load',async function(){
         .replace(/'/g, '&#039;');
     }
 
-    function printStaffIdCard(staffId) {
+    async function markStaffIdCardsGenerated(staffIds) {
+      if (!supabaseClient || !currentAuthUser || currentAuthUser.type !== 'ADMIN') {
+        throw new Error("Administrator cloud access is required.");
+      }
+      const ids = [...new Set(staffIds)].filter(Boolean);
+      if (!ids.length) return;
+      const generatedBy = String(currentAuthUser.email || "ADMIN");
+      const rows = ids.map(staffId => ({
+        staff_id: staffId,
+        generated_by: generatedBy,
+        generated_at: new Date().toISOString()
+      }));
+      const { error } = await supabaseClient.from('staff_id_cards').upsert(rows, { onConflict: 'staff_id' });
+      if (error) throw error;
+    }
+
+    async function getMyStaffIdCardIssued() {
+      if (!supabaseClient || !currentStaffId) return false;
+      const { data, error } = await supabaseClient.from('staff_id_cards')
+        .select('staff_id, generated_at').eq('staff_id', currentStaffId).maybeSingle();
+      if (error) { console.warn("Staff ID card status error:", error); return false; }
+      return !!data;
+    }
+
+    async function refreshStaffIdCardWidget() {
+      const status = document.getElementById("staff-id-card-status");
+      const button = document.getElementById("staff-id-card-view-btn");
+      if (!status || !button || !currentStaffId) return;
+      const issued = await getMyStaffIdCardIssued();
+      button.disabled = !issued;
+      button.className = issued
+        ? "flex-shrink-0 px-3 py-1.5 rounded-xl bg-ashiana-green hover:bg-[#08693A] text-white text-[10px] font-bold flex items-center space-x-1.5 shadow-sm transition-colors"
+        : "flex-shrink-0 px-3 py-1.5 rounded-xl bg-slate-200 text-slate-400 text-[10px] font-bold flex items-center space-x-1.5";
+      status.innerText = issued
+        ? "Your ID card has been generated by the school administration."
+        : "Your ID card has not been generated by the school administration yet.";
+      if (window.lucide) lucide.createIcons();
+    }
+
+    async function viewMyStaffIdCard() {
+      if (!currentStaffId) return;
+      const issued = await getMyStaffIdCardIssued();
+      if (!issued) {
+        showToast("Your ID card has not been generated by the administrator yet.", "error");
+        return;
+      }
+      await printStaffIdCard(currentStaffId, { markGenerated: false, autoPrint: false });
+    }
+
+    async function printStaffIdCard(staffId, options = {}) {
       const staff = staffDatabase.find(s => s.id === staffId);
       if (!staff) {
         showToast("Staff record not found.", "error");
         return;
+      }
+
+      if (options.markGenerated) {
+        try {
+          await markStaffIdCardsGenerated([staffId]);
+        } catch (e) {
+          console.error("Generate staff ID card error:", e);
+          showToast("Could not record ID card generation: " + (e.message || e), "error");
+          return;
+        }
       }
 
       const photo = String(staff.avatarUrl || staff.avatar_url || '').trim();
@@ -3856,9 +3941,9 @@ window.addEventListener('load',async function(){
         height: 160,
         correctLevel: QRCode.CorrectLevel.M
       });
-      setTimeout(function(){ window.print(); }, 700);
+      if (options.autoPrint !== false) setTimeout(function(){ window.print(); }, 700);
     } catch (e) {
-      setTimeout(function(){ window.print(); }, 300);
+      if (options.autoPrint !== false) setTimeout(function(){ window.print(); }, 300);
     }
   });
 <\/script>
