@@ -1336,6 +1336,17 @@
             <input type="date" id="profile-edit-valid-thru" class="w-full text-xs p-2 bg-white border border-slate-200 rounded-xl focus:ring-2 focus:ring-ashiana-green">
           </div>
 
+          <div class="grid grid-cols-2 gap-2">
+            <div>
+              <label class="block text-[10px] font-bold text-slate-600 mb-0.5">Phone</label>
+              <input type="tel" id="profile-edit-phone" inputmode="tel" maxlength="15" placeholder="Phone number" class="w-full text-xs p-2 bg-white border border-slate-200 rounded-xl focus:ring-2 focus:ring-ashiana-green">
+            </div>
+            <div>
+              <label class="block text-[10px] font-bold text-slate-600 mb-0.5">Address</label>
+              <input type="text" id="profile-edit-address" maxlength="250" placeholder="Residential address" class="w-full text-xs p-2 bg-white border border-slate-200 rounded-xl focus:ring-2 focus:ring-ashiana-green">
+            </div>
+          </div>
+
           <div>
             <label class="block text-[10px] font-bold text-slate-600 mb-0.5">Registered Login Email</label>
             <input type="email" id="profile-edit-email" readonly required class="w-full text-xs p-2 bg-slate-100 border border-slate-200 rounded-xl font-mono text-slate-500">
@@ -1513,6 +1524,17 @@
         <div>
           <label class="block text-[11px] font-bold text-slate-700 mb-1">Official Email *</label>
           <input type="email" id="edit-staff-email" required class="w-full text-xs p-2 bg-slate-50 border border-slate-200 rounded-xl font-mono">
+        </div>
+
+        <div class="grid grid-cols-2 gap-2">
+          <div>
+            <label class="block text-[11px] font-bold text-slate-700 mb-1">Phone</label>
+            <input type="tel" id="edit-staff-phone" inputmode="tel" maxlength="15" placeholder="Phone number" class="w-full text-xs p-2 bg-slate-50 border border-slate-200 rounded-xl">
+          </div>
+          <div>
+            <label class="block text-[11px] font-bold text-slate-700 mb-1">Address</label>
+            <input type="text" id="edit-staff-address" maxlength="250" placeholder="Residential address" class="w-full text-xs p-2 bg-slate-50 border border-slate-200 rounded-xl">
+          </div>
         </div>
 
         <div class="pt-2 flex items-center justify-end space-x-2">
@@ -2230,6 +2252,8 @@
               gender: s.gender || '',
               dob: s.dob || '',
               validThru: s.valid_thru || '',
+              phone: s.phone || '',
+              address: s.address || '',
               pinHash: "",
               status: s.status || "ACTIVE"
             };
@@ -3474,6 +3498,8 @@
             gender: s.gender || '',
             dob: s.dob || '',
             validThru: s.valid_thru || '',
+            phone: s.phone || '',
+            address: s.address || '',
             pinHash: '',
             status: s.status || 'ACTIVE'
           }));
@@ -5280,11 +5306,15 @@ window.addEventListener('load',async function(){
         const genderInp = document.getElementById("profile-edit-gender");
         const dobInp = document.getElementById("profile-edit-dob");
         const validThruInp = document.getElementById("profile-edit-valid-thru");
+        const phoneInp = document.getElementById("profile-edit-phone");
+        const addressInp = document.getElementById("profile-edit-address");
         if (nameInp) nameInp.value = staff.name || '';
         if (emailInp) emailInp.value = staff.email || '';
         if (genderInp) genderInp.value = staff.gender || '';
         if (dobInp) dobInp.value = staff.dob || '';
         if (validThruInp) validThruInp.value = staff.validThru || '';
+        if (phoneInp) phoneInp.value = staff.phone || staff.mobile || staff.mobileNumber || '';
+        if (addressInp) addressInp.value = staff.address || staff.residentialAddress || '';
       }
       document.getElementById("staff-profile-modal")?.classList.remove("hidden");
       if (window.lucide) lucide.createIcons();
@@ -5306,6 +5336,8 @@ window.addEventListener('load',async function(){
       const newGender = document.getElementById("profile-edit-gender").value;
       const newDob = document.getElementById("profile-edit-dob").value || null;
       const newValidThru = document.getElementById("profile-edit-valid-thru").value || null;
+      const newPhone = document.getElementById("profile-edit-phone").value.trim();
+      const newAddress = document.getElementById("profile-edit-address").value.trim();
 
       if (!newName) {
         showToast("Full name cannot be blank.", "error");
@@ -5326,7 +5358,9 @@ window.addEventListener('load',async function(){
             name: newName,
             gender: newGender || null,
             dob: newDob,
-            valid_thru: newValidThru
+            valid_thru: newValidThru,
+            phone: newPhone || null,
+            address: newAddress || null
           })
           .eq('id', staff.id);
 
@@ -5336,7 +5370,9 @@ window.addEventListener('load',async function(){
           name: newName,
           gender: newGender,
           dob: newDob || '',
-          validThru: newValidThru || ''
+          validThru: newValidThru || '',
+          phone: newPhone,
+          address: newAddress
         });
 
         if (currentAuthUser?.staffRecord) {
@@ -5345,7 +5381,9 @@ window.addEventListener('load',async function(){
             name: newName,
             gender: newGender,
             dob: newDob || '',
-            validThru: newValidThru || ''
+            validThru: newValidThru || '',
+            phone: newPhone,
+            address: newAddress
           };
           sessionStorage.setItem(STORAGE_KEY_CURRENT_USER, JSON.stringify(currentAuthUser));
         }
@@ -5498,7 +5536,7 @@ window.addEventListener('load',async function(){
           pin
         });
         const newStaff = {
-          id: result.staff.id, empId, name, department, role, email, pinHash: "", status: 'ACTIVE'
+          id: result.staff.id, empId, name, department, role, email, phone: "", address: "", pinHash: "", status: 'ACTIVE'
         };
         staffDatabase.push(newStaff);
         savePersistedData();
@@ -5528,6 +5566,8 @@ window.addEventListener('load',async function(){
       document.getElementById("edit-staff-department").value = staff.department;
       document.getElementById("edit-staff-role").value = staff.role;
       document.getElementById("edit-staff-email").value = staff.email;
+      document.getElementById("edit-staff-phone").value = staff.phone || staff.mobile || staff.mobileNumber || "";
+      document.getElementById("edit-staff-address").value = staff.address || staff.residentialAddress || "";
       document.getElementById("edit-staff-status").value = staff.status || "ACTIVE";
 
       document.getElementById("admin-edit-staff-modal")?.classList.remove("hidden");
@@ -5555,6 +5595,8 @@ window.addEventListener('load',async function(){
       const role = document.getElementById("edit-staff-role").value.trim();
       const email = document.getElementById("edit-staff-email").value.trim().toLowerCase();
       const status = document.getElementById("edit-staff-status").value;
+      const phone = document.getElementById("edit-staff-phone").value.trim();
+      const address = document.getElementById("edit-staff-address").value.trim();
       const oldEmail = String(staff.email || '').trim().toLowerCase();
       const emailChanged = email !== oldEmail;
 
@@ -5579,7 +5621,9 @@ window.addEventListener('load',async function(){
           name,
           department,
           role,
-          status
+          status,
+          phone: phone || null,
+          address: address || null
         };
 
         const { error } = await supabaseClient
@@ -5589,11 +5633,11 @@ window.addEventListener('load',async function(){
 
         if (error) throw error;
 
-        Object.assign(staff, { name, department, role, email, status });
+        Object.assign(staff, { name, department, role, email, status, phone, address });
         savePersistedData();
 
         if (currentAuthUser?.type === 'STAFF' && currentAuthUser.staffRecord?.id === staff.id) {
-          currentAuthUser.staffRecord = { ...currentAuthUser.staffRecord, name, department, role, email, status };
+          currentAuthUser.staffRecord = { ...currentAuthUser.staffRecord, name, department, role, email, status, phone, address };
           sessionStorage.setItem(STORAGE_KEY_CURRENT_USER, JSON.stringify(currentAuthUser));
         }
 
@@ -6114,7 +6158,7 @@ window.addEventListener('load',async function(){
             });
             staffDatabase.push({
               id: result.staff.id, empId: item.empId, name: item.name, department: item.department,
-              role: item.role, email: item.email, pinHash: "", status: item.status
+              role: item.role, email: item.email, phone: "", address: "", pinHash: "", status: item.status
             });
             addedCount++;
           }
@@ -6240,8 +6284,33 @@ window.addEventListener('load',async function(){
       }, 1000);
     }
 
+    // Android/browser Back handling for the single-page app.
+    // Back closes the currently open modal first. At the app root we keep a
+    // history sentinel so the system Back button does not accidentally close
+    // the PWA/browser tab; the user can use Sign Out to leave the session.
+    function setupAppBackButtonHandling() {
+      try {
+        history.replaceState({ ashianaApp: true, root: true }, "", location.href);
+        history.pushState({ ashianaApp: true, root: true }, "", location.href);
+
+        window.addEventListener("popstate", function () {
+          const visibleModal = Array.from(document.querySelectorAll('[id$="-modal"]'))
+            .find(el => !el.classList.contains("hidden"));
+
+          if (visibleModal) {
+            visibleModal.classList.add("hidden");
+          }
+
+          history.pushState({ ashianaApp: true, root: true }, "", location.href);
+        });
+      } catch (e) {
+        console.warn("Back button handler could not be initialized:", e);
+      }
+    }
+
     // App Initialization
     window.onload = async function() {
+      setupAppBackButtonHandling();
       initSupabase();
       await loadPersistedData();
       const restored = await restoreSupabaseSession();
