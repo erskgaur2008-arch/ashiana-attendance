@@ -5857,28 +5857,34 @@ window.addEventListener('load',async function(){
       if (staffIndex === -1) return;
 
       const staff = staffDatabase[staffIndex];
-      staffDatabase.splice(staffIndex, 1);
-      savePersistedData();
-
-      // Cloud deletion from Supabase
-      if (supabaseClient) {
-        try {
-          await supabaseClient.from('staff').delete().eq('tenant_id', currentTenant?.id).eq('id', staffId);
-        } catch (e) {
-          console.warn("Supabase delete error:", e);
-        }
+      if (!supabaseClient || currentAuthUser?.type !== 'ADMIN' || !currentTenant?.id || currentAuthUser.tenantId !== currentTenant.id) {
+        showToast("A verified administrator cloud workspace is required.", "error");
+        return;
       }
 
-      recordAuditLog("STAFF_DELETED", staff.name, `Deleted faculty record ${staff.empId}`);
-      playTone('SUCCESS');
-      showToast(`Faculty record ${staff.name} deleted.`, "info");
-      closeDeleteStaffModal();
-      renderStaffDirectoryTable();
-      renderLiveAttendanceTable();
-      updateKPICards();
+      try {
+        const { data, error } = await supabaseClient.from('staff').delete()
+          .eq('tenant_id', currentTenant.id).eq('id', staffId).select('id').maybeSingle();
+        if (error) throw error;
+        if (!data?.id) throw new Error("Staff record was not confirmed deleted. Refresh the roster and retry.");
 
-      const sel = document.getElementById("correction-staff-select");
-      if (sel) sel.innerHTML = staffDatabase.map(s => `<option value="${s.id}">${s.name} (${s.empId})</option>`).join('');
+        staffDatabase.splice(staffIndex, 1);
+        savePersistedData();
+        recordAuditLog("STAFF_DELETED", staff.name, `Deleted faculty record ${staff.empId}`);
+        playTone('SUCCESS');
+        showToast(`Faculty record ${staff.name} deleted.`, "info");
+        closeDeleteStaffModal();
+        renderStaffDirectoryTable();
+        renderLiveAttendanceTable();
+        updateKPICards();
+
+        const sel = document.getElementById("correction-staff-select");
+        if (sel) sel.innerHTML = staffDatabase.map(s => `<option value="${s.id}">${s.name} (${s.empId})</option>`).join('');
+      } catch (e) {
+        console.error("Supabase delete staff error:", e);
+        playTone('ERROR');
+        showToast("Faculty deletion failed: " + (e?.message || e), "error");
+      }
     }
 
     function openLeaveApplyModal() {
