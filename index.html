@@ -2170,6 +2170,7 @@
           .select('id,emp_id,name,department,role,email,status,avatar_url,gender,dob,valid_thru')
           .eq('tenant_id', tenant.id).ilike('email', email).eq('status', 'ACTIVE').maybeSingle();
         if (staffError || !staff) throw new Error("No active staff profile exists in this school workspace.");
+        assertStaffAuthIdentity(user, staff);
         const staffRecord = { id: staff.id, empId: staff.emp_id, name: staff.name, department: staff.department, role: staff.role, email: staff.email, avatarUrl: staff.avatar_url || '', gender: staff.gender || '', dob: staff.dob || '', validThru: staff.valid_thru || '', pinHash: '', status: staff.status || 'ACTIVE' };
         currentTenant = tenant;
         currentAuthUser = { type: 'STAFF', staffRecord, tenantId: tenant.id, tenantName: tenant.name, tenantSlug: tenant.slug };
