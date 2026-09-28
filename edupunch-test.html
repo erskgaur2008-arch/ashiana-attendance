@@ -251,10 +251,10 @@
           <span id="global-live-date" class="text-[10px] text-emerald-300">22 September 2026</span>
         </div>
 
-        <!-- Supabase Cloud Live Status Pill -->
-        <div id="nav-cloud-status-badge" class="flex items-center space-x-1.5 px-2.5 py-1 rounded-xl text-[10px] font-bold border transition-all bg-emerald-900/90 text-emerald-200 border-emerald-500/50 shadow-inner" title="PostgreSQL Real-Time Cloud Sync Active">
+        <!-- Supabase Test Cloud Status Pill -->
+        <div id="nav-cloud-status-badge" class="flex items-center space-x-1.5 px-2.5 py-1 rounded-xl text-[10px] font-bold border transition-all bg-emerald-900/90 text-emerald-200 border-emerald-500/50 shadow-inner" title="PostgreSQL Real-Time Test Cloud Sync Active">
           <span id="nav-cloud-dot" class="w-2 h-2 rounded-full bg-emerald-400 animate-pulse"></span>
-          <span id="nav-cloud-label">Cloud Live</span>
+          <span id="nav-cloud-label">Test Cloud</span>
         </div>
 
         <!-- Authenticated Profile / Logout -->
@@ -2301,8 +2301,8 @@
       const label = document.getElementById("nav-cloud-label");
       const badge = document.getElementById("nav-cloud-status-badge");
       if (dot) dot.className = connected ? "w-2 h-2 rounded-full bg-emerald-400 animate-pulse" : "w-2 h-2 rounded-full bg-amber-400";
-      if (label) label.innerText = stateLabel || (connected ? "Cloud Live" : "Local Mode");
-      if (badge) badge.title = connected ? "Cloud synchronization is active" : "Cloud synchronization is unavailable; local cache is still available";
+      if (label) label.innerText = stateLabel || (connected ? "Test Cloud" : "Local Mode");
+      if (badge) badge.title = connected ? "Test Supabase synchronization is active" : "Cloud synchronization is unavailable; local cache is still available";
     }
 
     // Background Delta Polling ensures sync works across all devices & browsers
@@ -2499,7 +2499,7 @@
           showToast("Cloud database verified. Everything is already up to date.", "info");
         }
 
-        updateCloudBadge(true, "Cloud Live");
+        updateCloudBadge(true, "Test Cloud");
         return true;
       } catch (err) {
         if (currentAuthUser === sessionUser && currentTenant?.id === tenantId) {
