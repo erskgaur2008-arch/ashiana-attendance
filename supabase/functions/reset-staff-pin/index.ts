@@ -78,13 +78,8 @@ Deno.serve(async (req: Request) => {
         .maybeSingle();
       if (adminRow) return json({ error: "ADMIN_ACCOUNT_USE_ADMIN_LOGIN" }, 403);
 
-      const { data: pinSet, error: pinError } = await adminClient.rpc("set_staff_pin_service", {
-        p_staff_id: staff.id,
-        p_pin: pin,
-      });
-      if (pinError) throw pinError;
-      if (pinSet !== true) return json({ error: "PIN_UPDATE_FAILED" }, 500);
-
+      // Update Auth first. If the database PIN update subsequently fails, the
+      // caller can retry the same PIN to converge both credential stores.
       const { error: authUpdateError } = await adminClient.auth.admin.updateUserById(
         userData.user.id,
         {
@@ -98,6 +93,18 @@ Deno.serve(async (req: Request) => {
         }
       );
       if (authUpdateError) throw authUpdateError;
+
+      const { data: pinSet, error: pinError } = await adminClient.rpc("set_staff_pin_service", {
+        p_staff_id: staff.id,
+        p_pin: pin,
+      });
+      if (pinError) {
+        console.error("Database PIN update failed after Auth password update:", pinError);
+        return json({ error: "PIN_AUTH_SYNC_PENDING", message: "Auth password was updated, but the attendance PIN could not be confirmed. Retry the same PIN to synchronize it." }, 503);
+      }
+      if (pinSet !== true) {
+        return json({ error: "PIN_AUTH_SYNC_PENDING", message: "Auth password was updated, but the attendance PIN could not be confirmed. Retry the same PIN to synchronize it." }, 503);
+      }
 
       return json({
         success: true,
@@ -351,14 +358,8 @@ Deno.serve(async (req: Request) => {
 
     if (!userId) return json({ error: "Staff Auth account could not be located." }, 404);
 
-    const { data: pinSet, error: pinError } =
-      await adminClient.rpc("set_staff_pin_service", {
-        p_staff_id: staff.id,
-        p_pin: pin,
-      });
-    if (pinError) throw pinError;
-    if (pinSet !== true) return json({ error: "The staff PIN could not be updated." }, 500);
-
+    // Update Auth first. A subsequent DB failure is explicitly reported so
+    // the administrator can retry the same PIN and converge both stores.
     const { error: authUpdateError } =
       await adminClient.auth.admin.updateUserById(userId, {
         password: authPassword(staff.id, pin),
@@ -370,6 +371,16 @@ Deno.serve(async (req: Request) => {
         },
       });
     if (authUpdateError) throw authUpdateError;
+
+    const { data: pinSet, error: pinError } =
+      await adminClient.rpc("set_staff_pin_service", {
+        p_staff_id: staff.id,
+        p_pin: pin,
+      });
+    if (pinError || pinSet !== true) {
+      console.error("Database PIN update failed after Auth password update:", pinError);
+      return json({ error: "PIN_AUTH_SYNC_PENDING", message: "Auth password was updated, but the attendance PIN could not be confirmed. Retry the same PIN to synchronize it." }, 503);
+    }
 
     return json({
       success: true,
