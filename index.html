@@ -326,6 +326,10 @@
         <!-- TEACHER LOGIN FORM -->
         <form id="teacher-login-form" onsubmit="handleTeacherLogin(event)" class="space-y-3.5">
           <div>
+            <label class="block text-xs font-bold text-slate-700 mb-1">School Code <span class="font-medium text-slate-400">(required for Employee ID)</span></label>
+            <input type="text" id="teacher-login-school" maxlength="80" placeholder="e.g. ashiana" class="w-full text-xs px-3.5 py-2.5 sm:py-3 bg-slate-50 border border-slate-200 rounded-xl focus:ring-2 focus:ring-ashiana-green focus:outline-none focus:bg-white font-medium lowercase">
+          </div>
+          <div>
             <label class="block text-xs font-bold text-slate-700 mb-1">Employee ID or Registered Email</label>
             <div class="relative">
               <div class="absolute inset-y-0 left-0 pl-3.5 flex items-center pointer-events-none text-slate-400">
@@ -2761,10 +2765,11 @@
         const loginResult = await invokeVerifyAttendance({
           action: "staff_login",
           login_id: idVal,
+          school_code: schoolCode,
           pin: pinVal
         });
 
-        if (!loginResult?.success || !loginResult?.staff?.email || !loginResult?.staff?.id) {
+        if (!loginResult?.success || !loginResult?.staff?.email || !loginResult?.staff?.id || !loginResult?.staff?.tenant_id) {
           throw new Error("Staff authentication failed.");
         }
 
