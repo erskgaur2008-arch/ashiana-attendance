@@ -2837,6 +2837,7 @@
 
     async function handleTeacherLogin(event) {
       event.preventDefault();
+      const schoolCode = (document.getElementById("teacher-login-school")?.value || "").trim().toLowerCase();
       const idVal = normalizeLoginId(document.getElementById("teacher-login-id")?.value);
       const pinVal = (document.getElementById("teacher-login-pin")?.value || "").trim();
 
