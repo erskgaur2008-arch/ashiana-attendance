@@ -204,7 +204,7 @@ Deno.serve(async (req: Request) => {
       const email = String(staffInput.email || "").trim().toLowerCase();
       const status = String(staffInput.status || "ACTIVE").trim().toUpperCase() === "INACTIVE" ? "INACTIVE" : "ACTIVE";
 
-      if (!/^\\d{4}$/.test(pin)) return json({ error: "PIN must be exactly 4 digits." }, 400);
+      if (!/^\d{4}$/.test(pin)) return json({ error: "PIN must be exactly 4 digits." }, 400);
       if (!empId || !name || !email || !/^[^\\s@]+@[^\\s@]+\\.[^\\s@]+$/.test(email)) {
         return json({ error: "Employee ID, name and valid email are required." }, 400);
       }
