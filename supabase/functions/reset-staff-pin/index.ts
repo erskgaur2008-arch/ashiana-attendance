@@ -232,6 +232,9 @@ Deno.serve(async (req: Request) => {
           p_email: email,
           p_status: status,
           p_pin: pin,
+          p_phone: String(staffInput.phone || "").trim() || null,
+          p_address: String(staffInput.address || "").trim() || null,
+          p_valid_thru: staffInput.valid_thru || null,
         }
       );
       if (staffCreateError) {
