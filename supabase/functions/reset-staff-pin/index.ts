@@ -143,7 +143,7 @@ Deno.serve(async (req: Request) => {
     if (mode === "update_staff_email") {
       const staffId = String(body?.staff_id || "").trim();
       const newEmail = String(body?.email || "").trim().toLowerCase();
-      if (!staffId || !newEmail || !newEmail.includes("@")) {
+      if (!staffId || !/^[^\\s@]+@[^\\s@]+\\.[^\\s@]+$/.test(newEmail)) {
         return json({ error: "Staff ID and valid email are required." }, 400);
       }
 
@@ -160,9 +160,10 @@ Deno.serve(async (req: Request) => {
         return json({ success: true, changed: false, staff: { id: staff.id, email: staff.email } });
       }
 
-      const { data: duplicate } = await adminClient
-        .from("staff").select("id").ilike("email", newEmail).neq("id", staffId).eq("tenant_id", adminTenantId).maybeSingle();
-      if (duplicate) return json({ error: "Staff email already exists." }, 409);
+      const { data: duplicate, error: duplicateError } = await adminClient
+        .from("staff").select("id").ilike("email", newEmail).neq("id", staffId).maybeSingle();
+      if (duplicateError) throw duplicateError;
+      if (duplicate) return json({ error: "Staff email already exists in another account." }, 409);
 
       const { data: authUserId, error: lookupError } =
         await adminClient.rpc("get_auth_user_id_by_email", { p_email: oldEmail });
