@@ -112,6 +112,8 @@ No production schema changes, Edge Function deployments, auth-user creation, sec
 
 ## Private tenant-scoped staff-avatar implementation (branch-only)
 
+- Storage write-policy hardening: tenant-prefixed object paths must contain exactly two folder segments (tenant UUID / caller Auth UID) and uploads, updates, and deletes require an active staff row whose email matches the authenticated JWT in that tenant. This narrows writes beyond membership-only checks; policy behavior still requires isolated integration tests.
+
 - Follow-up during implementation: staff PIN login now resolves the signed-in Auth user's trusted active membership and verifies its tenant ID/STAFF role against the tenant ID returned by the attendance verification function before setting the active workspace. This supplies the tenant context required for the tenant-prefixed avatar upload path. Runtime validation remains pending.
 
 - Product access rule confirmed: **all active members of a school may view staff photos** within their own active tenant.
