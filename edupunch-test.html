@@ -2084,7 +2084,26 @@
 
     async function invokeAdminFunction(functionName, body) {
       if (!supabaseClient) throw new Error('Supabase client is not initialized.');
-      const { data, error } = await supabaseClient.functions.invoke(functionName, { body });
+
+      // Edge Functions must receive the signed-in Supabase user's JWT.
+      // Do not rely on a cached UI identity or the public anon key.
+      let { data: sessionData, error: sessionError } = await supabaseClient.auth.getSession();
+      let session = sessionData?.session || null;
+      if (sessionError || !session?.access_token ||
+          (session.expires_at && session.expires_at * 1000 <= Date.now() + 15000)) {
+        const refreshed = await supabaseClient.auth.refreshSession();
+        if (!refreshed.error && refreshed.data?.session?.access_token) {
+          session = refreshed.data.session;
+        }
+      }
+      if (!session?.access_token) {
+        throw new Error('AUTHENTICATION_REQUIRED: Please sign in again to the administrator portal.');
+      }
+
+      const { data, error } = await supabaseClient.functions.invoke(functionName, {
+        body,
+        headers: { Authorization: `Bearer ${session.access_token}` }
+      });
       if (error) {
         let message = error.message || 'Server request failed.';
         try {
