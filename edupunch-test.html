@@ -6591,8 +6591,8 @@ window.addEventListener('load',async function(){
     const key="sb_publishable_KCBRh8rwSH1KUyWJ0pRSPw_hcj0NSjT";
     try{
       const checks=await Promise.all([
-        fetch(base+"/auth/v1/health",{method:"GET",headers:{apikey:key}}),
-        fetch(base+"/rest/v1/",{method:"GET",headers:{apikey:key}})
+        fetch(base+"/auth/v1/health",{method:"GET",headers:{apikey:key,Authorization:"Bearer "+key}}),
+        fetch(base+"/rest/v1/",{method:"GET",headers:{apikey:key,Authorization:"Bearer "+key}})
       ]);
       const auth=checks[0],rest=checks[1];
       if(auth.ok && rest.ok){
