@@ -14,7 +14,10 @@ This branch is the isolated implementation track for converting EduPunch into a 
 - `20260928000000_multitenant_foundation.sql` creates the tenant tables and adds/backfills tenant identifiers.
 - `20260928001000_seed_ashiana_memberships.sql` seeds memberships for existing Auth users whose email matches an active Ashiana admin or staff record.
 - These migrations are committed to `feat/multi-tenant-foundation` only. They have **not** been applied to the production database.
-- The existing frontend and Edge Functions are not yet tenant-safe. Do not apply these migrations to production or merge this branch yet.
+- Auth resolution and the primary frontend sync path are tenant-aware in this branch; remaining frontend operations have been further scoped in the latest commit. These client filters are not a security boundary.
+- The production database was inspected read-only: existing business tables have RLS enabled but no `tenant_id` columns yet, confirming that the branch migrations remain unapplied. Existing policies include global `private.is_admin()` checks and email-based staff self-access; they must be replaced transactionally after tenant columns exist.
+- The deployed Edge Functions were inspected read-only. They use service-role access; current code resolves admins/staff by email without tenant membership checks, and `verify-attendance` has `verify_jwt=false` with custom bearer validation only on its attendance action. Function source has not yet been changed or deployed.
+- Do not apply these migrations to production or merge this branch yet.
 
 ## Required implementation gates
 
@@ -26,7 +29,7 @@ This branch is the isolated implementation track for converting EduPunch into a 
 
 2. **Frontend tenant scope**
    - Add tenant/workspace selection and visible school identity.
-   - Scope every read, insert, update, delete, realtime subscription, report, export, and cache key by the active tenant.
+   - Scope every read, insert, update, delete, realtime subscription, report, export, and cache key by the active tenant. Main sync and many staff/leave operations now carry tenant filters, but a full call-site and cache-read audit remains.
    - Clear tenant-scoped in-memory and local caches on logout or workspace switch.
    - Do not treat a client-side `.eq('tenant_id', ...)` filter as a security boundary; it is only a usability filter.
 
