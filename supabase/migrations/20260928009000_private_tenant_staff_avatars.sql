@@ -142,6 +142,8 @@ using (
         select 1 from public.staff s
         where s.avatar_url is not null
           and right(s.avatar_url, length(name)) = name
+          and s.status = 'ACTIVE'
+          and lower(s.email) = lower(coalesce((select auth.jwt() ->> 'email'), ''))
           and private.has_active_tenant_role(s.tenant_id, 'STAFF')
       ))
   )
