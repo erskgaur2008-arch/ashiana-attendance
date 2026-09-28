@@ -112,6 +112,8 @@ No production schema changes, Edge Function deployments, auth-user creation, sec
 
 ## Private tenant-scoped staff-avatar implementation (branch-only)
 
+- Follow-up during implementation: staff PIN login now resolves the signed-in Auth user's trusted active membership and verifies its tenant ID/STAFF role against the tenant ID returned by the attendance verification function before setting the active workspace. This supplies the tenant context required for the tenant-prefixed avatar upload path. Runtime validation remains pending.
+
 - Product access rule confirmed: **all active members of a school may view staff photos** within their own active tenant.
 - Frontend upload now uses `{tenant_uuid}/{auth_user_uuid}/profile-{timestamp}.{ext}` and stores the returned Storage object path in `staff.avatar_url` instead of a public URL. The frontend signs object paths on demand for rendering, with a short in-memory URL cache; signed URLs are not written to sessionStorage/localStorage or the staff row.
 - Legacy `staff.avatar_url` public URLs are supported by extracting the object key only from the known Supabase public Storage URL route, then requesting a signed URL for that key. This allows existing objects to remain in place when the bucket is made private, provided each referenced object still exists and the stored URL matches the current Storage route.
