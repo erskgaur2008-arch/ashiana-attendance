@@ -50,7 +50,6 @@ create policy school_applications_platform_approver_read
   on public.school_applications for select to authenticated
   using (
     lower(coalesce((select auth.jwt() ->> 'email'), '')) = 'rajkumargaur54@gmail.com'
-    and coalesce((select auth.jwt() ->> 'email_verified'), 'false') = 'true'
   );
 
 revoke all on public.school_applications from anon, authenticated;
