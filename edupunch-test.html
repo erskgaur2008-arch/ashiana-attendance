@@ -2066,7 +2066,31 @@
 
     async function invokeVerifyAttendance(body) {
       if (!supabaseClient) throw new Error('Supabase client is not initialized.');
-      const { data, error } = await supabaseClient.functions.invoke('verify-attendance', { body });
+
+      // Staff login is the initial credential-verification bridge and must
+      // remain callable before a Supabase Auth session exists. Attendance
+      // verification, however, requires the signed-in staff user's JWT.
+      const headers = {};
+      if (String(body?.action || 'attendance') !== 'staff_login') {
+        let { data: sessionData, error: sessionError } = await supabaseClient.auth.getSession();
+        let session = sessionData?.session || null;
+        if (sessionError || !session?.access_token ||
+            (session.expires_at && session.expires_at * 1000 <= Date.now() + 15000)) {
+          const refreshed = await supabaseClient.auth.refreshSession();
+          if (!refreshed.error && refreshed.data?.session?.access_token) {
+            session = refreshed.data.session;
+          }
+        }
+        if (!session?.access_token) {
+          throw new Error('AUTHENTICATION_REQUIRED: Sign in to the staff portal again before marking attendance.');
+        }
+        headers.Authorization = `Bearer ${session.access_token}`;
+      }
+
+      const { data, error } = await supabaseClient.functions.invoke('verify-attendance', {
+        body,
+        ...(Object.keys(headers).length ? { headers } : {})
+      });
       if (error) {
         let message = error.message || 'Authentication request failed.';
         try {
