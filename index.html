@@ -3002,23 +3002,24 @@
     }
 
     async function handleLogout() {
-      // Tear down tenant-bound event delivery before clearing workspace context.
+      // Invalidate the active identity synchronously so an in-flight refresh
+      // cannot apply data or persist it while channel/Auth cleanup is awaited.
       const tenantIdToClear = currentTenant?.id || persistedTenantId;
-      if (realtimeChannel && supabaseClient) { try { await supabaseClient.removeChannel(realtimeChannel); } catch (e) {} realtimeChannel = null; }
+      currentAuthUser = null;
+      currentStaffId = null;
+      currentTenant = null;
+      persistedTenantId = null;
+      staffDatabase = []; punchLedger = []; leaveRequests = []; auditLogs = [];
+      tenantSyncQueued = false;
+      sessionStorage.removeItem(STORAGE_KEY_CURRENT_USER);
       // Clear this workspace's persisted roster/attendance data on sign-out.
       if (tenantIdToClear) {
         const suffix = ':' + tenantIdToClear;
         [STORAGE_KEY_STAFF, STORAGE_KEY_PUNCHES, STORAGE_KEY_LEAVE, STORAGE_KEY_AUDIT]
           .forEach(key => localStorage.removeItem(key + suffix));
       }
+      if (realtimeChannel && supabaseClient) { try { await supabaseClient.removeChannel(realtimeChannel); } catch (e) {} realtimeChannel = null; }
       try { if (supabaseClient) await supabaseClient.auth.signOut(); } catch (e) {}
-      currentAuthUser = null;
-      currentStaffId = null;
-      currentTenant = null;
-      persistedTenantId = null;
-      staffDatabase = []; punchLedger = []; leaveRequests = []; auditLogs = [];
-      sessionStorage.removeItem(STORAGE_KEY_CURRENT_USER);
-      tenantSyncQueued = false;
       showToast("Signed out safely.", "info");
       applyAuthenticatedUI();
     }
