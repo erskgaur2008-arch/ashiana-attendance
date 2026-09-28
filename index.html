@@ -2170,7 +2170,7 @@
         if (tenant.role === 'SCHOOL_ADMIN') {
           const { data: adminRow, error: adminError } = await supabaseClient
             .from('admin_users').select('email,role,active')
-            .eq('tenant_id', tenant.id).eq('email', email).eq('active', true).maybeSingle();
+            .eq('tenant_id', tenant.id).ilike('email', email).eq('active', true).maybeSingle();
           if (adminError || !adminRow) throw new Error("School administrator membership has no active administrator profile.");
           assertAdminAuthIdentity(user, email, adminRow);
           currentTenant = tenant;
@@ -2934,12 +2934,12 @@
         if (tenant.role !== 'SCHOOL_ADMIN') throw new Error("This account is not a school administrator.");
         const { data: adminRow, error: adminError } = await supabaseClient
           .from('admin_users').select('email,role,active')
-          .eq('tenant_id', tenant.id).eq('email', userVal).eq('active', true).maybeSingle();
+          .eq('tenant_id', tenant.id).ilike('email', authEmail).eq('active', true).maybeSingle();
         if (adminError || !adminRow) throw new Error("Administrator account is not authorized for this workspace.");
         assertAdminAuthIdentity(data.user, userVal, adminRow);
 
         currentTenant = tenant;
-        currentAuthUser = { type: 'ADMIN', username: userVal, role: adminRow.role, tenantId: tenant.id, tenantName: tenant.name, tenantSlug: tenant.slug };
+        currentAuthUser = { type: 'ADMIN', username: authEmail, role: adminRow.role, tenantId: tenant.id, tenantName: tenant.name, tenantSlug: tenant.slug };
         currentStaffId = null;
         sessionStorage.setItem(STORAGE_KEY_CURRENT_USER, JSON.stringify(currentAuthUser));
         listenToRealtimePunches();
