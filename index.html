@@ -3900,31 +3900,23 @@ window.addEventListener('load',async function(){
     }
 
     async function executeBulkStaffDeletionNow() {
-      const count = modalBulkSelectedIds.size;
-      if (count === 0) return;
-
       const idsToDelete = Array.from(modalBulkSelectedIds);
-      staffDatabase = staffDatabase.filter(s => !modalBulkSelectedIds.has(s.id));
-      modalBulkSelectedIds.clear();
-      savePersistedData();
-
-      // Cloud deletion from Supabase
-      if (supabaseClient) {
-        idsToDelete.forEach(id => {
-          supabaseClient.from('staff').delete().eq('tenant_id', currentTenant?.id).eq('id', id).then(() => {});
-        });
+      if (!idsToDelete.length) return;
+      if (!supabaseClient || currentAuthUser?.type !== 'ADMIN' || !currentTenant?.id || currentAuthUser.tenantId !== currentTenant.id) {
+        showToast("A verified administrator cloud workspace is required.", "error"); return;
       }
-
-      recordAuditLog("BULK_DELETE", `${count} Faculty`, `Bulk deleted ${count} faculty records`);
-      playTone('SUCCESS');
-      showToast(`Successfully deleted ${count} faculty members.`, "info");
-      closeBulkDeleteStaffModal();
-      renderStaffDirectoryTable();
-      renderLiveAttendanceTable();
-      updateKPICards();
-
-      const sel = document.getElementById("correction-staff-select");
-      if (sel) sel.innerHTML = staffDatabase.map(s => `<option value="${s.id}">${s.name} (${s.empId})</option>`).join('');
+      try {
+        const { data, error } = await supabaseClient.from('staff').delete().eq('tenant_id', currentTenant.id).in('id', idsToDelete).select('id');
+        if (error) throw error;
+        const deletedIds = new Set((data || []).map(row => row.id));
+        if (deletedIds.size !== idsToDelete.length) throw new Error("Some selected records were not confirmed deleted. Refresh the roster and retry.");
+        staffDatabase = staffDatabase.filter(s => !deletedIds.has(s.id)); modalBulkSelectedIds.clear(); savePersistedData();
+        recordAuditLog("BULK_DELETE", `${deletedIds.size} Faculty`, `Bulk deleted ${deletedIds.size} faculty records`);
+        playTone('SUCCESS'); showToast(`Successfully deleted ${deletedIds.size} faculty members.`, "success");
+        closeBulkDeleteStaffModal(); renderStaffDirectoryTable(); renderLiveAttendanceTable(); updateKPICards();
+        const sel = document.getElementById("correction-staff-select");
+        if (sel) sel.innerHTML = staffDatabase.map(s => `<option value="${s.id}">${s.name} (${s.empId})</option>`).join('');
+      } catch (err) { console.error("Bulk staff deletion failed:", err); showToast("Deletion failed: " + (err?.message || err), "error"); }
     }
 
     function renderModalBulkStaffList() {
@@ -3994,34 +3986,24 @@ window.addEventListener('load',async function(){
     }
 
     async function executeBulkStaffDeletion() {
-      const count = modalBulkSelectedIds.size;
-      if (count === 0) return;
-
-      const confirmDelete = window.confirm(`Are you sure you want to permanently delete the ${count} selected faculty member(s)? This will remove them from the roster and database.`);
-      if (!confirmDelete) return;
-
-      const idsToDelete = Array.from(modalBulkSelectedIds);
-      staffDatabase = staffDatabase.filter(s => !modalBulkSelectedIds.has(s.id));
-      modalBulkSelectedIds.clear();
-      savePersistedData();
-
-      // Cloud deletion from Supabase
-      if (supabaseClient) {
-        idsToDelete.forEach(id => {
-          supabaseClient.from('staff').delete().eq('tenant_id', currentTenant?.id).eq('id', id).then(() => {});
-        });
+      const count = modalBulkSelectedIds.size; if (!count) return;
+      if (!supabaseClient || currentAuthUser?.type !== 'ADMIN' || !currentTenant?.id || currentAuthUser.tenantId !== currentTenant.id) {
+        showToast("A verified administrator cloud workspace is required.", "error"); return;
       }
-
-      recordAuditLog("BULK_DELETE", `${count} Faculty`, `Bulk deleted ${count} faculty records`);
-      playTone('SUCCESS');
-      showToast(`Successfully deleted ${count} faculty members.`, "info");
-      closeBulkDeleteStaffModal();
-      renderStaffDirectoryTable();
-      renderLiveAttendanceTable();
-      updateKPICards();
-
-      const sel = document.getElementById("correction-staff-select");
-      if (sel) sel.innerHTML = staffDatabase.map(s => `<option value="${s.id}">${s.name} (${s.empId})</option>`).join('');
+      const idsToDelete = Array.from(modalBulkSelectedIds);
+      if (!window.confirm(`Are you sure you want to permanently delete the ${count} selected faculty member(s)? This will remove them from the roster and database.`)) return;
+      try {
+        const { data, error } = await supabaseClient.from('staff').delete().eq('tenant_id', currentTenant.id).in('id', idsToDelete).select('id');
+        if (error) throw error;
+        const deletedIds = new Set((data || []).map(row => row.id));
+        if (deletedIds.size !== idsToDelete.length) throw new Error("Some selected records were not confirmed deleted. Refresh the roster and retry.");
+        staffDatabase = staffDatabase.filter(s => !deletedIds.has(s.id)); modalBulkSelectedIds.clear(); savePersistedData();
+        recordAuditLog("BULK_DELETE", `${deletedIds.size} Faculty`, `Bulk deleted ${deletedIds.size} faculty records`);
+        playTone('SUCCESS'); showToast(`Successfully deleted ${deletedIds.size} faculty members.`, "success");
+        closeBulkDeleteStaffModal(); renderStaffDirectoryTable(); renderLiveAttendanceTable(); updateKPICards();
+        const sel = document.getElementById("correction-staff-select");
+        if (sel) sel.innerHTML = staffDatabase.map(s => `<option value="${s.id}">${s.name} (${s.empId})</option>`).join('');
+      } catch (err) { console.error("Bulk staff deletion failed:", err); showToast("Deletion failed: " + (err?.message || err), "error"); }
     }
 
     function escapeIdCardHtml(value) {
