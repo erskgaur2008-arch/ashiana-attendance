@@ -1918,6 +1918,8 @@
 
     let currentAuthUser = null;
     let currentStaffId = null;
+    // Tenant context is resolved from the signed-in user's database membership, never browser metadata.
+    let currentTenant = null;
     let currentPortal = "staff";
 
     // Staff Directory Selection State
@@ -2085,64 +2087,67 @@
       return data;
     }
 
+    // Resolve the signed-in identity against the trusted tenant membership table.
+    // Multi-workspace selection is intentionally blocked until the workspace switcher is implemented.
+    async function resolveTenantMembership(userId) {
+      if (!supabaseClient || !userId) throw new Error("A valid authenticated identity is required.");
+      const { data: memberships, error } = await supabaseClient
+        .from('tenant_memberships')
+        .select('tenant_id,role,active')
+        .eq('user_id', userId)
+        .eq('active', true);
+      if (error) throw error;
+      if (!memberships?.length) throw new Error("This account has no active school workspace membership.");
+      if (memberships.length !== 1) throw new Error("This account belongs to multiple school workspaces. Workspace selection must be completed before access.");
+      const membership = memberships[0];
+      const { data: tenant, error: tenantError } = await supabaseClient
+        .from('tenants')
+        .select('id,name,slug,status')
+        .eq('id', membership.tenant_id)
+        .eq('status', 'active')
+        .maybeSingle();
+      if (tenantError || !tenant) throw new Error("The school workspace is unavailable or suspended.");
+      return { id: tenant.id, name: tenant.name, slug: tenant.slug, role: membership.role };
+    }
+
     async function restoreSupabaseSession() {
       if (!supabaseClient) return false;
       try {
         const { data: sessionData } = await supabaseClient.auth.getSession();
         const session = sessionData?.session;
         const user = session?.user;
-        if (!user?.email) return false;
-
+        if (!user?.id || !user?.email) return false;
         const email = user.email.trim().toLowerCase();
-        const { data: adminRow, error: adminError } = await supabaseClient
-          .from('admin_users')
-          .select('email,role,active')
-          .eq('email', email)
-          .eq('active', true)
-          .maybeSingle();
+        const tenant = await resolveTenantMembership(user.id);
 
-        if (!adminError && adminRow) {
-          currentAuthUser = { type: 'ADMIN', username: email, role: adminRow.role };
+        if (tenant.role === 'SCHOOL_ADMIN') {
+          const { data: adminRow, error: adminError } = await supabaseClient
+            .from('admin_users').select('email,role,active')
+            .eq('tenant_id', tenant.id).eq('email', email).eq('active', true).maybeSingle();
+          if (adminError || !adminRow) throw new Error("School administrator membership has no active administrator profile.");
+          currentTenant = tenant;
+          currentAuthUser = { type: 'ADMIN', username: email, role: adminRow.role, tenantId: tenant.id, tenantName: tenant.name, tenantSlug: tenant.slug };
           currentStaffId = null;
           sessionStorage.setItem(STORAGE_KEY_CURRENT_USER, JSON.stringify(currentAuthUser));
           return true;
         }
-
+        if (tenant.role !== 'STAFF') throw new Error("This account has an unsupported workspace role.");
         const { data: staff, error: staffError } = await supabaseClient
           .from('staff')
           .select('id,emp_id,name,department,role,email,status,avatar_url,gender,dob,valid_thru')
-          .ilike('email', email)
-          .eq('status', 'ACTIVE')
-          .maybeSingle();
-
-        if (staffError || !staff) {
-          await supabaseClient.auth.signOut();
-          return false;
-        }
-
-        const staffRecord = {
-          id: staff.id,
-          empId: staff.emp_id,
-          name: staff.name,
-          department: staff.department,
-          role: staff.role,
-          email: staff.email,
-          avatarUrl: staff.avatar_url || '',
-          gender: staff.gender || '',
-          dob: staff.dob || '',
-          validThru: staff.valid_thru || '',
-          pinHash: '',
-          status: staff.status || 'ACTIVE'
-        };
-        currentAuthUser = { type: 'STAFF', staffRecord };
+          .eq('tenant_id', tenant.id).ilike('email', email).eq('status', 'ACTIVE').maybeSingle();
+        if (staffError || !staff) throw new Error("No active staff profile exists in this school workspace.");
+        const staffRecord = { id: staff.id, empId: staff.emp_id, name: staff.name, department: staff.department, role: staff.role, email: staff.email, avatarUrl: staff.avatar_url || '', gender: staff.gender || '', dob: staff.dob || '', validThru: staff.valid_thru || '', pinHash: '', status: staff.status || 'ACTIVE' };
+        currentTenant = tenant;
+        currentAuthUser = { type: 'STAFF', staffRecord, tenantId: tenant.id, tenantName: tenant.name, tenantSlug: tenant.slug };
         currentStaffId = staff.id;
         sessionStorage.setItem(STORAGE_KEY_CURRENT_USER, JSON.stringify(currentAuthUser));
         return true;
       } catch (e) {
         console.warn('Supabase session restore failed:', e);
-        currentAuthUser = null;
-        currentStaffId = null;
+        currentAuthUser = null; currentStaffId = null; currentTenant = null;
         sessionStorage.removeItem(STORAGE_KEY_CURRENT_USER);
+        try { await supabaseClient.auth.signOut(); } catch (_) {}
         return false;
       }
     }
@@ -2837,18 +2842,15 @@
         });
         if (error || !data?.user) throw new Error(error?.message || "Administrator sign-in failed.");
 
+        const tenant = await resolveTenantMembership(data.user.id);
+        if (tenant.role !== 'SCHOOL_ADMIN') throw new Error("This account is not a school administrator.");
         const { data: adminRow, error: adminError } = await supabaseClient
-          .from('admin_users')
-          .select('email,role,active')
-          .eq('email', userVal)
-          .eq('active', true)
-          .maybeSingle();
-        if (adminError || !adminRow) {
-          await supabaseClient.auth.signOut();
-          throw new Error("Administrator account is not authorized.");
-        }
+          .from('admin_users').select('email,role,active')
+          .eq('tenant_id', tenant.id).eq('email', userVal).eq('active', true).maybeSingle();
+        if (adminError || !adminRow) throw new Error("Administrator account is not authorized for this workspace.");
 
-        currentAuthUser = { type: 'ADMIN', username: userVal, role: adminRow.role };
+        currentTenant = tenant;
+        currentAuthUser = { type: 'ADMIN', username: userVal, role: adminRow.role, tenantId: tenant.id, tenantName: tenant.name, tenantSlug: tenant.slug };
         currentStaffId = null;
         sessionStorage.setItem(STORAGE_KEY_CURRENT_USER, JSON.stringify(currentAuthUser));
         await syncAllDataFromSupabase(false);
@@ -2866,6 +2868,7 @@
       try { if (supabaseClient) await supabaseClient.auth.signOut(); } catch (e) {}
       currentAuthUser = null;
       currentStaffId = null;
+      currentTenant = null;
       sessionStorage.removeItem(STORAGE_KEY_CURRENT_USER);
       showToast("Signed out safely.", "info");
       applyAuthenticatedUI();
