@@ -150,7 +150,7 @@ Deno.serve(async (req: Request) => {
     if (mode === "update_staff_email") {
       const staffId = String(body?.staff_id || "").trim();
       const newEmail = String(body?.email || "").trim().toLowerCase();
-      if (!staffId || !/^[^\\s@]+@[^\\s@]+\\.[^\\s@]+$/.test(newEmail)) {
+      if (!staffId || !/^[^\s@]+@[^\s@]+\.[^\s@]+$/.test(newEmail)) {
         return json({ error: "Staff ID and valid email are required." }, 400);
       }
 
