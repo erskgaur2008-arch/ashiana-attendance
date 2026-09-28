@@ -274,9 +274,12 @@ Deno.serve(async (req: Request) => {
         user_metadata: { staff_id: staffId, emp_id: empId, name, account_type: "staff" },
       });
       if (authCreateError || !createdAuth.user?.id) {
-        const { error: rollbackError } = await adminClient.from("staff")
-          .delete().eq("id", staffId).eq("tenant_id", adminTenantId);
-        if (rollbackError) console.error("staff row cleanup failed after Auth create error:", rollbackError);
+        const { data: deletedStaff, error: rollbackError } = await adminClient.from("staff")
+          .delete().eq("id", staffId).eq("tenant_id", adminTenantId).select("id").maybeSingle();
+        if (rollbackError || !deletedStaff?.id) {
+          console.error("staff row cleanup failed or was unconfirmed after Auth create error:", rollbackError);
+          return json({ error: "STAFF_PROVISIONING_RECOVERY_REQUIRED", staff_id: staffId, message: "Auth account creation failed and staff-row cleanup could not be confirmed. Contact the platform administrator to reconcile this incomplete staff record." }, 503);
+        }
         return json({ error: "Unable to create the staff Auth account." }, 409);
       }
 
@@ -286,11 +289,14 @@ Deno.serve(async (req: Request) => {
       );
       if (membershipInsertError) {
         const { error: authDeleteError } = await adminClient.auth.admin.deleteUser(createdAuth.user.id);
-        const { error: staffDeleteError } = await adminClient.from("staff")
-          .delete().eq("id", staffId).eq("tenant_id", adminTenantId);
+        const { data: deletedStaff, error: staffDeleteError } = await adminClient.from("staff")
+          .delete().eq("id", staffId).eq("tenant_id", adminTenantId).select("id").maybeSingle();
         if (authDeleteError) console.error("Auth cleanup failed after membership error:", authDeleteError);
         if (staffDeleteError) console.error("staff cleanup failed after membership error:", staffDeleteError);
-        throw membershipInsertError;
+        if (authDeleteError || staffDeleteError || !deletedStaff?.id) {
+          return json({ error: "STAFF_PROVISIONING_RECOVERY_REQUIRED", staff_id: staffId, auth_user_id: createdAuth.user.id, message: "Membership creation failed and cleanup could not be fully confirmed. Contact the platform administrator to reconcile this incomplete account before retrying." }, 503);
+        }
+        return json({ error: "Unable to link the staff login to this school. Staff creation was rolled back." }, 409);
       }
 
       return json({
