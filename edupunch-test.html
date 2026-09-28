@@ -3322,8 +3322,19 @@
     }
 
     function handleSimulateScanSuccess() {
-      const payload = JSON.stringify({ school: "ASHIANA_PUBLIC_SCHOOL", date: activeQRSession.date, token: activeQRSession.token });
-      onQRCodeDetected(payload);
+      // UI-only simulation: open the PIN panel without pretending to have a server-issued QR.
+      pendingScannedQR = {
+        token: "SIMULATION_ONLY",
+        date: getIndiaTodayDate(),
+        school: "ASHIANA_PUBLIC_SCHOOL"
+      };
+      const pinPanel = document.getElementById('scanner-pin-panel');
+      const pinInput = document.getElementById('scanner-attendance-pin');
+      if (pinPanel) pinPanel.classList.remove('hidden');
+      if (pinInput) { pinInput.value = ''; pinInput.focus(); }
+      const status = document.getElementById('scanner-status-text');
+      if (status) status.innerHTML = '<span class="text-ashiana-green font-bold">Simulation ready.</span><br>PIN panel test only; no attendance will be recorded.';
+      if (window.lucide) lucide.createIcons();
     }
 
     function openPunchModal() {
@@ -3357,6 +3368,10 @@
       }
       if (!pendingScannedQR?.token) {
         showToast("Please scan the school QR code first.", "error");
+        return;
+      }
+      if (pendingScannedQR.token === "SIMULATION_ONLY") {
+        showToast("PIN panel simulation passed. No attendance was recorded.", "info");
         return;
       }
       try {
