@@ -2782,6 +2782,11 @@
           throw new Error(authError?.message || "Supabase Auth sign-in failed.");
         }
 
+        const resolvedTenant = await resolveTenantMembership(authData.user.id);
+        if (resolvedTenant.role !== 'STAFF' || resolvedTenant.id !== loginResult.staff.tenant_id) {
+          throw new Error("Staff workspace membership does not match the authenticated staff record.");
+        }
+
         const matched = {
           id: loginResult.staff.id,
           empId: loginResult.staff.emp_id,
@@ -2803,7 +2808,14 @@
         else staffDatabase.push(matched);
         savePersistedData();
 
-        currentAuthUser = { type: 'STAFF', staffRecord: matched };
+        currentTenant = resolvedTenant;
+        currentAuthUser = {
+          type: 'STAFF',
+          staffRecord: matched,
+          tenantId: resolvedTenant.id,
+          tenantName: resolvedTenant.name,
+          tenantSlug: resolvedTenant.slug
+        };
         currentStaffId = matched.id;
         sessionStorage.setItem(STORAGE_KEY_CURRENT_USER, JSON.stringify(currentAuthUser));
 
