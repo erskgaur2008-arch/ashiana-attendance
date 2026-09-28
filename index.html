@@ -2344,18 +2344,26 @@
       }
 
       const tenantId = currentTenant.id;
-      const previousState = { staffDatabase, punchLedger, leaveRequests, auditLogs };
       let anyChange = false;
 
       // Never reuse browser-cached school records across workspace identities.
-      if (persistedTenantId !== currentTenant.id) {
+      // Clear the old workspace in memory before taking rollback snapshots.
+      if (persistedTenantId !== tenantId) {
         staffDatabase = [];
         punchLedger = [];
         leaveRequests = [];
         auditLogs = [];
-        persistedTenantId = currentTenant.id;
+        persistedTenantId = tenantId;
         savePersistedData();
       }
+      // Sync merges punches in place, so rollback snapshots must not share array
+      // references (or row objects) with the mutable live state.
+      const previousState = {
+        staffDatabase: staffDatabase.map(row => ({ ...row })),
+        punchLedger: punchLedger.map(row => ({ ...row })),
+        leaveRequests: leaveRequests.map(row => ({ ...row })),
+        auditLogs: auditLogs.map(row => ({ ...row }))
+      };
 
       try {
         updateCloudBadge(true, "Syncing…");
@@ -2995,7 +3003,14 @@
 
     async function handleLogout() {
       // Tear down tenant-bound event delivery before clearing workspace context.
+      const tenantIdToClear = currentTenant?.id || persistedTenantId;
       if (realtimeChannel && supabaseClient) { try { await supabaseClient.removeChannel(realtimeChannel); } catch (e) {} realtimeChannel = null; }
+      // Clear this workspace's persisted roster/attendance data on sign-out.
+      if (tenantIdToClear) {
+        const suffix = ':' + tenantIdToClear;
+        [STORAGE_KEY_STAFF, STORAGE_KEY_PUNCHES, STORAGE_KEY_LEAVE, STORAGE_KEY_AUDIT]
+          .forEach(key => localStorage.removeItem(key + suffix));
+      }
       try { if (supabaseClient) await supabaseClient.auth.signOut(); } catch (e) {}
       currentAuthUser = null;
       currentStaffId = null;
@@ -3003,6 +3018,7 @@
       persistedTenantId = null;
       staffDatabase = []; punchLedger = []; leaveRequests = []; auditLogs = [];
       sessionStorage.removeItem(STORAGE_KEY_CURRENT_USER);
+      tenantSyncQueued = false;
       showToast("Signed out safely.", "info");
       applyAuthenticatedUI();
     }
