@@ -2829,6 +2829,7 @@
         };
         currentStaffId = matched.id;
         sessionStorage.setItem(STORAGE_KEY_CURRENT_USER, JSON.stringify(currentAuthUser));
+        listenToRealtimePunches();
 
         await syncAllDataFromSupabase(false);
         playTone('SUCCESS');
@@ -2883,6 +2884,7 @@
         currentAuthUser = { type: 'ADMIN', username: userVal, role: adminRow.role, tenantId: tenant.id, tenantName: tenant.name, tenantSlug: tenant.slug };
         currentStaffId = null;
         sessionStorage.setItem(STORAGE_KEY_CURRENT_USER, JSON.stringify(currentAuthUser));
+        listenToRealtimePunches();
         await syncAllDataFromSupabase(false);
         recordAuditLog("ADMIN_LOGIN", "Security Gateway", "Administrator signed in to console.");
         playTone('SUCCESS');
@@ -2898,13 +2900,14 @@
     }
 
     async function handleLogout() {
+      // Tear down tenant-bound event delivery before clearing workspace context.
+      if (realtimeChannel && supabaseClient) { try { await supabaseClient.removeChannel(realtimeChannel); } catch (e) {} realtimeChannel = null; }
       try { if (supabaseClient) await supabaseClient.auth.signOut(); } catch (e) {}
       currentAuthUser = null;
       currentStaffId = null;
       currentTenant = null;
       persistedTenantId = null;
       staffDatabase = []; punchLedger = []; leaveRequests = []; auditLogs = [];
-      if (realtimeChannel && supabaseClient) { try { await supabaseClient.removeChannel(realtimeChannel); } catch (e) {} realtimeChannel = null; }
       sessionStorage.removeItem(STORAGE_KEY_CURRENT_USER);
       showToast("Signed out safely.", "info");
       applyAuthenticatedUI();
@@ -6488,7 +6491,10 @@ window.addEventListener('load',async function(){
       }
       // Start cloud synchronization in the background so the local UI becomes
       // interactive immediately. Supabase remains the authoritative source.
-      if (currentAuthUser) syncAllDataFromSupabase(false);
+      if (currentAuthUser) {
+        listenToRealtimePunches();
+        syncAllDataFromSupabase(false);
+      }
 
       const sel = document.getElementById("correction-staff-select");
       if (sel) sel.innerHTML = staffDatabase.map(s => `<option value="${s.id}">${s.name} (${s.empId})</option>`).join('');
