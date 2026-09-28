@@ -163,3 +163,6 @@ No production schema changes, Edge Function deployments, auth-user creation, sec
 - This improves database-row consistency but does not make PostgreSQL, Supabase Auth user creation, and tenant-membership insertion one distributed transaction. Existing best-effort cleanup and failure recovery still require isolated tests.
 - PIN changes remain a cross-system consistency risk: the stored PIN hash and Auth password are updated separately. A safe operational retry/reconciliation approach and failure-injection tests are still required before release.
 - Static implementation only. Migration and function are not deployed or runtime-tested; verify function signature, date casting, column types, grants, rollback paths, and Auth/membership cleanup in an isolated environment.
+
+
+- **Global staff-email consistency follow-up:** the administrator email-change path now validates the full email shape and checks for duplicates across all tenant staff records, rather than only within the administrator's own tenant. This aligns the pre-check with the product decision that staff email addresses are globally unique; database/Auth uniqueness and rollback behavior still require isolated integration tests. Branch-only static change; not deployed or runtime-tested.
