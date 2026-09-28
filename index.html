@@ -2817,8 +2817,8 @@
         const idx = staffDatabase.findIndex(s => s.id === matched.id);
         if (idx >= 0) staffDatabase[idx] = { ...staffDatabase[idx], ...matched };
         else staffDatabase.push(matched);
-        savePersistedData();
 
+        // Establish verified tenant context before persisting any workspace data.
         currentTenant = resolvedTenant;
         currentAuthUser = {
           type: 'STAFF',
@@ -2828,6 +2828,8 @@
           tenantSlug: resolvedTenant.slug
         };
         currentStaffId = matched.id;
+        persistedTenantId = resolvedTenant.id;
+        savePersistedData();
         sessionStorage.setItem(STORAGE_KEY_CURRENT_USER, JSON.stringify(currentAuthUser));
         listenToRealtimePunches();
 
