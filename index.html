@@ -2523,22 +2523,26 @@
 
     // WebSockets Real-Time Sync Channel for Live Tables
     function listenToRealtimePunches() {
-      if (!supabaseClient || !checkWebSocketSupport()) return;
+      // Realtime must be bound to a verified workspace. RLS remains the
+      // authorization boundary; this filter also avoids cross-tenant event noise.
+      if (!supabaseClient || !checkWebSocketSupport() || !currentTenant?.id ||
+          !currentAuthUser || currentAuthUser.tenantId !== currentTenant.id) return;
 
       try {
         if (realtimeChannel) {
           try { supabaseClient.removeChannel(realtimeChannel); } catch (e) {}
+          realtimeChannel = null;
         }
-
+        const tenantFilter = `tenant_id=eq.${currentTenant.id}`;
         realtimeChannel = supabaseClient
-          .channel('public:db_sync_channel')
-          .on('postgres_changes', { event: '*', schema: 'public', table: 'attendance_punches' }, payload => {
+          .channel(`tenant:${currentTenant.id}:db_sync_channel`)
+          .on('postgres_changes', { event: '*', schema: 'public', table: 'attendance_punches', filter: tenantFilter }, () => {
             syncAllDataFromSupabase(false);
           })
-          .on('postgres_changes', { event: '*', schema: 'public', table: 'staff' }, payload => {
+          .on('postgres_changes', { event: '*', schema: 'public', table: 'staff', filter: tenantFilter }, () => {
             syncAllDataFromSupabase(false);
           })
-          .on('postgres_changes', { event: '*', schema: 'public', table: 'leave_requests' }, payload => {
+          .on('postgres_changes', { event: '*', schema: 'public', table: 'leave_requests', filter: tenantFilter }, () => {
             syncAllDataFromSupabase(false);
           })
           .subscribe((status, err) => {
@@ -4037,7 +4041,7 @@ window.addEventListener('load',async function(){
         generated_by: generatedBy,
         generated_at: new Date().toISOString()
       }));
-      const { error } = await supabaseClient.from('staff_id_cards').upsert(rows, { onConflict: 'staff_id' });
+      const { error } = await supabaseClient.from('staff_id_cards').upsert(rows, { onConflict: 'tenant_id,staff_id' });
       if (error) throw error;
     }
 
