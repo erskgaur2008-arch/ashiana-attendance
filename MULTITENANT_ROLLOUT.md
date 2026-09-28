@@ -72,3 +72,12 @@ This branch is the isolated implementation track for converting EduPunch into a 
 ## Non-goals for this stage
 
 No production schema changes, Edge Function deployments, auth-user creation, secrets changes, or merge to `main` are performed by this branch-only preparation.
+
+
+## Additional static review findings (2026-09-28)
+
+- A source review found over-escaped PIN and email validation regexes in the staged `reset-staff-pin` `create_staff` branch. These have been corrected in the branch source; compilation and runtime behavior are not yet tested.
+- Live read-only grant inspection showed broad table privileges for `anon` and `authenticated` on the known business tables. Migration `20260928007000_revoke_anon_business_table_grants.sql` stages revocation of all anonymous privileges on those tables as defense in depth. It has not been applied. Authenticated grants still need least-privilege review; RLS policies alone do not restrict which columns a permitted UPDATE can modify.
+- The staged `tenant_staff_self_update` policy constrains the row to the signed-in staff email and tenant, but does not constrain changed columns. Before release, either remove staff self-update if not required or enforce an explicit safe-column allowlist (for example through carefully reviewed column privileges or a trigger). Keep administrator update workflows functional.
+- The known live public business tables are RLS-enabled, but RLS is not forced. Service-role and table-owner behavior, all non-public schemas, views, RPCs, storage policies, and grants need a separate exposure audit.
+- No isolated database has been provisioned and no migration/function has been executed for testing. These changes are static-review findings only and are not release approval.
