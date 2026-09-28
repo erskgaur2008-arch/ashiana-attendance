@@ -1908,6 +1908,8 @@
     let supabaseClient = null;
     let isCloudConnected = false;
     let realtimeChannel = null;
+    let tenantSyncPromise = null;
+    let tenantSyncQueued = false;
     let autoPollingInterval = null;
     let html5QrScannerInstance = null;
     let isScannerRunning = false;
@@ -2309,6 +2311,25 @@
     // 🌐 COMPREHENSIVE MULTI-DEVICE CLOUD SYNCHRONIZATION ENGINE
     // =========================================================================
     async function syncAllDataFromSupabase(notifyManual = false) {
+      // Serialize refreshes. Realtime/polling events during a refresh request one
+      // additional pass, rather than racing writes to shared tenant arrays.
+      if (tenantSyncPromise) {
+        tenantSyncQueued = true;
+        return tenantSyncPromise;
+      }
+      tenantSyncPromise = (async () => {
+        let result = false;
+        do {
+          tenantSyncQueued = false;
+          result = await syncAllDataFromSupabaseOnce(notifyManual);
+        } while (tenantSyncQueued && currentAuthUser && currentTenant?.id === currentAuthUser.tenantId);
+        return result;
+      })();
+      try { return await tenantSyncPromise; }
+      finally { tenantSyncPromise = null; }
+    }
+
+    async function syncAllDataFromSupabaseOnce(notifyManual = false) {
       if (!supabaseClient) {
         if (notifyManual) showToast("Database client not ready.", "error");
         return;
