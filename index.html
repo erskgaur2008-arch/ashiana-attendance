@@ -2897,6 +2897,13 @@
         showToast(`Welcome, ${matched.name}!`, "success");
         applyAuthenticatedUI();
       } catch (err) {
+        if (realtimeChannel && supabaseClient) { try { await supabaseClient.removeChannel(realtimeChannel); } catch (_) {} realtimeChannel = null; }
+        try { await supabaseClient?.auth.signOut(); } catch (_) {}
+        currentAuthUser = null; currentStaffId = null; currentTenant = null;
+        persistedTenantId = null;
+        staffDatabase = []; punchLedger = []; leaveRequests = []; auditLogs = [];
+        sessionStorage.removeItem(STORAGE_KEY_CURRENT_USER);
+        applyAuthenticatedUI();
         playTone('ERROR');
         const msg = String(err?.message || err);
         if (msg.includes('RATE_LIMIT')) {
