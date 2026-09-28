@@ -55,8 +55,13 @@ This branch is the isolated implementation track for converting EduPunch into a 
 
 ## Decisions / blockers requiring product-owner input
 
-- **New-school onboarding:** choose who may create a tenant (self-serve signup, platform-super-admin approval, or operator-provisioned) and how the first `SCHOOL_ADMIN` Auth user is verified and assigned. Current membership seeding only covers existing matching Ashiana users; there is no secure tenant provisioning flow yet.
-- **Staff identity:** confirm whether employee IDs and staff emails must be globally unique across all schools or only unique within each school. Existing `staff.id` is the primary key, `emp_id` is globally unique, and related tables currently use single-column staff foreign keys; a safe composite-key migration depends on this decision.
+- **New-school onboarding (decided):** schools may submit a signup request, but a platform approver must approve it before a tenant and its first `SCHOOL_ADMIN` membership become active. The approver identity, approval interface, and first-admin verification flow still need implementation.
+- **Staff identity (decided):** employee IDs may be reused by different schools; staff email addresses must remain globally unique. Existing `staff.id` is the primary key, `emp_id` currently has a global uniqueness rule, and related tables use single-column staff foreign keys. A migration must remove global uniqueness from `emp_id`, add tenant-scoped uniqueness, and enforce normalized global email uniqueness without conflicting with Auth identities.
+
+## Pending product-owner input
+
+- Provide the email address (or other controlled identity) that will own platform-level school approvals. This must be a trusted, non-publicly assignable platform role, separate from `SCHOOL_ADMIN`.
+- Decide staff login discovery UX: because employee IDs may repeat across schools, login by employee ID alone is ambiguous. The login flow must collect a school slug/code (or require email login) and the server must resolve the staff record within that school before validating the PIN. The approved onboarding flow should issue the school code after approval.
 
 ## Non-goals for this stage
 
