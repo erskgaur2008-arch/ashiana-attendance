@@ -5315,15 +5315,42 @@ window.addEventListener('load',async function(){
         .toUpperCase() || "AP";
     }
 
-    function renderStaffAvatar(elementId, staff) {
+    const staffAvatarSignedUrlCache = new Map();
+    let staffAvatarRenderSequence = 0;
+
+    async function resolveStaffAvatarUrl(value) {
+      const raw = String(value || '').trim();
+      if (!raw || !supabaseClient) return '';
+      let objectPath = raw;
+      try {
+        if (/^https?:\\/\\//i.test(raw)) {
+          const parsed = new URL(raw);
+          const marker = '/storage/v1/object/public/staff-avatars/';
+          const offset = parsed.pathname.indexOf(marker);
+          if (offset < 0) return '';
+          objectPath = decodeURIComponent(parsed.pathname.slice(offset + marker.length));
+        }
+      } catch (_) { return ''; }
+      if (!objectPath || objectPath.startsWith('/') || objectPath.split('/').some(part => !part || part === '.' || part === '..')) return '';
+      const cacheEntry = staffAvatarSignedUrlCache.get(objectPath);
+      if (cacheEntry && cacheEntry.expiresAt > Date.now()) return cacheEntry.url;
+      const { data, error } = await supabaseClient.storage.from('staff-avatars').createSignedUrl(objectPath, 3600);
+      if (error || !data?.signedUrl) return '';
+      staffAvatarSignedUrlCache.set(objectPath, { url: data.signedUrl, expiresAt: Date.now() + 50 * 60 * 1000 });
+      return data.signedUrl;
+    }
+
+    async function renderStaffAvatar(elementId, staff) {
       const el = document.getElementById(elementId);
       if (!el) return;
-      const avatarUrl = String(staff?.avatarUrl || staff?.avatar_url || '').trim();
-      if (avatarUrl) {
-        el.innerHTML = `<img src="${avatarUrl}" alt="Staff profile photo" class="w-full h-full object-cover" loading="eager" referrerpolicy="no-referrer">`;
-      } else {
-        el.textContent = getStaffInitials(staff?.name);
-      }
+      const token = ++staffAvatarRenderSequence;
+      el.dataset.avatarRenderToken = String(token);
+      const raw = String(staff?.avatarUrl || staff?.avatar_url || '').trim();
+      if (!raw) { el.textContent = getStaffInitials(staff?.name); return; }
+      el.textContent = getStaffInitials(staff?.name);
+      const signedUrl = await resolveStaffAvatarUrl(raw);
+      if (!signedUrl || el.dataset.avatarRenderToken !== String(token) || !el.isConnected) return;
+      el.innerHTML = `<img src="${escapeIdCardHtml(signedUrl)}" alt="Staff profile photo" class="w-full h-full object-cover" loading="eager" referrerpolicy="no-referrer">`;
     }
 
     async function handleStaffAvatarUpload(event) {
@@ -5350,15 +5377,15 @@ window.addEventListener('load',async function(){
         if (authError || !authData?.user?.id) throw new Error("Staff authentication session is unavailable.");
 
         const ext = file.type === 'image/png' ? 'png' : file.type === 'image/webp' ? 'webp' : 'jpg';
-        const path = `${authData.user.id}/profile-${Date.now()}.${ext}`;
+        if (!currentTenant?.id) throw new Error('Active school workspace is unavailable.');
+        const path = `${currentTenant.id}/${authData.user.id}/profile-${Date.now()}.${ext}`;
         const { data: uploaded, error: uploadError } = await supabaseClient.storage
           .from('staff-avatars')
           .upload(path, file, { contentType: file.type, cacheControl: '3600', upsert: false });
         if (uploadError) throw uploadError;
 
-        const { data: publicData } = supabaseClient.storage.from('staff-avatars').getPublicUrl(uploaded.path);
-        const avatarUrl = publicData?.publicUrl;
-        if (!avatarUrl) throw new Error("Could not create the profile photo URL.");
+        const avatarUrl = uploaded.path;
+        if (!avatarUrl) throw new Error("Could not resolve the uploaded profile photo path.");
 
         const { error: updateError } = await supabaseClient
           .from('staff')
