@@ -1890,8 +1890,8 @@
     // =========================================================================
     // ⚙️ TEST SUPABASE CREDENTIALS (ISOLATED)
     // =========================================================================
-    const DEFAULT_SUPABASE_URL = "https://wecoexmaafpfmeuukujz.supabase.co";
-    const DEFAULT_SUPABASE_ANON_KEY = "sb_publishable_KCBRh8rwSH1KUyWJ0pRSPw_hcj0NSjT";
+    const DEFAULT_SUPABASE_URL = "https://oalfzgluqroqbbrulhpr.supabase.co";
+    const DEFAULT_SUPABASE_ANON_KEY = "eyJhbGciOiJIUzI1NiIsInR5cCI6IkpXVCJ9.eyJpc3MiOiJzdXBhYmFzZSIsInJlZiI6Im9hbGZ6Z2x1cXJvcWJicnVsaHByIiwicm9sZSI6ImFub24iLCJpYXQiOjE3OTAwNjAwMDQsImV4cCI6MjEwNTYzNjAwNH0.eBl1Q_ZmlUSoUHWqsv1qfVgreAGuJkBG2alPwT-Kaz8";
 
     // System Attendance Parameters
     const systemConfig = {
@@ -6588,8 +6588,8 @@ window.addEventListener('load',async function(){
   button.addEventListener("click",async function(){
     button.disabled=true;button.textContent="Checking…";
     status.textContent="Checking Supabase Auth and database API…";
-    const base="https://wecoexmaafpfmeuukujz.supabase.co";
-    const key="sb_publishable_KCBRh8rwSH1KUyWJ0pRSPw_hcj0NSjT";
+    const base="https://oalfzgluqroqbbrulhpr.supabase.co";
+    const key="eyJhbGciOiJIUzI1NiIsInR5cCI6IkpXVCJ9.eyJpc3MiOiJzdXBhYmFzZSIsInJlZiI6Im9hbGZ6Z2x1cXJvcWJicnVsaHByIiwicm9sZSI6ImFub24iLCJpYXQiOjE3OTAwNjAwMDQsImV4cCI6MjEwNTYzNjAwNH0.eBl1Q_ZmlUSoUHWqsv1qfVgreAGuJkBG2alPwT-Kaz8";
     try{
       const auth=await fetch(base+"/auth/v1/health",{method:"GET",headers:{apikey:key}});
       const db=await fetch(base+"/rest/v1/rpc/edupunch_test_connection",{method:"POST",headers:{apikey:key,"Content-Type":"application/json"},body:"{}"});
