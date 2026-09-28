@@ -3692,7 +3692,7 @@
     }
 
     function makeBulkIdCardHtml(staff, logoUrl, index) {
-      const photo = await resolveStaffAvatarUrl(staff.avatarUrl || staff.avatar_url || '');
+      const photo = String(staff.avatarUrl || staff.avatar_url || '').trim();
       const photoHtml = photo
         ? `<img class="photo-img" src="${escapeIdCardHtml(photo)}" alt="Staff Photo">`
         : `<div class="photo-fallback">${escapeIdCardHtml(getStaffInitials(staff.name))}</div>`;
@@ -4190,7 +4190,7 @@ window.addEventListener('load',async function(){
         }
       }
 
-      const photo = String(staff.avatarUrl || staff.avatar_url || '').trim();
+      const photo = await resolveStaffAvatarUrl(staff.avatarUrl || staff.avatar_url || '');
       const logoUrl = new URL('logo 2.png', window.location.href).href;
       const photoHtml = photo
         ? `<img src="${escapeIdCardHtml(photo)}" alt="Staff Photo">`
