@@ -2092,6 +2092,20 @@
       return data;
     }
 
+    function staffAccountErrorMessage(error, action = 'Staff account operation') {
+      const code = String(error?.message || error || '');
+      const guidance = {
+        PIN_AUTH_SYNC_PENDING: 'Auth accepted the new PIN, but the attendance PIN could not be confirmed. Retry the exact same 4-digit PIN to synchronize it. Do not choose a different PIN until this retry succeeds.',
+        STAFF_MEMBERSHIP_RECOVERY_REQUIRED: 'The staff login could not be linked to this school, and no PIN change was attempted. Contact the platform administrator to reconcile the account before retrying.',
+        STAFF_MEMBERSHIP_ROLE_CONFLICT: 'This login has a conflicting school membership role. Contact the platform administrator to reconcile the account before changing its PIN.',
+        STAFF_AUTH_EMAIL_MISMATCH: 'The linked login does not match this staff email. Contact the platform administrator to reconcile the account before changing its PIN.',
+        STAFF_AUTH_IDENTITY_CONFLICT: 'This login is linked to a different staff identity. Contact the platform administrator to reconcile the account before changing its PIN.',
+        STAFF_PROVISIONING_RECOVERY_REQUIRED: 'Staff creation did not finish cleanly and cleanup could not be confirmed. Contact the platform administrator to reconcile the incomplete account before trying to create it again.',
+        STAFF_EMAIL_SYNC_PENDING: 'The email change may be incomplete across the staff record and login. Contact the platform administrator to reconcile the account before retrying.',
+      };
+      return guidance[code] || (code ? `${action} failed: ${code}` : `${action} failed. Please refresh and try again.`);
+    }
+
     // Resolve the signed-in identity against the trusted tenant membership table.
     // Multi-workspace selection is intentionally blocked until the workspace switcher is implemented.
     async function resolveTenantMembership(userId) {
@@ -2736,7 +2750,7 @@
         if (msg.includes('INVALID_OR_EXPIRED') || msg.includes('AUTHENTICATION')) {
           showToast('The reset link has expired or is invalid. Please request a new one.', 'error');
         } else {
-          showToast('PIN reset failed: ' + msg, 'error');
+          showToast(staffAccountErrorMessage(err, 'PIN reset'), 'error');
         }
       } finally {
         if (btn) {
@@ -5675,7 +5689,7 @@ window.addEventListener('load',async function(){
         if (sel) sel.innerHTML = staffDatabase.map(s => `<option value="${s.id}">${s.name} (${s.empId})</option>`).join('');
       } catch (e) {
         playTone('ERROR');
-        showToast("Staff creation failed: " + (e?.message || e), "error");
+        showToast(staffAccountErrorMessage(e, "Staff creation"), "error");
       }
     }
 
@@ -5825,7 +5839,7 @@ window.addEventListener('load',async function(){
         renderStaffDirectoryTable();
       } catch (e) {
         playTone('ERROR');
-        showToast("PIN reset failed: " + (e?.message || e), "error");
+        showToast(staffAccountErrorMessage(e, "PIN reset"), "error");
       }
     }
 
