@@ -6,6 +6,7 @@ begin;
 create or replace function public.set_staff_pin(p_staff_id text, p_pin text)
 returns boolean
 language plpgsql
+security definer
 set search_path to ''
 as $function$
 declare
