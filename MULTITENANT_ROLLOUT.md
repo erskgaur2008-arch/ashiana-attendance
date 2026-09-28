@@ -139,3 +139,6 @@ No production schema changes, Edge Function deployments, auth-user creation, sec
 
 
 - **Leave-decision consistency follow-up:** approve/reject handlers now require a verified admin tenant session, await the tenant-filtered Supabase update, and verify a row was returned before changing local status, caching, audit display, or success feedback. Backend errors leave local status unchanged and are surfaced to the administrator. Static review only; validate UPDATE ... RETURNING under the actual RLS/grants and concurrent decision behavior in isolation.
+
+
+- **Attendance/leave write consistency follow-up:** admin quick-punch and manual correction now require a verified administrator tenant session and persist the tenant-filtered punch to Supabase before changing the local ledger or showing success. Staff leave submission now requires a verified staff tenant session, validates date order, awaits the tenant-scoped insert, and only then updates local state and reports success. Failed cloud writes are surfaced without optimistic local mutation. Static source review only; validate schema columns, RLS insert/update grants, returned errors, and duplicate/concurrent requests in isolated integration tests.
