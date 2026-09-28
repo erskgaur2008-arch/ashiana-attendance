@@ -5467,7 +5467,7 @@ window.addEventListener('load',async function(){
       try {
         if (!supabaseClient) throw new Error("Cloud database is unavailable.");
 
-        const { error } = await supabaseClient
+        const { data, error } = await supabaseClient
           .from('staff')
           .update({
             name: newName,
@@ -5476,9 +5476,10 @@ window.addEventListener('load',async function(){
             phone: newPhone || null,
             address: newAddress || null
           })
-          .eq('tenant_id', currentTenant?.id).eq('id', staff.id);
+          .eq('tenant_id', currentTenant?.id).eq('id', staff.id).select('id').maybeSingle();
 
         if (error) throw error;
+        if (!data?.id) throw new Error("Profile was not updated. Refresh and retry.");
 
         Object.assign(staff, {
           name: newName,
@@ -5763,12 +5764,13 @@ window.addEventListener('load',async function(){
           valid_thru: validThru
         };
 
-        const { error } = await supabaseClient
+        const { data, error } = await supabaseClient
           .from('staff')
           .update(updatePayload)
-          .eq('tenant_id', currentTenant?.id).eq('id', staff.id);
+          .eq('tenant_id', currentTenant?.id).eq('id', staff.id).select('id').maybeSingle();
 
         if (error) throw error;
+        if (!data?.id) throw new Error("Staff record was not updated. Refresh and retry.");
 
         Object.assign(staff, { name, department, role, email, status, phone, address, validThru });
         savePersistedData();
