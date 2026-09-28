@@ -374,6 +374,41 @@ Deno.serve(async (req: Request) => {
 
     if (!userId) return json({ error: "Staff Auth account could not be located." }, 404);
 
+    // Confirm the email lookup resolves to the intended staff identity before
+    // changing credentials. Legacy accounts without metadata are permitted
+    // only when their Auth email matches the staff record.
+    const { data: authIdentity, error: authIdentityError } =
+      await adminClient.auth.admin.getUserById(userId);
+    if (authIdentityError) throw authIdentityError;
+    const linkedAuthUser = authIdentity?.user;
+    if (!linkedAuthUser?.email || linkedAuthUser.email.trim().toLowerCase() !== staffEmail) {
+      return json({ error: "STAFF_AUTH_EMAIL_MISMATCH", message: "The resolved Auth account does not match this staff email. Reconcile the account before resetting its PIN." }, 409);
+    }
+    const linkedStaffId = linkedAuthUser.user_metadata?.staff_id;
+    const linkedAccountType = linkedAuthUser.user_metadata?.account_type;
+    if ((linkedStaffId && linkedStaffId !== staff.id) ||
+        (linkedAccountType && linkedAccountType !== "staff")) {
+      return json({ error: "STAFF_AUTH_IDENTITY_CONFLICT", message: "The Auth account is linked to a different identity. Reconcile the account before resetting its PIN." }, 409);
+    }
+
+    // Repair a missing STAFF membership before changing credentials, but
+    // never overwrite an existing membership with another role.
+    const { data: existingMembership, error: existingMembershipError } =
+      await adminClient.from("tenant_memberships").select("role,active")
+        .eq("tenant_id", adminTenantId).eq("user_id", userId).maybeSingle();
+    if (existingMembershipError) throw existingMembershipError;
+    if (existingMembership && existingMembership.role !== "STAFF") {
+      return json({ error: "STAFF_MEMBERSHIP_ROLE_CONFLICT", message: "This Auth user already has a non-staff membership in the school. Reconcile the account before resetting its PIN." }, 409);
+    }
+    const { error: membershipRepairError } = await adminClient.from("tenant_memberships").upsert(
+      { tenant_id: adminTenantId, user_id: userId, role: "STAFF", active: true },
+      { onConflict: "tenant_id,user_id" }
+    );
+    if (membershipRepairError) {
+      console.error("Staff membership repair failed before PIN reset:", membershipRepairError);
+      return json({ error: "STAFF_MEMBERSHIP_RECOVERY_REQUIRED", message: "The staff login could not be linked to this school. No PIN change was attempted; contact the platform administrator to reconcile the account." }, 503);
+    }
+
     // Update Auth first. A subsequent DB failure is explicitly reported so
     // the administrator can retry the same PIN and converge both stores.
     const { error: authUpdateError } =
