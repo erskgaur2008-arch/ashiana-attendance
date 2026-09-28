@@ -2322,6 +2322,8 @@
         return;
       }
 
+      const tenantId = currentTenant.id;
+      const previousState = { staffDatabase, punchLedger, leaveRequests, auditLogs };
       let anyChange = false;
 
       // Never reuse browser-cached school records across workspace identities.
@@ -2340,12 +2342,11 @@
         const { data: remoteStaff, error: staffErr } = await supabaseClient
            .from('staff')
           .select('*')
-          .eq('tenant_id', currentTenant.id)
+          .eq('tenant_id', tenantId)
           .order('name', { ascending: true });
 
-        if (staffErr) {
-          console.warn("Supabase staff sync notice:", staffErr);
-        } else if (remoteStaff && remoteStaff.length > 0) {
+        if (staffErr) throw new Error("Staff data could not be verified: " + staffErr.message);
+        if (remoteStaff && remoteStaff.length > 0) {
           // Compare remote staff with local staff
           const remoteMap = new Map();
           remoteStaff.forEach(s => {
@@ -2387,12 +2388,11 @@
         const { data: remotePunches, error: punchErr } = await supabaseClient
            .from('attendance_punches')
           .select('*')
-          .eq('tenant_id', currentTenant.id)
+          .eq('tenant_id', tenantId)
           .order('created_at', { ascending: true });
 
-        if (punchErr) {
-          console.warn("Supabase punches sync notice:", punchErr);
-        } else if (remotePunches) {
+        if (punchErr) throw new Error("Attendance data could not be verified: " + punchErr.message);
+        if (remotePunches) {
           remotePunches.forEach(rp => {
             const exists = punchLedger.some(p => 
               p.id === rp.id || 
@@ -2418,12 +2418,11 @@
         const { data: remoteLeaves, error: leaveErr } = await supabaseClient
            .from('leave_requests')
           .select('*')
-          .eq('tenant_id', currentTenant.id)
+          .eq('tenant_id', tenantId)
           .order('created_at', { ascending: false });
 
-        if (leaveErr) {
-          console.warn("Supabase leaves sync notice:", leaveErr);
-        } else if (remoteLeaves) {
+        if (leaveErr) throw new Error("Leave data could not be verified: " + leaveErr.message);
+        if (remoteLeaves) {
           // Supabase is the authoritative source for leave data. Replace the
           // local cache instead of merging it, so deleted/expired/demo leave
           // records cannot keep appearing on the Admin dashboard.
@@ -2442,6 +2441,8 @@
             anyChange = true;
           }
         }
+
+        if (currentAuthUser !== sessionUser || currentTenant?.id !== tenantId || sessionUser.tenantId !== tenantId) return false;
 
         if (anyChange) {
           savePersistedData();
@@ -2464,10 +2465,18 @@
         }
 
         updateCloudBadge(true, "Cloud Live");
+        return true;
       } catch (err) {
+        if (currentAuthUser === sessionUser && currentTenant?.id === tenantId) {
+          staffDatabase = previousState.staffDatabase;
+          punchLedger = previousState.punchLedger;
+          leaveRequests = previousState.leaveRequests;
+          auditLogs = previousState.auditLogs;
+        }
         console.warn("Global sync error:", err);
         updateCloudBadge(false, "Sync Error");
-        if (notifyManual) showToast("Sync error: " + err.message, "error");
+        if (notifyManual) showToast("Cloud data could not be fully verified. Please retry. " + (err?.message || ""), "error");
+        return false;
       }
     }
 
@@ -2883,7 +2892,7 @@
         sessionStorage.setItem(STORAGE_KEY_CURRENT_USER, JSON.stringify(currentAuthUser));
         listenToRealtimePunches();
 
-        await syncAllDataFromSupabase(false);
+        if (!await syncAllDataFromSupabase(false)) throw new Error("Cloud workspace data could not be fully verified. Please try signing in again.");
         playTone('SUCCESS');
         showToast(`Welcome, ${matched.name}!`, "success");
         applyAuthenticatedUI();
@@ -2943,7 +2952,7 @@
         currentStaffId = null;
         sessionStorage.setItem(STORAGE_KEY_CURRENT_USER, JSON.stringify(currentAuthUser));
         listenToRealtimePunches();
-        await syncAllDataFromSupabase(false);
+        if (!await syncAllDataFromSupabase(false)) throw new Error("Cloud workspace data could not be fully verified. Please try signing in again.");
         recordAuditLog("ADMIN_LOGIN", "Security Gateway", "Administrator signed in to console.");
         playTone('SUCCESS');
         showToast("Administrator signed in successfully.", "success");
@@ -6496,8 +6505,16 @@ window.addEventListener('load',async function(){
       // Start cloud synchronization in the background so the local UI becomes
       // interactive immediately. Supabase remains the authoritative source.
       if (currentAuthUser) {
-        listenToRealtimePunches();
-        syncAllDataFromSupabase(false);
+        const synced = await syncAllDataFromSupabase(false);
+        if (!synced) {
+          try { await supabaseClient?.auth.signOut(); } catch (_) {}
+          currentAuthUser = null; currentStaffId = null; currentTenant = null;
+          persistedTenantId = null;
+          staffDatabase = []; punchLedger = []; leaveRequests = []; auditLogs = [];
+          sessionStorage.removeItem(STORAGE_KEY_CURRENT_USER);
+        } else {
+          listenToRealtimePunches();
+        }
       }
 
       const sel = document.getElementById("correction-staff-select");
