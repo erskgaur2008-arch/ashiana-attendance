@@ -14,6 +14,32 @@ drop policy if exists staff_avatar_authenticated_insert on storage.objects;
 drop policy if exists staff_avatar_authenticated_update on storage.objects;
 drop policy if exists staff_avatar_authenticated_delete on storage.objects;
 
+-- SECURITY DEFINER is limited to this private-schema helper so legacy avatar
+-- rows can be checked despite staff-table self/admin RLS. It derives identity
+-- from auth.uid() and only returns a boolean for the exact object key.
+create or replace function private.can_read_staff_avatar(p_object_name text)
+returns boolean
+language sql
+stable
+security definer
+set search_path to ''
+as $function$
+  select auth.uid() is not null and exists (
+    select 1
+    from public.staff s
+    join public.tenant_memberships m on m.tenant_id = s.tenant_id
+    join public.tenants t on t.id = s.tenant_id
+    where s.avatar_url is not null
+      and right(s.avatar_url, length(p_object_name)) = p_object_name
+      and m.user_id = (select auth.uid())
+      and m.active = true
+      and m.role in ('STAFF', 'SCHOOL_ADMIN')
+      and t.status = 'active'
+  );
+$function$;
+revoke all on function private.can_read_staff_avatar(text) from public, anon;
+grant execute on function private.can_read_staff_avatar(text) to authenticated, service_role;
+
 -- Active staff and school administrators may read avatars in their own active
 -- tenant. New objects use {tenant_uuid}/{auth_user_uuid}/...; legacy objects
 -- remain under {auth_user_uuid}/... and are authorized through staff.avatar_url.
@@ -36,16 +62,7 @@ using (
        limit 1),
       'SCHOOL_ADMIN'
     )
-    or exists (
-      select 1
-      from public.staff s
-      where s.avatar_url is not null
-        and right(s.avatar_url, length(name)) = name
-        and (
-          private.has_active_tenant_role(s.tenant_id, 'STAFF')
-          or private.has_active_tenant_role(s.tenant_id, 'SCHOOL_ADMIN')
-        )
-    )
+    or private.can_read_staff_avatar(name)
   )
 );
 
