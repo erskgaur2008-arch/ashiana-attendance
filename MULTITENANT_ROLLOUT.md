@@ -19,7 +19,7 @@ This branch is the isolated implementation track for converting EduPunch into a 
 - **Staff login flow staged:** the staff form now accepts School Code + Employee ID + PIN, or registered email + PIN. The branch-only `verify-attendance` source resolves employee IDs by active tenant slug, binds email lookup to the staff row tenant, validates active tenant/membership, and scopes attendance QR/punch lookups by tenant. The browser sends the school code and requires the response to include a tenant ID. This source is not deployed; compatibility, provisioning and login behavior still require isolated testing.
 - Auth resolution and the primary frontend sync path are tenant-aware in this branch; staff and leave operations have tenant filters. Legacy unscoped browser cache and session-user hydration are disabled before authentication, and logout clears tenant memory and realtime subscription. Tenant-specific cache restore remains deferred until after trusted membership resolution. These client filters are not a security boundary.
 - The production database was inspected read-only: existing business tables have RLS enabled but no `tenant_id` columns yet, confirming that the branch migrations remain unapplied. Existing policies include global `private.is_admin()` checks and email-based staff self-access; they must be replaced transactionally after tenant columns exist.
-- The deployed Edge Functions were inspected read-only. They use service-role access; deployed code resolves admins/staff by email without tenant membership checks, and `verify-attendance` has `verify_jwt=false` with custom bearer validation only on its attendance action. A tenant-aware `verify-attendance` source copy is now staged on this branch only; it has not been deployed.
+- The deployed Edge Functions were inspected read-only. Deployed code resolves admins/staff without tenant membership checks; `verify-attendance` has `verify_jwt=false` with custom bearer validation only on attendance action. Tenant-aware source copies of `verify-attendance` and `generate-attendance-qr` are now staged on this branch only. QR generation derives one active `SCHOOL_ADMIN` membership from the Auth identity, requires an active tenant and tenant-bound admin profile, and scopes QR session reads/updates/inserts by tenant. Neither function source is deployed; isolated validation is still required.
 - Do not apply these migrations to production or merge this branch yet.
 
 ## Required implementation gates
@@ -44,7 +44,7 @@ This branch is the isolated implementation track for converting EduPunch into a 
    - Audit grants, including elevated table privileges, and verify no exposed table is unintentionally accessible.
 
 4. **Edge Functions**
-   - Update `verify-attendance`, `generate-attendance-qr`, and `reset-staff-pin` to validate the bearer user's active tenant membership and role.
+   - Update `verify-attendance`, `generate-attendance-qr`, and `reset-staff-pin` to validate the bearer user's active tenant membership and role. Tenant-aware source is staged for the first two; `reset-staff-pin` remains outstanding.
    - Derive tenant scope from validated membership, not caller-supplied tenant IDs.
    - Scope all service-role queries and mutations by tenant, staff identity, and relevant record ownership.
    - Return non-enumerating authorization errors and validate all request payloads.
