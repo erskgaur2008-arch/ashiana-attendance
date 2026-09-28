@@ -13,6 +13,7 @@ This branch is the isolated implementation track for converting EduPunch into a 
 
 - `20260928000000_multitenant_foundation.sql` creates the tenant tables and adds/backfills tenant identifiers.
 - `20260928001000_seed_ashiana_memberships.sql` seeds memberships for existing Auth users whose email matches an active Ashiana admin or staff record.
+- `20260928002000_school_applications.sql` adds an authenticated school-application queue. Applicants can submit and read their own pending/reviewed request; the verified platform approver email can read the queue. Direct client updates/deletes and approval mutations are not granted; approval/provisioning must be implemented in a trusted Edge Function.
 - These migrations are committed to `feat/multi-tenant-foundation` only. They have **not** been applied to the production database.
 - Auth resolution and the primary frontend sync path are tenant-aware in this branch; staff and leave operations have tenant filters. Legacy unscoped browser cache and session-user hydration are disabled before authentication, and logout clears tenant memory and realtime subscription. Tenant-specific cache restore remains deferred until after trusted membership resolution. These client filters are not a security boundary.
 - The production database was inspected read-only: existing business tables have RLS enabled but no `tenant_id` columns yet, confirming that the branch migrations remain unapplied. Existing policies include global `private.is_admin()` checks and email-based staff self-access; they must be replaced transactionally after tenant columns exist.
@@ -55,7 +56,7 @@ This branch is the isolated implementation track for converting EduPunch into a 
 
 ## Decisions / blockers requiring product-owner input
 
-- **New-school onboarding (decided):** schools may submit a signup request, but a platform approver must approve it before a tenant and its first `SCHOOL_ADMIN` membership become active. The approver identity, approval interface, and first-admin verification flow still need implementation.
+- **New-school onboarding (decided):** schools may submit a signup request, but a platform approver must approve it before a tenant and its first `SCHOOL_ADMIN` membership become active. The approver identity is set to `rajkumargaur54@gmail.com`; the approval interface, trusted approval/provisioning Edge Function, and first-admin verification flow still need implementation. The staged application queue is not yet wired to the frontend.
 - **Staff identity (decided):** employee IDs may be reused by different schools; staff email addresses must remain globally unique. Existing `staff.id` is the primary key, `emp_id` currently has a global uniqueness rule, and related tables use single-column staff foreign keys. A migration must remove global uniqueness from `emp_id`, add tenant-scoped uniqueness, and enforce normalized global email uniqueness without conflicting with Auth identities.
 
 ## Product-owner decisions
