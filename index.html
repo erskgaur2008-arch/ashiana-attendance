@@ -2859,6 +2859,9 @@
         showToast("Administrator signed in successfully.", "success");
         applyAuthenticatedUI();
       } catch (err) {
+        try { await supabaseClient?.auth.signOut(); } catch (_) {}
+        currentAuthUser = null; currentStaffId = null; currentTenant = null;
+        sessionStorage.removeItem(STORAGE_KEY_CURRENT_USER);
         playTone('ERROR');
         showToast("Administrator sign-in failed: " + (err?.message || err), "error");
       }
