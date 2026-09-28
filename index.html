@@ -5950,36 +5950,38 @@ window.addEventListener('load',async function(){
       if (window.lucide) lucide.createIcons();
     }
 
-    function approveLeave(id) {
-      const l = leaveRequests.find(x => x.id === id);
-      if (!l) return;
-      l.status = 'APPROVED';
-      savePersistedData();
-      if (supabaseClient) {
-        supabaseClient.from('leave_requests').update({ status: 'APPROVED' }).eq('tenant_id', currentTenant?.id).eq('id', id).then(() => {});
+    async function approveLeave(id) {
+      const l = leaveRequests.find(x => x.id === id); if (!l) return;
+      if (!supabaseClient || currentAuthUser?.type !== 'ADMIN' || !currentTenant?.id || currentAuthUser.tenantId !== currentTenant.id) {
+        showToast("A verified administrator cloud workspace is required.", "error"); return;
       }
-      recordAuditLog("LEAVE_APPROVED", l.staffName, `Approved ${l.type} from ${l.from} to ${l.to}`);
-      playTone('SUCCESS');
-      showToast(`Approved leave request for ${l.staffName}`, "success");
-      renderAdminLeaveTable();
-      updateKPICards();
-      refreshStaffUI();
+      try {
+        const { data, error } = await supabaseClient.from('leave_requests').update({ status: 'APPROVED' })
+          .eq('tenant_id', currentTenant.id).eq('id', id).select('id').maybeSingle();
+        if (error) throw error;
+        if (!data) throw new Error("Leave request was not updated. Refresh and retry.");
+        l.status = 'APPROVED'; savePersistedData();
+        recordAuditLog("LEAVE_APPROVED", l.staffName, `Approved ${l.type} from ${l.from} to ${l.to}`);
+        playTone('SUCCESS'); showToast(`Approved leave request for ${l.staffName}`, "success");
+        renderAdminLeaveTable(); updateKPICards(); refreshStaffUI();
+      } catch (err) { console.error("Leave decision failed:", err); showToast("Could not update leave request: " + (err?.message || err), "error"); }
     }
 
-    function rejectLeave(id) {
-      const l = leaveRequests.find(x => x.id === id);
-      if (!l) return;
-      l.status = 'REJECTED';
-      savePersistedData();
-      if (supabaseClient) {
-        supabaseClient.from('leave_requests').update({ status: 'REJECTED' }).eq('tenant_id', currentTenant?.id).eq('id', id).then(() => {});
+    async function rejectLeave(id) {
+      const l = leaveRequests.find(x => x.id === id); if (!l) return;
+      if (!supabaseClient || currentAuthUser?.type !== 'ADMIN' || !currentTenant?.id || currentAuthUser.tenantId !== currentTenant.id) {
+        showToast("A verified administrator cloud workspace is required.", "error"); return;
       }
-      recordAuditLog("LEAVE_REJECTED", l.staffName, `Rejected ${l.type} from ${l.from} to ${l.to}`);
-      playTone('ERROR');
-      showToast(`Rejected leave request for ${l.staffName}`, "info");
-      renderAdminLeaveTable();
-      updateKPICards();
-      refreshStaffUI();
+      try {
+        const { data, error } = await supabaseClient.from('leave_requests').update({ status: 'REJECTED' })
+          .eq('tenant_id', currentTenant.id).eq('id', id).select('id').maybeSingle();
+        if (error) throw error;
+        if (!data) throw new Error("Leave request was not updated. Refresh and retry.");
+        l.status = 'REJECTED'; savePersistedData();
+        recordAuditLog("LEAVE_REJECTED", l.staffName, `Rejected ${l.type} from ${l.from} to ${l.to}`);
+        playTone('ERROR'); showToast(`Rejected leave request for ${l.staffName}`, "info");
+        renderAdminLeaveTable(); updateKPICards(); refreshStaffUI();
+      } catch (err) { console.error("Leave decision failed:", err); showToast("Could not update leave request: " + (err?.message || err), "error"); }
     }
 
     function handleLeaveApplySubmit(event) {
