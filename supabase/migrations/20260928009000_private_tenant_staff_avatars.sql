@@ -72,6 +72,7 @@ create policy staff_avatar_tenant_member_insert
 on storage.objects for insert to authenticated
 with check (
   bucket_id = 'staff-avatars'
+  and cardinality(storage.foldername(name)) = 2
   and (storage.foldername(name))[2] = (select auth.uid())::text
   and exists (
     select 1
@@ -93,20 +94,28 @@ on storage.objects for update to authenticated
 using (
   bucket_id = 'staff-avatars'
   and (storage.foldername(name))[2] = (select auth.uid())::text
+  and cardinality(storage.foldername(name)) = 2
   and exists (
     select 1 from public.tenants t
+    join public.staff s on s.tenant_id = t.id
     where t.id::text = (storage.foldername(name))[1]
       and t.status = 'active'
+      and s.status = 'ACTIVE'
+      and lower(s.email) = lower(coalesce((select auth.jwt() ->> 'email'), ''))
       and private.has_active_tenant_role(t.id, 'STAFF')
   )
 )
 with check (
   bucket_id = 'staff-avatars'
+  and cardinality(storage.foldername(name)) = 2
   and (storage.foldername(name))[2] = (select auth.uid())::text
   and exists (
     select 1 from public.tenants t
+    join public.staff s on s.tenant_id = t.id
     where t.id::text = (storage.foldername(name))[1]
       and t.status = 'active'
+      and s.status = 'ACTIVE'
+      and lower(s.email) = lower(coalesce((select auth.jwt() ->> 'email'), ''))
       and private.has_active_tenant_role(t.id, 'STAFF')
   )
 );
@@ -117,10 +126,14 @@ using (
   bucket_id = 'staff-avatars'
   and (
     ((storage.foldername(name))[2] = (select auth.uid())::text
+      and cardinality(storage.foldername(name)) = 2
       and exists (
         select 1 from public.tenants t
+        join public.staff s on s.tenant_id = t.id
         where t.id::text = (storage.foldername(name))[1]
           and t.status = 'active'
+          and s.status = 'ACTIVE'
+          and lower(s.email) = lower(coalesce((select auth.jwt() ->> 'email'), ''))
           and private.has_active_tenant_role(t.id, 'STAFF')
       ))
     or
