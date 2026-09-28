@@ -5651,19 +5651,11 @@ window.addEventListener('load',async function(){
         const result = await invokeAdminFunction('reset-staff-pin', {
           mode: 'create_staff',
           staff: {
-            emp_id: empId, name, department, role, email, status: 'ACTIVE'
+            emp_id: empId, name, department, role, email, status: 'ACTIVE',
+            phone, address, valid_thru: validThru
           },
           pin
         });
-        const { error: profileError } = await supabaseClient
-          .from('staff')
-          .update({
-            phone: phone || null,
-            address: address || null,
-            valid_thru: validThru
-          })
-          .eq('tenant_id', currentTenant?.id).eq('id', result.staff.id);
-        if (profileError) throw profileError;
 
         const newStaff = {
           id: result.staff.id, empId, name, department, role, email,
