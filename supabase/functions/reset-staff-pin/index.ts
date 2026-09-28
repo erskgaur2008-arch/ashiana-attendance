@@ -195,10 +195,6 @@ Deno.serve(async (req: Request) => {
     // Create a brand-new staff account
     // -------------------------
     if (mode === "create_staff") {
-      // The existing create_staff_with_pin RPC has no tenant argument. Refuse
-      // until a tenant-aware transactional RPC is staged and verified.
-      return json({ error: "TENANT_AWARE_STAFF_CREATION_NOT_READY" }, 501);
-      /*
       const staffInput = body?.staff || {};
       const pin = String(body?.pin || "").trim();
       const empId = String(staffInput.emp_id || "").trim().toUpperCase();
@@ -206,76 +202,83 @@ Deno.serve(async (req: Request) => {
       const department = String(staffInput.department || "").trim();
       const role = String(staffInput.role || "").trim();
       const email = String(staffInput.email || "").trim().toLowerCase();
-      const status = String(staffInput.status || "ACTIVE").trim().toUpperCase();
+      const status = String(staffInput.status || "ACTIVE").trim().toUpperCase() === "INACTIVE" ? "INACTIVE" : "ACTIVE";
 
-      if (!/^\d{4}$/.test(pin)) return json({ error: "PIN must be exactly 4 digits." }, 400);
-      if (!empId || !name || !email || !email.includes("@")) {
+      if (!/^\\d{4}$/.test(pin)) return json({ error: "PIN must be exactly 4 digits." }, 400);
+      if (!empId || !name || !email || !/^[^\\s@]+@[^\\s@]+\\.[^\\s@]+$/.test(email)) {
         return json({ error: "Employee ID, name and valid email are required." }, 400);
       }
 
-      const { data: duplicateEmp } = await adminClient
-        .from("staff").select("id").eq("emp_id", empId).maybeSingle();
-      if (duplicateEmp) return json({ error: "Employee ID already exists." }, 409);
+      const { data: duplicateEmp, error: empCheckError } = await adminClient
+        .from("staff").select("id").eq("tenant_id", adminTenantId).eq("emp_id", empId).maybeSingle();
+      if (empCheckError) throw empCheckError;
+      if (duplicateEmp) return json({ error: "Employee ID already exists in this school." }, 409);
 
-      const { data: duplicateEmail } = await adminClient
+      const { data: duplicateEmail, error: emailCheckError } = await adminClient
         .from("staff").select("id").ilike("email", email).maybeSingle();
+      if (emailCheckError) throw emailCheckError;
       if (duplicateEmail) return json({ error: "Staff email already exists." }, 409);
 
-      const staffId = `usr_${Date.now()}_${crypto.randomUUID().slice(0, 8)}`;
-
+      const staffId = `usr_${crypto.randomUUID()}`;
       const { data: createdStaff, error: staffCreateError } = await adminClient.rpc(
-        "create_staff_with_pin",
+        "create_staff_with_pin_tenant",
         {
+          p_tenant_id: adminTenantId,
           p_id: staffId,
           p_emp_id: empId,
           p_name: name,
           p_department: department,
           p_role: role,
           p_email: email,
-          p_status: status === "INACTIVE" ? "INACTIVE" : "ACTIVE",
+          p_status: status,
           p_pin: pin,
         }
       );
-      if (staffCreateError) throw staffCreateError;
+      if (staffCreateError) {
+        if (staffCreateError.code === "23505") return json({ error: "Employee ID or email already exists." }, 409);
+        throw staffCreateError;
+      }
+      if (!createdStaff) throw new Error("Staff record creation returned no record.");
 
-      const password = authPassword(staffId, pin);
-      const { data: createdAuth, error: authCreateError } =
-        await adminClient.auth.admin.createUser({
-          email,
-          password,
-          email_confirm: true,
-          user_metadata: {
-            staff_id: staffId,
-            emp_id: empId,
-            name,
-            account_type: "staff",
-          },
-        });
+      const { data: createdAuth, error: authCreateError } = await adminClient.auth.admin.createUser({
+        email,
+        password: authPassword(staffId, pin),
+        email_confirm: true,
+        user_metadata: { staff_id: staffId, emp_id: empId, name, account_type: "staff" },
+      });
+      if (authCreateError || !createdAuth.user?.id) {
+        const { error: rollbackError } = await adminClient.from("staff")
+          .delete().eq("id", staffId).eq("tenant_id", adminTenantId);
+        if (rollbackError) console.error("staff row cleanup failed after Auth create error:", rollbackError);
+        return json({ error: "Unable to create the staff Auth account." }, 409);
+      }
 
-      if (authCreateError) {
-        await adminClient.from("staff").delete().eq("id", staffId);
-        return json({ error: `Unable to create the staff Auth account: ${authCreateError.message}` }, 409);
+      const { error: membershipInsertError } = await adminClient.from("tenant_memberships").upsert(
+        { tenant_id: adminTenantId, user_id: createdAuth.user.id, role: "STAFF", active: status === "ACTIVE" },
+        { onConflict: "tenant_id,user_id" }
+      );
+      if (membershipInsertError) {
+        const { error: authDeleteError } = await adminClient.auth.admin.deleteUser(createdAuth.user.id);
+        const { error: staffDeleteError } = await adminClient.from("staff")
+          .delete().eq("id", staffId).eq("tenant_id", adminTenantId);
+        if (authDeleteError) console.error("Auth cleanup failed after membership error:", authDeleteError);
+        if (staffDeleteError) console.error("staff cleanup failed after membership error:", staffDeleteError);
+        throw membershipInsertError;
       }
 
       return json({
         success: true,
         accountCreated: true,
         staff: {
-          id: createdStaff.id,
-          emp_id: createdStaff.emp_id,
-          name: createdStaff.name,
-          department: createdStaff.department,
-          role: createdStaff.role,
-          email: createdStaff.email,
-          status: createdStaff.status,
+          id: createdStaff.id, emp_id: createdStaff.emp_id, name: createdStaff.name,
+          department: createdStaff.department, role: createdStaff.role,
+          email: createdStaff.email, status: createdStaff.status, tenant_id: adminTenantId,
         },
-        auth_user_id: createdAuth.user?.id || null,
+        auth_user_id: createdAuth.user.id,
         message: "Staff account and 4-digit PIN created successfully.",
       }, 201);
     }
 
-    // -------------------------
-      */
     // Existing staff PIN reset
     // -------------------------
     const staffId = String(body?.staff_id || "").trim();
