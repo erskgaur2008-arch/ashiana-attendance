@@ -4395,48 +4395,32 @@ window.addEventListener('load',async function(){
     async function quickTestPunch(staffId) {
       const staff = staffDatabase.find(s => s.id === staffId);
       if (!staff) return;
+      if (!supabaseClient || currentAuthUser?.type !== 'ADMIN' || !currentTenant?.id || currentAuthUser.tenantId !== currentTenant.id) {
+        showToast("A verified administrator cloud workspace is required.", "error"); return;
+      }
       const recent = getTodayPunches(staffId);
       const nextType = recent.length % 2 === 0 ? "IN" : "OUT";
       const d = new Date();
       const time = `${d.getHours().toString().padStart(2, '0')}:${d.getMinutes().toString().padStart(2, '0')}`;
       const newPunchId = generateUUID();
-
-      punchLedger.push({
-        id: newPunchId,
-        staffId: staff.id,
-        staffName: staff.name,
-        empId: staff.empId,
-        attendanceDate: systemConfig.currentAttendanceDate,
-        type: nextType,
-        timestamp: time,
-        method: "ADMIN_QUICK"
-      });
-      savePersistedData();
-
-      if (supabaseClient) {
-        try {
-          await ensureStaffExistsInSupabase(staff);
-          await supabaseClient.from('attendance_punches').insert([{
-            id: newPunchId,
-            tenant_id: currentTenant?.id,
-            staff_id: staff.id,
-            staff_name: staff.name,
-            emp_id: staff.empId,
-            attendance_date: systemConfig.currentAttendanceDate,
-            type: nextType,
-            timestamp: time,
-            method: "ADMIN_QUICK"
-          }]);
-        } catch (e) {
-          console.warn("Quick punch cloud sync error:", e);
-        }
+      try {
+        await ensureStaffExistsInSupabase(staff);
+        const { error } = await supabaseClient.from('attendance_punches').insert([{
+          id: newPunchId, tenant_id: currentTenant.id, staff_id: staff.id, staff_name: staff.name,
+          emp_id: staff.empId, attendance_date: systemConfig.currentAttendanceDate,
+          type: nextType, timestamp: time, method: "ADMIN_QUICK"
+        }]);
+        if (error) throw error;
+        punchLedger.push({ id: newPunchId, staffId: staff.id, staffName: staff.name, empId: staff.empId,
+          attendanceDate: systemConfig.currentAttendanceDate, type: nextType, timestamp: time, method: "ADMIN_QUICK" });
+        savePersistedData();
+        playTone('SUCCESS'); showToast(`PUNCH ${nextType} marked for ${staff.name}`, "success");
+        if (currentStaffId === staff.id) refreshStaffUI();
+        renderLiveAttendanceTable(); updateKPICards();
+      } catch (e) {
+        console.error("Quick punch cloud sync error:", e);
+        showToast("Quick punch failed: " + (e?.message || e), "error");
       }
-
-      playTone('SUCCESS');
-      showToast(`PUNCH ${nextType} marked for ${staff.name}`, "success");
-      if (currentStaffId === staff.id) refreshStaffUI();
-      renderLiveAttendanceTable();
-      updateKPICards();
     }
 
     function updateKPICards() {
@@ -5984,59 +5968,33 @@ window.addEventListener('load',async function(){
       } catch (err) { console.error("Leave decision failed:", err); showToast("Could not update leave request: " + (err?.message || err), "error"); }
     }
 
-    function handleLeaveApplySubmit(event) {
+    async function handleLeaveApplySubmit(event) {
       event.preventDefault();
-      if (!currentStaffId) return;
-      const staff = staffDatabase.find(s => s.id === currentStaffId);
-      if (!staff) return;
-
+      if (currentAuthUser?.type !== 'STAFF' || !currentStaffId || !currentTenant?.id || currentAuthUser.tenantId !== currentTenant.id || !supabaseClient) {
+        showToast("A verified staff cloud session is required.", "error"); return;
+      }
+      const staff = staffDatabase.find(s => s.id === currentStaffId); if (!staff) return;
       const type = document.getElementById("leave-apply-type").value;
       const from = document.getElementById("leave-apply-from").value;
       const to = document.getElementById("leave-apply-to").value;
       const reason = document.getElementById("leave-apply-reason").value.trim();
-
-      if (!from || !to) {
-        showToast("Please specify both From and To dates", "error");
-        return;
+      if (!from || !to || to < from) { showToast("Please specify a valid From and To date.", "error"); return; }
+      const newLeave = { id: generateUUID(), staffId: staff.id, staffName: staff.name, type, from, to, reason, status: "PENDING" };
+      try {
+        await ensureStaffExistsInSupabase(staff);
+        const { error } = await supabaseClient.from('leave_requests').insert([{
+          id: newLeave.id, tenant_id: currentTenant.id, staff_id: staff.id, staff_name: staff.name,
+          type: newLeave.type, from_date: newLeave.from, to_date: newLeave.to, reason: newLeave.reason, status: newLeave.status
+        }]);
+        if (error) throw error;
+        leaveRequests.unshift(newLeave); savePersistedData();
+        recordAuditLog("LEAVE_APPLIED", staff.name, `Applied for ${type} from ${from} to ${to}`);
+        playTone('SUCCESS'); showToast("Leave request submitted for approval!", "success");
+        closeLeaveApplyModal(); renderAdminLeaveTable(); updateKPICards(); refreshStaffUI();
+      } catch (err) {
+        console.error("Leave submission failed:", err);
+        showToast("Leave request was not submitted: " + (err?.message || err), "error");
       }
-
-      const newLeave = {
-        id: "lev_" + Date.now(),
-        staffId: staff.id,
-        staffName: staff.name,
-        type,
-        from,
-        to,
-        reason,
-        status: "PENDING"
-      };
-
-      leaveRequests.unshift(newLeave);
-      savePersistedData();
-
-      if (supabaseClient) {
-        ensureStaffExistsInSupabase(staff).then(() => {
-          supabaseClient.from('leave_requests').insert([{
-            id: newLeave.id,
-            tenant_id: currentTenant?.id,
-            staff_id: staff.id,
-            staff_name: staff.name,
-            type: newLeave.type,
-            from_date: newLeave.from,
-            to_date: newLeave.to,
-            reason: newLeave.reason,
-            status: newLeave.status
-          }]).then(() => {});
-        });
-      }
-
-      recordAuditLog("LEAVE_APPLIED", staff.name, `Applied for ${type} from ${from} to ${to}`);
-      playTone('SUCCESS');
-      showToast("Leave request submitted for Principal approval!", "success");
-      closeLeaveApplyModal();
-      renderAdminLeaveTable();
-      updateKPICards();
-      refreshStaffUI();
     }
 
     // =========================================================================
@@ -6384,7 +6342,7 @@ window.addEventListener('load',async function(){
       });
     }
 
-    function handleManualCorrectionSubmit(event) {
+    async function handleManualCorrectionSubmit(event) {
       event.preventDefault();
       const staffId = document.getElementById("correction-staff-select").value;
       const type = document.getElementById("correction-punch-type").value;
@@ -6392,27 +6350,31 @@ window.addEventListener('load',async function(){
       const reason = document.getElementById("correction-reason").value.trim();
       const staff = staffDatabase.find(s => s.id === staffId);
       if (!staff) return;
-
-      const newId = "pch_corr_" + Date.now();
-      punchLedger.push({
-        id: newId,
-        staffId: staff.id,
-        staffName: staff.name,
-        empId: staff.empId,
-        attendanceDate: systemConfig.currentAttendanceDate,
-        type,
-        timestamp: time,
-        method: "MANUAL_ADMIN"
-      });
-      savePersistedData();
-
-      recordAuditLog("MANUAL_CORRECTION", staff.name, `Manually forced ${type} at ${time}. Reason: "${reason}"`);
-      playTone('SUCCESS');
-      showToast(`Manual ${type} recorded for ${staff.name}.`, "success");
-      document.getElementById("correction-reason").value = "";
-      if (currentStaffId === staff.id) refreshStaffUI();
-      renderLiveAttendanceTable();
-      updateKPICards();
+      if (!supabaseClient || currentAuthUser?.type !== 'ADMIN' || !currentTenant?.id || currentAuthUser.tenantId !== currentTenant.id) {
+        showToast("A verified administrator cloud workspace is required.", "error"); return;
+      }
+      if (!time || !reason) { showToast("Enter the correction time and reason.", "error"); return; }
+      const newId = generateUUID();
+      try {
+        await ensureStaffExistsInSupabase(staff);
+        const { error } = await supabaseClient.from('attendance_punches').insert([{
+          id: newId, tenant_id: currentTenant.id, staff_id: staff.id, staff_name: staff.name,
+          emp_id: staff.empId, attendance_date: systemConfig.currentAttendanceDate,
+          type, timestamp: time, method: "MANUAL_ADMIN"
+        }]);
+        if (error) throw error;
+        punchLedger.push({ id: newId, staffId: staff.id, staffName: staff.name, empId: staff.empId,
+          attendanceDate: systemConfig.currentAttendanceDate, type, timestamp: time, method: "MANUAL_ADMIN" });
+        savePersistedData();
+        recordAuditLog("MANUAL_CORRECTION", staff.name, `Manually forced ${type} at ${time}. Reason: "${reason}"`);
+        playTone('SUCCESS'); showToast(`Manual ${type} recorded for ${staff.name}.`, "success");
+        document.getElementById("correction-reason").value = "";
+        if (currentStaffId === staff.id) refreshStaffUI();
+        renderLiveAttendanceTable(); updateKPICards();
+      } catch (err) {
+        console.error("Manual correction failed:", err);
+        showToast("Manual correction failed: " + (err?.message || err), "error");
+      }
     }
 
     function startLiveClocks() {
