@@ -3692,7 +3692,7 @@
     }
 
     function makeBulkIdCardHtml(staff, logoUrl, index) {
-      const photo = String(staff.avatarUrl || staff.avatar_url || '').trim();
+      const photo = await resolveStaffAvatarUrl(staff.avatarUrl || staff.avatar_url || '');
       const photoHtml = photo
         ? `<img class="photo-img" src="${escapeIdCardHtml(photo)}" alt="Staff Photo">`
         : `<div class="photo-fallback">${escapeIdCardHtml(getStaffInitials(staff.name))}</div>`;
@@ -3754,7 +3754,11 @@
       }
 
       const logoUrl = new URL('logo 2.png', window.location.href).href;
-      const cards = selectedStaff.map((s, i) => makeBulkIdCardHtml(s, logoUrl, i));
+      const printableStaff = await Promise.all(selectedStaff.map(async staff => ({
+        ...staff,
+        avatarUrl: await resolveStaffAvatarUrl(staff.avatarUrl || staff.avatar_url || '')
+      })));
+      const cards = printableStaff.map((s, i) => makeBulkIdCardHtml(s, logoUrl, i));
       const pages = [];
       for (let i = 0; i < cards.length; i += 9) {
         pages.push(`<div class="page">${cards.slice(i, i + 9).join('')}</div>`);
@@ -4060,7 +4064,7 @@ window.addEventListener('load',async function(){
       const preview = document.getElementById("staff-id-card-preview");
       if (!modal || !preview) return;
 
-      const photo = String(staff.avatarUrl || staff.avatar_url || '').trim();
+      const photo = await resolveStaffAvatarUrl(staff.avatarUrl || staff.avatar_url || '');
       const logoUrl = new URL('logo 2.png', window.location.href).href;
       const photoHtml = photo
         ? `<img src="${escapeIdCardHtml(photo)}" alt="Staff Photo">`
