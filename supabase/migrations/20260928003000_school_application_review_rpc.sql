@@ -2,11 +2,7 @@
 -- Invoked only by the trusted approval Edge Function using service_role.
 begin;
 
-create schema if not exists private;
-revoke all on schema private from public, anon, authenticated;
-grant usage on schema private to service_role;
-
-create or replace function private.review_school_application(
+create or replace function public.review_school_application(
   p_application_id uuid,
   p_decision text,
   p_reviewer_id uuid,
@@ -82,7 +78,7 @@ begin
 end;
 $$;
 
-revoke all on function private.review_school_application(uuid, text, uuid, text) from public, anon, authenticated;
-grant execute on function private.review_school_application(uuid, text, uuid, text) to service_role;
+revoke all on function public.review_school_application(uuid, text, uuid, text) from public, anon, authenticated;
+grant execute on function public.review_school_application(uuid, text, uuid, text) to service_role;
 
 commit;
