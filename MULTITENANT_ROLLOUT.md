@@ -136,3 +136,6 @@ No production schema changes, Edge Function deployments, auth-user creation, sec
 
 
 - **Bulk deletion consistency follow-up:** both bulk staff deletion entry points now require a verified admin cloud workspace, issue one tenant-filtered delete for the selected IDs, inspect the returned error and deleted IDs, and update local roster/cache/audit UI only after the backend confirms every selected row was deleted. Failures remain visible and preserve the local roster for refresh/retry. Static review only: validate PostgREST delete-returning behavior with the deployed grants/RLS, composite foreign-key restrictions, and partial/zero-row outcomes in an isolated integration environment.
+
+
+- **Leave-decision consistency follow-up:** approve/reject handlers now require a verified admin tenant session, await the tenant-filtered Supabase update, and verify a row was returned before changing local status, caching, audit display, or success feedback. Backend errors leave local status unchanged and are surfaced to the administrator. Static review only; validate UPDATE ... RETURNING under the actual RLS/grants and concurrent decision behavior in isolation.
