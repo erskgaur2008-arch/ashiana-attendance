@@ -2782,8 +2782,15 @@
           throw new Error(authError?.message || "Supabase Auth sign-in failed.");
         }
 
-        const resolvedTenant = await resolveTenantMembership(authData.user.id);
+        let resolvedTenant;
+        try {
+          resolvedTenant = await resolveTenantMembership(authData.user.id);
+        } catch (membershipError) {
+          await supabaseClient.auth.signOut();
+          throw membershipError;
+        }
         if (resolvedTenant.role !== 'STAFF' || resolvedTenant.id !== loginResult.staff.tenant_id) {
+          await supabaseClient.auth.signOut();
           throw new Error("Staff workspace membership does not match the authenticated staff record.");
         }
 
