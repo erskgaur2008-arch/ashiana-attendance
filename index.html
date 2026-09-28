@@ -1920,6 +1920,7 @@
     let currentStaffId = null;
     // Tenant context is resolved from the signed-in user's database membership, never browser metadata.
     let currentTenant = null;
+    let persistedTenantId = null;
     let currentPortal = "staff";
 
     // Staff Directory Selection State
@@ -2275,6 +2276,16 @@
 
       let anyChange = false;
 
+      // Never reuse browser-cached school records across workspace identities.
+      if (persistedTenantId !== currentTenant.id) {
+        staffDatabase = [];
+        punchLedger = [];
+        leaveRequests = [];
+        auditLogs = [];
+        persistedTenantId = currentTenant.id;
+        savePersistedData();
+      }
+
       try {
         updateCloudBadge(true, "Syncing…");
         // 1. SYNC STAFF TABLE (Accounts, Names, Roles, Updated PINs)
@@ -2319,9 +2330,9 @@
             anyChange = true;
           }
         } else if (remoteStaff && remoteStaff.length === 0 && staffDatabase.length > 0) {
-          // Do not auto-seed or write the roster from a browser session.
-          // The roster is authoritative in Supabase and is managed by the Admin portal.
-          console.info("Supabase staff query returned no visible rows; no automatic roster write performed.");
+          // An empty authoritative tenant roster must not leave prior cached rows visible.
+          staffDatabase = [];
+          anyChange = true;
         }
 
         // 2. SYNC ATTENDANCE PUNCHES (All dates so history and reports work on any device)
@@ -2515,10 +2526,11 @@
 
     function savePersistedData() {
       try {
-        localStorage.setItem(STORAGE_KEY_STAFF, JSON.stringify(staffDatabase));
-        localStorage.setItem(STORAGE_KEY_PUNCHES, JSON.stringify(punchLedger));
-        localStorage.setItem(STORAGE_KEY_LEAVE, JSON.stringify(leaveRequests));
-        localStorage.setItem(STORAGE_KEY_AUDIT, JSON.stringify(auditLogs));
+        const tenantSuffix = currentTenant?.id ? ':' + currentTenant.id : ':legacy';
+        localStorage.setItem(STORAGE_KEY_STAFF + tenantSuffix, JSON.stringify(staffDatabase));
+        localStorage.setItem(STORAGE_KEY_PUNCHES + tenantSuffix, JSON.stringify(punchLedger));
+        localStorage.setItem(STORAGE_KEY_LEAVE + tenantSuffix, JSON.stringify(leaveRequests));
+        localStorage.setItem(STORAGE_KEY_AUDIT + tenantSuffix, JSON.stringify(auditLogs));
       } catch (e) {}
     }
 
