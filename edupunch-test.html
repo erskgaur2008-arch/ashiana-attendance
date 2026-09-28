@@ -6588,7 +6588,7 @@ window.addEventListener('load',async function(){
     button.disabled=true;button.textContent="Checking…";
     status.textContent="Checking Supabase Auth and database API…";
     const base="https://wecoexmaafpfmeuukujz.supabase.co";
-    const key="sb_publishable_KCBRh8rwSH1KUyWJ0pRSPw_hcj0NSjT";
+    const key="eyJhbGciOiJIUzI1NiIsInR5cCI6IkpXVCJ9.eyJpc3MiOiJzdXBhYmFzZSIsInJlZiI6IndlY29leG1hYWZwZm1ldXVrdWp6Iiwicm9sZSI6ImFub24iLCJpYXQiOjE3OTA2MDk3NTIsImV4cCI6MjEwNjE4NTc1Mn0.f9Lff7Jv759gnXSdwZJwcJoOdWW93PXoqWaTI-GpT3A";
     try{
       const checks=await Promise.all([
         fetch(base+"/auth/v1/health",{method:"GET",headers:{apikey:key,Authorization:"Bearer "+key}}),
