@@ -177,9 +177,19 @@ Deno.serve(async (req: Request) => {
       if (lookupError) throw lookupError;
       if (!authUserId) return json({ error: "Staff Auth account is missing. Reset the staff PIN first." }, 409);
 
-      const { error: staffUpdateError } = await adminClient
-        .from("staff").update({ email: newEmail }).eq("id", staffId).eq("tenant_id", adminTenantId);
+      // Guard against changing an unrelated Auth account if the email lookup
+      // resolves unexpectedly or legacy records have become inconsistent.
+      const { data: authUserData, error: authReadError } = await adminClient.auth.admin.getUserById(authUserId);
+      if (authReadError) throw authReadError;
+      if (!authUserData?.user?.email || authUserData.user.email.trim().toLowerCase() !== oldEmail) {
+        return json({ error: "STAFF_AUTH_EMAIL_MISMATCH", message: "The linked Auth account email does not match the staff record. Reconcile the account before changing its email." }, 409);
+      }
+
+      const { data: updatedStaff, error: staffUpdateError } = await adminClient
+        .from("staff").update({ email: newEmail }).eq("id", staffId).eq("tenant_id", adminTenantId)
+        .select("id").maybeSingle();
       if (staffUpdateError) throw staffUpdateError;
+      if (!updatedStaff?.id) return json({ error: "STAFF_EMAIL_DB_UPDATE_FAILED", message: "The staff email record was not updated. No Auth email change was attempted." }, 409);
 
       const { error: authUpdateError } = await adminClient.auth.admin.updateUserById(authUserId, {
         email: newEmail,
@@ -192,7 +202,13 @@ Deno.serve(async (req: Request) => {
         }
       });
       if (authUpdateError) {
-        await adminClient.from("staff").update({ email: oldEmail }).eq("id", staffId).eq("tenant_id", adminTenantId);
+        const { data: rolledBackStaff, error: rollbackError } = await adminClient.from("staff")
+          .update({ email: oldEmail }).eq("id", staffId).eq("tenant_id", adminTenantId)
+          .select("id").maybeSingle();
+        if (rollbackError || !rolledBackStaff?.id) {
+          console.error("Staff email rollback failed after Auth update error:", rollbackError);
+          return json({ error: "STAFF_EMAIL_SYNC_PENDING", message: "Auth email update failed and the staff record could not be confirmed restored. Contact the platform administrator to reconcile this account before retrying." }, 503);
+        }
         throw authUpdateError;
       }
 
