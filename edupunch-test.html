@@ -2119,7 +2119,8 @@
         const session = data?.session || null;
         const sessionUserId = session?.user?.id || '';
         const adminUi = currentAuthUser?.type === 'ADMIN';
-        const matchingAdmin = Boolean(adminUi && sessionUserId && currentAuthUser?.username);
+        const matchingAdmin = Boolean(adminUi && sessionUserId && session?.user?.email &&
+          String(session.user.email).trim().toLowerCase() === String(currentAuthUser?.username || '').trim().toLowerCase());
         const tokenPresent = Boolean(session?.access_token);
         const expired = Boolean(session?.expires_at && session.expires_at * 1000 <= Date.now());
         output.textContent = 'Admin session check: ' +
@@ -2127,8 +2128,8 @@
           ' · Admin UI: ' + (adminUi ? 'yes' : 'no') +
           ' · Access token: ' + (tokenPresent ? 'present' : 'missing') +
           ' · Token expired: ' + (expired ? 'yes' : 'no') +
-          ' · User session identity: ' + (sessionUserId && adminUi ? 'signed-in admin context' : 'not confirmed');
-        output.style.color = sessionUserId && tokenPresent && !expired && adminUi ? '#166534' : '#b91c1c';
+          ' · Session email matches admin: ' + (matchingAdmin ? 'yes' : 'no');
+        output.style.color = sessionUserId && tokenPresent && !expired && matchingAdmin ? '#166534' : '#b91c1c';
       } catch (e) {
         output.textContent = 'Admin session check failed: ' + (e?.message || 'unknown error');
         output.style.color = '#b91c1c';
