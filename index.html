@@ -2268,7 +2268,10 @@
       // Never attempt roster writes or cloud bootstrap while nobody is signed in.
       // Staff sessions may only read their own RLS-visible records.
       const sessionUser = currentAuthUser;
-      if (!sessionUser) return;
+      if (!sessionUser || !currentTenant?.id || sessionUser.tenantId !== currentTenant.id) {
+        if (notifyManual) showToast("A verified school workspace is required before syncing.", "error");
+        return;
+      }
 
       let anyChange = false;
 
@@ -2276,8 +2279,9 @@
         updateCloudBadge(true, "Syncing…");
         // 1. SYNC STAFF TABLE (Accounts, Names, Roles, Updated PINs)
         const { data: remoteStaff, error: staffErr } = await supabaseClient
-          .from('staff')
+           .from('staff')
           .select('*')
+          .eq('tenant_id', currentTenant.id)
           .order('name', { ascending: true });
 
         if (staffErr) {
@@ -2322,8 +2326,9 @@
 
         // 2. SYNC ATTENDANCE PUNCHES (All dates so history and reports work on any device)
         const { data: remotePunches, error: punchErr } = await supabaseClient
-          .from('attendance_punches')
+           .from('attendance_punches')
           .select('*')
+          .eq('tenant_id', currentTenant.id)
           .order('created_at', { ascending: true });
 
         if (punchErr) {
@@ -2352,8 +2357,9 @@
 
         // 3. SYNC LEAVE REQUESTS
         const { data: remoteLeaves, error: leaveErr } = await supabaseClient
-          .from('leave_requests')
+           .from('leave_requests')
           .select('*')
+          .eq('tenant_id', currentTenant.id)
           .order('created_at', { ascending: false });
 
         if (leaveErr) {
@@ -2548,14 +2554,15 @@
     // row exists; it never writes or exposes a PIN/hash from the browser.
     async function ensureStaffExistsInSupabase(staff) {
       if (!supabaseClient || !staff) return false;
-      const { data, error } = await supabaseClient.from('staff').select('id').eq('id', staff.id).maybeSingle();
+      if (!currentTenant?.id) throw new Error('Verified school workspace is required.');
+      const { data, error } = await supabaseClient.from('staff').select('id').eq('tenant_id', currentTenant.id).eq('id', staff.id).maybeSingle();
       if (error) throw error;
       if (!data) throw new Error('Staff profile is missing from Supabase.');
       return true;
     }
 
     async function syncAllToSupabase() {
-      if (!supabaseClient || currentAuthUser?.type !== 'ADMIN') {
+      if (!supabaseClient || currentAuthUser?.type !== 'ADMIN' || !currentTenant?.id || currentAuthUser.tenantId !== currentTenant.id) {
         showToast("Administrator cloud session is required for roster sync.", "error");
         return;
       }
@@ -2565,7 +2572,7 @@
           const { error } = await supabaseClient.from('staff').update({
             emp_id: s.empId, name: s.name, department: s.department,
             role: s.role, email: s.email, status: s.status
-          }).eq('id', s.id);
+          }).eq('tenant_id', currentTenant.id).eq('id', s.id);
           if (error) throw error;
         }
         playTone('SUCCESS');
@@ -4392,6 +4399,7 @@ window.addEventListener('load',async function(){
           await ensureStaffExistsInSupabase(staff);
           await supabaseClient.from('attendance_punches').insert([{
             id: newPunchId,
+            tenant_id: currentTenant?.id,
             staff_id: staff.id,
             staff_name: staff.name,
             emp_id: staff.empId,
@@ -5962,6 +5970,7 @@ window.addEventListener('load',async function(){
         ensureStaffExistsInSupabase(staff).then(() => {
           supabaseClient.from('leave_requests').insert([{
             id: newLeave.id,
+            tenant_id: currentTenant?.id,
             staff_id: staff.id,
             staff_name: staff.name,
             type: newLeave.type,
