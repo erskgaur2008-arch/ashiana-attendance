@@ -2890,9 +2890,8 @@
         persistedTenantId = resolvedTenant.id;
         savePersistedData();
         sessionStorage.setItem(STORAGE_KEY_CURRENT_USER, JSON.stringify(currentAuthUser));
-        listenToRealtimePunches();
-
         if (!await syncAllDataFromSupabase(false)) throw new Error("Cloud workspace data could not be fully verified. Please try signing in again.");
+        listenToRealtimePunches();
         playTone('SUCCESS');
         showToast(`Welcome, ${matched.name}!`, "success");
         applyAuthenticatedUI();
