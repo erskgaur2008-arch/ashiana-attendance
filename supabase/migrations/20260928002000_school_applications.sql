@@ -34,6 +34,9 @@ create policy school_applications_submit_own
   on public.school_applications for insert to authenticated
   with check (
     applicant_user_id = (select auth.uid())
+    and status = 'pending'
+    and reviewed_by is null
+    and reviewed_at is null
     and lower(contact_email) = lower(coalesce((select auth.jwt() ->> 'email'), ''))
   );
 
