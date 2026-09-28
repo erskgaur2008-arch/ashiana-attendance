@@ -2493,35 +2493,18 @@
 
     // Load Data with Cloud Priming
     async function loadPersistedData() {
-      try {
-        const savedStaff = localStorage.getItem(STORAGE_KEY_STAFF);
-        staffDatabase = savedStaff ? JSON.parse(savedStaff) : getBaselineFacultyData();
-
-        const savedPunches = localStorage.getItem(STORAGE_KEY_PUNCHES);
-        punchLedger = savedPunches ? JSON.parse(savedPunches) : [];
-
-        const savedLeave = localStorage.getItem(STORAGE_KEY_LEAVE);
-        // Never seed fake leave records. Cloud sync will replace this cache
-        // with the actual Supabase leave_requests rows after authentication.
-        leaveRequests = savedLeave ? JSON.parse(savedLeave) : [];
-
-        const savedAudit = localStorage.getItem(STORAGE_KEY_AUDIT);
-        auditLogs = savedAudit ? JSON.parse(savedAudit) : [
-          { id: "aud_1", timestamp: new Date().toLocaleString(), actor: "System Engine", action: "SYSTEM_INIT", entity: "School Calendar", details: "Shift 07:40 AM – 02:30 PM initialized." }
-        ];
-
-        const savedUser = sessionStorage.getItem(STORAGE_KEY_CURRENT_USER);
-        if (savedUser) {
-          currentAuthUser = JSON.parse(savedUser);
-          currentStaffId = currentAuthUser.staffRecord?.id || staffDatabase[0]?.id || "usr_101";
-        }
-      } catch (e) {
-        staffDatabase = getBaselineFacultyData();
-      }
-
-      // Cloud sync is started by window.onload after the real Supabase session
-      // has been restored. This prevents stale local session data from opening
-      // a portal before Auth has been validated.
+      // Do not hydrate legacy, unscoped browser records before authentication.
+      // Tenant-specific cache restore is intentionally deferred until a trusted
+      // membership has been resolved; cloud sync remains the authoritative source.
+      staffDatabase = [];
+      punchLedger = [];
+      leaveRequests = [];
+      auditLogs = [];
+      currentAuthUser = null;
+      currentStaffId = null;
+      currentTenant = null;
+      persistedTenantId = null;
+      sessionStorage.removeItem(STORAGE_KEY_CURRENT_USER);
     }
 
     function savePersistedData() {
@@ -2891,6 +2874,9 @@
       currentAuthUser = null;
       currentStaffId = null;
       currentTenant = null;
+      persistedTenantId = null;
+      staffDatabase = []; punchLedger = []; leaveRequests = []; auditLogs = [];
+      if (realtimeChannel && supabaseClient) { try { await supabaseClient.removeChannel(realtimeChannel); } catch (e) {} realtimeChannel = null; }
       sessionStorage.removeItem(STORAGE_KEY_CURRENT_USER);
       showToast("Signed out safely.", "info");
       applyAuthenticatedUI();
