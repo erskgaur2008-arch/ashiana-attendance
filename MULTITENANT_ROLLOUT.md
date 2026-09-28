@@ -1,0 +1,55 @@
+# Multi-tenant SaaS rollout
+
+This branch is the isolated implementation track for converting EduPunch into a tenant-isolated attendance SaaS. Production Supabase and the `main` branch must remain unchanged until the complete authorization path is implemented and tested.
+
+## Tenant model
+
+- `tenants`: one school/customer workspace, identified by a stable slug.
+- `tenant_memberships`: maps Supabase Auth users to a tenant and a tenant-scoped role (`SCHOOL_ADMIN` or `STAFF`).
+- Existing business records receive a `tenant_id`; existing Ashiana records are backfilled to the `ashiana` tenant.
+- Tenant selection is never trusted from browser input alone. The authenticated user's active membership must authorize the tenant on every request.
+
+## Current branch state
+
+- `20260928000000_multitenant_foundation.sql` creates the tenant tables and adds/backfills tenant identifiers.
+- `20260928001000_seed_ashiana_memberships.sql` seeds memberships for existing Auth users whose email matches an active Ashiana admin or staff record.
+- These migrations are committed to `feat/multi-tenant-foundation` only. They have **not** been applied to the production database.
+- The existing frontend and Edge Functions are not yet tenant-safe. Do not apply these migrations to production or merge this branch yet.
+
+## Required implementation gates
+
+1. **Auth and workspace resolution**
+   - Resolve the signed-in Auth user to active memberships from the database.
+   - Require explicit workspace selection if the user belongs to multiple schools.
+   - Keep tenant identity in the session state, but revalidate membership server-side.
+   - Remove any authorization dependence on browser storage or user-editable JWT metadata.
+
+2. **Frontend tenant scope**
+   - Add tenant/workspace selection and visible school identity.
+   - Scope every read, insert, update, delete, realtime subscription, report, export, and cache key by the active tenant.
+   - Clear tenant-scoped in-memory and local caches on logout or workspace switch.
+   - Do not treat a client-side `.eq('tenant_id', ...)` filter as a security boundary; it is only a usability filter.
+
+3. **Database authorization**
+   - Replace legacy global-admin policies with tenant membership-based policies for every business table.
+   - Enforce immutable tenant ownership on updates and inserts.
+   - Ensure staff self-service is restricted to their own staff identity and tenant.
+   - Add tenant-aware unique constraints and foreign-key integrity where identifiers must be unique within a school.
+   - Audit grants, including elevated table privileges, and verify no exposed table is unintentionally accessible.
+
+4. **Edge Functions**
+   - Update `verify-attendance`, `generate-attendance-qr`, and `reset-staff-pin` to validate the bearer user's active tenant membership and role.
+   - Derive tenant scope from validated membership, not caller-supplied tenant IDs.
+   - Scope all service-role queries and mutations by tenant, staff identity, and relevant record ownership.
+   - Return non-enumerating authorization errors and validate all request payloads.
+
+5. **Verification before release**
+   - Test two separate tenants with overlapping staff IDs/emails and verify there is no cross-tenant read or write.
+   - Test staff self-access, school-admin actions, inactive memberships, suspended tenants, logout, workspace switching, QR expiry, and PIN reset.
+   - Test legacy Ashiana workflows and data counts against a production backup or isolated Supabase development branch.
+   - Review RLS policies and database advisors; inspect Edge Function logs and test on physical Android devices.
+   - Apply migrations and deploy functions only after review and explicit production approval.
+
+## Non-goals for this stage
+
+No production schema changes, Edge Function deployments, auth-user creation, secrets changes, or merge to `main` are performed by this branch-only preparation.
