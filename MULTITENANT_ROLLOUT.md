@@ -166,3 +166,6 @@ No production schema changes, Edge Function deployments, auth-user creation, sec
 
 
 - **Global staff-email consistency follow-up:** the administrator email-change path now validates the full email shape and checks for duplicates across all tenant staff records, rather than only within the administrator's own tenant. This aligns the pre-check with the product decision that staff email addresses are globally unique; database/Auth uniqueness and rollback behavior still require isolated integration tests. Branch-only static change; not deployed or runtime-tested.
+
+
+- **Database enforcement for global staff email uniqueness:** added staged migration `20260928011000_global_staff_email_uniqueness.sql`, creating a unique index on normalized staff email (`lower(btrim(email::text))`). A read-only inspection of the current live `staff` table found no duplicate normalized staff emails at the time of inspection. This is only a preflight observation, not a guarantee that the index will build later; rerun the duplicate check immediately before any approved migration. Validate lock/build behavior and all create/change/import flows in an isolated database. The migration is not applied to production.
