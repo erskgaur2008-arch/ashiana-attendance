@@ -2106,6 +2106,20 @@
       return guidance[code] || (code ? `${action} failed: ${code}` : `${action} failed. Please refresh and try again.`);
     }
 
+    function assertStaffAuthIdentity(authUser, staff) {
+      const authEmail = String(authUser?.email || '').trim().toLowerCase();
+      const staffEmail = String(staff?.email || '').trim().toLowerCase();
+      if (!authUser?.id || !authEmail || !staffEmail || authEmail !== staffEmail) {
+        throw new Error("STAFF_AUTH_EMAIL_MISMATCH");
+      }
+      const metadata = authUser.user_metadata || {};
+      if ((metadata.staff_id && metadata.staff_id !== staff.id) ||
+          (metadata.account_type && metadata.account_type !== 'staff')) {
+        throw new Error("STAFF_AUTH_IDENTITY_CONFLICT");
+      }
+      return true;
+    }
+
     // Resolve the signed-in identity against the trusted tenant membership table.
     // Multi-workspace selection is intentionally blocked until the workspace switcher is implemented.
     async function resolveTenantMembership(userId) {
@@ -2798,6 +2812,12 @@
         });
         if (authError || !authData?.user) {
           throw new Error(authError?.message || "Supabase Auth sign-in failed.");
+        }
+        try {
+          assertStaffAuthIdentity(authData.user, loginResult.staff);
+        } catch (identityError) {
+          await supabaseClient.auth.signOut();
+          throw identityError;
         }
 
         let resolvedTenant;
