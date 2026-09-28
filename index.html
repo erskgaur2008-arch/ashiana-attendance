@@ -2106,6 +2106,20 @@
       return guidance[code] || (code ? `${action} failed: ${code}` : `${action} failed. Please refresh and try again.`);
     }
 
+    function assertAdminAuthIdentity(authUser, requestedEmail, adminRow) {
+      const authEmail = String(authUser?.email || '').trim().toLowerCase();
+      const loginEmail = String(requestedEmail || '').trim().toLowerCase();
+      const profileEmail = String(adminRow?.email || '').trim().toLowerCase();
+      if (!authUser?.id || !authEmail || authEmail !== loginEmail ||
+          !profileEmail || profileEmail !== authEmail) {
+        throw new Error("ADMIN_AUTH_EMAIL_MISMATCH");
+      }
+      if (authUser.user_metadata?.account_type === 'staff') {
+        throw new Error("ADMIN_AUTH_IDENTITY_CONFLICT");
+      }
+      return true;
+    }
+
     function assertStaffAuthIdentity(authUser, staff) {
       const authEmail = String(authUser?.email || '').trim().toLowerCase();
       const staffEmail = String(staff?.email || '').trim().toLowerCase();
@@ -2158,6 +2172,7 @@
             .from('admin_users').select('email,role,active')
             .eq('tenant_id', tenant.id).eq('email', email).eq('active', true).maybeSingle();
           if (adminError || !adminRow) throw new Error("School administrator membership has no active administrator profile.");
+          assertAdminAuthIdentity(user, email, adminRow);
           currentTenant = tenant;
           currentAuthUser = { type: 'ADMIN', username: email, role: adminRow.role, tenantId: tenant.id, tenantName: tenant.name, tenantSlug: tenant.slug };
           currentStaffId = null;
@@ -2909,6 +2924,11 @@
           password: passVal
         });
         if (error || !data?.user) throw new Error(error?.message || "Administrator sign-in failed.");
+        const authEmail = String(data.user.email || '').trim().toLowerCase();
+        if (!authEmail || authEmail !== userVal.trim().toLowerCase()) {
+          await supabaseClient.auth.signOut();
+          throw new Error("ADMIN_AUTH_EMAIL_MISMATCH");
+        }
 
         const tenant = await resolveTenantMembership(data.user.id);
         if (tenant.role !== 'SCHOOL_ADMIN') throw new Error("This account is not a school administrator.");
@@ -2916,6 +2936,7 @@
           .from('admin_users').select('email,role,active')
           .eq('tenant_id', tenant.id).eq('email', userVal).eq('active', true).maybeSingle();
         if (adminError || !adminRow) throw new Error("Administrator account is not authorized for this workspace.");
+        assertAdminAuthIdentity(data.user, userVal, adminRow);
 
         currentTenant = tenant;
         currentAuthUser = { type: 'ADMIN', username: userVal, role: adminRow.role, tenantId: tenant.id, tenantName: tenant.name, tenantSlug: tenant.slug };
