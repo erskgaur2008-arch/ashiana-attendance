@@ -3582,6 +3582,7 @@
         const { data, error } = await supabaseClient
           .from('staff')
           .select('*')
+          .eq('tenant_id', currentTenant.id)
           .order('name', { ascending: true });
 
         if (error) throw error;
@@ -3887,7 +3888,7 @@ window.addEventListener('load',async function(){
       // Cloud deletion from Supabase
       if (supabaseClient) {
         idsToDelete.forEach(id => {
-          supabaseClient.from('staff').delete().eq('id', id).then(() => {});
+          supabaseClient.from('staff').delete().eq('tenant_id', currentTenant?.id).eq('id', id).then(() => {});
         });
       }
 
@@ -3984,7 +3985,7 @@ window.addEventListener('load',async function(){
       // Cloud deletion from Supabase
       if (supabaseClient) {
         idsToDelete.forEach(id => {
-          supabaseClient.from('staff').delete().eq('id', id).then(() => {});
+          supabaseClient.from('staff').delete().eq('tenant_id', currentTenant?.id).eq('id', id).then(() => {});
         });
       }
 
@@ -4017,6 +4018,7 @@ window.addEventListener('load',async function(){
       if (!ids.length) return;
       const generatedBy = String(currentAuthUser.email || "ADMIN");
       const rows = ids.map(staffId => ({
+        tenant_id: currentTenant?.id,
         staff_id: staffId,
         generated_by: generatedBy,
         generated_at: new Date().toISOString()
@@ -4028,7 +4030,7 @@ window.addEventListener('load',async function(){
     async function getMyStaffIdCardIssued() {
       if (!supabaseClient || !currentStaffId) return false;
       const { data, error } = await supabaseClient.from('staff_id_cards')
-        .select('staff_id, generated_at').eq('staff_id', currentStaffId).maybeSingle();
+        .select('staff_id, generated_at').eq('tenant_id', currentTenant?.id).eq('staff_id', currentStaffId).maybeSingle();
       if (error) { console.warn("Staff ID card status error:", error); return false; }
       return !!data;
     }
@@ -5370,7 +5372,7 @@ window.addEventListener('load',async function(){
         const { error: updateError } = await supabaseClient
           .from('staff')
           .update({ avatar_url: avatarUrl })
-          .eq('id', staff.id);
+          .eq('tenant_id', currentTenant?.id).eq('id', staff.id);
         if (updateError) throw updateError;
 
         staff.avatarUrl = avatarUrl;
@@ -5458,7 +5460,7 @@ window.addEventListener('load',async function(){
             phone: newPhone || null,
             address: newAddress || null
           })
-          .eq('id', staff.id);
+          .eq('tenant_id', currentTenant?.id).eq('id', staff.id);
 
         if (error) throw error;
 
@@ -5643,7 +5645,7 @@ window.addEventListener('load',async function(){
             address: address || null,
             valid_thru: validThru
           })
-          .eq('id', result.staff.id);
+          .eq('tenant_id', currentTenant?.id).eq('id', result.staff.id);
         if (profileError) throw profileError;
 
         const newStaff = {
@@ -5748,7 +5750,7 @@ window.addEventListener('load',async function(){
         const { error } = await supabaseClient
           .from('staff')
           .update(updatePayload)
-          .eq('id', staff.id);
+          .eq('tenant_id', currentTenant?.id).eq('id', staff.id);
 
         if (error) throw error;
 
@@ -5845,7 +5847,7 @@ window.addEventListener('load',async function(){
       // Cloud deletion from Supabase
       if (supabaseClient) {
         try {
-          await supabaseClient.from('staff').delete().eq('id', staffId);
+          await supabaseClient.from('staff').delete().eq('tenant_id', currentTenant?.id).eq('id', staffId);
         } catch (e) {
           console.warn("Supabase delete error:", e);
         }
@@ -5922,7 +5924,7 @@ window.addEventListener('load',async function(){
       l.status = 'APPROVED';
       savePersistedData();
       if (supabaseClient) {
-        supabaseClient.from('leave_requests').update({ status: 'APPROVED' }).eq('id', id).then(() => {});
+        supabaseClient.from('leave_requests').update({ status: 'APPROVED' }).eq('tenant_id', currentTenant?.id).eq('id', id).then(() => {});
       }
       recordAuditLog("LEAVE_APPROVED", l.staffName, `Approved ${l.type} from ${l.from} to ${l.to}`);
       playTone('SUCCESS');
@@ -5938,7 +5940,7 @@ window.addEventListener('load',async function(){
       l.status = 'REJECTED';
       savePersistedData();
       if (supabaseClient) {
-        supabaseClient.from('leave_requests').update({ status: 'REJECTED' }).eq('id', id).then(() => {});
+        supabaseClient.from('leave_requests').update({ status: 'REJECTED' }).eq('tenant_id', currentTenant?.id).eq('id', id).then(() => {});
       }
       recordAuditLog("LEAVE_REJECTED", l.staffName, `Rejected ${l.type} from ${l.from} to ${l.to}`);
       playTone('ERROR');
@@ -6232,7 +6234,7 @@ window.addEventListener('load',async function(){
         let updatedCount = 0;
 
         const { data: remoteExisting, error: remoteErr } = await supabaseClient
-          .from('staff').select('id,emp_id,email,status');
+          .from('staff').select('id,emp_id,email,status').eq('tenant_id', currentTenant.id);
         if (remoteErr) throw remoteErr;
         const remoteMap = new Map((remoteExisting || []).map(r => [String(r.emp_id || '').toUpperCase(), r]));
 
@@ -6248,7 +6250,7 @@ window.addEventListener('load',async function(){
               role: item.role,
               email: item.email,
               status: item.status
-            }).eq('id', existing.id);
+            }).eq('tenant_id', currentTenant.id).eq('id', existing.id);
             if (updateErr) throw updateErr;
 
             const localIdx = staffDatabase.findIndex(s => s.id === existing.id || s.empId?.toUpperCase() === item.empId.toUpperCase());
