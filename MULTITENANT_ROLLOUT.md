@@ -208,3 +208,10 @@ No production schema changes, Edge Function deployments, auth-user creation, sec
 - This is branch-only static hardening. It does not clear the legacy unscoped keys, which are not hydrated, nor caches for other tenants. No runtime/browser tests, production changes, deployments, or migrations were performed. Verify logout during in-flight sync, account switching, localStorage failures, and late refresh completion in browser integration tests before release.
 
 - **Logout race follow-up:** logout now invalidates the in-memory user/tenant identity and clears tenant data synchronously before awaiting Realtime channel removal or Auth sign-out. This prevents an in-flight refresh from passing its identity guard during those awaits and repopulating the current UI/cache. Static review only; test slow channel removal, Auth sign-out failures, and concurrent queued refreshes in a browser integration environment.
+
+
+## Product-owner decision update (2026-09-29)
+
+- **Staff-avatar visibility (approved):** all active members of an active school tenant may view staff profile photos within that same tenant, including photos needed for staff directories and ID-card workflows. Access must remain tenant-isolated and authenticated; suspended tenants and inactive memberships must not grant access. This confirms the intended read scope already described in the staged `20260928009000_private_tenant_staff_avatars.sql` migration.
+- This decision does not authorize changing the live `staff-avatars` bucket, applying migrations, deploying functions, or merging to `main`. The private-avatar rollout remains gated on completing and validating signed-URL rendering, legacy object migration, and tenant-scoped Storage RLS in an isolated environment.
+- The feature branch is behind and has diverged from `main`. Reconcile the branch with current live fixes before further frontend implementation; do not replace the current `main` `index.html` wholesale with the older tenant-aware branch copy. Keep all reconciliation and follow-up commits on a non-production branch until reviewed and tested.
