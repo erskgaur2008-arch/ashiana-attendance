@@ -17,14 +17,15 @@ create table if not exists public.school_applications (
   review_note text,
   reviewed_by uuid references auth.users(id) on delete set null,
   reviewed_at timestamptz,
-  created_at timestamptz not null default now(),
-  constraint school_applications_slug_pending_unique unique (requested_slug, status)
+  created_at timestamptz not null default now()
 );
 
 create index if not exists school_applications_applicant_idx
   on public.school_applications(applicant_user_id, created_at desc);
 create index if not exists school_applications_pending_idx
   on public.school_applications(created_at desc) where status = 'pending';
+create unique index if not exists school_applications_one_pending_slug_idx
+  on public.school_applications(requested_slug) where status = 'pending';
 
 alter table public.school_applications enable row level security;
 
