@@ -5327,7 +5327,7 @@ window.addEventListener('load',async function(){
       if (!raw || !supabaseClient) return '';
       let objectPath = raw;
       try {
-        if (/^https?:\\/\\//i.test(raw)) {
+        if (raw.startsWith('https://') || raw.startsWith('http://')) {
           const parsed = new URL(raw);
           const marker = '/storage/v1/object/public/staff-avatars/';
           const offset = parsed.pathname.indexOf(marker);
