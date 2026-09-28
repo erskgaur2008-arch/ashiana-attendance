@@ -58,10 +58,10 @@ This branch is the isolated implementation track for converting EduPunch into a 
 - **New-school onboarding (decided):** schools may submit a signup request, but a platform approver must approve it before a tenant and its first `SCHOOL_ADMIN` membership become active. The approver identity, approval interface, and first-admin verification flow still need implementation.
 - **Staff identity (decided):** employee IDs may be reused by different schools; staff email addresses must remain globally unique. Existing `staff.id` is the primary key, `emp_id` currently has a global uniqueness rule, and related tables use single-column staff foreign keys. A migration must remove global uniqueness from `emp_id`, add tenant-scoped uniqueness, and enforce normalized global email uniqueness without conflicting with Auth identities.
 
-## Pending product-owner input
+## Product-owner decisions
 
-- Provide the email address (or other controlled identity) that will own platform-level school approvals. This must be a trusted, non-publicly assignable platform role, separate from `SCHOOL_ADMIN`.
-- Decide staff login discovery UX: because employee IDs may repeat across schools, login by employee ID alone is ambiguous. The login flow must collect a school slug/code (or require email login) and the server must resolve the staff record within that school before validating the PIN. The approved onboarding flow should issue the school code after approval.
+- **Platform approver (decided):** `rajkumargaur54@gmail.com` is the designated platform school approver. This identity must be verified against the authenticated user on the server and must not be assignable through public signup or ordinary school-admin controls.
+- **Staff login UX (decided):** allow either school code + Employee ID + PIN, or globally unique registered email + PIN. Employee ID lookup must be tenant-scoped; email lookup must enforce global uniqueness. The server must resolve the staff record and active tenant before validating the PIN.
 
 ## Non-goals for this stage
 
