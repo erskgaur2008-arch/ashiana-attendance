@@ -207,8 +207,8 @@
 <body class="bg-slate-100 text-slate-800 antialiased min-h-screen min-h-screen-safe flex flex-col selection:bg-emerald-600 selection:text-white">
   <section id="edupunch-test-panel" style="position:relative;z-index:9999;background:#fef3c7;color:#78350f;border-bottom:2px solid #f59e0b;padding:10px 14px;font:14px/1.4 system-ui,sans-serif">
     <div style="max-width:1100px;margin:auto;display:flex;gap:10px;align-items:center;justify-content:space-between;flex-wrap:wrap">
-      <div><strong>TEST ENVIRONMENT — EduPunch-Test</strong><div style="font-size:12px">Isolated Supabase project. Do not enter real staff or attendance data.</div><div id="edupunch-test-status" role="status" aria-live="polite" style="font-weight:600;margin-top:3px">Connection not checked yet.</div></div>
-      <button id="edupunch-test-connect" type="button" style="background:#92400e;color:white;border:0;border-radius:9px;padding:10px 14px;font-weight:700;cursor:pointer">Test Connection</button>
+      <div><strong>TEST ENVIRONMENT — EduPunch-Test</strong><div style="font-size:12px">Isolated Supabase project. Do not enter real staff or attendance data.</div><div id="edupunch-test-status" role="status" aria-live="polite" style="font-weight:600;margin-top:3px">Connection not checked yet.</div><div id="edupunch-admin-session-status" role="status" aria-live="polite" style="font-weight:600;margin-top:3px">Admin session not checked.</div></div>
+      <div style="display:flex;gap:8px;flex-wrap:wrap"><button id="edupunch-test-connect" type="button" style="background:#92400e;color:white;border:0;border-radius:9px;padding:10px 14px;font-weight:700;cursor:pointer">Test Connection</button><button id="edupunch-admin-session-check" type="button" style="background:#166534;color:white;border:0;border-radius:9px;padding:10px 14px;font-weight:700;cursor:pointer">Check Admin Session</button></div>
     </div>
   </section>
 
@@ -2105,6 +2105,35 @@
       if (data?.error) throw new Error(data.error);
       return data;
     }
+
+    // Test-only diagnostic: reports session state without exposing credentials or identifiers.
+    window.runAdminSessionDiagnostic = async function() {
+      const output = document.getElementById('edupunch-admin-session-status');
+      if (!output) return;
+      output.textContent = 'Checking admin session…';
+      output.style.color = '#78350f';
+      try {
+        if (!supabaseClient) throw new Error('Supabase client is not initialized.');
+        const { data, error } = await supabaseClient.auth.getSession();
+        if (error) throw error;
+        const session = data?.session || null;
+        const sessionUserId = session?.user?.id || '';
+        const adminUi = currentAuthUser?.type === 'ADMIN';
+        const matchingAdmin = Boolean(adminUi && sessionUserId && currentAuthUser?.username);
+        const tokenPresent = Boolean(session?.access_token);
+        const expired = Boolean(session?.expires_at && session.expires_at * 1000 <= Date.now());
+        output.textContent = 'Admin session check: ' +
+          (sessionUserId ? 'Supabase session found' : 'NO Supabase session') +
+          ' · Admin UI: ' + (adminUi ? 'yes' : 'no') +
+          ' · Access token: ' + (tokenPresent ? 'present' : 'missing') +
+          ' · Token expired: ' + (expired ? 'yes' : 'no') +
+          ' · User session identity: ' + (sessionUserId && adminUi ? 'signed-in admin context' : 'not confirmed');
+        output.style.color = sessionUserId && tokenPresent && !expired && adminUi ? '#166534' : '#b91c1c';
+      } catch (e) {
+        output.textContent = 'Admin session check failed: ' + (e?.message || 'unknown error');
+        output.style.color = '#b91c1c';
+      }
+    };
 
     async function invokeAdminFunction(functionName, body) {
       if (!supabaseClient) throw new Error('Supabase client is not initialized.');
@@ -6642,7 +6671,13 @@ window.addEventListener('load',async function(){
 (function(){
   const button=document.getElementById("edupunch-test-connect");
   const status=document.getElementById("edupunch-test-status");
+  const sessionButton=document.getElementById("edupunch-admin-session-check");
   if(!button||!status)return;
+  if(sessionButton)sessionButton.addEventListener("click",async function(){
+    sessionButton.disabled=true;sessionButton.textContent="Checking…";
+    try { if(typeof window.runAdminSessionDiagnostic==="function") await window.runAdminSessionDiagnostic(); }
+    finally { sessionButton.disabled=false;sessionButton.textContent="Check Admin Session"; }
+  });
   button.addEventListener("click",async function(){
     button.disabled=true;button.textContent="Checking…";
     status.textContent="Checking Supabase Auth and database API…";
