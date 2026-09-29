@@ -22,21 +22,29 @@ Deno.serve(
     const userId = String(ctx.userClaims?.sub ?? "");
     const email = String(ctx.userClaims?.email ?? "").trim().toLowerCase();
     if (!userId || !email) return Response.json({ error: "AUTHENTICATION_REQUIRED" }, { status: 401, headers });
+    const body = await req.json().catch(() => ({}));
+    const tenantId = String(body?.tenant_id ?? "").trim();
+    if (!/^[0-9a-f]{8}-[0-9a-f]{4}-[1-8][0-9a-f]{3}-[89ab][0-9a-f]{3}-[0-9a-f]{12}$/i.test(tenantId)) {
+      return Response.json({ error: "TENANT_CONTEXT_REQUIRED" }, { status: 400, headers });
+    }
 
-    const { data: memberships, error: membershipError } = await ctx.supabaseAdmin
+    // The selected tenant ID is only a selector. The authenticated identity
+    // must hold an active SCHOOL_ADMIN membership in that exact tenant.
+    const { data: membership, error: membershipError } = await ctx.supabaseAdmin
       .from("tenant_memberships")
       .select("tenant_id,role,active")
       .eq("user_id", userId)
+      .eq("tenant_id", tenantId)
       .eq("active", true)
-      .eq("role", "SCHOOL_ADMIN");
+      .eq("role", "SCHOOL_ADMIN")
+      .maybeSingle();
     if (membershipError) {
       console.error("Tenant membership lookup failed:", membershipError);
       return Response.json({ error: "TENANT_AUTHORIZATION_FAILED" }, { status: 500, headers });
     }
-    if (!memberships || memberships.length !== 1) {
-      return Response.json({ error: "SINGLE_ACTIVE_SCHOOL_ADMIN_MEMBERSHIP_REQUIRED" }, { status: 403, headers });
+    if (!membership) {
+      return Response.json({ error: "ADMIN_TENANT_MEMBERSHIP_REQUIRED" }, { status: 403, headers });
     }
-    const tenantId = memberships[0].tenant_id;
     const { data: tenant, error: tenantError } = await ctx.supabaseAdmin
       .from("tenants").select("id,slug,status").eq("id", tenantId).eq("status", "active").maybeSingle();
     if (tenantError || !tenant) {
