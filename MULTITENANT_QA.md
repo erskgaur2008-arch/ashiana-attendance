@@ -10,12 +10,17 @@ This checklist is for the `feat/multi-tenant-foundation` branch and the isolated
 - Record the test date, branch commit, test account role, and outcome for each scenario.
 - A SQL/RLS role simulation is useful evidence, but it does not replace an authenticated browser/API test.
 
-## Workspace selection
+## Workspace selection and switching
 
 - [ ] Sign in with an account that has one active membership. Confirm it opens that school directly.
 - [ ] Sign in with a test account that has active memberships in two test schools. Confirm the workspace picker lists only those schools.
 - [ ] Select each workspace and confirm the displayed school context and loaded records match the selection.
-- [ ] Cancel with the Cancel button, Escape, and backdrop click. Confirm no workspace is entered and no stale school data remains visible.
+- [ ] From the admin view, use the in-app switch control and confirm only active SCHOOL_ADMIN memberships in active tenants are offered.
+- [ ] Switch between both test schools and confirm the school context, admin identity, staff list, and attendance data are refreshed for the selected tenant.
+- [ ] Confirm the old realtime subscription is removed and no old-tenant data remains visible during or after switching.
+- [ ] Confirm a switch is denied if membership is revoked or the target tenant is suspended before final membership revalidation.
+- [ ] Confirm preflight failure preserves the current valid workspace, while failure after transition begins signs out and clears tenant state.
+- [ ] Cancel with the Cancel button, Escape, and backdrop click. Confirm no unintended workspace is entered and no stale school data remains visible.
 - [ ] Confirm suspended/inactive tenants and inactive memberships are not offered.
 - [ ] Confirm a forged or stale tenant ID is rejected by membership resolution.
 - [ ] Confirm a staff PIN login remains bound to the tenant of the matching staff record and cannot choose another tenant.
@@ -52,4 +57,4 @@ For each account, use synthetic records with unmistakably different labels in ea
 
 ## Current known coverage
 
-Database-level RLS simulations have previously shown tenant-scoped reads for admin and staff roles, and their synthetic cross-tenant fixtures were rolled back. This is not a full two-tenant authenticated browser/API test. The current app includes a multi-workspace selection dialog during membership resolution; an always-available in-app workspace switch control is not yet verified as implemented.
+Database-level RLS simulations have previously shown tenant-scoped reads for admin and staff roles, and their synthetic cross-tenant fixtures were rolled back. The in-app admin workspace switch control is implemented in the feature branch and its key source paths have been reviewed, but it has not yet been exercised in a browser. EduPunch-Test currently has only one persistent tenant, so genuine two-school authenticated switching and cross-tenant browser/API isolation remain unverified.
