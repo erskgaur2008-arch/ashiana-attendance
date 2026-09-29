@@ -67,3 +67,12 @@ Database-level RLS simulations have previously shown tenant-scoped reads for adm
 - [ ] Verify privilege state from PostgreSQL catalog queries; do not infer it from successful browser reads alone.
 
 The migration is committed as source only and has not been applied to EduPunch-Test or production. Database verification remains a release gate.
+
+
+## Foreign-key index regression check
+
+- [ ] After applying `20260929060000_index_unindexed_tenant_foreign_keys.sql` in an isolated database, confirm each of the six named indexes exists and matches its intended FK columns.
+- [ ] Re-run the Supabase Performance Advisor and review remaining index and RLS-initplan findings.
+- [ ] Compare representative query plans and monitor write overhead before any production rollout.
+
+This index migration is source only and has not been applied to either Supabase project.
