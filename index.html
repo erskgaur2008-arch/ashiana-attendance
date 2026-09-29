@@ -2136,19 +2136,98 @@
       return true;
     }
 
-    // Resolve the signed-in identity against the trusted tenant membership table.
-    // Multi-workspace selection is intentionally blocked until the workspace switcher is implemented.
-    async function resolveTenantMembership(userId) {
+    // Let authenticated users choose among only their active database memberships.
+    // Labels are inserted as text (never HTML); the selected tenant is revalidated below.
+    function chooseTenantMembership(memberships) {
+      return new Promise(resolve => {
+        const overlay = document.createElement('div');
+        overlay.className = 'fixed inset-0 z-[10000] flex items-center justify-center bg-slate-950/70 p-4';
+        overlay.setAttribute('role', 'presentation');
+
+        const dialog = document.createElement('section');
+        dialog.className = 'w-full max-w-md rounded-2xl border border-emerald-200 bg-white p-5 text-slate-900 shadow-2xl';
+        dialog.setAttribute('role', 'dialog');
+        dialog.setAttribute('aria-modal', 'true');
+        dialog.setAttribute('aria-labelledby', 'workspace-picker-title');
+
+        const title = document.createElement('h2');
+        title.id = 'workspace-picker-title';
+        title.className = 'text-lg font-bold';
+        title.textContent = 'Choose your school workspace';
+
+        const description = document.createElement('p');
+        description.className = 'mt-2 text-sm text-slate-600';
+        description.textContent = 'Your account has access to more than one school. Select a workspace to continue.';
+
+        const options = document.createElement('div');
+        options.className = 'mt-4 space-y-2';
+
+        const finish = value => {
+          overlay.remove();
+          resolve(value);
+        };
+
+        memberships.forEach(membership => {
+          const button = document.createElement('button');
+          button.type = 'button';
+          button.className = 'w-full rounded-xl border border-slate-200 p-3 text-left hover:border-emerald-500 hover:bg-emerald-50 focus:outline-none focus:ring-2 focus:ring-emerald-600';
+          const name = document.createElement('span');
+          name.className = 'block font-semibold';
+          name.textContent = membership.tenant_name || 'School workspace';
+          const role = document.createElement('span');
+          role.className = 'mt-1 block text-xs text-slate-500';
+          role.textContent = String(membership.role || '').replaceAll('_', ' ');
+          button.append(name, role);
+          button.addEventListener('click', () => finish(membership.tenant_id));
+          options.appendChild(button);
+        });
+
+        const cancel = document.createElement('button');
+        cancel.type = 'button';
+        cancel.className = 'mt-4 w-full rounded-xl border border-slate-300 px-4 py-2 text-sm font-medium hover:bg-slate-50';
+        cancel.textContent = 'Cancel';
+        cancel.addEventListener('click', () => finish(null));
+
+        dialog.append(title, description, options, cancel);
+        overlay.appendChild(dialog);
+        overlay.addEventListener('click', event => {
+          if (event.target === overlay) finish(null);
+        });
+        document.body.appendChild(overlay);
+        cancel.focus();
+      });
+    }
+
+    // Resolve identity and selected workspace against trusted active memberships.
+    async function resolveTenantMembership(userId, preferredTenantId = null) {
       if (!supabaseClient || !userId) throw new Error("A valid authenticated identity is required.");
       const { data: memberships, error } = await supabaseClient
         .from('tenant_memberships')
-        .select('tenant_id,role,active')
+        .select('tenant_id,role,active,tenants(name)')
         .eq('user_id', userId)
         .eq('active', true);
       if (error) throw error;
       if (!memberships?.length) throw new Error("This account has no active school workspace membership.");
-      if (memberships.length !== 1) throw new Error("This account belongs to multiple school workspaces. Workspace selection must be completed before access.");
-      const membership = memberships[0];
+
+      const choices = memberships.map(m => ({
+        tenant_id: m.tenant_id,
+        role: m.role,
+        tenant_name: Array.isArray(m.tenants) ? m.tenants[0]?.name : m.tenants?.name
+      }));
+      let selectedTenantId = preferredTenantId;
+      if (selectedTenantId) {
+        if (!choices.some(m => m.tenant_id === selectedTenantId)) {
+          throw new Error("The selected school is not an active workspace membership for this account.");
+        }
+      } else if (choices.length === 1) {
+        selectedTenantId = choices[0].tenant_id;
+      } else {
+        selectedTenantId = await chooseTenantMembership(choices);
+        if (!selectedTenantId) throw new Error("School workspace selection was cancelled.");
+      }
+
+      const membership = choices.find(m => m.tenant_id === selectedTenantId);
+      if (!membership) throw new Error("A valid school workspace selection is required.");
       const { data: tenant, error: tenantError } = await supabaseClient
         .from('tenants')
         .select('id,name,slug,status')
@@ -2909,7 +2988,7 @@
 
         let resolvedTenant;
         try {
-          resolvedTenant = await resolveTenantMembership(authData.user.id);
+          resolvedTenant = await resolveTenantMembership(authData.user.id, loginResult.staff.tenant_id);
         } catch (membershipError) {
           await supabaseClient.auth.signOut();
           throw membershipError;
