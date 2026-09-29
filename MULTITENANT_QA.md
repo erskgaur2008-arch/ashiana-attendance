@@ -1,6 +1,6 @@
 # Multi-tenant QA checklist
 
-This checklist is for the `feat/multi-tenant-foundation` branch and the isolated EduPunch-Test Supabase project. Run these checks before merging or deploying multi-tenant changes.
+This checklist is for the `feat/multitenant-main-integration` branch / draft PR #3 and the isolated EduPunch-Test Supabase project. The branch is reconciled against current `main`; it is not deployed. Run these checks before merging or deploying multi-tenant changes.
 
 ## Safety rules
 
@@ -57,4 +57,4 @@ For each account, use synthetic records with unmistakably different labels in ea
 
 ## Current known coverage
 
-Database-level RLS simulations have previously shown tenant-scoped reads for admin and staff roles, and their synthetic cross-tenant fixtures were rolled back. The in-app admin workspace switch control is implemented in the feature branch and its key source paths have been reviewed, but it has not yet been exercised in a browser. EduPunch-Test currently has only one persistent tenant, so genuine two-school authenticated switching and cross-tenant browser/API isolation remain unverified.
+Database-level RLS simulations have previously shown tenant-scoped reads for admin and staff roles, and their synthetic cross-tenant fixtures were rolled back. The in-app admin workspace switch control is included in the main-based integration branch and its key source paths have been reviewed, but it has not yet been exercised in a browser. EduPunch-Test currently has only one persistent tenant, so genuine two-school authenticated switching and cross-tenant browser/API isolation remain unverified.
