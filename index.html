@@ -656,6 +656,7 @@
         </div>
         <div class="admin-dashboard-actions">
           <div class="admin-live-pill"><span></span><strong>LIVE</strong><small>Cloud Sync</small></div>
+          <button id="admin-switch-school" onclick="switchAdminWorkspace()" class="admin-header-action" title="Switch school workspace"><i data-lucide="building-2"></i><span>Switch School</span></button>
           <button onclick="pollLatestPunches(true)" class="admin-header-action" title="Sync now"><i data-lucide="refresh-cw"></i><span>Sync</span></button>
           <button onclick="handleLogout()" class="admin-header-action admin-logout-action" title="Sign out"><i data-lucide="log-out"></i><span>Sign Out</span></button>
         </div>
@@ -3147,6 +3148,133 @@
         playTone('ERROR');
         showToast("Administrator sign-in failed: " + (err?.message || err), "error");
         applyAuthenticatedUI();
+      }
+    }
+
+    // Switch only between actively authorized SCHOOL_ADMIN memberships for the
+    // current Supabase identity. Staff sessions remain pinned to their staff row.
+    let workspaceSwitchInProgress = false;
+    async function switchAdminWorkspace() {
+      const button = document.getElementById("admin-switch-school");
+      if (workspaceSwitchInProgress) return;
+      if (!supabaseClient || currentAuthUser?.type !== 'ADMIN' || !currentTenant?.id ||
+          currentAuthUser.tenantId !== currentTenant.id) {
+        showToast("A verified administrator workspace is required.", "error");
+        return;
+      }
+
+      workspaceSwitchInProgress = true;
+      if (button) button.disabled = true;
+      const originalLabel = button?.innerHTML;
+      if (button) button.innerHTML = '<i data-lucide="loader-circle"></i><span>Checking…</span>';
+      try {
+        const { data: identityData, error: identityError } = await supabaseClient.auth.getUser();
+        const identity = identityData?.user;
+        if (identityError || !identity?.id || String(identity.email || '').trim().toLowerCase() !==
+            String(currentAuthUser.username || '').trim().toLowerCase()) {
+          throw new Error("Your authenticated identity could not be verified. Please sign in again.");
+        }
+
+        const { data: memberships, error: membershipError } = await supabaseClient
+          .from('tenant_memberships')
+          .select('tenant_id,role,active')
+          .eq('user_id', identity.id)
+          .eq('active', true)
+          .eq('role', 'SCHOOL_ADMIN');
+        if (membershipError) throw membershipError;
+        const activeMemberships = memberships || [];
+        if (activeMemberships.length < 2) {
+          showToast("No other active administrator workspace is available.", "info");
+          return;
+        }
+
+        const { data: tenants, error: tenantError } = await supabaseClient
+          .from('tenants')
+          .select('id,name,slug,status')
+          .in('id', activeMemberships.map(m => m.tenant_id))
+          .eq('status', 'active');
+        if (tenantError) throw tenantError;
+        const choices = activeMemberships
+          .filter(m => tenants?.some(t => t.id === m.tenant_id))
+          .map(m => {
+            const tenant = tenants.find(t => t.id === m.tenant_id);
+            return { tenant_id: m.tenant_id, role: m.role, tenant_name: tenant.name };
+          });
+        if (choices.length < 2) {
+          showToast("No other active administrator workspace is available.", "info");
+          return;
+        }
+
+        const selectedId = await chooseTenantMembership(choices);
+        if (!selectedId || selectedId === currentTenant.id) return;
+
+        // Re-resolve the chosen membership and active tenant immediately before
+        // changing local context; the dialog itself is never an authorization source.
+        const nextTenant = await resolveTenantMembership(identity.id, selectedId);
+        if (nextTenant.role !== 'SCHOOL_ADMIN') throw new Error("This account is not an administrator in the selected school.");
+        const { data: adminRow, error: adminError } = await supabaseClient
+          .from('admin_users')
+          .select('email,role,active')
+          .eq('tenant_id', nextTenant.id)
+          .ilike('email', identity.email)
+          .eq('active', true)
+          .maybeSingle();
+        if (adminError || !adminRow) throw new Error("Administrator profile is not active in the selected school.");
+        assertAdminAuthIdentity(identity, String(identity.email).trim().toLowerCase(), adminRow);
+
+        const oldChannel = realtimeChannel;
+        realtimeChannel = null;
+        if (oldChannel) {
+          try { await supabaseClient.removeChannel(oldChannel); }
+          catch (cleanupError) { console.warn("Old workspace realtime cleanup notice:", cleanupError); }
+        }
+        currentAuthUser = null;
+        currentStaffId = null;
+        currentTenant = null;
+        staffDatabase = [];
+        punchLedger = [];
+        leaveRequests = [];
+        auditLogs = [];
+        tenantSyncQueued = false;
+
+        currentTenant = nextTenant;
+        currentAuthUser = {
+          type: 'ADMIN',
+          username: String(identity.email).trim().toLowerCase(),
+          role: adminRow.role,
+          tenantId: nextTenant.id,
+          tenantName: nextTenant.name,
+          tenantSlug: nextTenant.slug
+        };
+        persistedTenantId = null;
+        sessionStorage.setItem(STORAGE_KEY_CURRENT_USER, JSON.stringify(currentAuthUser));
+
+        if (!await syncAllDataFromSupabase(false)) {
+          throw new Error("The selected school's data could not be verified. Your session will be closed for safety.");
+        }
+        listenToRealtimePunches();
+        applyAuthenticatedUI();
+        showToast("Switched to " + nextTenant.name + ".", "success");
+      } catch (err) {
+        console.error("Workspace switch failed:", err);
+        // Once the old workspace context has been cleared, fail closed if a
+        // transition began but could not complete.
+        if (currentTenant && currentAuthUser?.tenantId === currentTenant.id &&
+            persistedTenantId === currentTenant.id) {
+          showToast("Could not switch school: " + (err?.message || err), "error");
+        } else if (currentAuthUser?.type === 'ADMIN') {
+          await handleLogout();
+          showToast("Workspace verification failed. Please sign in again.", "error");
+        } else {
+          showToast("Could not switch school: " + (err?.message || err), "error");
+        }
+      } finally {
+        workspaceSwitchInProgress = false;
+        if (button) {
+          button.disabled = false;
+          button.innerHTML = originalLabel || '<i data-lucide="building-2"></i><span>Switch School</span>';
+          if (window.lucide) lucide.createIcons();
+        }
       }
     }
 
