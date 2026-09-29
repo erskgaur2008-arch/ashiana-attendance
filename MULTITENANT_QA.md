@@ -21,3 +21,10 @@
 
 - Regression smoke check in EduPunch-Test: within one SQL `DO` block, created a temporary tenant and a second `admin_users` profile using an existing synthetic test-admin email, verified multiple same-email profiles could coexist across tenants, then deleted the temporary profile and tenant. Follow-up count confirmed zero temporary QA tenants remained. This validates the composite-key/index behavior only; it does not validate RLS or authenticated UI authorization.
 - Static post-edit assertions passed for both Edge Functions requiring the selected tenant, exact-tenant active admin membership checks, removal of the one-membership-only gate, and the frontend helper attaching selected tenant context. No TypeScript/browser execution was available in this review step.
+
+
+## EduPunch-Test Edge Function deployment (2026-09-29)
+
+- With explicit user approval, deployed branch source to isolated project `wecoexmaafpfmeuukujz` only: `reset-staff-pin` version 2 and `generate-attendance-qr` version 4. Both deployments are ACTIVE with `verify_jwt=true`.
+- Read-only post-deploy verification confirmed each deployed `index.ts` matches the reviewed branch source byte-for-byte (reset: 22,496 characters; QR: 5,767 characters).
+- No production project was targeted. Functions were deployed but not invoked. Authenticated runtime tests for each supported admin workflow, invalid/cross-tenant tenant IDs, staff account provisioning/PIN reset/email update, QR creation/retrieval, and multi-school switching remain pending. Do not use real staff credentials or PINs; test only with dedicated synthetic accounts.
