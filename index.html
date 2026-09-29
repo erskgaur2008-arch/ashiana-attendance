@@ -3026,11 +3026,29 @@
         showToast("Administrator signed in successfully.", "success");
         applyAuthenticatedUI();
       } catch (err) {
-        try { await supabaseClient?.auth.signOut(); } catch (_) {}
-        currentAuthUser = null; currentStaffId = null; currentTenant = null;
+        // Fail closed: a rejected administrator sign-in must not leave any
+        // previous tenant's data or realtime listener in the page.
+        const tenantIdToClear = currentTenant?.id || persistedTenantId;
+        currentAuthUser = null;
+        currentStaffId = null;
+        currentTenant = null;
+        persistedTenantId = null;
+        tenantSyncQueued = false;
+        staffDatabase = []; punchLedger = []; leaveRequests = []; auditLogs = [];
         sessionStorage.removeItem(STORAGE_KEY_CURRENT_USER);
+        if (tenantIdToClear) {
+          const suffix = ':' + tenantIdToClear;
+          [STORAGE_KEY_STAFF, STORAGE_KEY_PUNCHES, STORAGE_KEY_LEAVE, STORAGE_KEY_AUDIT]
+            .forEach(key => localStorage.removeItem(key + suffix));
+        }
+        if (realtimeChannel && supabaseClient) {
+          try { await supabaseClient.removeChannel(realtimeChannel); } catch (_) {}
+          realtimeChannel = null;
+        }
+        try { await supabaseClient?.auth.signOut(); } catch (_) {}
         playTone('ERROR');
         showToast("Administrator sign-in failed: " + (err?.message || err), "error");
+        applyAuthenticatedUI();
       }
     }
 
