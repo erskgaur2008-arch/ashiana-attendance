@@ -72,10 +72,10 @@ begin
   insert into public.tenant_memberships (tenant_id, user_id, role, active)
   values (v_tenant_id, v_app.applicant_user_id, 'SCHOOL_ADMIN', true);
 
-  -- The application owner must also have the school-admin profile required
-  -- by the existing admin UI and tenant-aware QR Edge Function. The insert
-  -- intentionally fails atomically if this email is already globally used
-  -- in admin_users; multi-school admin profiles need a separate schema change.
+  -- The application owner must also have a tenant-scoped school-admin
+  -- profile required by the admin UI and tenant-aware Edge Functions. The
+  -- composite (tenant_id, email) key permits this identity to administer
+  -- other schools while preserving one profile per email per tenant.
   insert into public.admin_users (email, role, active, tenant_id)
   values (v_applicant_email, 'ADMIN', true, v_tenant_id);
 
