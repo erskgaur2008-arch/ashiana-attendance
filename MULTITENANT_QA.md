@@ -66,7 +66,7 @@ Database-level RLS simulations have previously shown tenant-scoped reads for adm
 - [ ] Confirm service-role maintenance and Edge Function workflows remain functional.
 - [ ] Verify privilege state from PostgreSQL catalog queries; do not infer it from successful browser reads alone.
 
-The migration is committed as source only and has not been applied to EduPunch-Test or production. Database verification remains a release gate.
+The migration has been applied to the isolated EduPunch-Test project only. Catalog checks confirmed `anon` and `authenticated` lack `TRUNCATE`, `TRIGGER`, and `REFERENCES` on all 11 listed tables; normal CRUD behavior still requires authenticated workflow testing. Production was not changed.
 
 
 ## Foreign-key index regression check
@@ -75,7 +75,7 @@ The migration is committed as source only and has not been applied to EduPunch-T
 - [ ] Re-run the Supabase Performance Advisor and review remaining index and RLS-initplan findings.
 - [ ] Compare representative query plans and monitor write overhead before any production rollout.
 
-This index migration is source only and has not been applied to either Supabase project.
+The index migration has been applied to EduPunch-Test only. PostgreSQL catalog checks confirmed all six indexes exist with the intended columns. Production was not changed; query-plan and write-overhead review remain release gates.
 
 
 ## Staff self-update column allowlist
@@ -88,6 +88,6 @@ This index migration is source only and has not been applied to either Supabase 
 - [ ] Confirm the staff profile form and profile-photo upload still succeed; verify failed attempts do not partially modify a row.
 - [ ] Confirm trusted service-role Edge Function operations (PIN/email provisioning and profile changes) still work.
 
-The allowlist includes `avatar_url` because the current staff profile-photo flow writes that field directly. This migration is source only and remains unapplied until isolated testing is available.
+The allowlist includes `avatar_url` because the current staff profile-photo flow writes that field directly. The trigger migration has been applied to EduPunch-Test only. Catalog checks confirmed the `BEFORE UPDATE` trigger and `SECURITY DEFINER` function with an empty search path are installed. Authenticated staff/admin update attempts, profile/photo UI behavior, and service-role flows still require runtime testing. Production was not changed.
 
 - [ ] Confirm a SCHOOL_ADMIN cannot change a staff row's primary key (`id`) or move it to another tenant (`tenant_id`), even when roster editing is otherwise authorized.
