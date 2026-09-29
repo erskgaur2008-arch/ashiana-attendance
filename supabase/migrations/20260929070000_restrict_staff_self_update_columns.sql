@@ -18,6 +18,13 @@ begin
     return new;
   end if;
 
+  -- Row identity is immutable for every end-user update, including admins.
+  -- Keep this outside the admin bypass so roster edits cannot re-key a staff row.
+  if new.id is distinct from old.id or new.tenant_id is distinct from old.tenant_id then
+    raise exception 'Staff identity and tenant are immutable'
+      using errcode = '42501';
+  end if;
+
   -- Active school administrators retain tenant-scoped roster editing.
   if private.has_active_tenant_role(old.tenant_id, 'SCHOOL_ADMIN') then
     return new;
@@ -27,8 +34,6 @@ begin
   if v_email = ''
      or old.status <> 'ACTIVE'
      or lower(coalesce(old.email, '')) <> v_email
-     or new.id is distinct from old.id
-     or new.tenant_id is distinct from old.tenant_id
      or not private.has_active_tenant_role(old.tenant_id, 'STAFF') then
     raise exception 'Staff profile update is not authorized'
       using errcode = '42501';
