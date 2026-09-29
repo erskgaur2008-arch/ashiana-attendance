@@ -76,3 +76,16 @@ The migration is committed as source only and has not been applied to EduPunch-T
 - [ ] Compare representative query plans and monitor write overhead before any production rollout.
 
 This index migration is source only and has not been applied to either Supabase project.
+
+
+## Staff self-update column allowlist
+
+- [ ] Apply `20260929070000_restrict_staff_self_update_columns.sql` only in an isolated test database.
+- [ ] Confirm a staff account can update only `name`, `gender`, `dob`, `phone`, `address`, and `avatar_url` on its own active staff row.
+- [ ] Confirm a staff account cannot change `emp_id`, `email`, `status`, `role`, `department`, `tenant_id`, PIN/hash fields, or any other column, including by sending direct API requests.
+- [ ] Confirm staff cannot update another staff member's row, even in the same tenant.
+- [ ] Confirm a SCHOOL_ADMIN can still edit tenant-scoped staff roster fields through the existing admin workflow.
+- [ ] Confirm the staff profile form and profile-photo upload still succeed; verify failed attempts do not partially modify a row.
+- [ ] Confirm trusted service-role Edge Function operations (PIN/email provisioning and profile changes) still work.
+
+The allowlist includes `avatar_url` because the current staff profile-photo flow writes that field directly. This migration is source only and remains unapplied until isolated testing is available.
