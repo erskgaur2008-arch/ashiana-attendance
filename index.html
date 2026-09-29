@@ -326,6 +326,10 @@
         <!-- TEACHER LOGIN FORM -->
         <form id="teacher-login-form" onsubmit="handleTeacherLogin(event)" class="space-y-3.5">
           <div>
+            <label class="block text-xs font-bold text-slate-700 mb-1">School Code <span class="font-medium text-slate-400">(required for Employee ID)</span></label>
+            <input type="text" id="teacher-login-school" maxlength="80" placeholder="e.g. ashiana" class="w-full text-xs px-3.5 py-2.5 sm:py-3 bg-slate-50 border border-slate-200 rounded-xl focus:ring-2 focus:ring-ashiana-green focus:outline-none focus:bg-white font-medium lowercase">
+          </div>
+          <div>
             <label class="block text-xs font-bold text-slate-700 mb-1">Employee ID or Registered Email</label>
             <div class="relative">
               <div class="absolute inset-y-0 left-0 pl-3.5 flex items-center pointer-events-none text-slate-400">
@@ -652,6 +656,7 @@
         </div>
         <div class="admin-dashboard-actions">
           <div class="admin-live-pill"><span></span><strong>LIVE</strong><small>Cloud Sync</small></div>
+          <button id="admin-switch-school" onclick="switchAdminWorkspace()" class="admin-header-action" title="Switch school workspace"><i data-lucide="building-2"></i><span>Switch School</span></button>
           <button onclick="pollLatestPunches(true)" class="admin-header-action" title="Sync now"><i data-lucide="refresh-cw"></i><span>Sync</span></button>
           <button onclick="handleLogout()" class="admin-header-action admin-logout-action" title="Sign out"><i data-lucide="log-out"></i><span>Sign Out</span></button>
         </div>
@@ -1904,6 +1909,8 @@
     let supabaseClient = null;
     let isCloudConnected = false;
     let realtimeChannel = null;
+    let tenantSyncPromise = null;
+    let tenantSyncQueued = false;
     let autoPollingInterval = null;
     let html5QrScannerInstance = null;
     let isScannerRunning = false;
@@ -1918,6 +1925,9 @@
 
     let currentAuthUser = null;
     let currentStaffId = null;
+    // Tenant context is resolved from the signed-in user's database membership, never browser metadata.
+    let currentTenant = null;
+    let persistedTenantId = null;
     let currentPortal = "staff";
 
     // Staff Directory Selection State
@@ -2128,64 +2138,209 @@
       return data;
     }
 
+    function staffAccountErrorMessage(error, action = 'Staff account operation') {
+      const code = String(error?.message || error || '');
+      const guidance = {
+        PIN_AUTH_SYNC_PENDING: 'Auth accepted the new PIN, but the attendance PIN could not be confirmed. Retry the exact same 4-digit PIN to synchronize it. Do not choose a different PIN until this retry succeeds.',
+        STAFF_MEMBERSHIP_RECOVERY_REQUIRED: 'The staff login could not be linked to this school, and no PIN change was attempted. Contact the platform administrator to reconcile the account before retrying.',
+        STAFF_MEMBERSHIP_ROLE_CONFLICT: 'This login has a conflicting school membership role. Contact the platform administrator to reconcile the account before changing its PIN.',
+        STAFF_AUTH_EMAIL_MISMATCH: 'The linked login does not match this staff email. Contact the platform administrator to reconcile the account before changing its PIN.',
+        STAFF_AUTH_IDENTITY_CONFLICT: 'This login is linked to a different staff identity. Contact the platform administrator to reconcile the account before changing its PIN.',
+        STAFF_PROVISIONING_RECOVERY_REQUIRED: 'Staff creation did not finish cleanly and cleanup could not be confirmed. Contact the platform administrator to reconcile the incomplete account before trying to create it again.',
+        STAFF_EMAIL_SYNC_PENDING: 'The email change may be incomplete across the staff record and login. Contact the platform administrator to reconcile the account before retrying.',
+      };
+      return guidance[code] || (code ? `${action} failed: ${code}` : `${action} failed. Please refresh and try again.`);
+    }
+
+    function assertAdminAuthIdentity(authUser, requestedEmail, adminRow) {
+      const authEmail = String(authUser?.email || '').trim().toLowerCase();
+      const loginEmail = String(requestedEmail || '').trim().toLowerCase();
+      const profileEmail = String(adminRow?.email || '').trim().toLowerCase();
+      if (!authUser?.id || !authEmail || authEmail !== loginEmail ||
+          !profileEmail || profileEmail !== authEmail) {
+        throw new Error("ADMIN_AUTH_EMAIL_MISMATCH");
+      }
+      if (authUser.user_metadata?.account_type === 'staff') {
+        throw new Error("ADMIN_AUTH_IDENTITY_CONFLICT");
+      }
+      return true;
+    }
+
+    function assertStaffAuthIdentity(authUser, staff) {
+      const authEmail = String(authUser?.email || '').trim().toLowerCase();
+      const staffEmail = String(staff?.email || '').trim().toLowerCase();
+      if (!authUser?.id || !authEmail || !staffEmail || authEmail !== staffEmail) {
+        throw new Error("STAFF_AUTH_EMAIL_MISMATCH");
+      }
+      const metadata = authUser.user_metadata || {};
+      if ((metadata.staff_id && metadata.staff_id !== staff.id) ||
+          (metadata.account_type && metadata.account_type !== 'staff')) {
+        throw new Error("STAFF_AUTH_IDENTITY_CONFLICT");
+      }
+      return true;
+    }
+
+    // Let authenticated users choose among only their active database memberships.
+    // Labels are inserted as text (never HTML); the selected tenant is revalidated below.
+    function chooseTenantMembership(memberships) {
+      return new Promise(resolve => {
+        const overlay = document.createElement('div');
+        overlay.className = 'fixed inset-0 z-[10000] flex items-center justify-center bg-slate-950/70 p-4';
+        overlay.setAttribute('role', 'presentation');
+
+        const dialog = document.createElement('section');
+        dialog.className = 'w-full max-w-md rounded-2xl border border-emerald-200 bg-white p-5 text-slate-900 shadow-2xl';
+        dialog.setAttribute('role', 'dialog');
+        dialog.setAttribute('aria-modal', 'true');
+        dialog.setAttribute('aria-labelledby', 'workspace-picker-title');
+
+        const title = document.createElement('h2');
+        title.id = 'workspace-picker-title';
+        title.className = 'text-lg font-bold';
+        title.textContent = 'Choose your school workspace';
+
+        const description = document.createElement('p');
+        description.className = 'mt-2 text-sm text-slate-600';
+        description.textContent = 'Your account has access to more than one school. Select a workspace to continue.';
+
+        const options = document.createElement('div');
+        options.className = 'mt-4 space-y-2';
+
+        let settled = false;
+        const finish = value => {
+          if (settled) return;
+          settled = true;
+          document.removeEventListener('keydown', onKeyDown);
+          overlay.remove();
+          resolve(value);
+        };
+        const onKeyDown = event => {
+          if (event.key === 'Escape') {
+            event.preventDefault();
+            finish(null);
+          }
+        };
+        document.addEventListener('keydown', onKeyDown);
+
+        memberships.forEach(membership => {
+          const button = document.createElement('button');
+          button.type = 'button';
+          button.className = 'w-full rounded-xl border border-slate-200 p-3 text-left hover:border-emerald-500 hover:bg-emerald-50 focus:outline-none focus:ring-2 focus:ring-emerald-600';
+          const name = document.createElement('span');
+          name.className = 'block font-semibold';
+          name.textContent = membership.tenant_name || 'School workspace';
+          const role = document.createElement('span');
+          role.className = 'mt-1 block text-xs text-slate-500';
+          role.textContent = String(membership.role || '').replaceAll('_', ' ');
+          button.append(name, role);
+          button.addEventListener('click', () => finish(membership.tenant_id));
+          options.appendChild(button);
+        });
+
+        const cancel = document.createElement('button');
+        cancel.type = 'button';
+        cancel.className = 'mt-4 w-full rounded-xl border border-slate-300 px-4 py-2 text-sm font-medium hover:bg-slate-50';
+        cancel.textContent = 'Cancel';
+        cancel.addEventListener('click', () => finish(null));
+
+        dialog.append(title, description, options, cancel);
+        overlay.appendChild(dialog);
+        overlay.addEventListener('click', event => {
+          if (event.target === overlay) finish(null);
+        });
+        document.body.appendChild(overlay);
+        (options.querySelector('button') || cancel).focus();
+      });
+    }
+
+    // Resolve identity and selected workspace against trusted active memberships.
+    async function resolveTenantMembership(userId, preferredTenantId = null) {
+      if (!supabaseClient || !userId) throw new Error("A valid authenticated identity is required.");
+      const { data: memberships, error } = await supabaseClient
+        .from('tenant_memberships')
+        .select('tenant_id,role,active')
+        .eq('user_id', userId)
+        .eq('active', true);
+      if (error) throw error;
+      if (!memberships?.length) throw new Error("This account has no active school workspace membership.");
+
+      const { data: activeTenants, error: tenantsError } = await supabaseClient
+        .from('tenants')
+        .select('id,name,slug,status')
+        .in('id', memberships.map(m => m.tenant_id))
+        .eq('status', 'active');
+      if (tenantsError) throw tenantsError;
+      const choices = memberships
+        .filter(m => activeTenants?.some(t => t.id === m.tenant_id))
+        .map(m => {
+          const tenant = activeTenants.find(t => t.id === m.tenant_id);
+          return { tenant_id: m.tenant_id, role: m.role, tenant_name: tenant.name };
+        });
+      if (!choices.length) throw new Error("No active school workspace is available for this account.");
+      let selectedTenantId = preferredTenantId;
+      if (selectedTenantId) {
+        if (!choices.some(m => m.tenant_id === selectedTenantId)) {
+          throw new Error("The selected school is not an active workspace membership for this account.");
+        }
+      } else if (choices.length === 1) {
+        selectedTenantId = choices[0].tenant_id;
+      } else {
+        selectedTenantId = await chooseTenantMembership(choices);
+        if (!selectedTenantId) throw new Error("School workspace selection was cancelled.");
+      }
+
+      const membership = choices.find(m => m.tenant_id === selectedTenantId);
+      if (!membership) throw new Error("A valid school workspace selection is required.");
+      const { data: tenant, error: tenantError } = await supabaseClient
+        .from('tenants')
+        .select('id,name,slug,status')
+        .eq('id', membership.tenant_id)
+        .eq('status', 'active')
+        .maybeSingle();
+      if (tenantError || !tenant) throw new Error("The school workspace is unavailable or suspended.");
+      return { id: tenant.id, name: tenant.name, slug: tenant.slug, role: membership.role };
+    }
+
     async function restoreSupabaseSession() {
       if (!supabaseClient) return false;
       try {
         const { data: sessionData } = await supabaseClient.auth.getSession();
         const session = sessionData?.session;
         const user = session?.user;
-        if (!user?.email) return false;
-
+        if (!user?.id || !user?.email) return false;
         const email = user.email.trim().toLowerCase();
-        const { data: adminRow, error: adminError } = await supabaseClient
-          .from('admin_users')
-          .select('email,role,active')
-          .eq('email', email)
-          .eq('active', true)
-          .maybeSingle();
+        const tenant = await resolveTenantMembership(user.id);
 
-        if (!adminError && adminRow) {
-          currentAuthUser = { type: 'ADMIN', username: email, role: adminRow.role };
+        if (tenant.role === 'SCHOOL_ADMIN') {
+          const { data: adminRow, error: adminError } = await supabaseClient
+            .from('admin_users').select('email,role,active')
+            .eq('tenant_id', tenant.id).ilike('email', email).eq('active', true).maybeSingle();
+          if (adminError || !adminRow) throw new Error("School administrator membership has no active administrator profile.");
+          assertAdminAuthIdentity(user, email, adminRow);
+          currentTenant = tenant;
+          currentAuthUser = { type: 'ADMIN', username: email, role: adminRow.role, tenantId: tenant.id, tenantName: tenant.name, tenantSlug: tenant.slug };
           currentStaffId = null;
           sessionStorage.setItem(STORAGE_KEY_CURRENT_USER, JSON.stringify(currentAuthUser));
           return true;
         }
-
+        if (tenant.role !== 'STAFF') throw new Error("This account has an unsupported workspace role.");
         const { data: staff, error: staffError } = await supabaseClient
           .from('staff')
           .select('id,emp_id,name,department,role,email,status,avatar_url,gender,dob,valid_thru')
-          .ilike('email', email)
-          .eq('status', 'ACTIVE')
-          .maybeSingle();
-
-        if (staffError || !staff) {
-          await supabaseClient.auth.signOut();
-          return false;
-        }
-
-        const staffRecord = {
-          id: staff.id,
-          empId: staff.emp_id,
-          name: staff.name,
-          department: staff.department,
-          role: staff.role,
-          email: staff.email,
-          avatarUrl: staff.avatar_url || '',
-          gender: staff.gender || '',
-          dob: staff.dob || '',
-          validThru: staff.valid_thru || '',
-          pinHash: '',
-          status: staff.status || 'ACTIVE'
-        };
-        currentAuthUser = { type: 'STAFF', staffRecord };
+          .eq('tenant_id', tenant.id).ilike('email', email).eq('status', 'ACTIVE').maybeSingle();
+        if (staffError || !staff) throw new Error("No active staff profile exists in this school workspace.");
+        assertStaffAuthIdentity(user, staff);
+        const staffRecord = { id: staff.id, empId: staff.emp_id, name: staff.name, department: staff.department, role: staff.role, email: staff.email, avatarUrl: staff.avatar_url || '', gender: staff.gender || '', dob: staff.dob || '', validThru: staff.valid_thru || '', pinHash: '', status: staff.status || 'ACTIVE' };
+        currentTenant = tenant;
+        currentAuthUser = { type: 'STAFF', staffRecord, tenantId: tenant.id, tenantName: tenant.name, tenantSlug: tenant.slug };
         currentStaffId = staff.id;
         sessionStorage.setItem(STORAGE_KEY_CURRENT_USER, JSON.stringify(currentAuthUser));
         return true;
       } catch (e) {
         console.warn('Supabase session restore failed:', e);
-        currentAuthUser = null;
-        currentStaffId = null;
+        currentAuthUser = null; currentStaffId = null; currentTenant = null;
         sessionStorage.removeItem(STORAGE_KEY_CURRENT_USER);
+        try { await supabaseClient.auth.signOut(); } catch (_) {}
         return false;
       }
     }
@@ -2257,6 +2412,36 @@
               window.staffPinRecoveryActive = true;
               openStaffPinResetModal(true, session.user.email);
             }
+
+            // Supabase can report sign-out from another tab or an expired session.
+            // Clear the current tenant immediately so stale workspace data is not
+            // left visible while background requests are still settling.
+            if (event === 'SIGNED_OUT') {
+              const tenantIdToClear = currentTenant?.id || persistedTenantId;
+              currentAuthUser = null;
+              currentStaffId = null;
+              currentTenant = null;
+              persistedTenantId = null;
+              tenantSyncQueued = false;
+              staffDatabase = [];
+              punchLedger = [];
+              leaveRequests = [];
+              auditLogs = [];
+              sessionStorage.removeItem(STORAGE_KEY_CURRENT_USER);
+              if (tenantIdToClear) {
+                const suffix = ':' + tenantIdToClear;
+                [STORAGE_KEY_STAFF, STORAGE_KEY_PUNCHES, STORAGE_KEY_LEAVE, STORAGE_KEY_AUDIT]
+                  .forEach(key => localStorage.removeItem(key + suffix));
+              }
+              const channelToRemove = realtimeChannel;
+              realtimeChannel = null;
+              if (channelToRemove) {
+                Promise.resolve()
+                  .then(() => supabaseClient.removeChannel(channelToRemove))
+                  .catch(err => console.warn("Realtime cleanup after sign-out failed:", err));
+              }
+              applyAuthenticatedUI();
+            }
           });
 
           isCloudConnected = true;
@@ -2298,6 +2483,25 @@
     // 🌐 COMPREHENSIVE MULTI-DEVICE CLOUD SYNCHRONIZATION ENGINE
     // =========================================================================
     async function syncAllDataFromSupabase(notifyManual = false) {
+      // Serialize refreshes. Realtime/polling events during a refresh request one
+      // additional pass, rather than racing writes to shared tenant arrays.
+      if (tenantSyncPromise) {
+        tenantSyncQueued = true;
+        return tenantSyncPromise;
+      }
+      tenantSyncPromise = (async () => {
+        let result = false;
+        do {
+          tenantSyncQueued = false;
+          result = await syncAllDataFromSupabaseOnce(notifyManual);
+        } while (tenantSyncQueued && currentAuthUser && currentTenant?.id === currentAuthUser.tenantId);
+        return result;
+      })();
+      try { return await tenantSyncPromise; }
+      finally { tenantSyncPromise = null; }
+    }
+
+    async function syncAllDataFromSupabaseOnce(notifyManual = false) {
       if (!supabaseClient) {
         if (notifyManual) showToast("Database client not ready.", "error");
         return;
@@ -2306,21 +2510,45 @@
       // Never attempt roster writes or cloud bootstrap while nobody is signed in.
       // Staff sessions may only read their own RLS-visible records.
       const sessionUser = currentAuthUser;
-      if (!sessionUser) return;
+      if (!sessionUser || !currentTenant?.id || sessionUser.tenantId !== currentTenant.id) {
+        if (notifyManual) showToast("A verified school workspace is required before syncing.", "error");
+        return;
+      }
 
+      const tenantId = currentTenant.id;
       let anyChange = false;
+
+      // Never reuse browser-cached school records across workspace identities.
+      // Clear the old workspace in memory before taking rollback snapshots.
+      if (persistedTenantId !== tenantId) {
+        staffDatabase = [];
+        punchLedger = [];
+        leaveRequests = [];
+        auditLogs = [];
+        persistedTenantId = tenantId;
+        savePersistedData();
+      }
+      // Sync merges punches in place, so rollback snapshots must not share array
+      // references (or row objects) with the mutable live state.
+      const previousState = {
+        staffDatabase: staffDatabase.map(row => ({ ...row })),
+        punchLedger: punchLedger.map(row => ({ ...row })),
+        leaveRequests: leaveRequests.map(row => ({ ...row })),
+        auditLogs: auditLogs.map(row => ({ ...row }))
+      };
 
       try {
         updateCloudBadge(true, "Syncing…");
         // 1. SYNC STAFF TABLE (Accounts, Names, Roles, Updated PINs)
         const { data: remoteStaff, error: staffErr } = await supabaseClient
-          .from('staff')
+           .from('staff')
           .select('*')
+          .eq('tenant_id', tenantId)
           .order('name', { ascending: true });
 
-        if (staffErr) {
-          console.warn("Supabase staff sync notice:", staffErr);
-        } else if (remoteStaff && remoteStaff.length > 0) {
+        if (staffErr) throw new Error("Staff data could not be verified: " + staffErr.message);
+        if (currentAuthUser !== sessionUser || currentTenant?.id !== tenantId || sessionUser.tenantId !== tenantId) return false;
+        if (remoteStaff && remoteStaff.length > 0) {
           // Compare remote staff with local staff
           const remoteMap = new Map();
           remoteStaff.forEach(s => {
@@ -2353,20 +2581,21 @@
             anyChange = true;
           }
         } else if (remoteStaff && remoteStaff.length === 0 && staffDatabase.length > 0) {
-          // Do not auto-seed or write the roster from a browser session.
-          // The roster is authoritative in Supabase and is managed by the Admin portal.
-          console.info("Supabase staff query returned no visible rows; no automatic roster write performed.");
+          // An empty authoritative tenant roster must not leave prior cached rows visible.
+          staffDatabase = [];
+          anyChange = true;
         }
 
         // 2. SYNC ATTENDANCE PUNCHES (All dates so history and reports work on any device)
         const { data: remotePunches, error: punchErr } = await supabaseClient
-          .from('attendance_punches')
+           .from('attendance_punches')
           .select('*')
+          .eq('tenant_id', tenantId)
           .order('created_at', { ascending: true });
 
-        if (punchErr) {
-          console.warn("Supabase punches sync notice:", punchErr);
-        } else if (remotePunches) {
+        if (punchErr) throw new Error("Attendance data could not be verified: " + punchErr.message);
+        if (currentAuthUser !== sessionUser || currentTenant?.id !== tenantId || sessionUser.tenantId !== tenantId) return false;
+        if (remotePunches) {
           remotePunches.forEach(rp => {
             const exists = punchLedger.some(p => 
               p.id === rp.id || 
@@ -2390,13 +2619,14 @@
 
         // 3. SYNC LEAVE REQUESTS
         const { data: remoteLeaves, error: leaveErr } = await supabaseClient
-          .from('leave_requests')
+           .from('leave_requests')
           .select('*')
+          .eq('tenant_id', tenantId)
           .order('created_at', { ascending: false });
 
-        if (leaveErr) {
-          console.warn("Supabase leaves sync notice:", leaveErr);
-        } else if (remoteLeaves) {
+        if (leaveErr) throw new Error("Leave data could not be verified: " + leaveErr.message);
+        if (currentAuthUser !== sessionUser || currentTenant?.id !== tenantId || sessionUser.tenantId !== tenantId) return false;
+        if (remoteLeaves) {
           // Supabase is the authoritative source for leave data. Replace the
           // local cache instead of merging it, so deleted/expired/demo leave
           // records cannot keep appearing on the Admin dashboard.
@@ -2415,6 +2645,8 @@
             anyChange = true;
           }
         }
+
+        if (currentAuthUser !== sessionUser || currentTenant?.id !== tenantId || sessionUser.tenantId !== tenantId) return false;
 
         if (anyChange) {
           savePersistedData();
@@ -2437,10 +2669,18 @@
         }
 
         updateCloudBadge(true, "Cloud Live");
+        return true;
       } catch (err) {
+        if (currentAuthUser === sessionUser && currentTenant?.id === tenantId) {
+          staffDatabase = previousState.staffDatabase;
+          punchLedger = previousState.punchLedger;
+          leaveRequests = previousState.leaveRequests;
+          auditLogs = previousState.auditLogs;
+        }
         console.warn("Global sync error:", err);
         updateCloudBadge(false, "Sync Error");
-        if (notifyManual) showToast("Sync error: " + err.message, "error");
+        if (notifyManual) showToast("Cloud data could not be fully verified. Please retry. " + (err?.message || ""), "error");
+        return false;
       }
     }
 
@@ -2514,64 +2754,52 @@
 
     // Load Data with Cloud Priming
     async function loadPersistedData() {
-      try {
-        const savedStaff = localStorage.getItem(STORAGE_KEY_STAFF);
-        staffDatabase = savedStaff ? JSON.parse(savedStaff) : getBaselineFacultyData();
-
-        const savedPunches = localStorage.getItem(STORAGE_KEY_PUNCHES);
-        punchLedger = savedPunches ? JSON.parse(savedPunches) : [];
-
-        const savedLeave = localStorage.getItem(STORAGE_KEY_LEAVE);
-        // Never seed fake leave records. Cloud sync will replace this cache
-        // with the actual Supabase leave_requests rows after authentication.
-        leaveRequests = savedLeave ? JSON.parse(savedLeave) : [];
-
-        const savedAudit = localStorage.getItem(STORAGE_KEY_AUDIT);
-        auditLogs = savedAudit ? JSON.parse(savedAudit) : [
-          { id: "aud_1", timestamp: new Date().toLocaleString(), actor: "System Engine", action: "SYSTEM_INIT", entity: "School Calendar", details: "Shift 07:40 AM – 02:30 PM initialized." }
-        ];
-
-        const savedUser = sessionStorage.getItem(STORAGE_KEY_CURRENT_USER);
-        if (savedUser) {
-          currentAuthUser = JSON.parse(savedUser);
-          currentStaffId = currentAuthUser.staffRecord?.id || staffDatabase[0]?.id || "usr_101";
-        }
-      } catch (e) {
-        staffDatabase = getBaselineFacultyData();
-      }
-
-      // Cloud sync is started by window.onload after the real Supabase session
-      // has been restored. This prevents stale local session data from opening
-      // a portal before Auth has been validated.
+      // Do not hydrate legacy, unscoped browser records before authentication.
+      // Tenant-specific cache restore is intentionally deferred until a trusted
+      // membership has been resolved; cloud sync remains the authoritative source.
+      staffDatabase = [];
+      punchLedger = [];
+      leaveRequests = [];
+      auditLogs = [];
+      currentAuthUser = null;
+      currentStaffId = null;
+      currentTenant = null;
+      persistedTenantId = null;
+      sessionStorage.removeItem(STORAGE_KEY_CURRENT_USER);
     }
 
     function savePersistedData() {
       try {
-        localStorage.setItem(STORAGE_KEY_STAFF, JSON.stringify(staffDatabase));
-        localStorage.setItem(STORAGE_KEY_PUNCHES, JSON.stringify(punchLedger));
-        localStorage.setItem(STORAGE_KEY_LEAVE, JSON.stringify(leaveRequests));
-        localStorage.setItem(STORAGE_KEY_AUDIT, JSON.stringify(auditLogs));
+        const tenantSuffix = currentTenant?.id ? ':' + currentTenant.id : ':legacy';
+        localStorage.setItem(STORAGE_KEY_STAFF + tenantSuffix, JSON.stringify(staffDatabase));
+        localStorage.setItem(STORAGE_KEY_PUNCHES + tenantSuffix, JSON.stringify(punchLedger));
+        localStorage.setItem(STORAGE_KEY_LEAVE + tenantSuffix, JSON.stringify(leaveRequests));
+        localStorage.setItem(STORAGE_KEY_AUDIT + tenantSuffix, JSON.stringify(auditLogs));
       } catch (e) {}
     }
 
     // WebSockets Real-Time Sync Channel for Live Tables
     function listenToRealtimePunches() {
-      if (!supabaseClient || !checkWebSocketSupport()) return;
+      // Realtime must be bound to a verified workspace. RLS remains the
+      // authorization boundary; this filter also avoids cross-tenant event noise.
+      if (!supabaseClient || !checkWebSocketSupport() || !currentTenant?.id ||
+          !currentAuthUser || currentAuthUser.tenantId !== currentTenant.id) return;
 
       try {
         if (realtimeChannel) {
           try { supabaseClient.removeChannel(realtimeChannel); } catch (e) {}
+          realtimeChannel = null;
         }
-
+        const tenantFilter = `tenant_id=eq.${currentTenant.id}`;
         realtimeChannel = supabaseClient
-          .channel('public:db_sync_channel')
-          .on('postgres_changes', { event: '*', schema: 'public', table: 'attendance_punches' }, payload => {
+          .channel(`tenant:${currentTenant.id}:db_sync_channel`)
+          .on('postgres_changes', { event: '*', schema: 'public', table: 'attendance_punches', filter: tenantFilter }, () => {
             syncAllDataFromSupabase(false);
           })
-          .on('postgres_changes', { event: '*', schema: 'public', table: 'staff' }, payload => {
+          .on('postgres_changes', { event: '*', schema: 'public', table: 'staff', filter: tenantFilter }, () => {
             syncAllDataFromSupabase(false);
           })
-          .on('postgres_changes', { event: '*', schema: 'public', table: 'leave_requests' }, payload => {
+          .on('postgres_changes', { event: '*', schema: 'public', table: 'leave_requests', filter: tenantFilter }, () => {
             syncAllDataFromSupabase(false);
           })
           .subscribe((status, err) => {
@@ -2586,14 +2814,15 @@
     // row exists; it never writes or exposes a PIN/hash from the browser.
     async function ensureStaffExistsInSupabase(staff) {
       if (!supabaseClient || !staff) return false;
-      const { data, error } = await supabaseClient.from('staff').select('id').eq('id', staff.id).maybeSingle();
+      if (!currentTenant?.id) throw new Error('Verified school workspace is required.');
+      const { data, error } = await supabaseClient.from('staff').select('id').eq('tenant_id', currentTenant.id).eq('id', staff.id).maybeSingle();
       if (error) throw error;
       if (!data) throw new Error('Staff profile is missing from Supabase.');
       return true;
     }
 
     async function syncAllToSupabase() {
-      if (!supabaseClient || currentAuthUser?.type !== 'ADMIN') {
+      if (!supabaseClient || currentAuthUser?.type !== 'ADMIN' || !currentTenant?.id || currentAuthUser.tenantId !== currentTenant.id) {
         showToast("Administrator cloud session is required for roster sync.", "error");
         return;
       }
@@ -2603,7 +2832,7 @@
           const { error } = await supabaseClient.from('staff').update({
             emp_id: s.empId, name: s.name, department: s.department,
             role: s.role, email: s.email, status: s.status
-          }).eq('id', s.id);
+          }).eq('tenant_id', currentTenant.id).eq('id', s.id);
           if (error) throw error;
         }
         playTone('SUCCESS');
@@ -2764,7 +2993,7 @@
         if (msg.includes('INVALID_OR_EXPIRED') || msg.includes('AUTHENTICATION')) {
           showToast('The reset link has expired or is invalid. Please request a new one.', 'error');
         } else {
-          showToast('PIN reset failed: ' + msg, 'error');
+          showToast(staffAccountErrorMessage(err, 'PIN reset'), 'error');
         }
       } finally {
         if (btn) {
@@ -2797,10 +3026,11 @@
         const loginResult = await invokeVerifyAttendance({
           action: "staff_login",
           login_id: idVal,
+          school_code: schoolCode,
           pin: pinVal
         });
 
-        if (!loginResult?.success || !loginResult?.staff?.email || !loginResult?.staff?.id) {
+        if (!loginResult?.success || !loginResult?.staff?.email || !loginResult?.staff?.id || !loginResult?.staff?.tenant_id) {
           throw new Error("Staff authentication failed.");
         }
 
@@ -2811,6 +3041,24 @@
         });
         if (authError || !authData?.user) {
           throw new Error(authError?.message || "Supabase Auth sign-in failed.");
+        }
+        try {
+          assertStaffAuthIdentity(authData.user, loginResult.staff);
+        } catch (identityError) {
+          await supabaseClient.auth.signOut();
+          throw identityError;
+        }
+
+        let resolvedTenant;
+        try {
+          resolvedTenant = await resolveTenantMembership(authData.user.id, loginResult.staff.tenant_id);
+        } catch (membershipError) {
+          await supabaseClient.auth.signOut();
+          throw membershipError;
+        }
+        if (resolvedTenant.role !== 'STAFF' || resolvedTenant.id !== loginResult.staff.tenant_id) {
+          await supabaseClient.auth.signOut();
+          throw new Error("Staff workspace membership does not match the authenticated staff record.");
         }
 
         const matched = {
@@ -2832,17 +3080,33 @@
         const idx = staffDatabase.findIndex(s => s.id === matched.id);
         if (idx >= 0) staffDatabase[idx] = { ...staffDatabase[idx], ...matched };
         else staffDatabase.push(matched);
-        savePersistedData();
 
-        currentAuthUser = { type: 'STAFF', staffRecord: matched };
+        // Establish verified tenant context before persisting any workspace data.
+        currentTenant = resolvedTenant;
+        currentAuthUser = {
+          type: 'STAFF',
+          staffRecord: matched,
+          tenantId: resolvedTenant.id,
+          tenantName: resolvedTenant.name,
+          tenantSlug: resolvedTenant.slug
+        };
         currentStaffId = matched.id;
+        persistedTenantId = resolvedTenant.id;
+        savePersistedData();
         sessionStorage.setItem(STORAGE_KEY_CURRENT_USER, JSON.stringify(currentAuthUser));
-
-        await syncAllDataFromSupabase(false);
+        if (!await syncAllDataFromSupabase(false)) throw new Error("Cloud workspace data could not be fully verified. Please try signing in again.");
+        listenToRealtimePunches();
         playTone('SUCCESS');
         showToast(`Welcome, ${matched.name}!`, "success");
         applyAuthenticatedUI();
       } catch (err) {
+        if (realtimeChannel && supabaseClient) { try { await supabaseClient.removeChannel(realtimeChannel); } catch (_) {} realtimeChannel = null; }
+        try { await supabaseClient?.auth.signOut(); } catch (_) {}
+        currentAuthUser = null; currentStaffId = null; currentTenant = null;
+        persistedTenantId = null;
+        staffDatabase = []; punchLedger = []; leaveRequests = []; auditLogs = [];
+        sessionStorage.removeItem(STORAGE_KEY_CURRENT_USER);
+        applyAuthenticatedUI();
         playTone('ERROR');
         const msg = String(err?.message || err);
         if (msg.includes('RATE_LIMIT')) {
@@ -2879,37 +3143,202 @@
           password: passVal
         });
         if (error || !data?.user) throw new Error(error?.message || "Administrator sign-in failed.");
-
-        const { data: adminRow, error: adminError } = await supabaseClient
-          .from('admin_users')
-          .select('email,role,active')
-          .eq('email', userVal)
-          .eq('active', true)
-          .maybeSingle();
-        if (adminError || !adminRow) {
+        const authEmail = String(data.user.email || '').trim().toLowerCase();
+        if (!authEmail || authEmail !== userVal.trim().toLowerCase()) {
           await supabaseClient.auth.signOut();
-          throw new Error("Administrator account is not authorized.");
+          throw new Error("ADMIN_AUTH_EMAIL_MISMATCH");
         }
 
-        currentAuthUser = { type: 'ADMIN', username: userVal, role: adminRow.role };
+        const tenant = await resolveTenantMembership(data.user.id);
+        if (tenant.role !== 'SCHOOL_ADMIN') throw new Error("This account is not a school administrator.");
+        const { data: adminRow, error: adminError } = await supabaseClient
+          .from('admin_users').select('email,role,active')
+          .eq('tenant_id', tenant.id).ilike('email', authEmail).eq('active', true).maybeSingle();
+        if (adminError || !adminRow) throw new Error("Administrator account is not authorized for this workspace.");
+        assertAdminAuthIdentity(data.user, userVal, adminRow);
+
+        currentTenant = tenant;
+        currentAuthUser = { type: 'ADMIN', username: authEmail, role: adminRow.role, tenantId: tenant.id, tenantName: tenant.name, tenantSlug: tenant.slug };
         currentStaffId = null;
         sessionStorage.setItem(STORAGE_KEY_CURRENT_USER, JSON.stringify(currentAuthUser));
-        await syncAllDataFromSupabase(false);
+        listenToRealtimePunches();
+        if (!await syncAllDataFromSupabase(false)) throw new Error("Cloud workspace data could not be fully verified. Please try signing in again.");
         recordAuditLog("ADMIN_LOGIN", "Security Gateway", "Administrator signed in to console.");
         playTone('SUCCESS');
         showToast("Administrator signed in successfully.", "success");
         applyAuthenticatedUI();
       } catch (err) {
+        // Fail closed: a rejected administrator sign-in must not leave any
+        // previous tenant's data or realtime listener in the page.
+        const tenantIdToClear = currentTenant?.id || persistedTenantId;
+        currentAuthUser = null;
+        currentStaffId = null;
+        currentTenant = null;
+        persistedTenantId = null;
+        tenantSyncQueued = false;
+        staffDatabase = []; punchLedger = []; leaveRequests = []; auditLogs = [];
+        sessionStorage.removeItem(STORAGE_KEY_CURRENT_USER);
+        if (tenantIdToClear) {
+          const suffix = ':' + tenantIdToClear;
+          [STORAGE_KEY_STAFF, STORAGE_KEY_PUNCHES, STORAGE_KEY_LEAVE, STORAGE_KEY_AUDIT]
+            .forEach(key => localStorage.removeItem(key + suffix));
+        }
+        if (realtimeChannel && supabaseClient) {
+          try { await supabaseClient.removeChannel(realtimeChannel); } catch (_) {}
+          realtimeChannel = null;
+        }
+        try { await supabaseClient?.auth.signOut(); } catch (_) {}
         playTone('ERROR');
         showToast("Administrator sign-in failed: " + (err?.message || err), "error");
+        applyAuthenticatedUI();
+      }
+    }
+
+    // Switch only between actively authorized SCHOOL_ADMIN memberships for the
+    // current Supabase identity. Staff sessions remain pinned to their staff row.
+    let workspaceSwitchInProgress = false;
+    async function switchAdminWorkspace() {
+      const button = document.getElementById("admin-switch-school");
+      if (workspaceSwitchInProgress) return;
+      if (!supabaseClient || currentAuthUser?.type !== 'ADMIN' || !currentTenant?.id ||
+          currentAuthUser.tenantId !== currentTenant.id) {
+        showToast("A verified administrator workspace is required.", "error");
+        return;
+      }
+
+      workspaceSwitchInProgress = true;
+      if (button) button.disabled = true;
+      const originalLabel = button?.innerHTML;
+      if (button) button.innerHTML = '<i data-lucide="loader-circle"></i><span>Checking…</span>';
+      let transitionStarted = false;
+      try {
+        const { data: identityData, error: identityError } = await supabaseClient.auth.getUser();
+        const identity = identityData?.user;
+        if (identityError || !identity?.id || String(identity.email || '').trim().toLowerCase() !==
+            String(currentAuthUser.username || '').trim().toLowerCase()) {
+          throw new Error("Your authenticated identity could not be verified. Please sign in again.");
+        }
+
+        const { data: memberships, error: membershipError } = await supabaseClient
+          .from('tenant_memberships')
+          .select('tenant_id,role,active')
+          .eq('user_id', identity.id)
+          .eq('active', true)
+          .eq('role', 'SCHOOL_ADMIN');
+        if (membershipError) throw membershipError;
+        const activeMemberships = memberships || [];
+        if (activeMemberships.length < 2) {
+          showToast("No other active administrator workspace is available.", "info");
+          return;
+        }
+
+        const { data: tenants, error: tenantError } = await supabaseClient
+          .from('tenants')
+          .select('id,name,slug,status')
+          .in('id', activeMemberships.map(m => m.tenant_id))
+          .eq('status', 'active');
+        if (tenantError) throw tenantError;
+        const choices = activeMemberships
+          .filter(m => tenants?.some(t => t.id === m.tenant_id))
+          .map(m => {
+            const tenant = tenants.find(t => t.id === m.tenant_id);
+            return { tenant_id: m.tenant_id, role: m.role, tenant_name: tenant.name };
+          });
+        if (choices.length < 2) {
+          showToast("No other active administrator workspace is available.", "info");
+          return;
+        }
+
+        const selectedId = await chooseTenantMembership(choices);
+        if (!selectedId || selectedId === currentTenant.id) return;
+
+        // Re-resolve the chosen membership and active tenant immediately before
+        // changing local context; the dialog itself is never an authorization source.
+        const nextTenant = await resolveTenantMembership(identity.id, selectedId);
+        if (nextTenant.role !== 'SCHOOL_ADMIN') throw new Error("This account is not an administrator in the selected school.");
+        const { data: adminRow, error: adminError } = await supabaseClient
+          .from('admin_users')
+          .select('email,role,active')
+          .eq('tenant_id', nextTenant.id)
+          .ilike('email', identity.email)
+          .eq('active', true)
+          .maybeSingle();
+        if (adminError || !adminRow) throw new Error("Administrator profile is not active in the selected school.");
+        assertAdminAuthIdentity(identity, String(identity.email).trim().toLowerCase(), adminRow);
+
+        transitionStarted = true;
+        const oldChannel = realtimeChannel;
+        realtimeChannel = null;
+        if (oldChannel) {
+          try { await supabaseClient.removeChannel(oldChannel); }
+          catch (cleanupError) { console.warn("Old workspace realtime cleanup notice:", cleanupError); }
+        }
+        currentAuthUser = null;
+        currentStaffId = null;
+        currentTenant = null;
+        staffDatabase = [];
+        punchLedger = [];
+        leaveRequests = [];
+        auditLogs = [];
+        tenantSyncQueued = false;
+
+        currentTenant = nextTenant;
+        currentAuthUser = {
+          type: 'ADMIN',
+          username: String(identity.email).trim().toLowerCase(),
+          role: adminRow.role,
+          tenantId: nextTenant.id,
+          tenantName: nextTenant.name,
+          tenantSlug: nextTenant.slug
+        };
+        persistedTenantId = null;
+        sessionStorage.setItem(STORAGE_KEY_CURRENT_USER, JSON.stringify(currentAuthUser));
+
+        if (!await syncAllDataFromSupabase(false)) {
+          throw new Error("The selected school's data could not be verified. Your session will be closed for safety.");
+        }
+        listenToRealtimePunches();
+        applyAuthenticatedUI();
+        showToast("Switched to " + nextTenant.name + ".", "success");
+      } catch (err) {
+        console.error("Workspace switch failed:", err);
+        // Preserve the existing session for preflight errors. After transition
+        // starts, fail closed rather than leave a partially loaded workspace active.
+        if (transitionStarted) {
+          await handleLogout();
+          showToast("Workspace verification failed. Please sign in again.", "error");
+        } else {
+          showToast("Could not switch school: " + (err?.message || err), "error");
+        }
+      } finally {
+        workspaceSwitchInProgress = false;
+        if (button) {
+          button.disabled = false;
+          button.innerHTML = originalLabel || '<i data-lucide="building-2"></i><span>Switch School</span>';
+          if (window.lucide) lucide.createIcons();
+        }
       }
     }
 
     async function handleLogout() {
-      try { if (supabaseClient) await supabaseClient.auth.signOut(); } catch (e) {}
+      // Invalidate the active identity synchronously so an in-flight refresh
+      // cannot apply data or persist it while channel/Auth cleanup is awaited.
+      const tenantIdToClear = currentTenant?.id || persistedTenantId;
       currentAuthUser = null;
       currentStaffId = null;
+      currentTenant = null;
+      persistedTenantId = null;
+      staffDatabase = []; punchLedger = []; leaveRequests = []; auditLogs = [];
+      tenantSyncQueued = false;
       sessionStorage.removeItem(STORAGE_KEY_CURRENT_USER);
+      // Clear this workspace's persisted roster/attendance data on sign-out.
+      if (tenantIdToClear) {
+        const suffix = ':' + tenantIdToClear;
+        [STORAGE_KEY_STAFF, STORAGE_KEY_PUNCHES, STORAGE_KEY_LEAVE, STORAGE_KEY_AUDIT]
+          .forEach(key => localStorage.removeItem(key + suffix));
+      }
+      if (realtimeChannel && supabaseClient) { try { await supabaseClient.removeChannel(realtimeChannel); } catch (e) {} realtimeChannel = null; }
+      try { if (supabaseClient) await supabaseClient.auth.signOut(); } catch (e) {}
       showToast("Signed out safely.", "info");
       applyAuthenticatedUI();
     }
@@ -3600,6 +4029,7 @@
         const { data, error } = await supabaseClient
           .from('staff')
           .select('*')
+          .eq('tenant_id', currentTenant.id)
           .order('name', { ascending: true });
 
         if (error) throw error;
@@ -3780,7 +4210,11 @@
       }
 
       const logoUrl = new URL('logo 2.png', window.location.href).href;
-      const cards = selectedStaff.map((s, i) => makeBulkIdCardHtml(s, logoUrl, i));
+      const printableStaff = await Promise.all(selectedStaff.map(async staff => ({
+        ...staff,
+        avatarUrl: await resolveStaffAvatarUrl(staff.avatarUrl || staff.avatar_url || '')
+      })));
+      const cards = printableStaff.map((s, i) => makeBulkIdCardHtml(s, logoUrl, i));
       const pages = [];
       for (let i = 0; i < cards.length; i += 9) {
         pages.push(`<div class="page">${cards.slice(i, i + 9).join('')}</div>`);
@@ -3894,31 +4328,23 @@ window.addEventListener('load',async function(){
     }
 
     async function executeBulkStaffDeletionNow() {
-      const count = modalBulkSelectedIds.size;
-      if (count === 0) return;
-
       const idsToDelete = Array.from(modalBulkSelectedIds);
-      staffDatabase = staffDatabase.filter(s => !modalBulkSelectedIds.has(s.id));
-      modalBulkSelectedIds.clear();
-      savePersistedData();
-
-      // Cloud deletion from Supabase
-      if (supabaseClient) {
-        idsToDelete.forEach(id => {
-          supabaseClient.from('staff').delete().eq('id', id).then(() => {});
-        });
+      if (!idsToDelete.length) return;
+      if (!supabaseClient || currentAuthUser?.type !== 'ADMIN' || !currentTenant?.id || currentAuthUser.tenantId !== currentTenant.id) {
+        showToast("A verified administrator cloud workspace is required.", "error"); return;
       }
-
-      recordAuditLog("BULK_DELETE", `${count} Faculty`, `Bulk deleted ${count} faculty records`);
-      playTone('SUCCESS');
-      showToast(`Successfully deleted ${count} faculty members.`, "info");
-      closeBulkDeleteStaffModal();
-      renderStaffDirectoryTable();
-      renderLiveAttendanceTable();
-      updateKPICards();
-
-      const sel = document.getElementById("correction-staff-select");
-      if (sel) sel.innerHTML = staffDatabase.map(s => `<option value="${s.id}">${s.name} (${s.empId})</option>`).join('');
+      try {
+        const { data, error } = await supabaseClient.from('staff').delete().eq('tenant_id', currentTenant.id).in('id', idsToDelete).select('id');
+        if (error) throw error;
+        const deletedIds = new Set((data || []).map(row => row.id));
+        if (deletedIds.size !== idsToDelete.length) throw new Error("Some selected records were not confirmed deleted. Refresh the roster and retry.");
+        staffDatabase = staffDatabase.filter(s => !deletedIds.has(s.id)); modalBulkSelectedIds.clear(); savePersistedData();
+        recordAuditLog("BULK_DELETE", `${deletedIds.size} Faculty`, `Bulk deleted ${deletedIds.size} faculty records`);
+        playTone('SUCCESS'); showToast(`Successfully deleted ${deletedIds.size} faculty members.`, "success");
+        closeBulkDeleteStaffModal(); renderStaffDirectoryTable(); renderLiveAttendanceTable(); updateKPICards();
+        const sel = document.getElementById("correction-staff-select");
+        if (sel) sel.innerHTML = staffDatabase.map(s => `<option value="${s.id}">${s.name} (${s.empId})</option>`).join('');
+      } catch (err) { console.error("Bulk staff deletion failed:", err); showToast("Deletion failed: " + (err?.message || err), "error"); }
     }
 
     function renderModalBulkStaffList() {
@@ -3988,34 +4414,24 @@ window.addEventListener('load',async function(){
     }
 
     async function executeBulkStaffDeletion() {
-      const count = modalBulkSelectedIds.size;
-      if (count === 0) return;
-
-      const confirmDelete = window.confirm(`Are you sure you want to permanently delete the ${count} selected faculty member(s)? This will remove them from the roster and database.`);
-      if (!confirmDelete) return;
-
-      const idsToDelete = Array.from(modalBulkSelectedIds);
-      staffDatabase = staffDatabase.filter(s => !modalBulkSelectedIds.has(s.id));
-      modalBulkSelectedIds.clear();
-      savePersistedData();
-
-      // Cloud deletion from Supabase
-      if (supabaseClient) {
-        idsToDelete.forEach(id => {
-          supabaseClient.from('staff').delete().eq('id', id).then(() => {});
-        });
+      const count = modalBulkSelectedIds.size; if (!count) return;
+      if (!supabaseClient || currentAuthUser?.type !== 'ADMIN' || !currentTenant?.id || currentAuthUser.tenantId !== currentTenant.id) {
+        showToast("A verified administrator cloud workspace is required.", "error"); return;
       }
-
-      recordAuditLog("BULK_DELETE", `${count} Faculty`, `Bulk deleted ${count} faculty records`);
-      playTone('SUCCESS');
-      showToast(`Successfully deleted ${count} faculty members.`, "info");
-      closeBulkDeleteStaffModal();
-      renderStaffDirectoryTable();
-      renderLiveAttendanceTable();
-      updateKPICards();
-
-      const sel = document.getElementById("correction-staff-select");
-      if (sel) sel.innerHTML = staffDatabase.map(s => `<option value="${s.id}">${s.name} (${s.empId})</option>`).join('');
+      const idsToDelete = Array.from(modalBulkSelectedIds);
+      if (!window.confirm(`Are you sure you want to permanently delete the ${count} selected faculty member(s)? This will remove them from the roster and database.`)) return;
+      try {
+        const { data, error } = await supabaseClient.from('staff').delete().eq('tenant_id', currentTenant.id).in('id', idsToDelete).select('id');
+        if (error) throw error;
+        const deletedIds = new Set((data || []).map(row => row.id));
+        if (deletedIds.size !== idsToDelete.length) throw new Error("Some selected records were not confirmed deleted. Refresh the roster and retry.");
+        staffDatabase = staffDatabase.filter(s => !deletedIds.has(s.id)); modalBulkSelectedIds.clear(); savePersistedData();
+        recordAuditLog("BULK_DELETE", `${deletedIds.size} Faculty`, `Bulk deleted ${deletedIds.size} faculty records`);
+        playTone('SUCCESS'); showToast(`Successfully deleted ${deletedIds.size} faculty members.`, "success");
+        closeBulkDeleteStaffModal(); renderStaffDirectoryTable(); renderLiveAttendanceTable(); updateKPICards();
+        const sel = document.getElementById("correction-staff-select");
+        if (sel) sel.innerHTML = staffDatabase.map(s => `<option value="${s.id}">${s.name} (${s.empId})</option>`).join('');
+      } catch (err) { console.error("Bulk staff deletion failed:", err); showToast("Deletion failed: " + (err?.message || err), "error"); }
     }
 
     function escapeIdCardHtml(value) {
@@ -4035,18 +4451,19 @@ window.addEventListener('load',async function(){
       if (!ids.length) return;
       const generatedBy = String(currentAuthUser.email || "ADMIN");
       const rows = ids.map(staffId => ({
+        tenant_id: currentTenant?.id,
         staff_id: staffId,
         generated_by: generatedBy,
         generated_at: new Date().toISOString()
       }));
-      const { error } = await supabaseClient.from('staff_id_cards').upsert(rows, { onConflict: 'staff_id' });
+      const { error } = await supabaseClient.from('staff_id_cards').upsert(rows, { onConflict: 'tenant_id,staff_id' });
       if (error) throw error;
     }
 
     async function getMyStaffIdCardIssued() {
       if (!supabaseClient || !currentStaffId) return false;
       const { data, error } = await supabaseClient.from('staff_id_cards')
-        .select('staff_id, generated_at').eq('staff_id', currentStaffId).maybeSingle();
+        .select('staff_id, generated_at').eq('tenant_id', currentTenant?.id).eq('staff_id', currentStaffId).maybeSingle();
       if (error) { console.warn("Staff ID card status error:", error); return false; }
       return !!data;
     }
@@ -4085,7 +4502,7 @@ window.addEventListener('load',async function(){
       const preview = document.getElementById("staff-id-card-preview");
       if (!modal || !preview) return;
 
-      const photo = String(staff.avatarUrl || staff.avatar_url || '').trim();
+      const photo = await resolveStaffAvatarUrl(staff.avatarUrl || staff.avatar_url || '');
       const logoUrl = new URL('logo 2.png', window.location.href).href;
       const photoHtml = photo
         ? `<img src="${escapeIdCardHtml(photo)}" alt="Staff Photo">`
@@ -4211,7 +4628,7 @@ window.addEventListener('load',async function(){
         }
       }
 
-      const photo = String(staff.avatarUrl || staff.avatar_url || '').trim();
+      const photo = await resolveStaffAvatarUrl(staff.avatarUrl || staff.avatar_url || '');
       const logoUrl = new URL('logo 2.png', window.location.href).href;
       const photoHtml = photo
         ? `<img src="${escapeIdCardHtml(photo)}" alt="Staff Photo">`
@@ -4406,47 +4823,32 @@ window.addEventListener('load',async function(){
     async function quickTestPunch(staffId) {
       const staff = staffDatabase.find(s => s.id === staffId);
       if (!staff) return;
+      if (!supabaseClient || currentAuthUser?.type !== 'ADMIN' || !currentTenant?.id || currentAuthUser.tenantId !== currentTenant.id) {
+        showToast("A verified administrator cloud workspace is required.", "error"); return;
+      }
       const recent = getTodayPunches(staffId);
       const nextType = recent.length % 2 === 0 ? "IN" : "OUT";
       const d = new Date();
       const time = `${d.getHours().toString().padStart(2, '0')}:${d.getMinutes().toString().padStart(2, '0')}`;
       const newPunchId = generateUUID();
-
-      punchLedger.push({
-        id: newPunchId,
-        staffId: staff.id,
-        staffName: staff.name,
-        empId: staff.empId,
-        attendanceDate: systemConfig.currentAttendanceDate,
-        type: nextType,
-        timestamp: time,
-        method: "ADMIN_QUICK"
-      });
-      savePersistedData();
-
-      if (supabaseClient) {
-        try {
-          await ensureStaffExistsInSupabase(staff);
-          await supabaseClient.from('attendance_punches').insert([{
-            id: newPunchId,
-            staff_id: staff.id,
-            staff_name: staff.name,
-            emp_id: staff.empId,
-            attendance_date: systemConfig.currentAttendanceDate,
-            type: nextType,
-            timestamp: time,
-            method: "ADMIN_QUICK"
-          }]);
-        } catch (e) {
-          console.warn("Quick punch cloud sync error:", e);
-        }
+      try {
+        await ensureStaffExistsInSupabase(staff);
+        const { error } = await supabaseClient.from('attendance_punches').insert([{
+          id: newPunchId, tenant_id: currentTenant.id, staff_id: staff.id, staff_name: staff.name,
+          emp_id: staff.empId, attendance_date: systemConfig.currentAttendanceDate,
+          type: nextType, timestamp: time, method: "ADMIN_QUICK"
+        }]);
+        if (error) throw error;
+        punchLedger.push({ id: newPunchId, staffId: staff.id, staffName: staff.name, empId: staff.empId,
+          attendanceDate: systemConfig.currentAttendanceDate, type: nextType, timestamp: time, method: "ADMIN_QUICK" });
+        savePersistedData();
+        playTone('SUCCESS'); showToast(`PUNCH ${nextType} marked for ${staff.name}`, "success");
+        if (currentStaffId === staff.id) refreshStaffUI();
+        renderLiveAttendanceTable(); updateKPICards();
+      } catch (e) {
+        console.error("Quick punch cloud sync error:", e);
+        showToast("Quick punch failed: " + (e?.message || e), "error");
       }
-
-      playTone('SUCCESS');
-      showToast(`PUNCH ${nextType} marked for ${staff.name}`, "success");
-      if (currentStaffId === staff.id) refreshStaffUI();
-      renderLiveAttendanceTable();
-      updateKPICards();
     }
 
     function updateKPICards() {
@@ -5339,15 +5741,42 @@ window.addEventListener('load',async function(){
         .toUpperCase() || "AP";
     }
 
-    function renderStaffAvatar(elementId, staff) {
+    const staffAvatarSignedUrlCache = new Map();
+    let staffAvatarRenderSequence = 0;
+
+    async function resolveStaffAvatarUrl(value) {
+      const raw = String(value || '').trim();
+      if (!raw || !supabaseClient) return '';
+      let objectPath = raw;
+      try {
+        if (raw.startsWith('https://') || raw.startsWith('http://')) {
+          const parsed = new URL(raw);
+          const marker = '/storage/v1/object/public/staff-avatars/';
+          const offset = parsed.pathname.indexOf(marker);
+          if (offset < 0) return '';
+          objectPath = decodeURIComponent(parsed.pathname.slice(offset + marker.length));
+        }
+      } catch (_) { return ''; }
+      if (!objectPath || objectPath.startsWith('/') || objectPath.split('/').some(part => !part || part === '.' || part === '..')) return '';
+      const cacheEntry = staffAvatarSignedUrlCache.get(objectPath);
+      if (cacheEntry && cacheEntry.expiresAt > Date.now()) return cacheEntry.url;
+      const { data, error } = await supabaseClient.storage.from('staff-avatars').createSignedUrl(objectPath, 3600);
+      if (error || !data?.signedUrl) return '';
+      staffAvatarSignedUrlCache.set(objectPath, { url: data.signedUrl, expiresAt: Date.now() + 50 * 60 * 1000 });
+      return data.signedUrl;
+    }
+
+    async function renderStaffAvatar(elementId, staff) {
       const el = document.getElementById(elementId);
       if (!el) return;
-      const avatarUrl = String(staff?.avatarUrl || staff?.avatar_url || '').trim();
-      if (avatarUrl) {
-        el.innerHTML = `<img src="${avatarUrl}" alt="Staff profile photo" class="w-full h-full object-cover" loading="eager" referrerpolicy="no-referrer">`;
-      } else {
-        el.textContent = getStaffInitials(staff?.name);
-      }
+      const token = ++staffAvatarRenderSequence;
+      el.dataset.avatarRenderToken = String(token);
+      const raw = String(staff?.avatarUrl || staff?.avatar_url || '').trim();
+      if (!raw) { el.textContent = getStaffInitials(staff?.name); return; }
+      el.textContent = getStaffInitials(staff?.name);
+      const signedUrl = await resolveStaffAvatarUrl(raw);
+      if (!signedUrl || el.dataset.avatarRenderToken !== String(token) || !el.isConnected) return;
+      el.innerHTML = `<img src="${escapeIdCardHtml(signedUrl)}" alt="Staff profile photo" class="w-full h-full object-cover" loading="eager" referrerpolicy="no-referrer">`;
     }
 
     async function handleStaffAvatarUpload(event) {
@@ -5374,20 +5803,20 @@ window.addEventListener('load',async function(){
         if (authError || !authData?.user?.id) throw new Error("Staff authentication session is unavailable.");
 
         const ext = file.type === 'image/png' ? 'png' : file.type === 'image/webp' ? 'webp' : 'jpg';
-        const path = `${authData.user.id}/profile-${Date.now()}.${ext}`;
+        if (!currentTenant?.id) throw new Error('Active school workspace is unavailable.');
+        const path = `${currentTenant.id}/${authData.user.id}/profile-${Date.now()}.${ext}`;
         const { data: uploaded, error: uploadError } = await supabaseClient.storage
           .from('staff-avatars')
           .upload(path, file, { contentType: file.type, cacheControl: '3600', upsert: false });
         if (uploadError) throw uploadError;
 
-        const { data: publicData } = supabaseClient.storage.from('staff-avatars').getPublicUrl(uploaded.path);
-        const avatarUrl = publicData?.publicUrl;
-        if (!avatarUrl) throw new Error("Could not create the profile photo URL.");
+        const avatarUrl = uploaded.path;
+        if (!avatarUrl) throw new Error("Could not resolve the uploaded profile photo path.");
 
         const { error: updateError } = await supabaseClient
           .from('staff')
           .update({ avatar_url: avatarUrl })
-          .eq('id', staff.id);
+          .eq('tenant_id', currentTenant?.id).eq('id', staff.id);
         if (updateError) throw updateError;
 
         staff.avatarUrl = avatarUrl;
@@ -5466,7 +5895,7 @@ window.addEventListener('load',async function(){
       try {
         if (!supabaseClient) throw new Error("Cloud database is unavailable.");
 
-        const { error } = await supabaseClient
+        const { data, error } = await supabaseClient
           .from('staff')
           .update({
             name: newName,
@@ -5475,9 +5904,10 @@ window.addEventListener('load',async function(){
             phone: newPhone || null,
             address: newAddress || null
           })
-          .eq('id', staff.id);
+          .eq('tenant_id', currentTenant?.id).eq('id', staff.id).select('id').maybeSingle();
 
         if (error) throw error;
+        if (!data?.id) throw new Error("Profile was not updated. Refresh and retry.");
 
         Object.assign(staff, {
           name: newName,
@@ -5649,19 +6079,11 @@ window.addEventListener('load',async function(){
         const result = await invokeAdminFunction('reset-staff-pin', {
           mode: 'create_staff',
           staff: {
-            emp_id: empId, name, department, role, email, status: 'ACTIVE'
+            emp_id: empId, name, department, role, email, status: 'ACTIVE',
+            phone, address, valid_thru: validThru
           },
           pin
         });
-        const { error: profileError } = await supabaseClient
-          .from('staff')
-          .update({
-            phone: phone || null,
-            address: address || null,
-            valid_thru: validThru
-          })
-          .eq('id', result.staff.id);
-        if (profileError) throw profileError;
 
         const newStaff = {
           id: result.staff.id, empId, name, department, role, email,
@@ -5681,7 +6103,7 @@ window.addEventListener('load',async function(){
         if (sel) sel.innerHTML = staffDatabase.map(s => `<option value="${s.id}">${s.name} (${s.empId})</option>`).join('');
       } catch (e) {
         playTone('ERROR');
-        showToast("Staff creation failed: " + (e?.message || e), "error");
+        showToast(staffAccountErrorMessage(e, "Staff creation"), "error");
       }
     }
 
@@ -5762,12 +6184,13 @@ window.addEventListener('load',async function(){
           valid_thru: validThru
         };
 
-        const { error } = await supabaseClient
+        const { data, error } = await supabaseClient
           .from('staff')
           .update(updatePayload)
-          .eq('id', staff.id);
+          .eq('tenant_id', currentTenant?.id).eq('id', staff.id).select('id').maybeSingle();
 
         if (error) throw error;
+        if (!data?.id) throw new Error("Staff record was not updated. Refresh and retry.");
 
         Object.assign(staff, { name, department, role, email, status, phone, address, validThru });
         savePersistedData();
@@ -5830,7 +6253,7 @@ window.addEventListener('load',async function(){
         renderStaffDirectoryTable();
       } catch (e) {
         playTone('ERROR');
-        showToast("PIN reset failed: " + (e?.message || e), "error");
+        showToast(staffAccountErrorMessage(e, "PIN reset"), "error");
       }
     }
 
@@ -5856,28 +6279,34 @@ window.addEventListener('load',async function(){
       if (staffIndex === -1) return;
 
       const staff = staffDatabase[staffIndex];
-      staffDatabase.splice(staffIndex, 1);
-      savePersistedData();
-
-      // Cloud deletion from Supabase
-      if (supabaseClient) {
-        try {
-          await supabaseClient.from('staff').delete().eq('id', staffId);
-        } catch (e) {
-          console.warn("Supabase delete error:", e);
-        }
+      if (!supabaseClient || currentAuthUser?.type !== 'ADMIN' || !currentTenant?.id || currentAuthUser.tenantId !== currentTenant.id) {
+        showToast("A verified administrator cloud workspace is required.", "error");
+        return;
       }
 
-      recordAuditLog("STAFF_DELETED", staff.name, `Deleted faculty record ${staff.empId}`);
-      playTone('SUCCESS');
-      showToast(`Faculty record ${staff.name} deleted.`, "info");
-      closeDeleteStaffModal();
-      renderStaffDirectoryTable();
-      renderLiveAttendanceTable();
-      updateKPICards();
+      try {
+        const { data, error } = await supabaseClient.from('staff').delete()
+          .eq('tenant_id', currentTenant.id).eq('id', staffId).select('id').maybeSingle();
+        if (error) throw error;
+        if (!data?.id) throw new Error("Staff record was not confirmed deleted. Refresh the roster and retry.");
 
-      const sel = document.getElementById("correction-staff-select");
-      if (sel) sel.innerHTML = staffDatabase.map(s => `<option value="${s.id}">${s.name} (${s.empId})</option>`).join('');
+        staffDatabase.splice(staffIndex, 1);
+        savePersistedData();
+        recordAuditLog("STAFF_DELETED", staff.name, `Deleted faculty record ${staff.empId}`);
+        playTone('SUCCESS');
+        showToast(`Faculty record ${staff.name} deleted.`, "info");
+        closeDeleteStaffModal();
+        renderStaffDirectoryTable();
+        renderLiveAttendanceTable();
+        updateKPICards();
+
+        const sel = document.getElementById("correction-staff-select");
+        if (sel) sel.innerHTML = staffDatabase.map(s => `<option value="${s.id}">${s.name} (${s.empId})</option>`).join('');
+      } catch (e) {
+        console.error("Supabase delete staff error:", e);
+        playTone('ERROR');
+        showToast("Faculty deletion failed: " + (e?.message || e), "error");
+      }
     }
 
     function openLeaveApplyModal() {
@@ -5933,90 +6362,67 @@ window.addEventListener('load',async function(){
       if (window.lucide) lucide.createIcons();
     }
 
-    function approveLeave(id) {
-      const l = leaveRequests.find(x => x.id === id);
-      if (!l) return;
-      l.status = 'APPROVED';
-      savePersistedData();
-      if (supabaseClient) {
-        supabaseClient.from('leave_requests').update({ status: 'APPROVED' }).eq('id', id).then(() => {});
+    async function approveLeave(id) {
+      const l = leaveRequests.find(x => x.id === id); if (!l) return;
+      if (!supabaseClient || currentAuthUser?.type !== 'ADMIN' || !currentTenant?.id || currentAuthUser.tenantId !== currentTenant.id) {
+        showToast("A verified administrator cloud workspace is required.", "error"); return;
       }
-      recordAuditLog("LEAVE_APPROVED", l.staffName, `Approved ${l.type} from ${l.from} to ${l.to}`);
-      playTone('SUCCESS');
-      showToast(`Approved leave request for ${l.staffName}`, "success");
-      renderAdminLeaveTable();
-      updateKPICards();
-      refreshStaffUI();
+      try {
+        const { data, error } = await supabaseClient.from('leave_requests').update({ status: 'APPROVED' })
+          .eq('tenant_id', currentTenant.id).eq('id', id).select('id').maybeSingle();
+        if (error) throw error;
+        if (!data) throw new Error("Leave request was not updated. Refresh and retry.");
+        l.status = 'APPROVED'; savePersistedData();
+        recordAuditLog("LEAVE_APPROVED", l.staffName, `Approved ${l.type} from ${l.from} to ${l.to}`);
+        playTone('SUCCESS'); showToast(`Approved leave request for ${l.staffName}`, "success");
+        renderAdminLeaveTable(); updateKPICards(); refreshStaffUI();
+      } catch (err) { console.error("Leave decision failed:", err); showToast("Could not update leave request: " + (err?.message || err), "error"); }
     }
 
-    function rejectLeave(id) {
-      const l = leaveRequests.find(x => x.id === id);
-      if (!l) return;
-      l.status = 'REJECTED';
-      savePersistedData();
-      if (supabaseClient) {
-        supabaseClient.from('leave_requests').update({ status: 'REJECTED' }).eq('id', id).then(() => {});
+    async function rejectLeave(id) {
+      const l = leaveRequests.find(x => x.id === id); if (!l) return;
+      if (!supabaseClient || currentAuthUser?.type !== 'ADMIN' || !currentTenant?.id || currentAuthUser.tenantId !== currentTenant.id) {
+        showToast("A verified administrator cloud workspace is required.", "error"); return;
       }
-      recordAuditLog("LEAVE_REJECTED", l.staffName, `Rejected ${l.type} from ${l.from} to ${l.to}`);
-      playTone('ERROR');
-      showToast(`Rejected leave request for ${l.staffName}`, "info");
-      renderAdminLeaveTable();
-      updateKPICards();
-      refreshStaffUI();
+      try {
+        const { data, error } = await supabaseClient.from('leave_requests').update({ status: 'REJECTED' })
+          .eq('tenant_id', currentTenant.id).eq('id', id).select('id').maybeSingle();
+        if (error) throw error;
+        if (!data) throw new Error("Leave request was not updated. Refresh and retry.");
+        l.status = 'REJECTED'; savePersistedData();
+        recordAuditLog("LEAVE_REJECTED", l.staffName, `Rejected ${l.type} from ${l.from} to ${l.to}`);
+        playTone('ERROR'); showToast(`Rejected leave request for ${l.staffName}`, "info");
+        renderAdminLeaveTable(); updateKPICards(); refreshStaffUI();
+      } catch (err) { console.error("Leave decision failed:", err); showToast("Could not update leave request: " + (err?.message || err), "error"); }
     }
 
-    function handleLeaveApplySubmit(event) {
+    async function handleLeaveApplySubmit(event) {
       event.preventDefault();
-      if (!currentStaffId) return;
-      const staff = staffDatabase.find(s => s.id === currentStaffId);
-      if (!staff) return;
-
+      if (currentAuthUser?.type !== 'STAFF' || !currentStaffId || !currentTenant?.id || currentAuthUser.tenantId !== currentTenant.id || !supabaseClient) {
+        showToast("A verified staff cloud session is required.", "error"); return;
+      }
+      const staff = staffDatabase.find(s => s.id === currentStaffId); if (!staff) return;
       const type = document.getElementById("leave-apply-type").value;
       const from = document.getElementById("leave-apply-from").value;
       const to = document.getElementById("leave-apply-to").value;
       const reason = document.getElementById("leave-apply-reason").value.trim();
-
-      if (!from || !to) {
-        showToast("Please specify both From and To dates", "error");
-        return;
+      if (!from || !to || to < from) { showToast("Please specify a valid From and To date.", "error"); return; }
+      const newLeave = { id: generateUUID(), staffId: staff.id, staffName: staff.name, type, from, to, reason, status: "PENDING" };
+      try {
+        await ensureStaffExistsInSupabase(staff);
+        const { error } = await supabaseClient.from('leave_requests').insert([{
+          id: newLeave.id, tenant_id: currentTenant.id, staff_id: staff.id, staff_name: staff.name,
+          type: newLeave.type, from_date: newLeave.from, to_date: newLeave.to, reason: newLeave.reason, status: newLeave.status
+        }]);
+        if (error) throw error;
+        leaveRequests.unshift(newLeave); savePersistedData();
+        recordAuditLog("LEAVE_APPLIED", staff.name, `Applied for ${type} from ${from} to ${to}`);
+        playTone('SUCCESS'); showToast("Leave request submitted for approval!", "success");
+        closeLeaveApplyModal(); renderAdminLeaveTable(); updateKPICards(); refreshStaffUI();
+      } catch (err) {
+        console.error("Leave submission failed:", err);
+        showToast("Leave request was not submitted: " + (err?.message || err), "error");
       }
-
-      const newLeave = {
-        id: "lev_" + Date.now(),
-        staffId: staff.id,
-        staffName: staff.name,
-        type,
-        from,
-        to,
-        reason,
-        status: "PENDING"
-      };
-
-      leaveRequests.unshift(newLeave);
-      savePersistedData();
-
-      if (supabaseClient) {
-        ensureStaffExistsInSupabase(staff).then(() => {
-          supabaseClient.from('leave_requests').insert([{
-            id: newLeave.id,
-            staff_id: staff.id,
-            staff_name: staff.name,
-            type: newLeave.type,
-            from_date: newLeave.from,
-            to_date: newLeave.to,
-            reason: newLeave.reason,
-            status: newLeave.status
-          }]).then(() => {});
-        });
-      }
-
-      recordAuditLog("LEAVE_APPLIED", staff.name, `Applied for ${type} from ${from} to ${to}`);
-      playTone('SUCCESS');
-      showToast("Leave request submitted for Principal approval!", "success");
-      closeLeaveApplyModal();
-      renderAdminLeaveTable();
-      updateKPICards();
-      refreshStaffUI();
     }
 
     // =========================================================================
@@ -6248,7 +6654,7 @@ window.addEventListener('load',async function(){
         let updatedCount = 0;
 
         const { data: remoteExisting, error: remoteErr } = await supabaseClient
-          .from('staff').select('id,emp_id,email,status');
+          .from('staff').select('id,emp_id,email,status').eq('tenant_id', currentTenant.id);
         if (remoteErr) throw remoteErr;
         const remoteMap = new Map((remoteExisting || []).map(r => [String(r.emp_id || '').toUpperCase(), r]));
 
@@ -6264,7 +6670,7 @@ window.addEventListener('load',async function(){
               role: item.role,
               email: item.email,
               status: item.status
-            }).eq('id', existing.id);
+            }).eq('tenant_id', currentTenant.id).eq('id', existing.id);
             if (updateErr) throw updateErr;
 
             const localIdx = staffDatabase.findIndex(s => s.id === existing.id || s.empId?.toUpperCase() === item.empId.toUpperCase());
@@ -6364,7 +6770,7 @@ window.addEventListener('load',async function(){
       });
     }
 
-    function handleManualCorrectionSubmit(event) {
+    async function handleManualCorrectionSubmit(event) {
       event.preventDefault();
       const staffId = document.getElementById("correction-staff-select").value;
       const type = document.getElementById("correction-punch-type").value;
@@ -6372,27 +6778,31 @@ window.addEventListener('load',async function(){
       const reason = document.getElementById("correction-reason").value.trim();
       const staff = staffDatabase.find(s => s.id === staffId);
       if (!staff) return;
-
-      const newId = "pch_corr_" + Date.now();
-      punchLedger.push({
-        id: newId,
-        staffId: staff.id,
-        staffName: staff.name,
-        empId: staff.empId,
-        attendanceDate: systemConfig.currentAttendanceDate,
-        type,
-        timestamp: time,
-        method: "MANUAL_ADMIN"
-      });
-      savePersistedData();
-
-      recordAuditLog("MANUAL_CORRECTION", staff.name, `Manually forced ${type} at ${time}. Reason: "${reason}"`);
-      playTone('SUCCESS');
-      showToast(`Manual ${type} recorded for ${staff.name}.`, "success");
-      document.getElementById("correction-reason").value = "";
-      if (currentStaffId === staff.id) refreshStaffUI();
-      renderLiveAttendanceTable();
-      updateKPICards();
+      if (!supabaseClient || currentAuthUser?.type !== 'ADMIN' || !currentTenant?.id || currentAuthUser.tenantId !== currentTenant.id) {
+        showToast("A verified administrator cloud workspace is required.", "error"); return;
+      }
+      if (!time || !reason) { showToast("Enter the correction time and reason.", "error"); return; }
+      const newId = generateUUID();
+      try {
+        await ensureStaffExistsInSupabase(staff);
+        const { error } = await supabaseClient.from('attendance_punches').insert([{
+          id: newId, tenant_id: currentTenant.id, staff_id: staff.id, staff_name: staff.name,
+          emp_id: staff.empId, attendance_date: systemConfig.currentAttendanceDate,
+          type, timestamp: time, method: "MANUAL_ADMIN"
+        }]);
+        if (error) throw error;
+        punchLedger.push({ id: newId, staffId: staff.id, staffName: staff.name, empId: staff.empId,
+          attendanceDate: systemConfig.currentAttendanceDate, type, timestamp: time, method: "MANUAL_ADMIN" });
+        savePersistedData();
+        recordAuditLog("MANUAL_CORRECTION", staff.name, `Manually forced ${type} at ${time}. Reason: "${reason}"`);
+        playTone('SUCCESS'); showToast(`Manual ${type} recorded for ${staff.name}.`, "success");
+        document.getElementById("correction-reason").value = "";
+        if (currentStaffId === staff.id) refreshStaffUI();
+        renderLiveAttendanceTable(); updateKPICards();
+      } catch (err) {
+        console.error("Manual correction failed:", err);
+        showToast("Manual correction failed: " + (err?.message || err), "error");
+      }
     }
 
     function startLiveClocks() {
@@ -6457,7 +6867,18 @@ window.addEventListener('load',async function(){
       }
       // Start cloud synchronization in the background so the local UI becomes
       // interactive immediately. Supabase remains the authoritative source.
-      if (currentAuthUser) syncAllDataFromSupabase(false);
+      if (currentAuthUser) {
+        const synced = await syncAllDataFromSupabase(false);
+        if (!synced) {
+          try { await supabaseClient?.auth.signOut(); } catch (_) {}
+          currentAuthUser = null; currentStaffId = null; currentTenant = null;
+          persistedTenantId = null;
+          staffDatabase = []; punchLedger = []; leaveRequests = []; auditLogs = [];
+          sessionStorage.removeItem(STORAGE_KEY_CURRENT_USER);
+        } else {
+          listenToRealtimePunches();
+        }
+      }
 
       const sel = document.getElementById("correction-staff-select");
       if (sel) sel.innerHTML = staffDatabase.map(s => `<option value="${s.id}">${s.name} (${s.empId})</option>`).join('');
