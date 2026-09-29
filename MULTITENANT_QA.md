@@ -89,3 +89,5 @@ This index migration is source only and has not been applied to either Supabase 
 - [ ] Confirm trusted service-role Edge Function operations (PIN/email provisioning and profile changes) still work.
 
 The allowlist includes `avatar_url` because the current staff profile-photo flow writes that field directly. This migration is source only and remains unapplied until isolated testing is available.
+
+- [ ] Confirm a SCHOOL_ADMIN cannot change a staff row's primary key (`id`) or move it to another tenant (`tenant_id`), even when roster editing is otherwise authorized.
