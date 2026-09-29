@@ -68,7 +68,6 @@ Database-level RLS simulations have previously shown tenant-scoped reads for adm
 
 The migration has been applied to the isolated EduPunch-Test project only. Catalog checks confirmed `anon` and `authenticated` lack `TRUNCATE`, `TRIGGER`, and `REFERENCES` on all 11 listed tables; normal CRUD behavior still requires authenticated workflow testing. Production was not changed.
 
-
 ## Foreign-key index regression check
 
 - [ ] After applying `20260929060000_index_unindexed_tenant_foreign_keys.sql` in an isolated database, confirm each of the six named indexes exists and matches its intended FK columns.
@@ -76,7 +75,6 @@ The migration has been applied to the isolated EduPunch-Test project only. Catal
 - [ ] Compare representative query plans and monitor write overhead before any production rollout.
 
 The index migration has been applied to EduPunch-Test only. PostgreSQL catalog checks confirmed all six indexes exist with the intended columns. Production was not changed; query-plan and write-overhead review remain release gates.
-
 
 ## Staff self-update column allowlist
 
@@ -104,3 +102,10 @@ The allowlist includes `avatar_url` because the current staff profile-photo flow
 - User supplied a screenshot showing the Faculty & Staff Directory loaded with the synthetic staff record. A subsequent screenshot showed the staff dashboard for the test staff identity, with the session recognized but Admin UI disabled and the admin-email match false; this is consistent with role-specific UI separation in the observed session.
 - The user reports that they checked the app and all tested functions were working. These are user-observed browser checks, not independently captured API traces or automated tests. Do not infer that every checklist item, two-tenant isolation, workspace switching, Edge Function parity, or production readiness has passed.
 - All activity described here was against the isolated EduPunch-Test environment. No production deployment or database change was made. Two-school authenticated cross-tenant isolation and Edge Function reconciliation remain outstanding release checks.
+
+## Edge Function source parity review (2026-09-29)
+
+- Read-only source comparison: deployed `verify-attendance` v1 and `reset-staff-pin` v1 match their corresponding branch `index.ts` files byte-for-byte.
+- Deployed `generate-attendance-qr` v3 differs from branch source. The deployed version explicitly extracts and validates the bearer token with Supabase Auth and resolves the user email by Auth user ID; the branch version relies on `ctx.userClaims`. This is a material implementation drift that needs review and a deliberate choice of intended source before deploying or testing endpoint parity. No function was deployed or invoked.
+- Deployed `review-school-application` v1 differs from branch source: deployed authorization uses a hard-coded approver email; branch authorization checks the authenticated user's active `platform_admins` registry row. Keep this endpoint out of current onboarding validation until the test deployment is reconciled with reviewed source and an authorized test account exists.
+- These are source-comparison results only. Exact source parity does not establish correct runtime behavior, and differing source does not alone prove exploitability. Test project only; production unchanged.
