@@ -2270,6 +2270,36 @@
               window.staffPinRecoveryActive = true;
               openStaffPinResetModal(true, session.user.email);
             }
+
+            // Supabase can report sign-out from another tab or an expired session.
+            // Clear the current tenant immediately so stale workspace data is not
+            // left visible while background requests are still settling.
+            if (event === 'SIGNED_OUT') {
+              const tenantIdToClear = currentTenant?.id || persistedTenantId;
+              currentAuthUser = null;
+              currentStaffId = null;
+              currentTenant = null;
+              persistedTenantId = null;
+              tenantSyncQueued = false;
+              staffDatabase = [];
+              punchLedger = [];
+              leaveRequests = [];
+              auditLogs = [];
+              sessionStorage.removeItem(STORAGE_KEY_CURRENT_USER);
+              if (tenantIdToClear) {
+                const suffix = ':' + tenantIdToClear;
+                [STORAGE_KEY_STAFF, STORAGE_KEY_PUNCHES, STORAGE_KEY_LEAVE, STORAGE_KEY_AUDIT]
+                  .forEach(key => localStorage.removeItem(key + suffix));
+              }
+              const channelToRemove = realtimeChannel;
+              realtimeChannel = null;
+              if (channelToRemove) {
+                Promise.resolve()
+                  .then(() => supabaseClient.removeChannel(channelToRemove))
+                  .catch(err => console.warn("Realtime cleanup after sign-out failed:", err));
+              }
+              applyAuthenticatedUI();
+            }
           });
 
           isCloudConnected = true;
@@ -2375,6 +2405,7 @@
           .order('name', { ascending: true });
 
         if (staffErr) throw new Error("Staff data could not be verified: " + staffErr.message);
+        if (currentAuthUser !== sessionUser || currentTenant?.id !== tenantId || sessionUser.tenantId !== tenantId) return false;
         if (remoteStaff && remoteStaff.length > 0) {
           // Compare remote staff with local staff
           const remoteMap = new Map();
@@ -2421,6 +2452,7 @@
           .order('created_at', { ascending: true });
 
         if (punchErr) throw new Error("Attendance data could not be verified: " + punchErr.message);
+        if (currentAuthUser !== sessionUser || currentTenant?.id !== tenantId || sessionUser.tenantId !== tenantId) return false;
         if (remotePunches) {
           remotePunches.forEach(rp => {
             const exists = punchLedger.some(p => 
@@ -2451,6 +2483,7 @@
           .order('created_at', { ascending: false });
 
         if (leaveErr) throw new Error("Leave data could not be verified: " + leaveErr.message);
+        if (currentAuthUser !== sessionUser || currentTenant?.id !== tenantId || sessionUser.tenantId !== tenantId) return false;
         if (remoteLeaves) {
           // Supabase is the authoritative source for leave data. Replace the
           // local cache instead of merging it, so deleted/expired/demo leave
