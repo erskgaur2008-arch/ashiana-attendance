@@ -2162,10 +2162,21 @@
         const options = document.createElement('div');
         options.className = 'mt-4 space-y-2';
 
+        let settled = false;
         const finish = value => {
+          if (settled) return;
+          settled = true;
+          document.removeEventListener('keydown', onKeyDown);
           overlay.remove();
           resolve(value);
         };
+        const onKeyDown = event => {
+          if (event.key === 'Escape') {
+            event.preventDefault();
+            finish(null);
+          }
+        };
+        document.addEventListener('keydown', onKeyDown);
 
         memberships.forEach(membership => {
           const button = document.createElement('button');
@@ -2194,7 +2205,7 @@
           if (event.target === overlay) finish(null);
         });
         document.body.appendChild(overlay);
-        cancel.focus();
+        (options.querySelector('button') || cancel).focus();
       });
     }
 
