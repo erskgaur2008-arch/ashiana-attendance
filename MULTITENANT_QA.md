@@ -91,3 +91,9 @@ The index migration has been applied to EduPunch-Test only. PostgreSQL catalog c
 The allowlist includes `avatar_url` because the current staff profile-photo flow writes that field directly. The trigger migration has been applied to EduPunch-Test only. Catalog checks confirmed the `BEFORE UPDATE` trigger and `SECURITY DEFINER` function with an empty search path are installed. Authenticated staff/admin update attempts, profile/photo UI behavior, and service-role flows still require runtime testing. Production was not changed.
 
 - [ ] Confirm a SCHOOL_ADMIN cannot change a staff row's primary key (`id`) or move it to another tenant (`tenant_id`), even when roster editing is otherwise authorized.
+
+## Isolated Edge Function deployment check (2026-09-29)
+
+- Read-only inspection found active EduPunch-Test deployments for `verify-attendance` (version 1), `reset-staff-pin` (version 1), `generate-attendance-qr` (version 3), and `review-school-application` (version 1). The deployed school-review function still authorizes the approver by a hard-coded email, while the current branch source requires an active `platform_admins` registry row. Therefore the test project's deployed review endpoint is not aligned with the reviewed branch source and must not be used to validate the current registry-backed onboarding flow.
+- No function was deployed or invoked during this check. The active deployments must be reconciled with branch source and reviewed before endpoint testing. Do not deploy to production.
+- Authenticated browser/API tests remain blocked until dedicated test-account sessions are available in a controlled browser/API environment; do not share passwords, PINs, service-role keys, or bearer tokens in chat.
