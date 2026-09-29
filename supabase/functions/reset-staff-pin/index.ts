@@ -120,29 +120,40 @@ Deno.serve(async (req: Request) => {
     }
 
     const adminEmail = adminUserData.user.email.trim().toLowerCase();
-    const { data: authorizedAdmin, error: authorizedAdminError } = await adminClient
-      .from("admin_users")
-      .select("email,role,active,tenant_id")
-      .eq("email", adminEmail)
-      .eq("active", true)
-      .maybeSingle();
-
-    if (authorizedAdminError) throw authorizedAdminError;
-    if (!authorizedAdmin) return json({ error: "Administrator account is not authorized." }, 403);
-
-    const { data: adminMemberships, error: membershipError } = await adminClient.from("tenant_memberships")
-      .select("tenant_id,role").eq("user_id", adminUserData.user.id).eq("active", true);
-    if (membershipError) throw membershipError;
-    if (!adminMemberships || adminMemberships.length !== 1 || adminMemberships[0].role !== "SCHOOL_ADMIN") {
-      return json({ error: "ADMIN_TENANT_MEMBERSHIP_REQUIRED" }, 403);
+    const requestedTenantId = String(body?.tenant_id || "").trim();
+    if (!/^[0-9a-f]{8}-[0-9a-f]{4}-[1-8][0-9a-f]{3}-[89ab][0-9a-f]{3}-[0-9a-f]{12}$/i.test(requestedTenantId)) {
+      return json({ error: "TENANT_CONTEXT_REQUIRED" }, 400);
     }
-    const adminTenantId = adminMemberships[0].tenant_id;
+
+    // Tenant context is supplied by the selected workspace, but authorization
+    // is derived from the authenticated user's active membership for that
+    // exact tenant. Never infer a tenant from the user's global email.
+    const { data: adminMembership, error: membershipError } = await adminClient
+      .from("tenant_memberships")
+      .select("tenant_id,role")
+      .eq("user_id", adminUserData.user.id)
+      .eq("tenant_id", requestedTenantId)
+      .eq("active", true)
+      .eq("role", "SCHOOL_ADMIN")
+      .maybeSingle();
+    if (membershipError) throw membershipError;
+    if (!adminMembership) return json({ error: "ADMIN_TENANT_MEMBERSHIP_REQUIRED" }, 403);
+
+    const adminTenantId = adminMembership.tenant_id;
     const { data: activeTenant, error: tenantError } = await adminClient.from("tenants")
       .select("id").eq("id", adminTenantId).eq("status", "active").maybeSingle();
     if (tenantError) throw tenantError;
-    if (!activeTenant || authorizedAdmin.tenant_id !== adminTenantId) {
-      return json({ error: "ADMIN_TENANT_MEMBERSHIP_REQUIRED" }, 403);
-    }
+    if (!activeTenant) return json({ error: "ADMIN_TENANT_MEMBERSHIP_REQUIRED" }, 403);
+
+    const { data: authorizedAdmin, error: authorizedAdminError } = await adminClient
+      .from("admin_users")
+      .select("email,role,active,tenant_id")
+      .ilike("email", adminEmail)
+      .eq("tenant_id", adminTenantId)
+      .eq("active", true)
+      .maybeSingle();
+    if (authorizedAdminError) throw authorizedAdminError;
+    if (!authorizedAdmin) return json({ error: "Administrator account is not authorized for this workspace." }, 403);
 
     // -------------------------
     // Admin: synchronize a staff login email across public.staff and Auth
