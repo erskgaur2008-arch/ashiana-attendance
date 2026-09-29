@@ -2203,17 +2203,25 @@
       if (!supabaseClient || !userId) throw new Error("A valid authenticated identity is required.");
       const { data: memberships, error } = await supabaseClient
         .from('tenant_memberships')
-        .select('tenant_id,role,active,tenants(name)')
+        .select('tenant_id,role,active')
         .eq('user_id', userId)
         .eq('active', true);
       if (error) throw error;
       if (!memberships?.length) throw new Error("This account has no active school workspace membership.");
 
-      const choices = memberships.map(m => ({
-        tenant_id: m.tenant_id,
-        role: m.role,
-        tenant_name: Array.isArray(m.tenants) ? m.tenants[0]?.name : m.tenants?.name
-      }));
+      const { data: activeTenants, error: tenantsError } = await supabaseClient
+        .from('tenants')
+        .select('id,name,slug,status')
+        .in('id', memberships.map(m => m.tenant_id))
+        .eq('status', 'active');
+      if (tenantsError) throw tenantsError;
+      const choices = memberships
+        .filter(m => activeTenants?.some(t => t.id === m.tenant_id))
+        .map(m => {
+          const tenant = activeTenants.find(t => t.id === m.tenant_id);
+          return { tenant_id: m.tenant_id, role: m.role, tenant_name: tenant.name };
+        });
+      if (!choices.length) throw new Error("No active school workspace is available for this account.");
       let selectedTenantId = preferredTenantId;
       if (selectedTenantId) {
         if (!choices.some(m => m.tenant_id === selectedTenantId)) {
