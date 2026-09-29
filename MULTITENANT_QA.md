@@ -58,3 +58,12 @@ For each account, use synthetic records with unmistakably different labels in ea
 ## Current known coverage
 
 Database-level RLS simulations have previously shown tenant-scoped reads for admin and staff roles, and their synthetic cross-tenant fixtures were rolled back. The in-app admin workspace switch control is included in the main-based integration branch and its key source paths have been reviewed, but it has not yet been exercised in a browser. EduPunch-Test currently has only one persistent tenant, so genuine two-school authenticated switching and cross-tenant browser/API isolation remain unverified.
+
+## Elevated client privilege regression check
+
+- [ ] After applying `20260929050000_revoke_elevated_client_table_privileges.sql` to an isolated test database, confirm `anon` and `authenticated` have no `TRUNCATE`, `TRIGGER`, or `REFERENCES` privileges on the listed public tables.
+- [ ] Confirm intended `SELECT`, `INSERT`, `UPDATE`, and `DELETE` workflows still work according to each table's RLS policies.
+- [ ] Confirm service-role maintenance and Edge Function workflows remain functional.
+- [ ] Verify privilege state from PostgreSQL catalog queries; do not infer it from successful browser reads alone.
+
+The migration is committed as source only and has not been applied to EduPunch-Test or production. Database verification remains a release gate.
