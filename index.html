@@ -2119,8 +2119,14 @@
         throw new Error('AUTHENTICATION_REQUIRED: Please sign in again to the administrator portal.');
       }
 
+      // Attach the selected workspace for admin Edge Functions. Server-side
+      // membership and tenant checks remain authoritative; this value is only
+      // a requested context, never an authorization credential.
+      const requestBody = currentAuthUser?.type === 'ADMIN' && currentTenant?.id
+        ? { ...(body || {}), tenant_id: currentTenant.id }
+        : body;
       const { data, error } = await supabaseClient.functions.invoke(functionName, {
-        body,
+        body: requestBody,
         headers: { Authorization: `Bearer ${session.access_token}` }
       });
       if (error) {
