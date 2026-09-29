@@ -3167,6 +3167,7 @@
       if (button) button.disabled = true;
       const originalLabel = button?.innerHTML;
       if (button) button.innerHTML = '<i data-lucide="loader-circle"></i><span>Checking…</span>';
+      let transitionStarted = false;
       try {
         const { data: identityData, error: identityError } = await supabaseClient.auth.getUser();
         const identity = identityData?.user;
@@ -3222,6 +3223,7 @@
         if (adminError || !adminRow) throw new Error("Administrator profile is not active in the selected school.");
         assertAdminAuthIdentity(identity, String(identity.email).trim().toLowerCase(), adminRow);
 
+        transitionStarted = true;
         const oldChannel = realtimeChannel;
         realtimeChannel = null;
         if (oldChannel) {
@@ -3257,12 +3259,9 @@
         showToast("Switched to " + nextTenant.name + ".", "success");
       } catch (err) {
         console.error("Workspace switch failed:", err);
-        // Once the old workspace context has been cleared, fail closed if a
-        // transition began but could not complete.
-        if (currentTenant && currentAuthUser?.tenantId === currentTenant.id &&
-            persistedTenantId === currentTenant.id) {
-          showToast("Could not switch school: " + (err?.message || err), "error");
-        } else if (currentAuthUser?.type === 'ADMIN') {
+        // Preserve the existing session for preflight errors. After transition
+        // starts, fail closed rather than leave a partially loaded workspace active.
+        if (transitionStarted) {
           await handleLogout();
           showToast("Workspace verification failed. Please sign in again.", "error");
         } else {
