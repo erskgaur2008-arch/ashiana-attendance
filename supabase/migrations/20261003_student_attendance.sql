@@ -49,8 +49,8 @@ alter table public.student_attendance enable row level security;
 drop policy if exists student_roster_admin_all on public.student_roster;
 create policy student_roster_admin_all on public.student_roster
 for all to authenticated
-using (private.is_admin())
-with check (private.is_admin());
+using ((private.is_admin() and school_code = 'ashiana'))
+with check ((private.is_admin() and school_code = 'ashiana'));
 
 drop policy if exists student_roster_teacher_select on public.student_roster;
 create policy student_roster_teacher_select on public.student_roster
@@ -69,19 +69,19 @@ using (
 drop policy if exists student_assignments_admin_all on public.student_class_assignments;
 create policy student_assignments_admin_all on public.student_class_assignments
 for all to authenticated
-using (private.is_admin())
-with check (private.is_admin());
+using ((private.is_admin() and school_code = 'ashiana'))
+with check ((private.is_admin() and school_code = 'ashiana'));
 
 drop policy if exists student_assignments_teacher_select on public.student_class_assignments;
 create policy student_assignments_teacher_select on public.student_class_assignments
 for select to authenticated
-using (lower(teacher_email) = lower(coalesce(auth.jwt() ->> 'email','')));
+using (school_code = 'ashiana' and lower(teacher_email) = lower(coalesce(auth.jwt() ->> 'email','')));
 
 drop policy if exists student_attendance_admin_all on public.student_attendance;
 create policy student_attendance_admin_all on public.student_attendance
 for all to authenticated
-using (private.is_admin())
-with check (private.is_admin());
+using ((private.is_admin() and school_code = 'ashiana'))
+with check ((private.is_admin() and school_code = 'ashiana'));
 
 drop policy if exists student_attendance_teacher_select on public.student_attendance;
 create policy student_attendance_teacher_select on public.student_attendance
