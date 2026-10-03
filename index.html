@@ -530,7 +530,8 @@
                 <i data-lucide="calendar-off" class="w-3.5 h-3.5 text-ashiana-green"></i>
                 <span>Leave Application</span>
               </h4>
-              <button onclick="openLeaveApplyModal()" class="text-[11px] font-bold text-ashiana-green hover:text-emerald-800">
+    <button id="staff-nav-students" onclick="switchStaffTab('students')" class="flex flex-col items-center text-slate-500"><i data-lucide="clipboard-check" class="w-4 h-4"></i><span class="text-[9px]">Students</span></button>
+          <button onclick="openLeaveApplyModal()" class="text-[11px] font-bold text-ashiana-green hover:text-emerald-800">
                 + Apply Leave
               </button>
             </div>
@@ -608,6 +609,7 @@
           </div>
         </div>
 
+<div id="staff-tab-students" class="staff-dashboard-scroll staff-dashboard-content hidden flex-1 overflow-y-auto space-y-3"><div class="bg-white rounded-2xl p-4 border"><h4 class="font-bold">Student Attendance</h4><div class="grid grid-cols-2 gap-2 mt-3"><select id="teacher-student-class" onchange="loadTeacherStudentAttendance()" class="w-full p-2 border rounded"><option value="">Loading classes…</option></select><input id="teacher-student-date" type="date" onchange="loadTeacherStudentAttendance()" class="w-full p-2 border rounded"></div><div id="teacher-student-list" class="mt-3">Choose a class.</div><button onclick="saveTeacherStudentAttendance()" class="w-full mt-3 p-3 bg-ashiana-green text-white rounded">Save Attendance</button></div></div>
         <!-- Mobile Bottom Navigation Bar -->
         <div class="bg-white border-t border-slate-200 px-3 py-2 flex justify-around items-center text-slate-500 text-xs">
           <button id="staff-nav-punch" onclick="switchStaffTab('punch')" class="flex flex-col items-center text-ashiana-green font-bold transition-colors">
@@ -657,7 +659,7 @@
         </div>
       </div>
 
-      <div class="admin-quick-actions">
+      <div class="admin-quick-actions"><button onclick="switchAdminTab('students')"><i data-lucide="graduation-cap"></i><span>Students</span></button>
         <button onclick="switchAdminTab('live')"><i data-lucide="radio"></i><span>Live Attendance</span></button>
         <button onclick="switchAdminTab('qr')"><i data-lucide="qr-code"></i><span>Daily QR</span></button>
         <button onclick="switchAdminTab('directory')"><i data-lucide="users"></i><span>Faculty</span></button>
@@ -849,6 +851,7 @@
         </div>
       </div>
 
+<div id="admin-tab-students" class="hidden space-y-3"><div class="bg-white rounded-2xl border p-4"><h3 class="font-bold">Student & Class Management</h3><form onsubmit="adminAddStudent(event)" class="grid grid-cols-1 sm:grid-cols-5 gap-2 my-4"><input id="new-student-admission" required placeholder="Admission No." class="p-2 border rounded"><input id="new-student-name" required placeholder="Student Name" class="p-2 border rounded"><input id="new-student-class" required placeholder="Class" class="p-2 border rounded"><input id="new-student-section" required placeholder="Section" class="p-2 border rounded"><div class="flex gap-2"><input id="new-student-roll" placeholder="Roll No." class="p-2 border rounded w-full"><button class="p-2 bg-ashiana-green text-white rounded">Add</button></div></form><form onsubmit="adminAssignClass(event)" class="grid grid-cols-1 sm:grid-cols-4 gap-2 border-t pt-4"><select id="assign-teacher-email" required class="p-2 border rounded"><option value="">Select teacher</option></select><input id="assign-class-name" required placeholder="Class" class="p-2 border rounded"><input id="assign-section" required placeholder="Section" class="p-2 border rounded"><button class="p-2 bg-emerald-900 text-white rounded">Assign</button></form><input id="admin-student-filter-class" placeholder="Filter class" oninput="loadAdminStudents()" class="p-2 border rounded my-3"><p id="admin-student-status" class="text-xs"></p><div class="overflow-x-auto"><table class="w-full text-xs text-left"><thead><tr><th>Admission</th><th>Student</th><th>Class</th><th>Section</th><th>Roll</th></tr></thead><tbody id="admin-student-tbody"></tbody></table></div></div></div>
       <!-- TAB 4: MANUAL CORRECTIONS -->
       <div id="admin-tab-corrections" class="hidden space-y-3">
         <div class="bg-white rounded-2xl border border-slate-200 shadow-sm p-4 sm:p-6 max-w-lg mx-auto">
