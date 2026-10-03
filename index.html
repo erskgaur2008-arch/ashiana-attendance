@@ -3240,13 +3240,30 @@
     let currentStaffTab = 'punch';
 
 
+    // Role-based UI permissions. Staff designation is descriptive; database RLS remains the security boundary.
+    function getAccessRole(user=currentAuthUser){
+      if(user?.type==='ADMIN') return 'ADMIN';
+      if(user?.type!=='STAFF') return 'GUEST';
+      const designation=String(user.staffRecord?.role||'').trim().toLowerCase();
+      return /\\b(teacher|tgt|pgt|prt|pre-primary teacher|special educator|pet)\\b/.test(designation) ? 'TEACHER' : 'STAFF';
+    }
+    function canAccessStudentAttendance(user=currentAuthUser){return getAccessRole(user)==='TEACHER';}
+    function applyStaffRoleAccess(){
+      const role=getAccessRole();
+      const studentNav=document.getElementById('staff-nav-students');
+      if(studentNav) studentNav.classList.toggle('hidden',role!=='TEACHER');
+      if(role!=='TEACHER' && currentStaffTab==='students') switchStaffTab('punch');
+      const roleLabel=document.getElementById('staff-header-role');
+      if(roleLabel && user?.staffRecord) roleLabel.innerText = role+' • '+user.staffRecord.empId;
+    }
+
     // Student attendance feature; Supabase RLS is the authorization boundary.
     const APS_STUDENT_SCHOOL='ashiana';
     let teacherStudentAssignments=[], teacherStudentRows=[], adminStudentRows=[];
     function studentDateToday(){const d=new Date();return d.getFullYear()+'-'+String(d.getMonth()+1).padStart(2,'0')+'-'+String(d.getDate()).padStart(2,'0');}
     function studentEscape(v){return String(v??'').replace(/[&<>"']/g,ch=>({'&':'&amp;','<':'&lt;','>':'&gt;','"':'&quot;',"'":'&#39;'}[ch]));}
     async function loadTeacherStudentAssignments(){
-      const sel=document.getElementById('teacher-student-class');if(!sel||!supabaseClient||currentAuthUser?.type!=='STAFF')return;
+      const sel=document.getElementById('teacher-student-class');if(!sel||!supabaseClient||!canAccessStudentAttendance())return;
       try{const email=String(currentAuthUser?.staffRecord?.email||'').trim().toLowerCase();if(!email)throw Error('Staff email is unavailable.');
         const {data,error}=await supabaseClient.from('student_class_assignments').select('class_name,section').eq('school_code',APS_STUDENT_SCHOOL).eq('teacher_email',email).eq('active',true).order('class_name').order('section');if(error)throw error;
         teacherStudentAssignments=data||[];sel.innerHTML='<option value="">Select assigned class</option>'+teacherStudentAssignments.map((a,i)=>'<option value="'+i+'">'+studentEscape(a.class_name)+' - '+studentEscape(a.section)+'</option>').join('');
@@ -3262,7 +3279,7 @@
       }catch(e){host.textContent='Could not load students: '+(e.message||e);}
     }
     async function saveTeacherStudentAttendance(){
-      if(currentAuthUser?.type!=='STAFF'||!supabaseClient)return showToast('Teacher cloud session required.','error');const date=document.getElementById('teacher-student-date')?.value;if(!date||!teacherStudentRows.length)return showToast('Select a class with students first.','error');
+      if(!canAccessStudentAttendance()||!supabaseClient)return showToast('Student attendance is available to teaching staff only.','error');const date=document.getElementById('teacher-student-date')?.value;if(!date||!teacherStudentRows.length)return showToast('Select a class with students first.','error');
       try{const {data,error:authError}=await supabaseClient.auth.getUser();if(authError||!data?.user)throw Error('Session expired; sign in again.');
         const marks=Array.from(document.querySelectorAll('#teacher-student-list select[data-student-id]')).map(el=>({school_code:APS_STUDENT_SCHOOL,student_id:el.dataset.studentId,attendance_date:date,status:el.value,marked_by:data.user.id}));
         const {error}=await supabaseClient.from('student_attendance').upsert(marks,{onConflict:'school_code,student_id,attendance_date'});if(error)throw error;showToast('Student attendance saved.','success');playTone('SUCCESS');
@@ -3278,7 +3295,7 @@
       try{const {error}=await supabaseClient.from('student_class_assignments').upsert({school_code:APS_STUDENT_SCHOOL,teacher_email:v('assign-teacher-email').toLowerCase(),class_name:v('assign-class-name'),section:v('assign-section'),active:true},{onConflict:'school_code,teacher_email,class_name,section'});if(error)throw error;event.target.reset();showToast('Class assignment saved.','success');}
       catch(e){showToast('Assignment failed: '+(e.message||e),'error');}
     }
-    function populateStudentTeacherOptions(){const sel=document.getElementById('assign-teacher-email');if(!sel)return;const rows=staffDatabase.filter(s=>s.status==='ACTIVE'&&s.email);sel.innerHTML='<option value="">Select teacher</option>'+rows.map(s=>'<option value="'+studentEscape(s.email)+'">'+studentEscape(s.name)+' ('+studentEscape(s.empId)+')</option>').join('');}
+    function populateStudentTeacherOptions(){const sel=document.getElementById('assign-teacher-email');if(!sel)return;const rows=staffDatabase.filter(s=>s.status==='ACTIVE'&&s.email&&getAccessRole({type:'STAFF',staffRecord:s})==='TEACHER');sel.innerHTML='<option value="">Select teacher</option>'+rows.map(s=>'<option value="'+studentEscape(s.email)+'">'+studentEscape(s.name)+' ('+studentEscape(s.empId)+')</option>').join('');}
     async function loadAdminStudents(){
       const tbody=document.getElementById('admin-student-tbody');if(!tbody||currentAuthUser?.type!=='ADMIN'||!supabaseClient)return;const status=document.getElementById('admin-student-status');if(status)status.textContent='Loading roster…';
       try{const filter=document.getElementById('admin-student-filter-class')?.value?.trim()||'';let q=supabaseClient.from('student_roster').select('admission_no,student_name,class_name,section,roll_no').eq('school_code',APS_STUDENT_SCHOOL).order('class_name').order('section').order('roll_no');if(filter)q=q.ilike('class_name','%'+filter+'%');const {data,error}=await q.limit(1000);if(error)throw error;adminStudentRows=data||[];
