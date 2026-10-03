@@ -317,11 +317,11 @@
         
         <!-- Tab Selector: Teacher vs Admin -->
         <div class="flex bg-emerald-950/70 p-1 rounded-2xl mt-4 border border-emerald-700/50">
-          <button id="btn-login-tab-teacher" onclick="switchLoginTab('teacher')" class="flex-1 py-2 rounded-xl text-xs font-bold transition-all bg-white text-emerald-950 shadow flex items-center justify-center space-x-1.5">
+          <button type="button" id="btn-login-tab-teacher" aria-controls="teacher-login-form" aria-pressed="true" onclick="window.switchLoginTab('teacher'); return false;" class="flex-1 py-2 rounded-xl text-xs font-bold transition-all bg-white text-emerald-950 shadow flex items-center justify-center space-x-1.5">
             <i data-lucide="user-check" class="w-3.5 h-3.5 text-ashiana-green"></i>
             <span>Teacher / Staff</span>
           </button>
-          <button id="btn-login-tab-admin" onclick="switchLoginTab('admin')" class="flex-1 py-2 rounded-xl text-xs font-bold transition-all text-emerald-200 hover:text-white flex items-center justify-center space-x-1.5">
+          <button type="button" id="btn-login-tab-admin" aria-controls="admin-login-form" aria-pressed="false" onclick="window.switchLoginTab('admin'); return false;" class="flex-1 py-2 rounded-xl text-xs font-bold transition-all text-emerald-200 hover:text-white flex items-center justify-center space-x-1.5">
             <i data-lucide="shield-check" class="w-3.5 h-3.5"></i>
             <span>Administrator</span>
           </button>
@@ -2747,25 +2747,29 @@
     }
 
     // Authentication Handlers with Live Multi-Device Fallback
-    function switchLoginTab(tab) {
+    // Global login selector for both standard and test portal pages.
+    window.switchLoginTab = function(tab) {
+      const isAdmin = tab === 'admin';
       const btnTeacher = document.getElementById("btn-login-tab-teacher");
       const btnAdmin = document.getElementById("btn-login-tab-admin");
       const formTeacher = document.getElementById("teacher-login-form");
       const formAdmin = document.getElementById("admin-login-form");
-
-      if (tab === 'teacher') {
-        btnTeacher.className = "flex-1 py-2 rounded-xl text-xs font-bold transition-all bg-white text-emerald-950 shadow flex items-center justify-center space-x-1.5";
-        btnAdmin.className = "flex-1 py-2 rounded-xl text-xs font-bold transition-all text-emerald-200 hover:text-white flex items-center justify-center space-x-1.5";
-        formTeacher.classList.remove("hidden");
-        formAdmin.classList.add("hidden");
-      } else {
-        btnAdmin.className = "flex-1 py-2 rounded-xl text-xs font-bold transition-all bg-white text-emerald-950 shadow flex items-center justify-center space-x-1.5";
-        btnTeacher.className = "flex-1 py-2 rounded-xl text-xs font-bold transition-all text-emerald-200 hover:text-white flex items-center justify-center space-x-1.5";
-        formAdmin.classList.remove("hidden");
-        formTeacher.classList.add("hidden");
-      }
+      if (!btnTeacher || !btnAdmin || !formTeacher || !formAdmin) return false;
+      btnTeacher.className = isAdmin
+        ? "flex-1 py-2 rounded-xl text-xs font-bold transition-all text-emerald-200 hover:text-white flex items-center justify-center space-x-1.5"
+        : "flex-1 py-2 rounded-xl text-xs font-bold transition-all bg-white text-emerald-950 shadow flex items-center justify-center space-x-1.5";
+      btnAdmin.className = isAdmin
+        ? "flex-1 py-2 rounded-xl text-xs font-bold transition-all bg-white text-emerald-950 shadow flex items-center justify-center space-x-1.5"
+        : "flex-1 py-2 rounded-xl text-xs font-bold transition-all text-emerald-200 hover:text-white flex items-center justify-center space-x-1.5";
+      btnTeacher.setAttribute("aria-pressed", String(!isAdmin));
+      btnAdmin.setAttribute("aria-pressed", String(isAdmin));
+      formTeacher.classList.toggle("hidden", isAdmin);
+      formAdmin.classList.toggle("hidden", !isAdmin);
       if (window.lucide) lucide.createIcons();
-    }
+      return false;
+    };
+    document.getElementById("btn-login-tab-teacher")?.addEventListener("click", () => window.switchLoginTab("teacher"));
+    document.getElementById("btn-login-tab-admin")?.addEventListener("click", () => window.switchLoginTab("admin"));
 
     function togglePinVisibility(id) {
       const input = document.getElementById(id);
