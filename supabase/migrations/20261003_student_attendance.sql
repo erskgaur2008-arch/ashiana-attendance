@@ -150,3 +150,8 @@ with check (
       and a.active = true
   )
 );
+
+-- Expose only to authenticated sessions; RLS policies above enforce row-level authorization.
+grant select, insert, update, delete on public.student_roster to authenticated;
+grant select, insert, update, delete on public.student_class_assignments to authenticated;
+grant select, insert, update, delete on public.student_attendance to authenticated;
