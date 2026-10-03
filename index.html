@@ -3254,7 +3254,7 @@
       if(studentNav) studentNav.classList.toggle('hidden',role!=='TEACHER');
       if(role!=='TEACHER' && currentStaffTab==='students') switchStaffTab('punch');
       const roleLabel=document.getElementById('staff-header-role');
-      if(roleLabel && user?.staffRecord) roleLabel.innerText = role+' • '+user.staffRecord.empId;
+      if(roleLabel && currentAuthUser?.staffRecord) roleLabel.innerText = (currentAuthUser.staffRecord.role||role)+' • '+currentAuthUser.staffRecord.empId;
     }
 
     // Student attendance feature; Supabase RLS is the authorization boundary.
@@ -3516,7 +3516,7 @@
     }
 
     // Refresh UI Components
-    function refreshStaffUI() {
+    function refreshStaffUI() {\n      applyStaffRoleAccess();
       if (!currentStaffId) return;
       const staff = staffDatabase.find(s => s.id === currentStaffId) || staffDatabase[0];
       const stats = calculateAttendance(staff.id);
