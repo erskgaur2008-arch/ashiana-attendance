@@ -3245,7 +3245,7 @@
       if(user?.type==='ADMIN') return 'ADMIN';
       if(user?.type!=='STAFF') return 'GUEST';
       const designation=String(user.staffRecord?.role||'').trim().toLowerCase();
-      return /\\b(teacher|tgt|pgt|prt|pre-primary teacher|special educator|pet)\\b/.test(designation) ? 'TEACHER' : 'STAFF';
+      return /\b(teacher|tgt|pgt|prt|pre-primary teacher|special educator|pet)\\b/.test(designation) ? 'TEACHER' : 'STAFF';
     }
     function canAccessStudentAttendance(user=currentAuthUser){return getAccessRole(user)==='TEACHER';}
     function applyStaffRoleAccess(){
