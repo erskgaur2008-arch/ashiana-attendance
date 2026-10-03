@@ -3239,25 +3239,82 @@
     // Staff Mobile Tab Switching (Punch vs History)
     let currentStaffTab = 'punch';
 
+
+    // Student attendance feature; Supabase RLS is the authorization boundary.
+    const APS_STUDENT_SCHOOL='ashiana';
+    let teacherStudentAssignments=[], teacherStudentRows=[], adminStudentRows=[];
+    function studentDateToday(){const d=new Date();return d.getFullYear()+'-'+String(d.getMonth()+1).padStart(2,'0')+'-'+String(d.getDate()).padStart(2,'0');}
+    function studentEscape(v){return String(v??'').replace(/[&<>"']/g,ch=>({'&':'&amp;','<':'&lt;','>':'&gt;','"':'&quot;',"'":'&#39;'}[ch]));}
+    async function loadTeacherStudentAssignments(){
+      const sel=document.getElementById('teacher-student-class');if(!sel||!supabaseClient||currentAuthUser?.type!=='STAFF')return;
+      try{const email=String(currentAuthUser?.staffRecord?.email||'').trim().toLowerCase();if(!email)throw Error('Staff email is unavailable.');
+        const {data,error}=await supabaseClient.from('student_class_assignments').select('class_name,section').eq('school_code',APS_STUDENT_SCHOOL).eq('teacher_email',email).eq('active',true).order('class_name').order('section');if(error)throw error;
+        teacherStudentAssignments=data||[];sel.innerHTML='<option value="">Select assigned class</option>'+teacherStudentAssignments.map((a,i)=>'<option value="'+i+'">'+studentEscape(a.class_name)+' - '+studentEscape(a.section)+'</option>').join('');
+        if(teacherStudentAssignments.length===1){sel.value='0';await loadTeacherStudentAttendance();}
+      }catch(e){sel.innerHTML='<option value="">Assignments unavailable</option>';document.getElementById('teacher-student-list').textContent=e.message||'Could not load assignments.';}
+    }
+    async function loadTeacherStudentAttendance(){
+      const sel=document.getElementById('teacher-student-class'),date=document.getElementById('teacher-student-date'),host=document.getElementById('teacher-student-list');if(!sel||!date||!host||!supabaseClient)return;if(!date.value)date.value=studentDateToday();
+      const a=teacherStudentAssignments[Number(sel.value)];if(!a){host.textContent='Select an assigned class.';return;}host.textContent='Loading students…';
+      try{const {data:students,error}=await supabaseClient.from('student_roster').select('id,admission_no,student_name,class_name,section,roll_no').eq('school_code',APS_STUDENT_SCHOOL).eq('class_name',a.class_name).eq('section',a.section).eq('status','ACTIVE').order('roll_no').order('student_name');if(error)throw error;teacherStudentRows=students||[];
+        const {data:marks,error:me}=await supabaseClient.from('student_attendance').select('student_id,status').eq('school_code',APS_STUDENT_SCHOOL).eq('attendance_date',date.value);if(me)throw me;const byId=Object.fromEntries((marks||[]).map(m=>[m.student_id,m.status]));
+        host.innerHTML=teacherStudentRows.length?teacherStudentRows.map(s=>'<div class="flex items-center gap-2 p-2 border rounded-xl"><div class="flex-1 min-w-0"><b class="text-xs">'+studentEscape(s.student_name)+'</b><p class="text-[10px] text-slate-500">'+studentEscape(s.admission_no)+' · Roll '+studentEscape(s.roll_no||'—')+'</p></div><select data-student-id="'+s.id+'" class="student-attendance-status text-xs p-2 border rounded-lg"><option value="PRESENT" '+((byId[s.id]||'PRESENT')==='PRESENT'?'selected':'')+'>Present</option><option value="ABSENT" '+(byId[s.id]==='ABSENT'?'selected':'')+'>Absent</option><option value="LEAVE" '+(byId[s.id]==='LEAVE'?'selected':'')+'>Leave</option></select></div>').join(''):'<p class="text-xs text-slate-400 text-center py-5">No active students in this class.</p>';
+      }catch(e){host.textContent='Could not load students: '+(e.message||e);}
+    }
+    async function saveTeacherStudentAttendance(){
+      if(currentAuthUser?.type!=='STAFF'||!supabaseClient)return showToast('Teacher cloud session required.','error');const date=document.getElementById('teacher-student-date')?.value;if(!date||!teacherStudentRows.length)return showToast('Select a class with students first.','error');
+      try{const {data,error:authError}=await supabaseClient.auth.getUser();if(authError||!data?.user)throw Error('Session expired; sign in again.');
+        const marks=Array.from(document.querySelectorAll('#teacher-student-list select[data-student-id]')).map(el=>({school_code:APS_STUDENT_SCHOOL,student_id:el.dataset.studentId,attendance_date:date,status:el.value,marked_by:data.user.id}));
+        const {error}=await supabaseClient.from('student_attendance').upsert(marks,{onConflict:'school_code,student_id,attendance_date'});if(error)throw error;showToast('Student attendance saved.','success');playTone('SUCCESS');
+      }catch(e){showToast('Save failed: '+(e.message||e),'error');}
+    }
+    async function adminAddStudent(event){
+      event.preventDefault();if(currentAuthUser?.type!=='ADMIN'||!supabaseClient)return showToast('Administrator session required.','error');const v=id=>document.getElementById(id)?.value?.trim()||'';
+      try{const {error}=await supabaseClient.from('student_roster').insert({school_code:APS_STUDENT_SCHOOL,admission_no:v('new-student-admission'),student_name:v('new-student-name'),class_name:v('new-student-class'),section:v('new-student-section'),roll_no:v('new-student-roll')||null,status:'ACTIVE'});if(error)throw error;event.target.reset();showToast('Student added.','success');await loadAdminStudents();}
+      catch(e){showToast('Unable to add student: '+(e.message||e),'error');}
+    }
+    async function adminAssignClass(event){
+      event.preventDefault();if(currentAuthUser?.type!=='ADMIN'||!supabaseClient)return showToast('Administrator session required.','error');const v=id=>document.getElementById(id)?.value?.trim()||'';
+      try{const {error}=await supabaseClient.from('student_class_assignments').upsert({school_code:APS_STUDENT_SCHOOL,teacher_email:v('assign-teacher-email').toLowerCase(),class_name:v('assign-class-name'),section:v('assign-section'),active:true},{onConflict:'school_code,teacher_email,class_name,section'});if(error)throw error;event.target.reset();showToast('Class assignment saved.','success');}
+      catch(e){showToast('Assignment failed: '+(e.message||e),'error');}
+    }
+    function populateStudentTeacherOptions(){const sel=document.getElementById('assign-teacher-email');if(!sel)return;const rows=staffDatabase.filter(s=>s.status==='ACTIVE'&&s.email);sel.innerHTML='<option value="">Select teacher</option>'+rows.map(s=>'<option value="'+studentEscape(s.email)+'">'+studentEscape(s.name)+' ('+studentEscape(s.empId)+')</option>').join('');}
+    async function loadAdminStudents(){
+      const tbody=document.getElementById('admin-student-tbody');if(!tbody||currentAuthUser?.type!=='ADMIN'||!supabaseClient)return;const status=document.getElementById('admin-student-status');if(status)status.textContent='Loading roster…';
+      try{const filter=document.getElementById('admin-student-filter-class')?.value?.trim()||'';let q=supabaseClient.from('student_roster').select('admission_no,student_name,class_name,section,roll_no').eq('school_code',APS_STUDENT_SCHOOL).order('class_name').order('section').order('roll_no');if(filter)q=q.ilike('class_name','%'+filter+'%');const {data,error}=await q.limit(1000);if(error)throw error;adminStudentRows=data||[];
+        tbody.innerHTML=adminStudentRows.map(s=>'<tr><td class="p-2">'+studentEscape(s.admission_no)+'</td><td class="p-2 font-semibold">'+studentEscape(s.student_name)+'</td><td class="p-2">'+studentEscape(s.class_name)+'</td><td class="p-2">'+studentEscape(s.section)+'</td><td class="p-2">'+studentEscape(s.roll_no||'—')+'</td></tr>').join('');if(status)status.textContent=adminStudentRows.length+' student record(s) loaded (up to 1,000).';
+      }catch(e){tbody.innerHTML='';if(status)status.textContent='Roster unavailable: '+(e.message||e);}
+    }
+
     function switchStaffTab(tab) {
       currentStaffTab = tab;
       const punchView = document.getElementById("staff-tab-punch");
       const historyView = document.getElementById("staff-tab-history");
+      const studentsView = document.getElementById("staff-tab-students");
+      const btnStudents = document.getElementById("staff-nav-students");
       const btnPunch = document.getElementById("staff-nav-punch");
       const btnHistory = document.getElementById("staff-nav-history");
 
       if (tab === 'punch') {
         if (punchView) punchView.classList.remove("hidden");
         if (historyView) historyView.classList.add("hidden");
+        studentsView?.classList.add('hidden');
+        if(btnStudents)btnStudents.className='flex flex-col items-center text-slate-500';
         if (btnPunch) btnPunch.className = "flex flex-col items-center text-ashiana-green font-bold transition-colors";
         if (btnHistory) btnHistory.className = "flex flex-col items-center hover:text-ashiana-green text-slate-500 font-semibold transition-colors";
         refreshStaffUI();
-      } else {
+      } else if (tab === 'history') {
         if (punchView) punchView.classList.add("hidden");
+        studentsView?.classList.add('hidden');
+        if(btnStudents)btnStudents.className='flex flex-col items-center text-slate-500';
         if (historyView) historyView.classList.remove("hidden");
         if (btnHistory) btnHistory.className = "flex flex-col items-center text-ashiana-green font-bold transition-colors";
         if (btnPunch) btnPunch.className = "flex flex-col items-center hover:text-ashiana-green text-slate-500 font-semibold transition-colors";
         renderStaffHistory();
+      } else if(tab === 'students') {
+        punchView?.classList.add('hidden');historyView?.classList.add('hidden');studentsView?.classList.remove('hidden');
+        if(btnPunch)btnPunch.className='flex flex-col items-center text-slate-500';if(btnHistory)btnHistory.className='flex flex-col items-center text-slate-500';if(btnStudents)btnStudents.className='flex flex-col items-center text-ashiana-green font-bold';
+        const date=document.getElementById('teacher-student-date');if(date&&!date.value)date.value=studentDateToday();loadTeacherStudentAssignments();
       }
       if (window.lucide) lucide.createIcons();
     }
@@ -4578,7 +4635,7 @@ window.addEventListener('load',async function(){
     function switchAdminTab(tab) {
       // Quick-action buttons do not have the legacy tab-btn-* IDs, so
       // toggle the content views independently of the optional tab buttons.
-      ['live', 'qr', 'directory', 'corrections', 'leave', 'audit', 'reports'].forEach(t => {
+      ['live', 'qr', 'directory', 'corrections', 'leave', 'audit', 'reports', 'students'].forEach(t => {
         const btn = document.getElementById(`tab-btn-${t}`);
         const view = document.getElementById(`admin-tab-${t}`);
 
@@ -4595,6 +4652,7 @@ window.addEventListener('load',async function(){
         }
       });
 
+      if (tab === 'students' && currentAuthUser?.type === 'ADMIN') { populateStudentTeacherOptions(); loadAdminStudents(); }
       if (tab === 'directory' && currentAuthUser?.type === 'ADMIN') {
         loadAdminStaffDirectoryFromSupabase(true);
       }
