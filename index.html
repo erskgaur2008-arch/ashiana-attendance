@@ -2992,7 +2992,20 @@
 
     function teacherPortalEmail(){return String(currentAuthUser?.staffRecord?.email||'').trim().toLowerCase();}
 function teacherPortalClass(){const el=document.getElementById('teacher-portal-class');const a=teacherStudentAssignments[Number(el?.value)];return a||null;}
-async function loadTeacherPortalManager(){if(!supabaseClient||!canAccessStudentAttendance())return;await loadTeacherStudentAssignments();const sel=document.getElementById('teacher-portal-class');if(sel){sel.innerHTML='<option value="">Select assigned class</option>'+teacherStudentAssignments.map((a,i)=>'<option value="'+i+'">'+studentEscape(a.class_name)+' - '+studentEscape(a.section)+'</option>').join('');}renderTeacherPortalEditor();await loadTeacherLeaveRequests();}
+async function loadTeacherPortalManager(){
+      if(!supabaseClient||!canAccessStudentAttendance())return;
+      if(!teacherStudentAssignments.length) await loadTeacherStudentAssignments();
+      const sel=document.getElementById('teacher-portal-class');
+      if(sel){
+        sel.innerHTML='<option value="">Select assigned class</option>'+
+          teacherStudentAssignments.map((a,i)=>'<option value="'+i+'">'+studentEscape(a.class_name)+' - '+studentEscape(a.section)+'</option>').join('');
+        if(teacherStudentAssignments.length===1){
+          sel.value='0';
+        }
+      }
+      renderTeacherPortalEditor();
+      await loadTeacherLeaveRequests();
+    }
 async function loadTeacherPortalStudents(){renderTeacherPortalEditor();}
 function renderTeacherPortalEditor(){const host=document.getElementById('teacher-portal-editor');if(!host)return;const type=document.getElementById('teacher-portal-type')?.value||'notice';if(type==='notice')host.innerHTML='<input id="tp-title" placeholder="Notice title" class="w-full p-2 border rounded"><textarea id="tp-body" rows="3" placeholder="Notice details" class="w-full p-2 border rounded"></textarea><button onclick="saveTeacherNotice()" class="w-full p-2.5 bg-emerald-800 text-white rounded-xl font-bold">Publish Notice</button>';
 else if(type==='homework')host.innerHTML='<input id="tp-title" placeholder="Homework title" class="w-full p-2 border rounded"><input id="tp-subject" placeholder="Subject" class="w-full p-2 border rounded"><textarea id="tp-body" rows="3" placeholder="Homework details" class="w-full p-2 border rounded"></textarea><input id="tp-due" type="date" class="w-full p-2 border rounded"><button onclick="saveTeacherHomework()" class="w-full p-2.5 bg-blue-700 text-white rounded-xl font-bold">Publish Homework</button>';
@@ -3665,7 +3678,7 @@ async function assignClassTeacher(){const cls=document.getElementById('assign-cl
       }catch(e){parsedStudentBulkRows=[];showToast('Student import file error: '+(e.message||e),'error');}
     }
     async function executeStudentBulkUpload(){if(!parsedStudentBulkRows.length)return showToast('No student records to import.','error');if(currentAuthUser?.type!=='ADMIN'||!supabaseClient)return showToast('Administrator cloud session is required.','error');const btn=document.getElementById('btn-confirm-student-bulk');btn.disabled=true;btn.textContent='Importing students…';const st=document.getElementById('student-bulk-status');try{let imported=0;for(let i=0;i<parsedStudentBulkRows.length;i+=500){const chunk=parsedStudentBulkRows.slice(i,i+500),{error}=await supabaseClient.from('student_roster').upsert(chunk,{onConflict:'school_code,enroll_no'});if(error)throw error;imported+=chunk.length;if(st)st.textContent='Imported '+imported+' of '+parsedStudentBulkRows.length+' students…';}showToast('Student bulk import completed: '+imported+' records.','success');await loadAdminStudents();closeStudentBulkUploadModal();}catch(e){showToast('Student bulk import failed: '+(e.message||e),'error');}finally{btn.disabled=false;btn.textContent='Import Students';}}
-    function switchStaffTab(tab) {
+    async function switchStaffTab(tab) {
       currentStaffTab = tab;
       const punchView = document.getElementById("staff-tab-punch");
       const historyView = document.getElementById("staff-tab-history");
@@ -3693,7 +3706,9 @@ async function assignClassTeacher(){const cls=document.getElementById('assign-cl
       } else if(tab === 'students') {
         punchView?.classList.add('hidden');historyView?.classList.add('hidden');studentsView?.classList.remove('hidden');
         if(btnPunch)btnPunch.className='flex flex-col items-center text-slate-500';if(btnHistory)btnHistory.className='flex flex-col items-center text-slate-500';if(btnStudents)btnStudents.className='flex flex-col items-center text-ashiana-green font-bold';
-        const date=document.getElementById('teacher-student-date');if(date&&!date.value)date.value=studentDateToday();loadTeacherStudentAssignments();
+        const date=document.getElementById('teacher-student-date');if(date&&!date.value)date.value=studentDateToday();
+        await loadTeacherStudentAssignments();
+        await loadTeacherPortalManager();
       }
       if (window.lucide) lucide.createIcons();
     }
@@ -4507,7 +4522,13 @@ window.addEventListener('load',async function(){
     }
 
     async function viewMyStaffIdCard() {
-      if (!currentStaffId) return;
+      if (!currentStaffId) {
+        currentStaffId = currentAuthUser?.staffRecord?.id || null;
+      }
+      if (!currentStaffId) {
+        showToast("Your staff account is not fully loaded. Please sign out and sign in again.", "error");
+        return;
+      }
 
       const issued = await getMyStaffIdCardIssued();
       if (!issued) {
@@ -4524,6 +4545,13 @@ window.addEventListener('load',async function(){
       const modal = document.getElementById("staff-id-card-preview-modal");
       const preview = document.getElementById("staff-id-card-preview");
       if (!modal || !preview) return;
+
+      // The preview modal is declared inside the Punch tab. Move it to the
+      // document body before opening so it remains visible even when the
+      // teacher is currently on the Students/History tab.
+      if (modal.parentElement !== document.body) {
+        document.body.appendChild(modal);
+      }
 
       const photo = String(staff.avatarUrl || staff.avatar_url || '').trim();
       const logoUrl = new URL('logo 2.png', window.location.href).href;
