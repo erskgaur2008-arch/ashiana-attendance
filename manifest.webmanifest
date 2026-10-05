@@ -2,10 +2,16 @@
   "name": "Ashiana Public School Attendance",
   "short_name": "Ashiana Attendance",
   "start_url": "./",
+  "scope": "./",
   "display": "standalone",
+  "orientation": "portrait",
   "background_color": "#064E3B",
   "theme_color": "#064E3B",
-  "description": "Staff attendance system for Ashiana Public School",
+  "description": "Attendance and school management app for Ashiana Public School",
+  "categories": [
+    "education",
+    "productivity"
+  ],
   "icons": [
     {
       "src": "logo 2.png",
@@ -16,6 +22,23 @@
       "src": "logo 2.png",
       "sizes": "512x512",
       "type": "image/png"
+    }
+  ],
+  "shortcuts": [
+    {
+      "name": "Attendance",
+      "short_name": "Attendance",
+      "url": "./"
+    },
+    {
+      "name": "Student Portal",
+      "short_name": "Students",
+      "url": "./?portal=student"
+    },
+    {
+      "name": "Staff Portal",
+      "short_name": "Staff",
+      "url": "./?portal=staff"
     }
   ]
 }
