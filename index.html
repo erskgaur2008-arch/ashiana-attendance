@@ -311,11 +311,11 @@
         
         <!-- Tab Selector: Teacher vs Admin -->
         <div class="flex bg-emerald-950/70 p-1 rounded-2xl mt-4 border border-emerald-700/50">
-          <button type="button" id="btn-login-tab-teacher" aria-controls="teacher-login-form" aria-pressed="true" class="flex-1 py-2 rounded-xl text-xs font-bold transition-all bg-white text-emerald-950 shadow flex items-center justify-center space-x-1.5">
+          <button type="button" id="btn-login-tab-teacher" onclick="window.switchLoginTab('teacher')" aria-controls="teacher-login-form" aria-pressed="true" class="flex-1 py-2 rounded-xl text-xs font-bold transition-all bg-white text-emerald-950 shadow flex items-center justify-center space-x-1.5">
             <i data-lucide="user-check" class="w-3.5 h-3.5 text-ashiana-green"></i>
             <span>Teacher / Staff</span>
           </button>
-          <button type="button" id="btn-login-tab-admin" aria-controls="admin-login-form" aria-pressed="false" class="flex-1 py-2 rounded-xl text-xs font-bold transition-all text-emerald-200 hover:text-white flex items-center justify-center space-x-1.5">
+          <button type="button" id="btn-login-tab-admin" onclick="window.switchLoginTab('admin')" aria-controls="admin-login-form" aria-pressed="false" class="flex-1 py-2 rounded-xl text-xs font-bold transition-all text-emerald-200 hover:text-white flex items-center justify-center space-x-1.5">
             <i data-lucide="shield-check" class="w-3.5 h-3.5"></i>
             <span>Administrator</span>
           </button>
@@ -2678,8 +2678,6 @@
       formAdmin.classList.toggle("hidden", !isAdmin);
       if (window.lucide) lucide.createIcons();
     };
-    document.getElementById("btn-login-tab-teacher")?.addEventListener("click", () => window.switchLoginTab("teacher"));
-    document.getElementById("btn-login-tab-admin")?.addEventListener("click", () => window.switchLoginTab("admin"));
 
     function togglePinVisibility(id) {
       const input = document.getElementById(id);
@@ -6597,6 +6595,10 @@ window.addEventListener('load',async function(){
     // App Initialization
     async function bootstrapApp() {
       setupAppBackButtonHandling();
+
+      // Bind login controls only after the DOM exists.
+      document.getElementById("btn-login-tab-teacher")?.addEventListener("click", () => window.switchLoginTab("teacher"));
+      document.getElementById("btn-login-tab-admin")?.addEventListener("click", () => window.switchLoginTab("admin"));
 
       // Bind forms explicitly; this avoids dependence on inline onsubmit handlers
       // and works consistently on mobile browsers and hosted CSP environments.
