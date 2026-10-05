@@ -3374,6 +3374,7 @@ async function handleTeacherLogin(event) {
       const studentPortal = document.getElementById("student-portal-view");
       const sessionControls = document.getElementById("authenticated-session-controls");
       const globalHeader = document.getElementById("global-header");
+      const globalStatusBanner = document.getElementById("global-status-banner");
 
       if (!currentAuthUser) {
         authGateway.classList.remove("hidden");
@@ -3381,16 +3382,17 @@ async function handleTeacherLogin(event) {
         adminPortal.classList.add("hidden");
         studentPortal?.classList.add("hidden");
         sessionControls.classList.add("hidden");
-        // Show the public/login header again after logout.
-        globalHeader?.classList.remove("hidden");
+        // Keep the login screen clean: hide the public navigation/status strip.
+        globalHeader?.classList.add("hidden");
+        globalStatusBanner?.classList.add("hidden");
         return;
       }
 
       authGateway.classList.add("hidden");
       sessionControls.classList.remove("hidden");
-      // The dashboard has its own header, so hide the public/global header
-      // after authentication to avoid duplicated navigation and save screen space.
+      // Authenticated portals have their own navigation/header.
       globalHeader?.classList.add("hidden");
+      globalStatusBanner?.classList.add("hidden");
 
       const navAvatar = document.getElementById("nav-user-avatar");
       const navName = document.getElementById("nav-user-name");
