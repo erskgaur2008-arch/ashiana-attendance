@@ -3553,12 +3553,57 @@ async function handleTeacherLogin(event) {
     function studentDateToday(){const d=new Date();return d.getFullYear()+'-'+String(d.getMonth()+1).padStart(2,'0')+'-'+String(d.getDate()).padStart(2,'0');}
     function studentEscape(v){return String(v??'').replace(/[&<>"']/g,ch=>({'&':'&amp;','<':'&lt;','>':'&gt;','"':'&quot;',"'":'&#39;'}[ch]));}
     async function loadTeacherStudentAssignments(){
-      const sel=document.getElementById('teacher-student-class');if(!sel||!supabaseClient||!canAccessStudentAttendance())return;
-      try{const email=String(currentAuthUser?.staffRecord?.email||'').trim().toLowerCase();if(!email)throw Error('Staff email is unavailable.');
-        const {data,error}=await supabaseClient.from('student_class_assignments').select('class_name,section').eq('school_code',APS_STUDENT_SCHOOL).eq('teacher_email',email).eq('active',true).order('class_name').order('section');if(error)throw error;
-        teacherStudentAssignments=data||[];sel.innerHTML='<option value="">Select assigned class</option>'+teacherStudentAssignments.map((a,i)=>'<option value="'+i+'">'+studentEscape(a.class_name)+' - '+studentEscape(a.section)+'</option>').join('');
-        if(teacherStudentAssignments.length===1){sel.value='0';await loadTeacherStudentAttendance();}
-      }catch(e){sel.innerHTML='<option value="">Assignments unavailable</option>';document.getElementById('teacher-student-list').textContent=e.message||'Could not load assignments.';}
+      const sel=document.getElementById('teacher-student-class');
+      const host=document.getElementById('teacher-student-list');
+      if(!sel||!supabaseClient||!canAccessStudentAttendance())return;
+      sel.innerHTML='<option value="">Loading classes…</option>';
+      try{
+        // Use the authenticated Supabase user as the source of truth for the
+        // RLS email match. The locally cached staff record can be stale.
+        const {data:authData,error:authError}=await supabaseClient.auth.getUser();
+        if(authError||!authData?.user)throw Error('Your cloud session has expired. Please sign in again.');
+        const authEmail=String(authData.user.email||'').trim().toLowerCase();
+        const staffEmail=String(currentAuthUser?.staffRecord?.email||'').trim().toLowerCase();
+        const emails=[...new Set([authEmail,staffEmail].filter(Boolean))];
+        if(!emails.length)throw Error('Staff email is unavailable.');
+
+        const query=supabaseClient.from('student_class_assignments')
+          .select('class_name,section')
+          .eq('school_code',APS_STUDENT_SCHOOL)
+          .in('teacher_email',emails)
+          .eq('active',true)
+          .order('class_name')
+          .order('section');
+
+        const {data,error}=await Promise.race([
+          query,
+          new Promise((_,reject)=>setTimeout(()=>reject(Error('Class assignment request timed out. Please retry.')),12000))
+        ]);
+        if(error)throw error;
+
+        teacherStudentAssignments=(data||[]).map(a=>({
+          class_name:String(a.class_name||'').trim(),
+          section:String(a.section||'').trim()
+        })).filter(a=>a.class_name&&a.section);
+
+        if(!teacherStudentAssignments.length){
+          sel.innerHTML='<option value="">No assigned classes found</option>';
+          if(host)host.textContent='No active student classes are assigned to your teacher account.';
+          return;
+        }
+
+        sel.innerHTML='<option value="">Select assigned class</option>'+
+          teacherStudentAssignments.map((a,i)=>'<option value="'+i+'">'+studentEscape(a.class_name)+' - '+studentEscape(a.section)+'</option>').join('');
+
+        if(teacherStudentAssignments.length===1){
+          sel.value='0';
+          await loadTeacherStudentAttendance();
+        }
+      }catch(e){
+        console.error('Teacher class assignment load failed:',e);
+        sel.innerHTML='<option value="">Unable to load classes</option>';
+        if(host)host.textContent=e.message||'Could not load assigned classes.';
+      }
     }
     async function loadTeacherStudentAttendance(){
       const sel=document.getElementById('teacher-student-class'),date=document.getElementById('teacher-student-date'),host=document.getElementById('teacher-student-list');if(!sel||!date||!host||!supabaseClient)return;if(!date.value)date.value=studentDateToday();
