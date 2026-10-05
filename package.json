@@ -1,0 +1,16 @@
+{
+  "name": "ashiana-attendance-mobile",
+  "private": true,
+  "version": "1.0.0",
+  "description": "Android build wrapper for Ashiana Public School Attendance",
+  "scripts": {
+    "build:android": "npx cap sync android && npx cap build android --androidreleasetype APK"
+  },
+  "dependencies": {
+    "@capacitor/core": "^8.0.0",
+    "@capacitor/android": "^8.0.0"
+  },
+  "devDependencies": {
+    "@capacitor/cli": "^8.0.0"
+  }
+}
