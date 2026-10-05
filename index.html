@@ -83,6 +83,18 @@
       }
     }
 
+    /* Staff side navigation drawer */
+    .staff-drawer-backdrop{position:fixed;inset:0;z-index:180;background:rgba(2,44,34,.48);backdrop-filter:blur(2px);opacity:0;pointer-events:none;transition:opacity .2s ease}
+    .staff-drawer-backdrop.open{opacity:1;pointer-events:auto}
+    .staff-side-drawer{position:fixed;top:0;left:0;bottom:0;width:min(82vw,310px);z-index:190;background:#fff;box-shadow:18px 0 45px rgba(15,23,42,.22);transform:translateX(-105%);transition:transform .24s ease;display:flex;flex-direction:column;overflow:hidden}
+    .staff-side-drawer.open{transform:translateX(0)}
+    .staff-drawer-item{display:flex;align-items:center;gap:12px;width:100%;padding:13px 16px;border-radius:13px;color:#475569;font-size:12px;font-weight:700;text-align:left;transition:.15s}
+    .staff-drawer-item:hover{background:#f0fdf4;color:#047857}
+    .staff-drawer-item.active{background:#ecfdf5;color:#047857;box-shadow:inset 3px 0 0 #0a7e46}
+    .staff-drawer-item.danger{color:#b91c1c}.staff-drawer-item.danger:hover{background:#fef2f2;color:#991b1b}
+    .staff-drawer-item svg{width:18px;height:18px;flex:0 0 18px}
+    @media(min-width:641px){.staff-side-drawer{width:330px}.staff-drawer-item{font-size:13px;padding:14px 18px}}
+
     /* Modern Teacher / Staff Dashboard */
     .staff-dashboard-shell{width:100%;max-width:980px;margin:0 auto}
     .staff-dashboard-card{min-height:calc(100vh - 118px);max-height:calc(100vh - 78px);box-shadow:0 24px 60px rgba(15,23,42,.12)}
@@ -473,8 +485,11 @@
       <div class="w-full bg-white staff-dashboard-card border border-slate-200 overflow-hidden flex flex-col">
         
         <!-- Staff Header Bar -->
-        <div class="staff-dashboard-header bg-gradient-to-br from-emerald-950 via-[#064E3B] to-[#087443] text-white p-4 sm:p-5 border-b-2 border-ashiana-red sticky top-0 z-10">
-          <div class="flex items-center justify-between">
+        <div class="staff-dashboard-header bg-gradient-to-br from-emerald-950 via-[#064E3B] to-[#087443] text-white p-3.5 sm:p-5 border-b-2 border-ashiana-red sticky top-0 z-10">
+          <div class="flex items-center justify-between gap-2">
+            <button id="staff-menu-button" type="button" onclick="toggleStaffDrawer(true)" class="w-10 h-10 rounded-xl bg-white/10 hover:bg-white/20 border border-white/15 flex items-center justify-center text-white flex-shrink-0 focus:outline-none focus:ring-2 focus:ring-emerald-300" title="Open menu" aria-label="Open staff menu" aria-expanded="false">
+              <i data-lucide="menu" class="w-5 h-5"></i>
+            </button>
             <div class="flex items-center space-x-3">
               <button id="staff-avatar-circle" type="button" onclick="viewMyStaffIdCard()" class="relative w-11 h-11 rounded-2xl bg-emerald-500/20 border border-emerald-400/40 flex items-center justify-center font-bold text-sm text-emerald-100 shadow-inner overflow-hidden group cursor-pointer focus:outline-none focus:ring-2 focus:ring-emerald-300" title="View My Staff ID Card" aria-label="View My Staff ID Card">
                 AP
@@ -500,6 +515,47 @@
             </div>
           </div>
         </div>
+
+        <!-- Staff Side Drawer -->
+        <div id="staff-drawer-backdrop" class="staff-drawer-backdrop" onclick="toggleStaffDrawer(false)" aria-hidden="true"></div>
+        <aside id="staff-side-drawer" class="staff-side-drawer" aria-label="Staff navigation" aria-hidden="true">
+          <div class="p-4 bg-gradient-to-br from-emerald-950 via-[#064E3B] to-[#087443] text-white border-b-2 border-ashiana-red">
+            <div class="flex items-center justify-between gap-3">
+              <div class="min-w-0">
+                <div class="text-[9px] uppercase tracking-[.18em] text-emerald-200 font-bold">Ashiana Attendance</div>
+                <div class="text-base font-extrabold truncate mt-1">Staff Menu</div>
+                <div id="staff-drawer-role" class="text-[10px] text-emerald-200 mt-0.5 truncate">Faculty</div>
+              </div>
+              <button type="button" onclick="toggleStaffDrawer(false)" class="w-9 h-9 rounded-xl bg-white/10 hover:bg-white/20 flex items-center justify-center" aria-label="Close menu">
+                <i data-lucide="x" class="w-5 h-5"></i>
+              </button>
+            </div>
+          </div>
+          <nav class="flex-1 overflow-y-auto p-3 space-y-1.5">
+            <button id="staff-drawer-punch" type="button" onclick="selectStaffDrawerTab('punch')" class="staff-drawer-item active">
+              <i data-lucide="clock"></i><span>Punch</span>
+            </button>
+            <button id="staff-drawer-students" type="button" onclick="selectStaffDrawerTab('students')" class="staff-drawer-item hidden">
+              <i data-lucide="clipboard-check"></i><span>Students</span>
+            </button>
+            <button id="staff-drawer-history" type="button" onclick="selectStaffDrawerTab('history')" class="staff-drawer-item">
+              <i data-lucide="calendar-days"></i><span>History</span>
+            </button>
+            <button id="staff-drawer-leave" type="button" onclick="selectStaffDrawerLeave()" class="staff-drawer-item">
+              <i data-lucide="file-text"></i><span>Leave</span>
+            </button>
+            <button id="staff-drawer-profile" type="button" onclick="selectStaffDrawerProfile()" class="staff-drawer-item">
+              <i data-lucide="user"></i><span>Profile</span>
+            </button>
+            <div class="my-3 border-t border-slate-200"></div>
+            <button type="button" onclick="selectStaffDrawerSignOut()" class="staff-drawer-item danger">
+              <i data-lucide="log-out"></i><span>Sign Out</span>
+            </button>
+          </nav>
+          <div class="px-4 py-3 border-t border-slate-200 bg-slate-50 text-[9px] text-slate-400 text-center">
+            Tap any option to continue
+          </div>
+        </aside>
 
         <!-- TAB 1: TODAY'S PUNCH DASHBOARD BODY -->
         <div id="staff-tab-punch" class="staff-dashboard-scroll staff-dashboard-content flex-1 overflow-y-auto hide-scrollbar space-y-3">
@@ -728,30 +784,8 @@
     <div class="p-3 border-t bg-slate-50"><button type="button" onclick="closeTeacherAttendanceViewer()" class="w-full py-2.5 bg-slate-800 text-white rounded-xl text-xs font-bold">Close</button></div>
   </div>
 </div>
-        <!-- Mobile Bottom Navigation Bar -->
-        <div class="bg-white border-t border-slate-200 px-3 py-2 flex justify-around items-center text-slate-500 text-xs">
-    <button id="staff-nav-students" onclick="switchStaffTab('students')" class="flex flex-col items-center text-slate-500"><i data-lucide="clipboard-check" class="w-4 h-4"></i><span class="text-[9px]">Students</span></button>
-          <button id="staff-nav-punch" onclick="switchStaffTab('punch')" class="flex flex-col items-center text-ashiana-green font-bold transition-colors">
-            <i data-lucide="clock" class="w-4 h-4"></i>
-            <span class="text-[9px] mt-0.5">Punch</span>
-          </button>
-          <button id="staff-nav-history" onclick="switchStaffTab('history')" class="flex flex-col items-center hover:text-ashiana-green text-slate-500 font-semibold transition-colors">
-            <i data-lucide="calendar-days" class="w-4 h-4"></i>
-            <span class="text-[9px] mt-0.5">History</span>
-          </button>
-          <button onclick="openLeaveApplyModal()" class="flex flex-col items-center hover:text-ashiana-green text-slate-500 font-semibold transition-colors">
-            <i data-lucide="file-text" class="w-4 h-4"></i>
-            <span class="text-[9px] mt-0.5">Leave</span>
-          </button>
-          <button onclick="openStaffProfileModal()" class="flex flex-col items-center hover:text-ashiana-green text-slate-500 font-semibold transition-colors">
-            <i data-lucide="user" class="w-4 h-4"></i>
-            <span class="text-[9px] mt-0.5">Profile</span>
-          </button>
-          <button onclick="handleLogout()" class="flex flex-col items-center hover:text-ashiana-red text-slate-400 transition-colors">
-            <i data-lucide="log-out" class="w-4 h-4"></i>
-            <span class="text-[9px] mt-0.5">Sign Out</span>
-          </button>
-        </div>
+        <!-- Bottom navigation removed: all staff actions are available from the side drawer. -->
+        <div class="h-1 bg-white flex-shrink-0" aria-hidden="true"></div>
 
       </div>
     </div>
@@ -3310,7 +3344,9 @@ async function handleTeacherLogin(event) {
       } else if (portal === 'staff') {
         studentView?.classList.add("hidden");staffView.classList.remove("hidden");
         adminView.classList.add("hidden");
-        refreshStaffUI();
+        currentStaffTab='punch';
+        toggleStaffDrawer(false);
+        switchStaffTab('punch');
       } else {
         studentView?.classList.add("hidden");staffView.classList.add("hidden");
         adminView.classList.remove("hidden");
@@ -3582,8 +3618,10 @@ async function handleTeacherLogin(event) {
     function applyStaffRoleAccess(){
       const role=getAccessRole();
       const studentNav=document.getElementById('staff-nav-students');
+      const drawerStudentNav=document.getElementById('staff-drawer-students');
       const studentHome=document.getElementById('teacher-home-students-section');
       if(studentNav) studentNav.classList.toggle('hidden',role!=='TEACHER');
+      if(drawerStudentNav) drawerStudentNav.classList.toggle('hidden',role!=='TEACHER');
       if(studentHome) studentHome.classList.toggle('hidden',role!=='TEACHER');
       if(role!=='TEACHER' && currentStaffTab==='students') switchStaffTab('punch');
       const roleLabel=document.getElementById('staff-header-role');
@@ -3763,34 +3801,66 @@ async function assignClassTeacher(){const cls=document.getElementById('assign-cl
       modal.classList.add('hidden');modal.classList.remove('flex');
     }
 
+    function toggleStaffDrawer(open){
+      const drawer=document.getElementById('staff-side-drawer');
+      const backdrop=document.getElementById('staff-drawer-backdrop');
+      const menu=document.getElementById('staff-menu-button');
+      if(!drawer||!backdrop)return;
+      drawer.classList.toggle('open',!!open);
+      backdrop.classList.toggle('open',!!open);
+      drawer.setAttribute('aria-hidden',open?'false':'true');
+      if(menu)menu.setAttribute('aria-expanded',open?'true':'false');
+      document.body.classList.toggle('overflow-hidden',!!open);
+      if(open){
+        const role=document.getElementById('staff-drawer-role');
+        if(role&&currentAuthUser?.staffRecord)role.textContent=currentAuthUser.staffRecord.role||'Faculty';
+      }
+      if(window.lucide)lucide.createIcons();
+    }
+    function updateStaffDrawerActive(tab){
+      ['punch','students','history'].forEach(k=>{
+        const b=document.getElementById('staff-drawer-'+k);
+        if(b)b.classList.toggle('active',k===tab);
+      });
+    }
+    function selectStaffDrawerTab(tab){
+      toggleStaffDrawer(false);
+      switchStaffTab(tab);
+    }
+    function selectStaffDrawerLeave(){
+      toggleStaffDrawer(false);
+      openLeaveApplyModal();
+    }
+    function selectStaffDrawerProfile(){
+      toggleStaffDrawer(false);
+      openStaffProfileModal();
+    }
+    function selectStaffDrawerSignOut(){
+      toggleStaffDrawer(false);
+      handleLogout();
+    }
+
     async function switchStaffTab(tab) {
       currentStaffTab = tab;
       const punchView = document.getElementById("staff-tab-punch");
       const historyView = document.getElementById("staff-tab-history");
       const studentsView = document.getElementById("staff-tab-students");
-      const btnStudents = document.getElementById("staff-nav-students");
-      const btnPunch = document.getElementById("staff-nav-punch");
-      const btnHistory = document.getElementById("staff-nav-history");
+      updateStaffDrawerActive(tab);
 
       if (tab === 'punch') {
         if (punchView) punchView.classList.remove("hidden");
         if (historyView) historyView.classList.add("hidden");
         studentsView?.classList.add('hidden');
-        if(btnStudents)btnStudents.className='flex flex-col items-center text-slate-500';
-        if (btnPunch) btnPunch.className = "flex flex-col items-center text-ashiana-green font-bold transition-colors";
-        if (btnHistory) btnHistory.className = "flex flex-col items-center hover:text-ashiana-green text-slate-500 font-semibold transition-colors";
+
         refreshStaffUI();
       } else if (tab === 'history') {
         if (punchView) punchView.classList.add("hidden");
         studentsView?.classList.add('hidden');
-        if(btnStudents)btnStudents.className='flex flex-col items-center text-slate-500';
         if (historyView) historyView.classList.remove("hidden");
-        if (btnHistory) btnHistory.className = "flex flex-col items-center text-ashiana-green font-bold transition-colors";
-        if (btnPunch) btnPunch.className = "flex flex-col items-center hover:text-ashiana-green text-slate-500 font-semibold transition-colors";
         renderStaffHistory();
       } else if(tab === 'students') {
         punchView?.classList.add('hidden');historyView?.classList.add('hidden');studentsView?.classList.remove('hidden');
-        if(btnPunch)btnPunch.className='flex flex-col items-center text-slate-500';if(btnHistory)btnHistory.className='flex flex-col items-center text-slate-500';if(btnStudents)btnStudents.className='flex flex-col items-center text-ashiana-green font-bold';
+
         const date=document.getElementById('teacher-student-date');if(date&&!date.value)date.value=studentDateToday();
         await loadTeacherStudentAssignments();
         await loadTeacherPortalManager();
