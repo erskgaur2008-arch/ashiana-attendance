@@ -44,7 +44,9 @@ jobs:
           cp manifest.webmanifest mobile/www/
           cp sw.js mobile/www/
           cp "logo 2.png" mobile/www/
+          cp -R vendor mobile/www/vendor
           test -f mobile/www/index.html
+          test -s mobile/www/vendor/supabase.js
 
       - name: Install Capacitor
         run: npm install --no-audit --no-fund
