@@ -3172,7 +3172,7 @@ async function studentDashboardSection(type){
     if(s?.enroll_no&&s?.dob&&supabaseClient){
       const dt=String(s.dob).slice(0,10).split("-");
       const dobPassword=dt.length===3?dt[2]+dt[1]+dt[0]:"";
-      if(/^\\d{8}$/.test(dobPassword)){
+      if(/^\d{8}$/.test(dobPassword)){
         const {data}=await supabaseClient.rpc("student_portal_bundle",{p_enroll_no:s.enroll_no,p_dob_password:dobPassword});
         if(data?.success){currentAuthUser.portalData=data;}
       }
@@ -3245,7 +3245,7 @@ async function refreshStudentPortalData(){const s=currentAuthUser?.studentRecord
           try{
             const dt=String(s.dob).slice(0,10).split('-');
             const dobPassword=dt.length===3?dt[2]+dt[1]+dt[0]:'';
-            if(/^\\d{8}$/.test(dobPassword)){
+            if(/^\d{8}$/.test(dobPassword)){
               const {data}=await supabaseClient.functions.invoke('student-photo-url',{body:{enroll_no:String(s.enroll_no),dob_password:dobPassword}});
               photoUrl=data?.success?String(data.photo_url||''):'';
             }
@@ -3939,7 +3939,7 @@ async function saveTeacherStudentAttendance(){
       try{
         const iso=String(s.dob).slice(0,10),dt=iso.split('-');
         const dobPassword=dt.length===3?dt[2]+dt[1]+dt[0]:'';
-        if(!/^\\d{8}$/.test(dobPassword))return '';
+        if(!/^\d{8}$/.test(dobPassword))return '';
         const {data,error}=await supabaseClient.functions.invoke('student-photo-url',{body:{enroll_no:String(s.enroll_no),dob_password:dobPassword}});
         if(error)throw error;
         return data?.success&&data?.photo_url?data.photo_url:'';
