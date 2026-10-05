@@ -441,6 +441,23 @@
         <!-- TAB 1: TODAY'S PUNCH DASHBOARD BODY -->
         <div id="staff-tab-punch" class="staff-dashboard-scroll staff-dashboard-content flex-1 overflow-y-auto hide-scrollbar space-y-3">
           
+          <!-- STUDENTS SECTION: TEACHER HOME ACCESS -->
+          <div id="teacher-home-students-section" class="hidden bg-gradient-to-br from-emerald-50 via-white to-green-50 rounded-2xl p-4 border border-emerald-200 shadow-sm">
+            <div class="flex items-center gap-3">
+              <div class="w-11 h-11 rounded-2xl bg-emerald-900 text-white flex items-center justify-center shadow-sm flex-shrink-0">
+                <i data-lucide="graduation-cap" class="w-5 h-5"></i>
+              </div>
+              <div class="min-w-0 flex-1">
+                <h3 class="text-sm font-extrabold text-slate-800">Students Section</h3>
+                <p class="text-[10px] text-slate-500 mt-0.5">View your assigned students and mark daily student attendance.</p>
+              </div>
+            </div>
+            <button type="button" onclick="switchStaffTab('students')" class="w-full mt-3 py-3 bg-emerald-900 hover:bg-emerald-950 text-white rounded-xl font-bold text-xs flex items-center justify-center gap-2 shadow-sm active:scale-[0.99] transition-all">
+              <i data-lucide="clipboard-check" class="w-4 h-4"></i>
+              <span>Open Students & Mark Attendance</span>
+            </button>
+          </div>
+
           <!-- Shift Overview Card -->
           <div class="bg-white rounded-2xl p-3.5 shadow-sm border border-slate-200/80">
             <div class="flex items-center justify-between border-b border-slate-100 pb-2 mb-2.5">
@@ -3377,7 +3394,9 @@
     function applyStaffRoleAccess(){
       const role=getAccessRole();
       const studentNav=document.getElementById('staff-nav-students');
+      const studentHome=document.getElementById('teacher-home-students-section');
       if(studentNav) studentNav.classList.toggle('hidden',role!=='TEACHER');
+      if(studentHome) studentHome.classList.toggle('hidden',role!=='TEACHER');
       if(role!=='TEACHER' && currentStaffTab==='students') switchStaffTab('punch');
       const roleLabel=document.getElementById('staff-header-role');
       if(roleLabel && currentAuthUser?.staffRecord) roleLabel.innerText = (currentAuthUser.staffRecord.role||role)+' • '+currentAuthUser.staffRecord.empId;
