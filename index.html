@@ -3906,13 +3906,23 @@ async function saveTeacherStudentAttendance(){
     function studentIdInitials(s){return String(s?.student_name||'ST').split(/\s+/).map(x=>x[0]).join('').slice(0,2).toUpperCase();}
     function studentDobText(v){if(!v)return '—';const d=new Date(v+'T00:00:00');return isNaN(d)?v:d.toLocaleDateString('en-IN',{day:'2-digit',month:'short',year:'numeric'});}
     async function getStudentPhotoUrl(s){
-      if(!s?.enroll_no||!s?.dob||!supabaseClient)return '';
+      if(!s?.enroll_no||!supabaseClient)return '';
+      // Admins already have Storage access, so use a signed URL directly.
+      // This avoids routing the admin preview through the student credential function.
+      if(currentAuthUser?.type==='ADMIN' && s?.photo_path){
+        try{
+          const {data,error}=await supabaseClient.storage.from('student-photos').createSignedUrl(s.photo_path,3600);
+          if(!error&&data?.signedUrl)return data.signedUrl;
+        }catch(e){console.warn('Admin student photo URL failed:',e);}
+      }
+      if(!s?.dob)return '';
       try{
-        const dt=String(s.dob).slice(0,10).split('-');
+        const iso=String(s.dob).slice(0,10),dt=iso.split('-');
         const dobPassword=dt.length===3?dt[2]+dt[1]+dt[0]:'';
         if(!/^\\d{8}$/.test(dobPassword))return '';
-        const {data,error}=await supabaseClient.functions.invoke('student-photo-url',{body:{enroll_no:s.enroll_no,dob_password:dobPassword}});
-        return error?'':(data?.photo_url||'');
+        const {data,error}=await supabaseClient.functions.invoke('student-photo-url',{body:{enroll_no:String(s.enroll_no),dob_password:dobPassword}});
+        if(error)throw error;
+        return data?.success&&data?.photo_url?data.photo_url:'';
       }catch(e){console.warn('Student photo load failed:',e);return '';}
     }
     function renderStudentCardQr(container,student){
