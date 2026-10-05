@@ -3586,7 +3586,8 @@
     }
 
     // Refresh UI Components
-    function refreshStaffUI() {\n      applyStaffRoleAccess();
+    function refreshStaffUI() {
+      applyStaffRoleAccess();
       if (!currentStaffId) return;
       const staff = staffDatabase.find(s => s.id === currentStaffId) || staffDatabase[0];
       const stats = calculateAttendance(staff.id);
@@ -3993,49 +3994,7 @@ window.addEventListener('load',async function(){
   await Promise.all(imgs.map(img=>img.complete?Promise.resolve():new Promise(res=>{img.onload=res;img.onerror=res;})));
   setTimeout(()=>window.print(),900);
 });
-<\/script>
-  <!-- Emergency login UI fallback: deliberately isolated from the main application script. -->
-  <script>
-    (function () {
-      function switchLoginTabFallback(tab) {
-        var admin = tab === "admin";
-        var teacherBtn = document.getElementById("btn-login-tab-teacher");
-        var adminBtn = document.getElementById("btn-login-tab-admin");
-        var teacherForm = document.getElementById("teacher-login-form");
-        var adminForm = document.getElementById("admin-login-form");
-        if (!teacherBtn || !adminBtn || !teacherForm || !adminForm) return;
-        teacherForm.classList.toggle("hidden", admin);
-        adminForm.classList.toggle("hidden", !admin);
-        teacherBtn.classList.toggle("bg-white", !admin);
-        teacherBtn.classList.toggle("text-emerald-950", !admin);
-        teacherBtn.classList.toggle("shadow", !admin);
-        adminBtn.classList.toggle("bg-white", admin);
-        adminBtn.classList.toggle("text-emerald-950", admin);
-        adminBtn.classList.toggle("shadow", admin);
-        teacherBtn.setAttribute("aria-pressed", String(!admin));
-        adminBtn.setAttribute("aria-pressed", String(admin));
-      }
-      window.switchLoginTab = window.switchLoginTab || switchLoginTabFallback;
-      function bind() {
-        var teacherBtn = document.getElementById("btn-login-tab-teacher");
-        var adminBtn = document.getElementById("btn-login-tab-admin");
-        if (teacherBtn) {
-          teacherBtn.onclick = function () { switchLoginTabFallback("teacher"); };
-        }
-        if (adminBtn) {
-          adminBtn.onclick = function () { switchLoginTabFallback("admin"); };
-        }
-        switchLoginTabFallback("teacher");
-      }
-      if (document.readyState === "loading") {
-        document.addEventListener("DOMContentLoaded", bind, { once: true });
-      } else {
-        bind();
-      }
-    })();
-  </script>
-
-</body></html>`);
+<\/script></body></html>`);
       win.document.close();
     }
 
