@@ -343,6 +343,7 @@
             <i data-lucide="shield-check" class="w-3.5 h-3.5"></i>
             <span>Administrator</span>
           </button>
+          <button type="button" id="btn-login-tab-student" onclick="window.switchLoginTab('student')" aria-controls="student-login-form" aria-pressed="false" class="flex-1 py-2 rounded-xl text-xs font-bold transition-all text-emerald-200 hover:text-white flex items-center justify-center space-x-1.5"><i data-lucide="graduation-cap" class="w-3.5 h-3.5"></i><span>Student</span></button>
         </div>
       </div>
 
@@ -421,10 +422,30 @@
             <span>Forgot Administrator Password?</span>
           </button>
         </form>
+        <form id="student-login-form" class="space-y-3.5 hidden" onsubmit="handleStudentLogin(event)">
+          <div class="p-2.5 bg-emerald-50 border border-emerald-200 rounded-xl flex items-center space-x-2 text-xs text-emerald-950"><i data-lucide="graduation-cap" class="w-4 h-4 text-ashiana-green flex-shrink-0"></i><span>Student portal login. Use your Admission No. and Date of Birth.</span></div>
+          <div><label class="block text-xs font-bold text-slate-700 mb-1">Admission No.</label><input type="text" id="student-login-admission" required autocomplete="username" placeholder="Enter Admission No." class="w-full text-xs px-3.5 py-2.5 sm:py-3 bg-slate-50 border border-slate-200 rounded-xl focus:ring-2 focus:ring-ashiana-green focus:outline-none focus:bg-white font-medium uppercase"></div>
+          <div><label class="block text-xs font-bold text-slate-700 mb-1">Password (DOB)</label><input type="password" id="student-login-dob" required inputmode="numeric" maxlength="8" pattern="[0-9]{8}" autocomplete="current-password" placeholder="DDMMYYYY" class="w-full text-xs px-3.5 py-2.5 sm:py-3 bg-slate-50 border border-slate-200 rounded-xl focus:ring-2 focus:ring-ashiana-green focus:outline-none bg-white font-mono tracking-[0.18em] text-base font-bold"><p class="text-[10px] text-slate-500 mt-1">DOB password format: <b>DDMMYYYY</b></p></div>
+          <button type="submit" id="btn-student-login" class="w-full py-3 bg-emerald-950 hover:bg-black text-white font-bold rounded-xl text-xs flex items-center justify-center space-x-2 shadow-lg"><i data-lucide="log-in" class="w-4 h-4"></i><span>Login to Student Portal</span></button>
+        </form>
       </div>
 
       <div class="bg-slate-50 p-3 text-center border-t border-slate-100 text-[10px] text-slate-500">
         Ashiana Public School • Sector 46-A, Chandigarh
+      </div>
+    </div>
+
+    <!-- STUDENT PORTAL -->
+    <div id="student-portal-view" class="hidden flex-col w-full max-w-2xl space-y-4 student-dashboard-shell">
+      <div class="w-full bg-white rounded-3xl border border-slate-200 shadow-xl overflow-hidden">
+        <div class="bg-gradient-to-br from-emerald-950 via-[#064E3B] to-[#087443] text-white p-5 border-b-2 border-ashiana-red">
+          <div class="flex items-center justify-between gap-3"><div class="flex items-center gap-3"><div id="student-portal-avatar" class="w-14 h-14 rounded-2xl bg-white/15 border border-white/20 flex items-center justify-center font-black text-lg overflow-hidden">ST</div><div><p class="text-[10px] uppercase tracking-widest text-emerald-200">Student Portal</p><h2 id="student-portal-name" class="font-extrabold text-lg leading-tight">Student</h2><p id="student-portal-class" class="text-xs text-emerald-100 mt-0.5">Class —</p></div></div><button onclick="handleLogout()" class="px-3 py-2 bg-white/10 hover:bg-white/20 rounded-xl text-xs font-bold flex items-center gap-1.5"><i data-lucide="log-out" class="w-4 h-4"></i>Sign Out</button></div>
+        </div>
+        <div class="p-4 sm:p-5 space-y-4">
+          <div class="grid grid-cols-2 sm:grid-cols-4 gap-2"><div class="p-3 bg-slate-50 rounded-2xl border"><p class="text-[10px] text-slate-500">Admission No.</p><b id="student-portal-admission" class="text-xs">—</b></div><div class="p-3 bg-slate-50 rounded-2xl border"><p class="text-[10px] text-slate-500">Roll No.</p><b id="student-portal-roll" class="text-xs">—</b></div><div class="p-3 bg-slate-50 rounded-2xl border"><p class="text-[10px] text-slate-500">Section</p><b id="student-portal-section" class="text-xs">—</b></div><div class="p-3 bg-slate-50 rounded-2xl border"><p class="text-[10px] text-slate-500">Category</p><b id="student-portal-category" class="text-xs">—</b></div></div>
+          <div class="border rounded-2xl p-4"><h3 class="font-bold text-sm mb-3">Student Details</h3><div class="grid grid-cols-1 sm:grid-cols-2 gap-2 text-xs"><div><span class="text-slate-500">Date of Birth</span><p id="student-portal-dob" class="font-semibold">—</p></div><div><span class="text-slate-500">Father Name</span><p id="student-portal-father" class="font-semibold">—</p></div><div><span class="text-slate-500">Mother Name</span><p id="student-portal-mother" class="font-semibold">—</p></div><div><span class="text-slate-500">Phone</span><p id="student-portal-phone" class="font-semibold">—</p></div><div class="sm:col-span-2"><span class="text-slate-500">Address</span><p id="student-portal-address" class="font-semibold">—</p></div></div></div>
+          <button onclick="createStudentPortalIdCard()" class="w-full py-3 bg-emerald-900 text-white rounded-xl text-xs font-bold flex items-center justify-center gap-2"><i data-lucide="contact" class="w-4 h-4"></i>View Student ID Card</button>
+        </div>
       </div>
     </div>
 
@@ -2796,25 +2817,12 @@
     // Explicitly expose the login switch and bind click listeners so the selector
     // continues to work when mobile browsers or hosting CSP block inline handlers.
     window.switchLoginTab = function(tab) {
-      const isAdmin = tab === 'admin';
-      const btnTeacher = document.getElementById("btn-login-tab-teacher");
-      const btnAdmin = document.getElementById("btn-login-tab-admin");
-      const formTeacher = document.getElementById("teacher-login-form");
-      const formAdmin = document.getElementById("admin-login-form");
-      if (!btnTeacher || !btnAdmin || !formTeacher || !formAdmin) return;
-
-      btnTeacher.className = isAdmin
-        ? "flex-1 py-2 rounded-xl text-xs font-bold transition-all text-emerald-200 hover:text-white flex items-center justify-center space-x-1.5"
-        : "flex-1 py-2 rounded-xl text-xs font-bold transition-all bg-white text-emerald-950 shadow flex items-center justify-center space-x-1.5";
-      btnAdmin.className = isAdmin
-        ? "flex-1 py-2 rounded-xl text-xs font-bold transition-all bg-white text-emerald-950 shadow flex items-center justify-center space-x-1.5"
-        : "flex-1 py-2 rounded-xl text-xs font-bold transition-all text-emerald-200 hover:text-white flex items-center justify-center space-x-1.5";
-      btnTeacher.setAttribute("aria-pressed", String(!isAdmin));
-      btnAdmin.setAttribute("aria-pressed", String(isAdmin));
-      formTeacher.classList.toggle("hidden", isAdmin);
-      formAdmin.classList.toggle("hidden", !isAdmin);
-      if (window.lucide) lucide.createIcons();
-    };
+      const forms={teacher:document.getElementById("teacher-login-form"),admin:document.getElementById("admin-login-form"),student:document.getElementById("student-login-form")};
+      const buttons={teacher:document.getElementById("btn-login-tab-teacher"),admin:document.getElementById("btn-login-tab-admin"),student:document.getElementById("btn-login-tab-student")};
+      Object.entries(forms).forEach(([k,el])=>{if(el)el.classList.toggle("hidden",k!==tab);});
+      Object.entries(buttons).forEach(([k,el])=>{if(!el)return;el.setAttribute("aria-pressed",String(k===tab));el.className="flex-1 py-2 rounded-xl text-xs font-bold transition-all "+(k===tab?"bg-white text-emerald-950 shadow":"text-emerald-200 hover:text-white")+" flex items-center justify-center space-x-1.5";});
+      if(window.lucide)lucide.createIcons();
+    };;
 
     function togglePinVisibility(id) {
       const input = document.getElementById(id);
@@ -2957,7 +2965,20 @@
       }
     }
 
-    async function handleTeacherLogin(event) {
+    async function handleStudentLogin(event){
+      event.preventDefault();
+      const admission=(document.getElementById("student-login-admission")?.value||"").trim().toUpperCase();
+      const dob=(document.getElementById("student-login-dob")?.value||"").replace(/\D/g,"");
+      if(!admission||!/^[0-9]{8}$/.test(dob)){showToast("Enter Admission No. and DOB password in DDMMYYYY format.","error");return;}
+      if(!supabaseClient){showToast("Cloud authentication is unavailable. Please try again.","error");return;}
+      const btn=document.getElementById("btn-student-login");if(btn){btn.disabled=true;btn.textContent="Verifying…";}
+      try{const {data,error}=await supabaseClient.rpc("student_login",{p_school_code:APS_STUDENT_SCHOOL,p_enroll_no:admission,p_dob_password:dob});if(error)throw error;if(!data?.success||!data?.student)throw new Error("INVALID_STUDENT_LOGIN");currentAuthUser={type:"STUDENT",studentRecord:data.student};currentStaffId=null;sessionStorage.setItem(STORAGE_KEY_CURRENT_USER,JSON.stringify(currentAuthUser));applyAuthenticatedUI();showToast("Welcome, "+data.student.student_name+"!","success");}
+      catch(err){showToast(String(err?.message||err).includes("INVALID_STUDENT_LOGIN")?"Incorrect Admission No. or DOB password.":"Student login failed. Please try again.","error");}
+      finally{if(btn){btn.disabled=false;btn.textContent="Login to Student Portal";}}
+    }
+    function populateStudentPortal(s){if(!s)return;const set=(id,v)=>{const e=document.getElementById(id);if(e)e.textContent=v||"—";};set("student-portal-name",s.student_name);set("student-portal-class","Class "+(s.class_name||"—")+" • Section "+(s.section||"—"));set("student-portal-admission",s.enroll_no);set("student-portal-roll",s.roll_no);set("student-portal-section",s.section);set("student-portal-category",s.category);set("student-portal-dob",s.dob?new Date(s.dob+"T00:00:00").toLocaleDateString("en-IN",{day:"2-digit",month:"short",year:"numeric"}):"—");set("student-portal-father",s.father_name);set("student-portal-mother",s.mother_name);set("student-portal-phone",s.phone_number);set("student-portal-address",s.address);const av=document.getElementById("student-portal-avatar");if(av){av.textContent=(s.student_name||"ST").split(/\s+/).map(x=>x[0]).join("").slice(0,2).toUpperCase();if(s.photo_path&&supabaseClient)supabaseClient.storage.from("student-photos").createSignedUrl(s.photo_path,3600).then(({data,error})=>{if(!error&&data?.signedUrl)av.innerHTML='<img src="'+studentEscape(data.signedUrl)+'" class="w-full h-full object-cover" alt="Student photo">';});}}
+    async function createStudentPortalIdCard(){const s=currentAuthUser?.studentRecord;if(!s)return;currentStudentIdCardId=s.id;const modal=document.getElementById("student-id-card-preview-modal"),preview=document.getElementById("student-id-card-preview");if(!modal||!preview)return;preview.innerHTML='<div class="w-[54mm] h-[85.6mm] flex items-center justify-center bg-white text-slate-500 text-xs">Preparing ID card…</div>';modal.classList.remove("hidden");modal.classList.add("flex");document.body.classList.add("overflow-hidden");preview.innerHTML=makeStudentIdCardHtml(s,await getStudentPhotoUrl(s));renderStudentCardQr(preview.querySelector("[data-student-qr]"),s);}
+async function handleTeacherLogin(event) {
       event.preventDefault();
       const idVal = normalizeLoginId(document.getElementById("teacher-login-id")?.value);
       const pinVal = (document.getElementById("teacher-login-pin")?.value || "").trim();
@@ -3128,6 +3149,7 @@
       const authGateway = document.getElementById("auth-gateway-view");
       const staffPortal = document.getElementById("staff-portal-view");
       const adminPortal = document.getElementById("admin-portal-view");
+      const studentPortal = document.getElementById("student-portal-view");
       const sessionControls = document.getElementById("authenticated-session-controls");
       const globalHeader = document.getElementById("global-header");
 
@@ -3135,6 +3157,7 @@
         authGateway.classList.remove("hidden");
         staffPortal.classList.add("hidden");
         adminPortal.classList.add("hidden");
+        studentPortal?.classList.add("hidden");
         sessionControls.classList.add("hidden");
         // Show the public/login header again after logout.
         globalHeader?.classList.remove("hidden");
@@ -3160,6 +3183,14 @@
         updateAdminDashboardDate();
         loadAdminStaffDirectoryFromSupabase(false);
         if (window.lucide) lucide.createIcons();
+      } else if (currentAuthUser.type === 'STUDENT') {
+        navAvatar.innerText="ST";
+        navAvatar.className="w-5 h-5 sm:w-6 sm:h-6 rounded-full bg-emerald-600 text-white font-bold flex items-center justify-center text-[10px] overflow-hidden";
+        navName.innerText=currentAuthUser.studentRecord.student_name;
+        navRole.innerText="Student";
+        switchPortal("student");
+        populateStudentPortal(currentAuthUser.studentRecord);
+        return;
       } else {
         const s = currentAuthUser.staffRecord;
         navAvatar.className = "w-5 h-5 sm:w-6 sm:h-6 rounded-full bg-ashiana-green text-white font-bold flex items-center justify-center text-[10px] overflow-hidden";
@@ -3182,13 +3213,16 @@
       currentPortal = portal;
       const staffView = document.getElementById("staff-portal-view");
       const adminView = document.getElementById("admin-portal-view");
+      const studentView = document.getElementById("student-portal-view");
 
-      if (portal === 'staff') {
-        staffView.classList.remove("hidden");
+      if (portal === 'student') {
+        staffView.classList.add("hidden");adminView.classList.add("hidden");studentView?.classList.remove("hidden");populateStudentPortal(currentAuthUser?.studentRecord);if(window.lucide)lucide.createIcons();return;
+      } else if (portal === 'staff') {
+        studentView?.classList.add("hidden");staffView.classList.remove("hidden");
         adminView.classList.add("hidden");
         refreshStaffUI();
       } else {
-        staffView.classList.add("hidden");
+        studentView?.classList.add("hidden");staffView.classList.add("hidden");
         adminView.classList.remove("hidden");
         renderLiveAttendanceTable();
         renderStaffDirectoryTable();
@@ -3512,12 +3546,13 @@
     function studentIdInitials(s){return String(s?.student_name||'ST').split(/\s+/).map(x=>x[0]).join('').slice(0,2).toUpperCase();}
     function studentDobText(v){if(!v)return '—';const d=new Date(v+'T00:00:00');return isNaN(d)?v:d.toLocaleDateString('en-IN',{day:'2-digit',month:'short',year:'numeric'});}
     async function getStudentPhotoUrl(s){if(!s?.photo_path||!supabaseClient)return '';try{const {data,error}=await supabaseClient.storage.from('student-photos').createSignedUrl(s.photo_path,3600);return error?'':(data?.signedUrl||'');}catch(e){return '';}}
-    function makeStudentIdCardHtml(s,photoUrl=''){const photo=photoUrl?'<img src="'+studentEscape(photoUrl)+'" alt="Student Photo">':'<div class="sid-photo-fallback">'+studentEscape(studentIdInitials(s))+'</div>';const val=(x)=>studentEscape(x||'—');return '<div class="student-id-preview-card"><div class="sid-top"><img class="sid-logo" src="'+studentEscape(new URL('logo 2.png',window.location.href).href)+'" alt="Ashiana Public School"><div class="sid-school">ASHIANA PUBLIC SCHOOL</div><div class="sid-sub">SECTOR 46-A, CHANDIGARH • STUDENT ID CARD</div><div class="sid-line"></div></div><div class="sid-photo-wrap">'+photo+'</div><div class="sid-name-band"><div class="sid-name">'+val(s.student_name)+'</div><div class="sid-class">Class '+val(s.class_name)+' • Section '+val(s.section)+'</div></div><div class="sid-details"><div class="sid-row"><span>Enroll No.</span><b>'+val(s.enroll_no)+'</b></div><div class="sid-row"><span>Roll No.</span><b>'+val(s.roll_no)+'</b></div><div class="sid-row"><span>DOB</span><b>'+studentDobText(s.dob)+'</b></div><div class="sid-row"><span>Father</span><b>'+val(s.father_name)+'</b></div><div class="sid-row"><span>Mother</span><b>'+val(s.mother_name)+'</b></div><div class="sid-row"><span>Phone</span><b>'+val(s.phone_number)+'</b></div><div class="sid-row address-row"><span>Address</span><b>'+val(s.address)+'</b></div></div><div class="sid-footer">If found, please return to Ashiana Public School, Sector 46-A, Chandigarh.</div></div>';}
+    function renderStudentCardQr(container,student){if(!container||typeof QRCode==="undefined")return;container.innerHTML="";new QRCode(container,{text:"ASHIANA|STUDENT|"+String(student.enroll_no||"")+"|"+String(student.student_name||""),width:52,height:52,colorDark:"#064e3b",colorLight:"#ffffff",correctLevel:QRCode.CorrectLevel.M});}
+    function makeStudentIdCardHtml(s,photoUrl=''){const photo=photoUrl?'<img src="'+studentEscape(photoUrl)+'" alt="Student Photo">':'<div class="sid-photo-fallback">'+studentEscape(studentIdInitials(s))+'</div>';const val=(x)=>studentEscape(x||'—');return '<div class="student-id-preview-card"><div class="sid-top"><img class="sid-logo" src="'+studentEscape(new URL('logo 2.png',window.location.href).href)+'" alt="Ashiana Public School"><div class="sid-school">ASHIANA PUBLIC SCHOOL</div><div class="sid-sub">SECTOR 46-A, CHANDIGARH • STUDENT ID CARD</div><div class="sid-line"></div></div><div class="sid-photo-wrap">'+photo+'</div><div class="sid-name-band"><div class="sid-name">'+val(s.student_name)+'</div><div class="sid-class">Class '+val(s.class_name)+' • Section '+val(s.section)+'</div></div><div class="sid-details"><div class="sid-row"><span>Enroll No.</span><b>'+val(s.enroll_no)+'</b></div><div class="sid-row"><span>Roll No.</span><b>'+val(s.roll_no)+'</b></div><div class="sid-row"><span>DOB</span><b>'+studentDobText(s.dob)+'</b></div><div class="sid-row"><span>Father</span><b>'+val(s.father_name)+'</b></div><div class="sid-row"><span>Mother</span><b>'+val(s.mother_name)+'</b></div><div class="sid-row"><span>Phone</span><b>'+val(s.phone_number)+'</b></div><div class="sid-row address-row"><span>Address</span><b>'+val(s.address)+'</b></div></div><div data-student-qr class="sid-qr-wrap" style="width:15mm;height:15mm;margin:0 auto .5mm;display:flex;align-items:center;justify-content:center"></div><div class="sid-footer">Scan to verify student identity • If found, please return to Ashiana Public School, Sector 46-A, Chandigarh.</div></div>';}
     let currentStudentIdCardId=null;
-    async function createStudentIdCardById(id){const s=adminStudentRows.find(x=>x.id===id);if(!s)return showToast('Student record not found.','error');currentStudentIdCardId=id;const modal=document.getElementById('student-id-card-preview-modal'),preview=document.getElementById('student-id-card-preview');if(!modal||!preview)return;preview.innerHTML='<div class="w-[54mm] h-[85.6mm] flex items-center justify-center bg-white text-slate-500 text-xs">Preparing ID card…</div>';modal.classList.remove('hidden');modal.classList.add('flex');document.body.classList.add('overflow-hidden');const photo=await getStudentPhotoUrl(s);preview.innerHTML=makeStudentIdCardHtml(s,photo);}
+    async function createStudentIdCardById(id){const s=adminStudentRows.find(x=>x.id===id);if(!s)return showToast('Student record not found.','error');currentStudentIdCardId=id;const modal=document.getElementById('student-id-card-preview-modal'),preview=document.getElementById('student-id-card-preview');if(!modal||!preview)return;preview.innerHTML='<div class="w-[54mm] h-[85.6mm] flex items-center justify-center bg-white text-slate-500 text-xs">Preparing ID card…</div>';modal.classList.remove('hidden');modal.classList.add('flex');document.body.classList.add('overflow-hidden');const photo=await getStudentPhotoUrl(s);preview.innerHTML=makeStudentIdCardHtml(s,photo);renderStudentCardQr(preview.querySelector("[data-student-qr]"),s);}
     function closeStudentIdCardPreview(event){if(event&&event.target&&event.target.id!=='student-id-card-preview-modal')return;const modal=document.getElementById('student-id-card-preview-modal');if(modal){modal.classList.add('hidden');modal.classList.remove('flex');}document.body.classList.remove('overflow-hidden');currentStudentIdCardId=null;}
     async function printCurrentStudentIdCard(){if(!currentStudentIdCardId)return;const s=adminStudentRows.find(x=>x.id===currentStudentIdCardId);if(!s)return;await printStudentIdCards([s]);}
-    async function printStudentIdCards(students){if(!students.length)return;const printWin=window.open('','_blank','width=900,height=900');if(!printWin){showToast('Please allow pop-ups to print student ID cards.','error');return;}printWin.document.open();printWin.document.write('<html><head><title>Ashiana Student ID Cards</title><style>@page{size:A4 portrait;margin:0}*{box-sizing:border-box}html,body{margin:0;padding:0;background:#fff}body{font-family:Arial,Helvetica,sans-serif}.student-id-print-page{width:210mm;height:297mm;padding:12mm 18mm;display:grid;grid-template-columns:repeat(3,54mm);grid-auto-rows:85.6mm;column-gap:6mm;row-gap:5mm;align-content:start;page-break-after:always;break-after:page}.student-id-print-page:last-child{page-break-after:auto;break-after:auto}.student-id-preview-card{width:54mm;height:85.6mm;overflow:hidden;display:flex;flex-direction:column;background:#fff;border:.3mm solid #9ca3af;border-radius:2mm;color:#111827}.student-id-preview-card .sid-top{height:18mm;flex:0 0 18mm;padding:1.5mm 3mm 1mm;color:#fff;background:linear-gradient(145deg,#063f32,#075b46 62%,#0a7655);text-align:center}.student-id-preview-card .sid-logo{width:6mm;height:6mm;object-fit:contain;background:#fff;border-radius:50%;padding:.3mm;display:block;margin:0 auto .35mm}.student-id-preview-card .sid-school{font-size:2.65mm;line-height:1.05;font-weight:900;white-space:nowrap}.student-id-preview-card .sid-sub{font-size:1.45mm;line-height:1.05;margin-top:.35mm;font-weight:800;white-space:nowrap}.student-id-preview-card .sid-line{height:.25mm;background:#ef3340;margin:.45mm 8mm 0}.student-id-preview-card .sid-photo-wrap{height:25mm;flex:0 0 25mm;width:20mm;margin:-.5mm auto 0;background:#fff;border:.55mm solid #fff;box-shadow:0 1mm 2.5mm rgba(0,0,0,.22);position:relative;z-index:2}.student-id-preview-card .sid-photo-wrap img,.student-id-preview-card .sid-photo-fallback{width:100%;height:100%;object-fit:cover;display:block;background:#e5e7eb}.student-id-preview-card .sid-photo-fallback{display:flex;align-items:center;justify-content:center;color:#08693a;font-size:6mm;font-weight:900}.student-id-preview-card .sid-name-band{height:8mm;min-height:8mm;flex:0 0 8mm;background:#064e3b;color:#fff;padding:1mm 2mm .7mm;text-align:center}.student-id-preview-card .sid-name{font-size:2.7mm;line-height:1.05;font-weight:900;text-transform:uppercase;white-space:nowrap;overflow:hidden;text-overflow:ellipsis}.student-id-preview-card .sid-class{font-size:1.9mm;line-height:1.05;margin-top:.45mm;font-weight:700;white-space:nowrap}.student-id-preview-card .sid-details{height:31mm;flex:0 0 31mm;padding:1.1mm 3mm .3mm;background:#fff}.student-id-preview-card .sid-row{display:flex;align-items:flex-start;min-height:3.1mm;font-size:1.7mm;line-height:1.15}.student-id-preview-card .sid-row span{flex:0 0 15mm;color:#64748b;font-weight:700}.student-id-preview-card .sid-row b{flex:1;min-width:0;overflow:hidden;white-space:nowrap;text-overflow:ellipsis}.student-id-preview-card .sid-row.address-row{min-height:6mm}.student-id-preview-card .sid-row.address-row b{white-space:normal;display:-webkit-box;-webkit-line-clamp:2;-webkit-box-orient:vertical}.student-id-preview-card .sid-footer{flex:1 1 auto;text-align:center;font-size:1.25mm;line-height:1.2;color:#94a3b8;padding:.3mm 2mm 0}.student-id-preview-card img{display:block}</style></head><body><div id="pages"></div></body></html>');printWin.document.close();const paths=students.filter(s=>s.photo_path).map(s=>s.photo_path);let photoMap={};if(paths.length){for(let i=0;i<paths.length;i+=500){const chunk=paths.slice(i,i+500),{data,error}=await supabaseClient.storage.from('student-photos').createSignedUrls(chunk,3600);if(!error)(data||[]).forEach(x=>{if(x.path&&x.signedUrl)photoMap[x.path]=x.signedUrl;});}}const pages=[];for(let i=0;i<students.length;i+=9)pages.push(students.slice(i,i+9));const pagesHtml=pages.map(group=>'<div class="student-id-print-page">'+group.map(s=>makeStudentIdCardHtml(s,photoMap[s.photo_path]||'')).join('')+'</div>').join('');printWin.document.getElementById('pages').innerHTML=pagesHtml;try{await supabaseClient.from('student_roster').update({id_card_generated_at:new Date().toISOString()}).in('id',students.map(s=>s.id)).eq('school_code',APS_STUDENT_SCHOOL);}catch(e){console.warn('Could not record ID card generation',e);}setTimeout(()=>{try{printWin.focus();printWin.print();}catch(e){}},1200);}
+    async function printStudentIdCards(students){if(!students.length)return;const printWin=window.open('','_blank','width=900,height=900');if(!printWin){showToast('Please allow pop-ups to print student ID cards.','error');return;}printWin.document.open();printWin.document.write('<html><head><title>Ashiana Student ID Cards</title><script src="https://cdnjs.cloudflare.com/ajax/libs/qrcodejs/1.0.0/qrcode.min.js"><\/script><style>@page{size:A4 portrait;margin:0}*{box-sizing:border-box}html,body{margin:0;padding:0;background:#fff}body{font-family:Arial,Helvetica,sans-serif}.student-id-print-page{width:210mm;height:297mm;padding:12mm 18mm;display:grid;grid-template-columns:repeat(3,54mm);grid-auto-rows:85.6mm;column-gap:6mm;row-gap:5mm;align-content:start;page-break-after:always;break-after:page}.student-id-print-page:last-child{page-break-after:auto;break-after:auto}.student-id-preview-card{width:54mm;height:85.6mm;overflow:hidden;display:flex;flex-direction:column;background:#fff;border:.3mm solid #9ca3af;border-radius:2mm;color:#111827}.student-id-preview-card .sid-top{height:18mm;flex:0 0 18mm;padding:1.5mm 3mm 1mm;color:#fff;background:linear-gradient(145deg,#063f32,#075b46 62%,#0a7655);text-align:center}.student-id-preview-card .sid-logo{width:6mm;height:6mm;object-fit:contain;background:#fff;border-radius:50%;padding:.3mm;display:block;margin:0 auto .35mm}.student-id-preview-card .sid-school{font-size:2.65mm;line-height:1.05;font-weight:900;white-space:nowrap}.student-id-preview-card .sid-sub{font-size:1.45mm;line-height:1.05;margin-top:.35mm;font-weight:800;white-space:nowrap}.student-id-preview-card .sid-line{height:.25mm;background:#ef3340;margin:.45mm 8mm 0}.student-id-preview-card .sid-photo-wrap{height:25mm;flex:0 0 25mm;width:20mm;margin:-.5mm auto 0;background:#fff;border:.55mm solid #fff;box-shadow:0 1mm 2.5mm rgba(0,0,0,.22);position:relative;z-index:2}.student-id-preview-card .sid-photo-wrap img,.student-id-preview-card .sid-photo-fallback{width:100%;height:100%;object-fit:cover;display:block;background:#e5e7eb}.student-id-preview-card .sid-photo-fallback{display:flex;align-items:center;justify-content:center;color:#08693a;font-size:6mm;font-weight:900}.student-id-preview-card .sid-name-band{height:8mm;min-height:8mm;flex:0 0 8mm;background:#064e3b;color:#fff;padding:1mm 2mm .7mm;text-align:center}.student-id-preview-card .sid-name{font-size:2.7mm;line-height:1.05;font-weight:900;text-transform:uppercase;white-space:nowrap;overflow:hidden;text-overflow:ellipsis}.student-id-preview-card .sid-class{font-size:1.9mm;line-height:1.05;margin-top:.45mm;font-weight:700;white-space:nowrap}.student-id-preview-card .sid-details{height:31mm;flex:0 0 31mm;padding:1.1mm 3mm .3mm;background:#fff}.student-id-preview-card .sid-row{display:flex;align-items:flex-start;min-height:3.1mm;font-size:1.7mm;line-height:1.15}.student-id-preview-card .sid-row span{flex:0 0 15mm;color:#64748b;font-weight:700}.student-id-preview-card .sid-row b{flex:1;min-width:0;overflow:hidden;white-space:nowrap;text-overflow:ellipsis}.student-id-preview-card .sid-row.address-row{min-height:6mm}.student-id-preview-card .sid-row.address-row b{white-space:normal;display:-webkit-box;-webkit-line-clamp:2;-webkit-box-orient:vertical}.student-id-preview-card .sid-footer{flex:1 1 auto;text-align:center;font-size:1.25mm;line-height:1.2;color:#94a3b8;padding:.3mm 2mm 0}.student-id-preview-card img{display:block}</style></head><body><div id="pages"></div></body></html>');printWin.document.close();const paths=students.filter(s=>s.photo_path).map(s=>s.photo_path);let photoMap={};if(paths.length){for(let i=0;i<paths.length;i+=500){const chunk=paths.slice(i,i+500),{data,error}=await supabaseClient.storage.from('student-photos').createSignedUrls(chunk,3600);if(!error)(data||[]).forEach(x=>{if(x.path&&x.signedUrl)photoMap[x.path]=x.signedUrl;});}}const pages=[];for(let i=0;i<students.length;i+=9)pages.push(students.slice(i,i+9));const pagesHtml=pages.map(group=>'<div class="student-id-print-page">'+group.map(s=>makeStudentIdCardHtml(s,photoMap[s.photo_path]||'')).join('')+'</div>').join('');printWin.document.getElementById('pages').innerHTML=pagesHtml;setTimeout(()=>{if(printWin.QRCode){printWin.document.querySelectorAll("[data-student-qr]").forEach((el,i)=>{const s=students[i];new printWin.QRCode(el,{text:"ASHIANA|STUDENT|"+String(s.enroll_no||"")+"|"+String(s.student_name||""),width:52,height:52,colorDark:"#064e3b",colorLight:"#ffffff",correctLevel:printWin.QRCode.CorrectLevel.M});});}},300);try{await supabaseClient.from('student_roster').update({id_card_generated_at:new Date().toISOString()}).in('id',students.map(s=>s.id)).eq('school_code',APS_STUDENT_SCHOOL);}catch(e){console.warn('Could not record ID card generation',e);}setTimeout(()=>{try{printWin.focus();printWin.print();}catch(e){}},1200);}
     async function createSelectedStudentIdCards(){const ids=studentSelectedIds();if(!ids.length)return showToast('Select at least one student first.','error');const students=ids.map(id=>adminStudentRows.find(s=>s.id===id)).filter(Boolean);if(!students.length)return;await printStudentIdCards(students);}
     async function deleteStudentById(id){const s=adminStudentRows.find(x=>x.id===id);if(!s)return;if(!confirm('Delete this student? Their student attendance history will also be deleted.'))return;try{if(s.photo_path)await supabaseClient.storage.from('student-photos').remove([s.photo_path]);const {error}=await supabaseClient.from('student_roster').delete().eq('id',id).eq('school_code',APS_STUDENT_SCHOOL);if(error)throw error;showToast('Student deleted.','success');await loadAdminStudents();}catch(e){showToast('Delete failed: '+(e.message||e),'error');}}
     async function deleteSelectedStudents(){const ids=studentSelectedIds();if(!ids.length)return showToast('Select at least one student.','error');if(!confirm('Delete '+ids.length+' selected students? Their student attendance history will also be deleted.'))return;try{const selected=ids.map(id=>adminStudentRows.find(s=>s.id===id)).filter(Boolean),paths=selected.map(s=>s.photo_path).filter(Boolean);if(paths.length)for(let i=0;i<paths.length;i+=1000)await supabaseClient.storage.from('student-photos').remove(paths.slice(i,i+1000));const {error}=await supabaseClient.from('student_roster').delete().in('id',ids).eq('school_code',APS_STUDENT_SCHOOL);if(error)throw error;showToast(ids.length+' students deleted.','success');await loadAdminStudents();}catch(e){showToast('Bulk delete failed: '+(e.message||e),'error');}}
@@ -6770,6 +6805,8 @@ window.addEventListener('load',async function(){
       // and works consistently on mobile browsers and hosted CSP environments.
       document.getElementById("teacher-login-form")?.addEventListener("submit", handleTeacherLogin);
       document.getElementById("admin-login-form")?.addEventListener("submit", handleAdminLogin);
+      document.getElementById("student-login-form")?.addEventListener("submit", handleStudentLogin);
+      document.getElementById("btn-login-tab-student")?.addEventListener("click", () => window.switchLoginTab("student"));
 
       await initSupabase();
       await loadPersistedData();
