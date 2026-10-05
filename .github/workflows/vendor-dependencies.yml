@@ -1,0 +1,50 @@
+name: Vendor web dependencies
+
+on:
+  push:
+    branches: ["main"]
+    paths-ignore:
+      - "vendor/**"
+  workflow_dispatch:
+
+permissions:
+  contents: write
+
+jobs:
+  vendor:
+    runs-on: ubuntu-latest
+    steps:
+      - name: Checkout
+        uses: actions/checkout@v4
+
+      - name: Download browser dependencies
+        shell: bash
+        run: |
+          set -euo pipefail
+          mkdir -p vendor
+          curl -fsSL https://cdn.tailwindcss.com -o vendor/tailwind.js
+          curl -fsSL https://unpkg.com/lucide@latest -o vendor/lucide.js
+          curl -fsSL https://cdn.jsdelivr.net/npm/@supabase/supabase-js@2 -o vendor/supabase.js
+          curl -fsSL https://cdnjs.cloudflare.com/ajax/libs/qrcodejs/1.0.0/qrcode.min.js -o vendor/qrcode.min.js
+          curl -fsSL https://cdn.jsdelivr.net/npm/xlsx@0.18.5/dist/xlsx.full.min.js -o vendor/xlsx.full.min.js
+          curl -fsSL https://unpkg.com/html5-qrcode@2.3.8/html5-qrcode.min.js -o vendor/html5-qrcode.min.js
+          test -s vendor/tailwind.js
+          test -s vendor/lucide.js
+          test -s vendor/supabase.js
+          test -s vendor/qrcode.min.js
+          test -s vendor/xlsx.full.min.js
+          test -s vendor/html5-qrcode.min.js
+
+      - name: Commit vendored dependencies
+        shell: bash
+        run: |
+          set -euo pipefail
+          git config user.name "github-actions[bot]"
+          git config user.email "41898282+github-actions[bot]@users.noreply.github.com"
+          git add vendor
+          if git diff --cached --quiet; then
+            echo "Vendor dependencies are already current."
+            exit 0
+          fi
+          git commit -m "Vendor browser dependencies for reliable web and APK runtime"
+          git push
