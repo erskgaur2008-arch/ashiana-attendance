@@ -55,6 +55,29 @@ jobs:
       - name: Add Android platform
         run: npx cap add android
 
+      - name: Apply school logo as Android app icon
+        shell: bash
+        run: |
+          set -e
+          command -v convert >/dev/null 2>&1 || {
+            sudo apt-get update
+            sudo apt-get install -y imagemagick
+          }
+
+          SRC="logo 2.png"
+          RES="android/app/src/main/res"
+
+          for spec in             "mipmap-mdpi:48"             "mipmap-hdpi:72"             "mipmap-xhdpi:96"             "mipmap-xxhdpi:144"             "mipmap-xxxhdpi:192"
+          do
+            DIR="${spec%%:*}"
+            SIZE="${spec##*:}"
+            mkdir -p "$RES/$DIR"
+            convert "$SRC" -resize "${SIZE}x${SIZE}" -gravity center -background none -extent "${SIZE}x${SIZE}" "$RES/$DIR/ic_launcher.png"
+            cp "$RES/$DIR/ic_launcher.png" "$RES/$DIR/ic_launcher_round.png"
+          done
+
+          test -s "$RES/mipmap-xxxhdpi/ic_launcher.png"
+
       - name: Sync web assets
         run: npx cap sync android
 
