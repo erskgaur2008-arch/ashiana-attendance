@@ -855,7 +855,50 @@
         </div>
       </div>
 
-<div id="admin-tab-students" class="hidden space-y-3"><div class="bg-white rounded-2xl border p-4"><h3 class="font-bold">Student & Class Management</h3><form onsubmit="adminAddStudent(event)" class="grid grid-cols-1 sm:grid-cols-5 gap-2 my-4"><input id="new-student-admission" required placeholder="Admission No." class="p-2 border rounded"><input id="new-student-name" required placeholder="Student Name" class="p-2 border rounded"><input id="new-student-class" required placeholder="Class" class="p-2 border rounded"><input id="new-student-section" required placeholder="Section" class="p-2 border rounded"><div class="flex gap-2"><input id="new-student-roll" placeholder="Roll No." class="p-2 border rounded w-full"><button class="p-2 bg-ashiana-green text-white rounded">Add</button></div></form><form onsubmit="adminAssignClass(event)" class="grid grid-cols-1 sm:grid-cols-4 gap-2 border-t pt-4"><select id="assign-teacher-email" required class="p-2 border rounded"><option value="">Select teacher</option></select><input id="assign-class-name" required placeholder="Class" class="p-2 border rounded"><input id="assign-section" required placeholder="Section" class="p-2 border rounded"><button class="p-2 bg-emerald-900 text-white rounded">Assign</button></form><input id="admin-student-filter-class" placeholder="Filter class" oninput="loadAdminStudents()" class="p-2 border rounded my-3"><p id="admin-student-status" class="text-xs"></p><div class="overflow-x-auto"><table class="w-full text-xs text-left"><thead><tr><th>Admission</th><th>Student</th><th>Class</th><th>Section</th><th>Roll</th></tr></thead><tbody id="admin-student-tbody"></tbody></table></div></div></div>
+<div id="admin-tab-students" class="hidden space-y-3"><div class="bg-white rounded-2xl border p-4">
+  <div class="flex flex-col sm:flex-row sm:items-center sm:justify-between gap-2">
+    <div><h3 class="font-bold">Student & Class Management</h3><p class="text-[10px] text-slate-500 mt-0.5">Bulk upload students first; teacher/class assignment can be done separately.</p></div>
+    <div class="flex flex-wrap gap-2">
+      <button type="button" onclick="downloadStudentBulkTemplate()" class="px-3 py-2 bg-slate-100 hover:bg-slate-200 text-slate-700 rounded-xl text-xs font-bold flex items-center gap-1.5 border">
+        <i data-lucide="download" class="w-3.5 h-3.5"></i><span>Student Template</span>
+      </button>
+      <button type="button" onclick="openStudentBulkUploadModal()" class="px-3 py-2 bg-ashiana-green hover:bg-emerald-800 text-white rounded-xl text-xs font-bold flex items-center gap-1.5 shadow">
+        <i data-lucide="upload-cloud" class="w-3.5 h-3.5"></i><span>Bulk Upload Students</span>
+      </button>
+    </div>
+  </div>
+  <form onsubmit="adminAddStudent(event)" class="grid grid-cols-1 sm:grid-cols-5 gap-2 my-4"><input id="new-student-admission" required placeholder="Admission No." class="p-2 border rounded"><input id="new-student-name" required placeholder="Student Name" class="p-2 border rounded"><input id="new-student-class" required placeholder="Class" class="p-2 border rounded"><input id="new-student-section" required placeholder="Section" class="p-2 border rounded"><div class="flex gap-2"><input id="new-student-roll" placeholder="Roll No." class="p-2 border rounded w-full"><button class="p-2 bg-ashiana-green text-white rounded">Add</button></div></form><form onsubmit="adminAssignClass(event)" class="grid grid-cols-1 sm:grid-cols-4 gap-2 border-t pt-4"><select id="assign-teacher-email" required class="p-2 border rounded"><option value="">Select teacher</option></select><input id="assign-class-name" required placeholder="Class" class="p-2 border rounded"><input id="assign-section" required placeholder="Section" class="p-2 border rounded"><button class="p-2 bg-emerald-900 text-white rounded">Assign</button></form><input id="admin-student-filter-class" placeholder="Filter class" oninput="loadAdminStudents()" class="p-2 border rounded my-3"><p id="admin-student-status" class="text-xs"></p><div class="overflow-x-auto"><table class="w-full text-xs text-left"><thead><tr><th>Admission</th><th>Student</th><th>Class</th><th>Section</th><th>Roll</th></tr></thead><tbody id="admin-student-tbody"></tbody></table></div></div></div>
+      <!-- Bulk Student Upload Modal -->
+      <div id="student-bulk-upload-modal" class="hidden fixed inset-0 z-[80] bg-slate-950/60 backdrop-blur-sm p-4 overflow-y-auto">
+        <div class="max-w-3xl mx-auto bg-white rounded-2xl shadow-2xl border border-slate-200 mt-8">
+          <div class="p-4 border-b flex items-center justify-between">
+            <div><h3 class="font-bold text-slate-800">Bulk Upload Students</h3><p class="text-[10px] text-slate-500">Upload .xlsx, .xls or .csv. Teacher assignment is intentionally separate.</p></div>
+            <button type="button" onclick="closeStudentBulkUploadModal()" class="p-2 rounded-lg hover:bg-slate-100"><i data-lucide="x" class="w-4 h-4"></i></button>
+          </div>
+          <div class="p-4 space-y-3">
+            <div class="bg-emerald-50 border border-emerald-200 rounded-xl p-3 text-[11px] text-emerald-900">
+              Required columns: <b>Admission No., Student Name, Class, Section</b>. Optional: <b>Roll No., Status</b>.
+              Existing Admission No. records will be updated.
+            </div>
+            <input id="student-bulk-file-input" type="file" accept=".xlsx,.xls,.csv" onchange="handleStudentBulkUpload(event)" class="block w-full text-xs border rounded-xl p-2">
+            <div id="student-bulk-preview" class="hidden space-y-2">
+              <div class="flex items-center justify-between">
+                <span id="student-bulk-count" class="text-xs font-bold text-slate-700">0 records</span>
+                <span class="text-[10px] text-slate-500">No teacher is assigned during upload.</span>
+              </div>
+              <div class="overflow-auto max-h-64 border rounded-xl">
+                <table class="w-full text-[11px] text-left">
+                  <thead class="sticky top-0 bg-slate-100"><tr><th class="p-2">Admission</th><th class="p-2">Student</th><th class="p-2">Class</th><th class="p-2">Section</th><th class="p-2">Roll</th></tr></thead>
+                  <tbody id="student-bulk-preview-tbody"></tbody>
+                </table>
+              </div>
+              <button type="button" id="btn-confirm-student-bulk" onclick="executeStudentBulkUpload()" disabled class="w-full py-3 bg-emerald-950 hover:bg-black text-white rounded-xl text-xs font-bold">Import Students</button>
+            </div>
+            <p id="student-bulk-status" class="text-xs"></p>
+          </div>
+        </div>
+      </div>
+
       <!-- TAB 4: MANUAL CORRECTIONS -->
       <div id="admin-tab-corrections" class="hidden space-y-3">
         <div class="bg-white rounded-2xl border border-slate-200 shadow-sm p-4 sm:p-6 max-w-lg mx-auto">
@@ -3365,6 +3408,99 @@
       try{const {error}=await supabaseClient.from('student_class_assignments').upsert({school_code:APS_STUDENT_SCHOOL,teacher_email:v('assign-teacher-email').toLowerCase(),class_name:v('assign-class-name'),section:v('assign-section'),active:true},{onConflict:'school_code,teacher_email,class_name,section'});if(error)throw error;event.target.reset();showToast('Class assignment saved.','success');}
       catch(e){showToast('Assignment failed: '+(e.message||e),'error');}
     }
+    let parsedStudentBulkRows = [];
+
+    function closeStudentBulkUploadModal(){
+      document.getElementById('student-bulk-upload-modal')?.classList.add('hidden');
+      const input=document.getElementById('student-bulk-file-input'); if(input) input.value='';
+      parsedStudentBulkRows=[];
+      document.getElementById('student-bulk-preview')?.classList.add('hidden');
+      const status=document.getElementById('student-bulk-status'); if(status) status.textContent='';
+    }
+
+    function openStudentBulkUploadModal(){
+      if(currentAuthUser?.type!=='ADMIN') return showToast('Administrator session required.','error');
+      document.getElementById('student-bulk-upload-modal')?.classList.remove('hidden');
+      if(window.lucide) lucide.createIcons();
+    }
+
+    async function downloadStudentBulkTemplate(){
+      const rows=[{
+        'Admission No.':'APS-0001','Student Name':'Sample Student','Class':'Nursery','Section':'A','Roll No.':'1','Status':'ACTIVE'
+      }];
+      try{
+        await ensureExcelLibrary();
+        if(typeof XLSX!=='undefined'){
+          const ws=XLSX.utils.json_to_sheet(rows);
+          const wb=XLSX.utils.book_new();
+          XLSX.utils.book_append_sheet(wb,ws,'Students');
+          XLSX.writeFile(wb,'Ashiana_Student_Bulk_Import_Template.xlsx');
+        }else{
+          const csv='Admission No.,Student Name,Class,Section,Roll No.,Status\n"APS-0001","Sample Student","Nursery","A","1","ACTIVE"\n';
+          const a=document.createElement('a');a.href=URL.createObjectURL(new Blob([csv],{type:'text/csv'}));a.download='Ashiana_Student_Bulk_Import_Template.csv';a.click();
+        }
+        showToast('Student template downloaded.','success');
+      }catch(e){showToast('Template download failed: '+(e.message||e),'error');}
+    }
+
+    async function handleStudentBulkUpload(event){
+      const file=event.target.files?.[0]; if(!file)return;
+      if(file.size>10*1024*1024)return showToast('File is larger than 10 MB.','error');
+      try{
+        await ensureExcelLibrary();
+        if(typeof XLSX==='undefined') throw Error('Spreadsheet library unavailable.');
+        const data=new Uint8Array(await file.arrayBuffer());
+        const wb=XLSX.read(data,{type:'array'});
+        const ws=wb.Sheets[wb.SheetNames[0]];
+        const rows=XLSX.utils.sheet_to_json(ws,{defval:''});
+        parsedStudentBulkRows=[];
+        const errors=[];
+        rows.forEach((row,index)=>{
+          const norm={}; Object.keys(row).forEach(k=>norm[k.trim().toLowerCase().replace(/[^a-z0-9]/g,'')]=row[k]);
+          const val=(...keys)=>{for(const k of keys){if(norm[k]!==undefined&&String(norm[k]).trim()!=='')return String(norm[k]).trim();}return '';};
+          const admission=val('admissionno','admissionnumber','admission','admissionid').toUpperCase();
+          const name=val('studentname','name','fullname');
+          const className=val('class','classname','grade');
+          const section=val('section','sec').toUpperCase();
+          const roll=val('rollno','rollnumber','roll');
+          const statusRaw=val('status')||'ACTIVE';
+          const status=statusRaw.toUpperCase()==='INACTIVE'?'INACTIVE':'ACTIVE';
+          if(!admission||!name||!className||!section) errors.push('Row '+(index+2)+': Admission, Student Name, Class and Section are required.');
+          else parsedStudentBulkRows.push({admission_no:admission,student_name:name,class_name:className,section,roll_no:roll||null,status});
+        });
+        if(errors.length){parsedStudentBulkRows=[]; throw Error(errors.slice(0,5).join(' ')+(errors.length>5?' More rows have errors.':''));}
+        if(!parsedStudentBulkRows.length) throw Error('No valid student rows found.');
+        const preview=document.getElementById('student-bulk-preview'),tbody=document.getElementById('student-bulk-preview-tbody');
+        document.getElementById('student-bulk-count').textContent=parsedStudentBulkRows.length+' student records ready';
+        tbody.innerHTML=parsedStudentBulkRows.slice(0,100).map(s=>'<tr class="border-t"><td class="p-2 font-semibold">'+studentEscape(s.admission_no)+'</td><td class="p-2">'+studentEscape(s.student_name)+'</td><td class="p-2">'+studentEscape(s.class_name)+'</td><td class="p-2">'+studentEscape(s.section)+'</td><td class="p-2">'+studentEscape(s.roll_no||'—')+'</td></tr>').join('');
+        if(parsedStudentBulkRows.length>100) tbody.insertAdjacentHTML('beforeend','<tr><td colspan="5" class="p-2 text-center text-slate-400">Preview limited to first 100 rows.</td></tr>');
+        preview.classList.remove('hidden');
+        document.getElementById('btn-confirm-student-bulk').disabled=false;
+        showToast('Student file parsed successfully.','success');
+      }catch(e){parsedStudentBulkRows=[];showToast('Student import file error: '+(e.message||e),'error');}
+    }
+
+    async function executeStudentBulkUpload(){
+      if(!parsedStudentBulkRows.length)return showToast('No student records to import.','error');
+      if(currentAuthUser?.type!=='ADMIN'||!supabaseClient)return showToast('Administrator cloud session is required.','error');
+      const btn=document.getElementById('btn-confirm-student-bulk'); btn.disabled=true; btn.textContent='Importing students…';
+      const status=document.getElementById('student-bulk-status');
+      try{
+        let imported=0;
+        for(let i=0;i<parsedStudentBulkRows.length;i+=500){
+          const chunk=parsedStudentBulkRows.slice(i,i+500);
+          const {error}=await supabaseClient.from('student_roster').upsert(chunk,{onConflict:'school_code,admission_no'});
+          if(error)throw error;
+          imported+=chunk.length;
+          if(status)status.textContent='Imported '+imported+' of '+parsedStudentBulkRows.length+' students…';
+        }
+        showToast('Student bulk import completed: '+imported+' records.','success');
+        await loadAdminStudents();
+        closeStudentBulkUploadModal();
+      }catch(e){showToast('Student bulk import failed: '+(e.message||e),'error');}
+      finally{btn.disabled=false;btn.textContent='Import Students';}
+    }
+
     function populateStudentTeacherOptions(){const sel=document.getElementById('assign-teacher-email');if(!sel)return;const rows=staffDatabase.filter(s=>s.status==='ACTIVE'&&s.email&&getAccessRole({type:'STAFF',staffRecord:s})==='TEACHER');sel.innerHTML='<option value="">Select teacher</option>'+rows.map(s=>'<option value="'+studentEscape(s.email)+'">'+studentEscape(s.name)+' ('+studentEscape(s.empId)+')</option>').join('');}
     async function loadAdminStudents(){
       const tbody=document.getElementById('admin-student-tbody');if(!tbody||currentAuthUser?.type!=='ADMIN'||!supabaseClient)return;const status=document.getElementById('admin-student-status');if(status)status.textContent='Loading roster…';
