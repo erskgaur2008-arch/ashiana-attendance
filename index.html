@@ -333,19 +333,20 @@
         <div class="w-16 h-0.5 bg-ashiana-red mx-auto my-1.5 rounded-full"></div>
         <p class="text-[11px] text-emerald-200">Sector 46-A, Chandigarh • Faculty Attendance</p>
         
-        <!-- Tab Selector: Teacher vs Admin -->
-        <div class="flex bg-emerald-950/70 p-1 rounded-2xl mt-4 border border-emerald-700/50">
-          <button type="button" id="btn-login-tab-teacher" onclick="window.switchLoginTab('teacher')" aria-controls="teacher-login-form" aria-pressed="true" class="flex-1 py-2 rounded-xl text-xs font-bold transition-all bg-white text-emerald-950 shadow flex items-center justify-center space-x-1.5">
-            <i data-lucide="user-check" class="w-3.5 h-3.5 text-ashiana-green"></i>
-            <span>Teacher / Staff</span>
-          </button>
-          <button type="button" id="btn-login-tab-admin" onclick="window.switchLoginTab('admin')" aria-controls="admin-login-form" aria-pressed="false" class="flex-1 py-2 rounded-xl text-xs font-bold transition-all text-emerald-200 hover:text-white flex items-center justify-center space-x-1.5">
-            <i data-lucide="shield-check" class="w-3.5 h-3.5"></i>
-            <span>Administrator</span>
-          </button>
-          <button type="button" id="btn-login-tab-student" onclick="window.switchLoginTab('student')" aria-controls="student-login-form" aria-pressed="false" class="flex-1 py-2 rounded-xl text-xs font-bold transition-all text-emerald-200 hover:text-white flex items-center justify-center space-x-1.5"><i data-lucide="graduation-cap" class="w-3.5 h-3.5"></i><span>Student</span></button>
-        </div>
-      </div>
+        <!-- Role Selector -->
+        <div class="mt-4">
+          <label for="login-role-select" class="sr-only">Select Login Role</label>
+          <div class="relative">
+            <i data-lucide="users-round" class="absolute left-3.5 top-1/2 -translate-y-1/2 w-4 h-4 text-emerald-700 pointer-events-none"></i>
+            <select id="login-role-select" onchange="window.switchLoginTab(this.value)" class="w-full appearance-none pl-10 pr-10 py-3 rounded-2xl bg-white text-emerald-950 border border-emerald-300 shadow-sm focus:ring-2 focus:ring-emerald-400 focus:outline-none font-bold text-sm">
+              <option value="teacher">Teacher / Staff</option>
+              <option value="admin">Administrator</option>
+              <option value="student">Student</option>
+            </select>
+            <i data-lucide="chevron-down" class="absolute right-3.5 top-1/2 -translate-y-1/2 w-4 h-4 text-emerald-700 pointer-events-none"></i>
+          </div>
+          <p class="text-[10px] text-emerald-200 mt-1.5 text-center">Select your login role</p>
+        </div>      </div>
 
       <div class="p-5 sm:p-6 space-y-4">
         <!-- TEACHER LOGIN FORM -->
@@ -2818,11 +2819,11 @@
     // continues to work when mobile browsers or hosting CSP block inline handlers.
     window.switchLoginTab = function(tab) {
       const forms={teacher:document.getElementById("teacher-login-form"),admin:document.getElementById("admin-login-form"),student:document.getElementById("student-login-form")};
-      const buttons={teacher:document.getElementById("btn-login-tab-teacher"),admin:document.getElementById("btn-login-tab-admin"),student:document.getElementById("btn-login-tab-student")};
       Object.entries(forms).forEach(([k,el])=>{if(el)el.classList.toggle("hidden",k!==tab);});
-      Object.entries(buttons).forEach(([k,el])=>{if(!el)return;el.setAttribute("aria-pressed",String(k===tab));el.className="flex-1 py-2 rounded-xl text-xs font-bold transition-all "+(k===tab?"bg-white text-emerald-950 shadow":"text-emerald-200 hover:text-white")+" flex items-center justify-center space-x-1.5";});
+      const selector=document.getElementById("login-role-select");
+      if(selector)selector.value=tab;
       if(window.lucide)lucide.createIcons();
-    };;
+    };;;
 
     function togglePinVisibility(id) {
       const input = document.getElementById(id);
@@ -6798,8 +6799,6 @@ window.addEventListener('load',async function(){
       setupAppBackButtonHandling();
 
       // Bind login controls only after the DOM exists.
-      document.getElementById("btn-login-tab-teacher")?.addEventListener("click", () => window.switchLoginTab("teacher"));
-      document.getElementById("btn-login-tab-admin")?.addEventListener("click", () => window.switchLoginTab("admin"));
 
       // Bind forms explicitly; this avoids dependence on inline onsubmit handlers
       // and works consistently on mobile browsers and hosted CSP environments.
