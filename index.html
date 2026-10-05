@@ -3232,6 +3232,21 @@ async function refreshStudentPortalData(){const s=currentAuthUser?.studentRecord
         getStudentPhotoUrl(s),
         new Promise(resolve=>setTimeout(()=>resolve(""),2500))
       ]);}catch(_){}
+      // Student ID-card photo is resolved only from the authenticated student's
+      // own roster record. Never use teacher/staff photo data here.
+      if(!photoUrl && currentAuthUser?.type==='STUDENT'){
+        const own=currentAuthUser?.portalData?.student;
+        if(own?.photo_path){
+          try{
+            const dt=String(s.dob).slice(0,10).split('-');
+            const dobPassword=dt.length===3?dt[2]+dt[1]+dt[0]:'';
+            if(/^\\d{8}$/.test(dobPassword)){
+              const {data}=await supabaseClient.functions.invoke('student-photo-url',{body:{enroll_no:String(s.enroll_no),dob_password:dobPassword}});
+              photoUrl=data?.success?String(data.photo_url||''):'';
+            }
+          }catch(e){console.warn('Own student ID photo retry failed:',e);}
+        }
+      }
       preview.innerHTML=makeStudentIdCardHtml(s,photoUrl);
       // QR is optional enhancement. Never wait for the external QR library before showing the card.
       renderStudentCardQr(preview.querySelector("[data-student-qr]"),s);
