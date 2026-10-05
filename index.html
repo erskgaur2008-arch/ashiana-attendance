@@ -3513,7 +3513,7 @@
           const enroll=val('enrollno','enrollmentno','enrollmentnumber','admissionno','admissionnumber','admission','admissionid').toUpperCase();
           const name=val('studentname','name','fullname');
           const className=val('class','classname','grade');
-          const section=val('section','sec').toUpperCase();
+          const section=val('sectionname','section','sec').toUpperCase();
           const roll=val('rollno','rollnumber','roll');
           const gender=val('gender','sex');
           const category=val('category','cat');
@@ -3521,7 +3521,7 @@
           const normalizedStatus=statusRaw.toUpperCase().replace(/[\s\/\-]+/g,'_');
           const status=(normalizedStatus==='INACTIVE_PASSOUT'||normalizedStatus==='LEFT_PASSOUT'||normalizedStatus==='INACTIVE'||normalizedStatus==='LEFT'||normalizedStatus==='PASSOUT')?'INACTIVE_PASSOUT':'ACTIVE';
           if(!enroll||!name||!className||!section||!gender||!category) errors.push('Row '+(index+2)+': Enroll No, Student Name, Class Name, Section Name, Gender and Category are required.');
-          else parsedStudentBulkRows.push({enroll_no:enroll,student_name:name,class_name:className,section,roll_no:roll,gender,category,status,school_code:APS_STUDENT_SCHOOL});
+          else parsedStudentBulkRows.push({enroll_no:enroll,student_name:name,class_name:className,section,roll_no:roll||null,gender,category,status,school_code:APS_STUDENT_SCHOOL});
         });
         if(errors.length){parsedStudentBulkRows=[]; throw Error(errors.slice(0,5).join(' ')+(errors.length>5?' More rows have errors.':''));}
         if(!parsedStudentBulkRows.length) throw Error('No valid student rows found.');
