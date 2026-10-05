@@ -4000,7 +4000,12 @@ async function loadAdminStudentAttendanceReport(){
       const g=groups.get(cls),ge=adminAttendanceBucket(s.gender,"gender"),ca=adminAttendanceBucket(s.category,"category"),st=map.get(s.id);if(st!=="PRESENT"&&st!=="ABSENT")return;
       const b=st==="PRESENT"?g.p:g.a;if(ge)b[ge]++;if(ca)b[ca]++;if(ge==="M")g.tm++;if(ge==="F")g.tf++;
     });
-    const order=["PRE-NUR","NURSERY","LKG","UKG","I","II","III","IV","V","VI","VII","VIII","IX","X"],rank=x=>{const i=order.indexOf(x.toUpperCase());return i<0?999:i},rows=[...groups.values()].sort((a,b)=>rank(a.name)-rank(b.name)||a.name.localeCompare(b.name)),total={p:{M:0,F:0,TG:0,G:0,SC:0,ST:0,OBC:0},a:{M:0,F:0,TG:0,G:0,SC:0,ST:0,OBC:0},tm:0,tf:0};
+    const order=["PRE-NUR","NURSERY","LKG","UKG","I","II","III","IV","V","VI","VII","VIII","IX","X"],rank=x=>{const i=order.indexOf(x.toUpperCase());return i<0?999:i};
+    // Always render all 14 school classes in the report, including classes with
+    // no students or no attendance marked for the selected date.
+    const blankGroup=cls=>({name:cls,p:{M:0,F:0,TG:0,G:0,SC:0,ST:0,OBC:0},a:{M:0,F:0,TG:0,G:0,SC:0,ST:0,OBC:0},tm:0,tf:0});
+    const rows=order.map(cls=>groups.get(cls)||blankGroup(cls));
+    const total={p:{M:0,F:0,TG:0,G:0,SC:0,ST:0,OBC:0},a:{M:0,F:0,TG:0,G:0,SC:0,ST:0,OBC:0},tm:0,tf:0};
     const vals=o=>keys.map(k=>o[k]);
     tbody.innerHTML=rows.map((r,i)=>{keys.forEach(k=>{total.p[k]+=r.p[k];total.a[k]+=r.a[k]});total.tm+=r.tm;total.tf+=r.tf;return '<tr><td class="border border-slate-400 text-center px-2 py-1">'+(i+1)+'</td><td class="border border-slate-400 font-bold px-2 py-1">'+studentEscape(r.name)+'</td>'+vals(r.p).map(v=>'<td class="border border-slate-400 text-center">'+v+'</td>').join("")+vals(r.a).map(v=>'<td class="border border-slate-400 text-center">'+v+'</td>').join("")+'<td class="border border-slate-400 text-center font-bold">'+r.tm+'</td><td class="border border-slate-400 text-center font-bold">'+r.tf+'</td></tr>'}).join("");
     tfoot.innerHTML='<tr class="font-black bg-slate-100"><td colspan="2" class="border border-slate-500 text-center py-2">Total</td>'+vals(total.p).map(v=>'<td class="border border-slate-500 text-center">'+v+'</td>').join("")+vals(total.a).map(v=>'<td class="border border-slate-500 text-center">'+v+'</td>').join("")+'<td class="border border-slate-500 text-center">'+total.tm+'</td><td class="border border-slate-500 text-center">'+total.tf+'</td></tr>';
