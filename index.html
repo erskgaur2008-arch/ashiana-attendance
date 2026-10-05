@@ -486,32 +486,26 @@
         
         <!-- Staff Header Bar -->
         <div class="staff-dashboard-header bg-gradient-to-br from-emerald-950 via-[#064E3B] to-[#087443] text-white p-3.5 sm:p-5 border-b-2 border-ashiana-red sticky top-0 z-10">
-          <div class="flex items-center justify-between gap-2">
+          <div class="flex items-center justify-start gap-2">
             <button id="staff-menu-button" type="button" onclick="toggleStaffDrawer(true)" class="w-10 h-10 rounded-xl bg-white/10 hover:bg-white/20 border border-white/15 flex items-center justify-center text-white flex-shrink-0 focus:outline-none focus:ring-2 focus:ring-emerald-300" title="Open menu" aria-label="Open staff menu" aria-expanded="false">
               <i data-lucide="menu" class="w-5 h-5"></i>
             </button>
-            <div class="flex items-center space-x-3">
+            <div class="flex items-center">
               <button id="staff-avatar-circle" type="button" onclick="viewMyStaffIdCard()" class="relative w-11 h-11 rounded-2xl bg-emerald-500/20 border border-emerald-400/40 flex items-center justify-center font-bold text-sm text-emerald-100 shadow-inner overflow-hidden group cursor-pointer focus:outline-none focus:ring-2 focus:ring-emerald-300" title="View My Staff ID Card" aria-label="View My Staff ID Card">
                 AP
                 <span class="absolute inset-0 bg-black/45 opacity-0 group-hover:opacity-100 group-focus:opacity-100 transition-opacity flex items-center justify-center">
                   <i data-lucide="contact" class="w-4 h-4 text-white"></i>
                 </span>
               </button>
-              <div class="min-w-0">
-                <h3 id="staff-header-name" class="font-bold text-sm text-white leading-tight truncate">Faculty Member</h3>
-                <p id="staff-header-role" class="text-[11px] text-emerald-200 truncate">Teacher • APS-101</p>
-                <p id="staff-header-email" class="text-[9px] text-emerald-300/80 font-mono truncate">faculty@ashianapublicschool.com</p>
+              <div class="hidden" aria-hidden="true">
+                <h3 id="staff-header-name">Faculty Member</h3>
+                <p id="staff-header-role">Teacher • APS-101</p>
+                <p id="staff-header-email">faculty@ashianapublicschool.com</p>
               </div>
             </div>
 
-            <div class="flex flex-col items-end space-y-1.5 flex-shrink-0">
-              <span id="staff-badge-status" class="px-2.5 py-0.5 rounded-full text-[9px] font-bold bg-amber-500/20 text-amber-300 border border-amber-500/30 uppercase tracking-wider">
-                NOT MARKED
-              </span>
-              <button onclick="handleLogout()" class="text-[10px] bg-white/10 hover:bg-white/20 text-emerald-200 px-2 py-0.5 rounded-lg flex items-center space-x-1 transition-colors">
-                <i data-lucide="log-out" class="w-3 h-3 text-rose-300"></i>
-                <span>Sign Out</span>
-              </button>
+            <div class="hidden" aria-hidden="true">
+              <span id="staff-badge-status">NOT MARKED</span>
             </div>
           </div>
         </div>
