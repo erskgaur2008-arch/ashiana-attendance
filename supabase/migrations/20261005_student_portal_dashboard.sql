@@ -1,0 +1,5 @@
+-- Student portal dashboard data model and teacher-managed content.
+-- Tables: notices, homework, timetable, leave requests, report cards, school calendar.
+-- RPCs: student_portal_bundle and student_submit_leave.
+-- Teacher write policies scope notices/homework/timetable/report cards/calendar to assigned classes.
+-- Student-facing bundle is returned only after Admission No. + DOB validation.
