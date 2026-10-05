@@ -862,6 +862,7 @@
       </div>
 
       <div class="admin-quick-actions"><button onclick="switchAdminTab('students')"><i data-lucide="graduation-cap"></i><span>Students</span></button>
+        <button type="button" onclick="openAdminStudentAttendanceReport()" title="Students Attendance Report"><i data-lucide="clipboard-list"></i><span>Attendance Report</span></button>
         <button onclick="switchAdminTab('live')"><i data-lucide="radio"></i><span>Live Attendance</span></button>
         <button onclick="switchAdminTab('qr')"><i data-lucide="qr-code"></i><span>Daily QR</span></button>
         <button onclick="switchAdminTab('directory')"><i data-lucide="users"></i><span>Faculty</span></button>
@@ -869,7 +870,6 @@
         <button onclick="switchAdminTab('leave')"><i data-lucide="calendar-check"></i><span>Leaves</span></button>
         <button onclick="switchAdminTab('corrections')"><i data-lucide="file-pen"></i><span>Corrections</span></button>
       </div>
-<button type="button" onclick="openAdminStudentAttendanceReport()" class="w-full text-left bg-gradient-to-r from-emerald-950 via-emerald-900 to-emerald-800 text-white rounded-2xl p-4 shadow-lg border border-emerald-800/40 hover:shadow-xl transition-all flex items-center justify-between gap-4"><span class="flex items-center gap-3"><span class="w-11 h-11 rounded-xl bg-white/10 flex items-center justify-center"><i data-lucide="clipboard-list" class="w-6 h-6"></i></span><span><b class="block text-sm">Students Attendance Report</b><small class="text-emerald-200 text-[10px]">Class-wise • Gender • Category • Present / Absent</small></span></span><i data-lucide="chevron-right" class="w-5 h-5 text-emerald-200"></i></button>
 
       <!-- Top KPI Row -->
       <div class="grid grid-cols-2 sm:grid-cols-3 lg:grid-cols-6 gap-2 sm:gap-3">
