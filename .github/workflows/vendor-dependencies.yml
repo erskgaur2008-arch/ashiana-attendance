@@ -7,6 +7,10 @@ on:
       - "vendor/**"
   workflow_dispatch:
 
+concurrency:
+  group: vendor-browser-dependencies
+  cancel-in-progress: true
+
 permissions:
   contents: write
 
@@ -47,4 +51,5 @@ jobs:
             exit 0
           fi
           git commit -m "Vendor browser dependencies for reliable web and APK runtime"
+          git pull --rebase origin main
           git push
