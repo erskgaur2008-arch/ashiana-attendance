@@ -324,7 +324,7 @@
 
       <div class="p-5 sm:p-6 space-y-4">
         <!-- TEACHER LOGIN FORM -->
-        <form id="teacher-login-form" onsubmit="handleTeacherLogin(event)" class="space-y-3.5">
+        <form id="teacher-login-form" class="space-y-3.5">
           <div>
             <label class="block text-xs font-bold text-slate-700 mb-1">Employee ID or Registered Email</label>
             <div class="relative">
@@ -359,7 +359,7 @@
         </form>
 
         <!-- ADMIN LOGIN FORM -->
-        <form id="admin-login-form" onsubmit="handleAdminLogin(event)" class="space-y-3.5 hidden">
+        <form id="admin-login-form" class="space-y-3.5 hidden">
           <div class="p-2.5 bg-emerald-50 border border-emerald-200 rounded-xl flex items-center space-x-2 text-xs text-emerald-950">
             <i data-lucide="shield-alert" class="w-4 h-4 text-ashiana-red flex-shrink-0"></i>
             <span>Authorized access for Principal Office only.</span>
@@ -391,6 +391,10 @@
           <button type="submit" class="w-full py-3 bg-emerald-950 hover:bg-black text-white font-bold rounded-xl text-xs flex items-center justify-center space-x-2 shadow-lg active:scale-[0.99] transition-all">
             <i data-lucide="lock" class="w-4 h-4"></i>
             <span>Access Administrator Portal</span>
+          </button>
+          <button type="button" onclick="requestAdminPasswordReset()" class="w-full py-2.5 mt-1 bg-amber-50 hover:bg-amber-100 border border-amber-200 text-amber-700 font-bold rounded-xl text-xs flex items-center justify-center space-x-2 active:scale-[0.99] transition-all">
+            <i data-lucide="mail-question" class="w-4 h-4"></i>
+            <span>Forgot Administrator Password?</span>
           </button>
         </form>
       </div>
@@ -1884,7 +1888,7 @@
     // ⚙️ LIVE SUPABASE POSTGRESQL CREDENTIALS (EMBEDDED)
     // =========================================================================
     const DEFAULT_SUPABASE_URL = "https://oalfzgluqroqbbrulhpr.supabase.co";
-    const DEFAULT_SUPABASE_ANON_KEY = "eyJhbGciOiJIUzI1NiIsInR5cCI6IkpXVCJ9.eyJpc3MiOiJzdXBhYmFzZSIsInJlZiI6Im9hbGZ6Z2x1cXJvcWJicnVsaHByIiwicm9sZSI6ImFub24iLCJpYXQiOjE3OTAwNjAwMDQsImV4cCI6MjEwNTYzNjAwNH0.eBl1Q_ZmlUSoUHWqsv1qfVgreAGuJkBG2alPwT-Kaz8";
+    const DEFAULT_SUPABASE_ANON_KEY = "sb_publishable_PND9f9FKbNrxlEakSgLKYA_5EsqLHkg";
 
     // System Attendance Parameters
     const systemConfig = {
@@ -2248,35 +2252,70 @@
     }
 
     // Initialize Supabase Client with Dual Auto-Sync Engine
-    function initSupabase() {
-      if (window.supabase && window.supabase.createClient) {
+    async function ensureSupabaseLibrary() {
+      if (window.supabase && window.supabase.createClient) return true;
+
+      const sources = [
+        "https://cdn.jsdelivr.net/npm/@supabase/supabase-js@2",
+        "https://unpkg.com/@supabase/supabase-js@2"
+      ];
+
+      for (const src of sources) {
         try {
-          supabaseClient = window.supabase.createClient(DEFAULT_SUPABASE_URL, DEFAULT_SUPABASE_ANON_KEY);
-
-          // Listen for Supabase's secure password-recovery redirect.
-          // The recovery session is used only to authorize the PIN change.
-          supabaseClient.auth.onAuthStateChange((event, session) => {
-            if (event === 'PASSWORD_RECOVERY' && session?.user?.email) {
-              window.staffPinRecoveryActive = true;
-              openStaffPinResetModal(true, session.user.email);
+          await new Promise((resolve, reject) => {
+            const existing = document.querySelector('script[data-supabase-runtime="true"]');
+            if (existing) {
+              if (window.supabase?.createClient) return resolve();
+              existing.addEventListener("load", resolve, { once: true });
+              existing.addEventListener("error", reject, { once: true });
+              return;
             }
+            const script = document.createElement("script");
+            script.src = src;
+            script.async = true;
+            script.dataset.supabaseRuntime = "true";
+            script.onload = resolve;
+            script.onerror = () => reject(new Error("Supabase CDN unavailable"));
+            document.head.appendChild(script);
           });
+          if (window.supabase && window.supabase.createClient) return true;
+        } catch (_) {}
+      }
+      return false;
+    }
 
-          isCloudConnected = true;
-          updateCloudBadge(true);
-          
-          const realtimeAvailable = checkWebSocketSupport();
-          if (realtimeAvailable) {
-            listenToRealtimePunches();
-          } else {
-            console.info("WebSockets restricted in current sandbox. Using 30-second HTTP fallback sync.");
-            startBackgroundPolling();
+    // Initialize Supabase Client with a resilient browser loader.
+    async function initSupabase() {
+      try {
+        const ready = await ensureSupabaseLibrary();
+        if (!ready) throw new Error("Supabase JS client could not be loaded.");
+
+        supabaseClient = window.supabase.createClient(DEFAULT_SUPABASE_URL, DEFAULT_SUPABASE_ANON_KEY);
+
+        // Listen for Supabase's secure password-recovery redirect.
+        supabaseClient.auth.onAuthStateChange((event, session) => {
+          if (event === 'PASSWORD_RECOVERY' && session?.user?.email) {
+            window.staffPinRecoveryActive = true;
+            openStaffPinResetModal(true, session.user.email);
           }
-        } catch (e) {
-          console.warn("Supabase init error:", e);
-          isCloudConnected = false;
-          updateCloudBadge(false);
+        });
+
+        isCloudConnected = true;
+        updateCloudBadge(true, "Cloud Auth Ready");
+
+        const realtimeAvailable = checkWebSocketSupport();
+        if (realtimeAvailable) {
+          listenToRealtimePunches();
+        } else {
+          console.info("WebSockets restricted in current sandbox. Using 30-second HTTP fallback sync.");
+          startBackgroundPolling();
         }
+        return true;
+      } catch (e) {
+        console.warn("Supabase init error:", e);
+        isCloudConnected = false;
+        updateCloudBadge(false, "Cloud Auth Offline");
+        return false;
       }
     }
 
@@ -2860,16 +2899,44 @@
         } else if (msg.includes('INVALID_PIN') || msg.includes('STAFF_NOT_FOUND')) {
           showToast("Incorrect Employee ID/email or PIN.", "error");
         } else if (msg.includes('ADMIN_ACCOUNT')) {
-          showToast("Use the Administrator login for this account.", "error");
+          window.switchLoginTab("admin");
+          const adminInput = document.getElementById("admin-login-user");
+          if (adminInput && !adminInput.value) adminInput.value = idVal;
+          showToast("This is an administrator account. The Administrator login has been opened for you.", "info");
         } else {
           showToast("Staff sign-in failed: " + msg, "error");
         }
       }
     }
 
+    async function requestAdminPasswordReset() {
+      const emailInput = document.getElementById("admin-login-user");
+      const email = normalizeLoginId(emailInput?.value).toLowerCase();
+
+      if (!email || !email.includes("@")) {
+        showToast("Enter the administrator email first.", "error");
+        emailInput?.focus();
+        return;
+      }
+      if (!supabaseClient) {
+        showToast("Cloud authentication is still starting. Please try again.", "error");
+        return;
+      }
+
+      try {
+        showToast("Sending secure password reset email...", "info");
+        const redirectTo = window.location.origin + window.location.pathname;
+        const { error } = await supabaseClient.auth.resetPasswordForEmail(email, { redirectTo });
+        if (error) throw error;
+        showToast("If this is an authorized administrator account, a password reset email has been sent.", "success");
+      } catch (err) {
+        showToast("Password reset request failed: " + (err?.message || err), "error");
+      }
+    }
+
     async function handleAdminLogin(event) {
       event.preventDefault();
-      const userVal = normalizeLoginId(document.getElementById("admin-login-user")?.value);
+      const userVal = normalizeLoginId(document.getElementById("admin-login-user")?.value).toLowerCase();
       const passVal = (document.getElementById("admin-login-pass")?.value || "").trim();
 
       if (!userVal || !passVal) {
@@ -2891,7 +2958,7 @@
         const { data: adminRow, error: adminError } = await supabaseClient
           .from('admin_users')
           .select('email,role,active')
-          .eq('email', userVal)
+          .ilike('email', userVal)
           .eq('active', true)
           .maybeSingle();
         if (adminError || !adminRow) {
@@ -6528,16 +6595,24 @@ window.addEventListener('load',async function(){
     }
 
     // App Initialization
-    window.onload = async function() {
+    async function bootstrapApp() {
       setupAppBackButtonHandling();
-      initSupabase();
+
+      // Bind forms explicitly; this avoids dependence on inline onsubmit handlers
+      // and works consistently on mobile browsers and hosted CSP environments.
+      document.getElementById("teacher-login-form")?.addEventListener("submit", handleTeacherLogin);
+      document.getElementById("admin-login-form")?.addEventListener("submit", handleAdminLogin);
+
+      await initSupabase();
       await loadPersistedData();
+
       const restored = await restoreSupabaseSession();
       if (!restored) {
         currentAuthUser = null;
         currentStaffId = null;
         sessionStorage.removeItem(STORAGE_KEY_CURRENT_USER);
       }
+
       // Start cloud synchronization in the background so the local UI becomes
       // interactive immediately. Supabase remains the authoritative source.
       if (currentAuthUser) syncAllDataFromSupabase(false);
@@ -6551,7 +6626,13 @@ window.addEventListener('load',async function(){
         loadAdminQRSession();
       }
       if (window.lucide) lucide.createIcons();
-    };
+    }
+
+    if (document.readyState === "loading") {
+      document.addEventListener("DOMContentLoaded", bootstrapApp, { once: true });
+    } else {
+      bootstrapApp();
+    }
   </script>
 </body>
 </html>
