@@ -693,14 +693,42 @@
         </div>
 
 <div id="staff-tab-students" class="staff-dashboard-scroll staff-dashboard-content hidden flex-1 overflow-y-auto space-y-3">
-  <div class="bg-white rounded-2xl p-4 border"><h4 class="font-bold">Student Attendance</h4><div class="grid grid-cols-2 gap-2 mt-3"><select id="teacher-student-class" onchange="loadTeacherStudentAttendance()" class="w-full p-2 border rounded"><option value="">Loading classes…</option></select><input id="teacher-student-date" type="date" onchange="loadTeacherStudentAttendance()" class="w-full p-2 border rounded"></div><div id="teacher-student-list" class="mt-3">Choose a class.</div><button onclick="saveTeacherStudentAttendance()" class="w-full mt-3 p-3 bg-ashiana-green text-white rounded">Save Attendance</button></div>
+  <div class="bg-white rounded-2xl p-4 border">
+    <div class="flex items-center justify-between gap-2">
+      <div><h4 class="font-bold">Student Attendance</h4><p class="text-[10px] text-slate-500 mt-0.5">Mark attendance and view previously marked records for your assigned class.</p></div>
+      <span id="teacher-student-marked-badge" class="text-[9px] font-bold px-2 py-1 rounded-full bg-slate-100 text-slate-500">Not loaded</span>
+    </div>
+    <div class="grid grid-cols-2 gap-2 mt-3">
+      <select id="teacher-student-class" onchange="loadTeacherStudentAttendance()" class="w-full p-2 border rounded"><option value="">Loading classes…</option></select>
+      <input id="teacher-student-date" type="date" onchange="loadTeacherStudentAttendance()" class="w-full p-2 border rounded">
+    </div>
+    <div id="teacher-student-list" class="mt-3">Choose a class.</div>
+    <div class="grid grid-cols-2 gap-2 mt-3">
+      <button type="button" onclick="saveTeacherStudentAttendance()" class="p-3 bg-ashiana-green text-white rounded-xl font-bold text-xs flex items-center justify-center gap-2 shadow-sm">
+        <i data-lucide="save" class="w-4 h-4"></i><span>Save Attendance</span>
+      </button>
+      <button type="button" onclick="viewTeacherStudentAttendance()" class="p-3 bg-blue-700 hover:bg-blue-800 text-white rounded-xl font-bold text-xs flex items-center justify-center gap-2 shadow-sm">
+        <i data-lucide="eye" class="w-4 h-4"></i><span>View Attendance</span>
+      </button>
+    </div>
+  </div>
   <div class="bg-white rounded-2xl p-4 border">
     <div class="flex items-center justify-between"><h4 class="font-bold">Student Portal Management</h4><span class="text-[10px] text-slate-500">Assigned classes only</span></div>
     <div class="grid grid-cols-2 gap-2 mt-3"><select id="teacher-portal-class" onchange="loadTeacherPortalStudents()" class="p-2 border rounded"><option value="">Select class & section</option></select><select id="teacher-portal-type" onchange="renderTeacherPortalEditor()" class="p-2 border rounded"><option value="notice">Notice</option><option value="homework">Homework</option><option value="timetable">Timetable</option><option value="calendar">Calendar Event</option><option value="report">Report Card</option></select></div>
     <div id="teacher-portal-editor" class="mt-3 space-y-2"></div>
     <div class="mt-4 border-t pt-3"><h5 class="font-bold text-xs mb-2">Student Leave Requests</h5><div id="teacher-leave-requests" class="space-y-2 text-xs">Loading…</div></div>
   </div>
-</div>        <!-- Mobile Bottom Navigation Bar -->
+</div><div id="teacher-attendance-viewer-modal" class="hidden fixed inset-0 z-[115] bg-slate-950/70 backdrop-blur-sm p-3 items-center justify-center" onclick="closeTeacherAttendanceViewer(event)">
+  <div class="bg-white w-full max-w-lg max-h-[92vh] rounded-2xl shadow-2xl overflow-hidden" onclick="event.stopPropagation()">
+    <div class="bg-gradient-to-r from-emerald-950 to-[#064E3B] p-3.5 text-white flex items-center justify-between border-b-2 border-ashiana-red">
+      <div><h3 class="text-sm font-bold">View Student Attendance</h3><p class="text-[10px] text-emerald-200">Marked attendance for your assigned class</p></div>
+      <button type="button" onclick="closeTeacherAttendanceViewer()" class="w-8 h-8 rounded-full bg-white/10 hover:bg-white/20 flex items-center justify-center"><i data-lucide="x" class="w-4 h-4"></i></button>
+    </div>
+    <div id="teacher-attendance-viewer-body" class="p-3 overflow-y-auto"></div>
+    <div class="p-3 border-t bg-slate-50"><button type="button" onclick="closeTeacherAttendanceViewer()" class="w-full py-2.5 bg-slate-800 text-white rounded-xl text-xs font-bold">Close</button></div>
+  </div>
+</div>
+        <!-- Mobile Bottom Navigation Bar -->
         <div class="bg-white border-t border-slate-200 px-3 py-2 flex justify-around items-center text-slate-500 text-xs">
     <button id="staff-nav-students" onclick="switchStaffTab('students')" class="flex flex-col items-center text-slate-500"><i data-lucide="clipboard-check" class="w-4 h-4"></i><span class="text-[9px]">Students</span></button>
           <button id="staff-nav-punch" onclick="switchStaffTab('punch')" class="flex flex-col items-center text-ashiana-green font-bold transition-colors">
@@ -985,7 +1013,9 @@
     <p id="admin-student-status" class="text-xs mt-3"></p>
     <div class="overflow-x-auto mt-2"><table class="w-full text-xs text-left"><thead class="bg-slate-50"><tr><th class="p-2"><input type="checkbox" onchange="toggleAllAdminStudents(this.checked)"></th><th class="p-2">Enroll No.</th><th class="p-2">Student</th><th class="p-2">Class</th><th class="p-2">Section</th><th class="p-2">Gender</th><th class="p-2">Category</th><th class="p-2">Status</th><th class="p-2">Actions</th></tr></thead><tbody id="admin-student-tbody"></tbody></table></div>
   </div>
-  <div class="bg-white rounded-2xl border p-4"><div class="flex flex-col sm:flex-row sm:items-center sm:justify-between gap-2"><div><h4 class="font-bold text-slate-800">Student Attendance Report</h4><p class="text-[10px] text-slate-500">Attendance marked by teachers, by date, class and section.</p></div><div class="flex flex-wrap gap-2"><input id="admin-student-att-date" type="date" class="p-2 border rounded-xl text-xs"><input id="admin-student-att-class" placeholder="Class" class="p-2 border rounded-xl text-xs"><input id="admin-student-att-section" placeholder="Section" class="p-2 border rounded-xl text-xs w-24"><button type="button" onclick="loadAdminStudentAttendance()" class="px-3 py-2 bg-emerald-900 text-white rounded-xl text-xs font-bold">View Attendance</button></div></div><p id="admin-student-att-status" class="text-xs mt-2"></p><div class="overflow-x-auto mt-2"><table class="w-full text-xs text-left"><thead class="bg-slate-50"><tr><th class="p-2">Enroll</th><th class="p-2">Student</th><th class="p-2">Gender</th><th class="p-2">Category</th><th class="p-2">Student Status</th><th class="p-2">Attendance</th><th class="p-2">Marked By</th></tr></thead><tbody id="admin-student-att-tbody"></tbody></table></div></div>
+  <div class="bg-white rounded-2xl border p-4"><div class="flex flex-col sm:flex-row sm:items-center sm:justify-between gap-2"><div><h4 class="font-bold text-slate-800">Student Attendance Report</h4><p class="text-[10px] text-slate-500">Attendance marked by teachers, by date, class and section.</p></div><div class="flex flex-wrap gap-2"><input id="admin-student-att-date" type="date" class="p-2 border rounded-xl text-xs"><input id="admin-student-att-class" placeholder="Class" class="p-2 border rounded-xl text-xs"><input id="admin-student-att-section" placeholder="Section" class="p-2 border rounded-xl text-xs w-24"><button type="button" onclick="loadAdminStudentAttendance()" class="px-3 py-2 bg-emerald-900 hover:bg-emerald-950 text-white rounded-xl text-xs font-bold flex items-center gap-1.5 shadow-sm" title="View marked student attendance">
+  <i data-lucide="eye" class="w-3.5 h-3.5"></i><span>View Attendance</span>
+</button></div></div><p id="admin-student-att-status" class="text-xs mt-2"></p><div class="overflow-x-auto mt-2"><table class="w-full text-xs text-left"><thead class="bg-slate-50"><tr><th class="p-2">Enroll</th><th class="p-2">Student</th><th class="p-2">Gender</th><th class="p-2">Category</th><th class="p-2">Student Status</th><th class="p-2">Attendance</th><th class="p-2">Marked By</th></tr></thead><tbody id="admin-student-att-tbody"></tbody></table></div></div>
 </div>
 <div id="student-edit-modal" class="hidden fixed inset-0 z-[85] bg-slate-950/60 backdrop-blur-sm p-4 overflow-y-auto">
   <div class="max-w-2xl mx-auto bg-white rounded-2xl shadow-2xl mt-6">
@@ -3626,7 +3656,55 @@ async function handleTeacherLogin(event) {
         host.innerHTML=teacherStudentRows.length?teacherStudentRows.map(s=>'<div class="flex items-center gap-2 p-2 border rounded-xl"><div class="flex-1 min-w-0"><b class="text-xs">'+studentEscape(s.student_name)+'</b><p class="text-[10px] text-slate-500">Roll '+studentEscape(s.roll_no||'—')+' · '+studentEscape(s.gender||'—')+' · '+studentEscape(s.category||'—')+'</p></div><select data-student-id="'+s.id+'" class="student-attendance-status text-xs p-2 border rounded-lg"><option value="PRESENT" '+((byId[s.id]||'PRESENT')==='PRESENT'?'selected':'')+'>Present</option><option value="ABSENT" '+(byId[s.id]==='ABSENT'?'selected':'')+'>Absent</option><option value="LEAVE" '+(byId[s.id]==='LEAVE'?'selected':'')+'>Leave</option></select></div>').join(''):'<p class="text-xs text-slate-400 text-center py-5">No active students in this class.</p>';
       }catch(e){host.textContent='Could not load students: '+(e.message||e);}
     }
-    async function saveTeacherStudentAttendance(){
+    async function viewTeacherStudentAttendance(){
+      if(!canAccessStudentAttendance()||!supabaseClient)return showToast('Student attendance is available to teaching staff only.','error');
+      const sel=document.getElementById('teacher-student-class'),date=document.getElementById('teacher-student-date');
+      const host=document.getElementById('teacher-attendance-viewer-body');
+      const modal=document.getElementById('teacher-attendance-viewer-modal');
+      const a=teacherStudentAssignments[Number(sel?.value)];
+      const selectedDate=date?.value||studentDateToday();
+      if(!a)return showToast('Select an assigned class first.','error');
+      if(!host||!modal)return;
+      host.innerHTML='<div class="py-8 text-center text-slate-400 text-xs">Loading marked attendance…</div>';
+      modal.classList.remove('hidden');modal.classList.add('flex');
+      try{
+        const {data:students,error:studentError}=await supabaseClient.from('student_roster')
+          .select('id,enroll_no,student_name,class_name,section,roll_no,gender,category,status')
+          .eq('school_code',APS_STUDENT_SCHOOL).eq('class_name',a.class_name).eq('section',a.section)
+          .eq('status','ACTIVE').order('roll_no').order('student_name');
+        if(studentError)throw studentError;
+        const {data:marks,error:markError}=await supabaseClient.from('student_attendance')
+          .select('student_id,status,marked_by,updated_at')
+          .eq('school_code',APS_STUDENT_SCHOOL).eq('attendance_date',selectedDate);
+        if(markError)throw markError;
+        const byId=Object.fromEntries((marks||[]).map(m=>[m.student_id,m]));
+        const rows=(students||[]).map(s=>({...s,attendance:byId[s.id]||null}));
+        const marked=rows.filter(r=>r.attendance).length;
+        const present=rows.filter(r=>r.attendance?.status==='PRESENT').length;
+        const absent=rows.filter(r=>r.attendance?.status==='ABSENT').length;
+        const leave=rows.filter(r=>r.attendance?.status==='LEAVE').length;
+        const badge=document.getElementById('teacher-student-marked-badge');
+        if(badge)badge.textContent=marked+' marked';
+        host.innerHTML='<div class="grid grid-cols-4 gap-2 mb-3">'+
+          '<div class="p-2 rounded-xl bg-slate-50 border text-center"><b class="text-sm">'+rows.length+'</b><span class="block text-[9px] text-slate-500">Students</span></div>'+
+          '<div class="p-2 rounded-xl bg-emerald-50 border border-emerald-100 text-center"><b class="text-sm text-emerald-700">'+present+'</b><span class="block text-[9px] text-slate-500">Present</span></div>'+
+          '<div class="p-2 rounded-xl bg-rose-50 border border-rose-100 text-center"><b class="text-sm text-rose-700">'+absent+'</b><span class="block text-[9px] text-slate-500">Absent</span></div>'+
+          '<div class="p-2 rounded-xl bg-amber-50 border border-amber-100 text-center"><b class="text-sm text-amber-700">'+leave+'</b><span class="block text-[9px] text-slate-500">Leave</span></div></div>'+
+          '<div class="text-[10px] text-slate-500 mb-2">Class <b class="text-slate-800">'+studentEscape(a.class_name)+' - '+studentEscape(a.section)+'</b> · Date <b class="text-slate-800">'+studentEscape(selectedDate)+'</b> · Marked <b class="text-slate-800">'+marked+'/'+rows.length+'</b></div>'+
+          '<div class="max-h-[55vh] overflow-y-auto border rounded-xl divide-y">'+
+          (rows.length?rows.map(r=>{
+            const st=r.attendance?.status||'NOT MARKED';
+            const cls=st==='PRESENT'?'bg-emerald-100 text-emerald-800':st==='ABSENT'?'bg-rose-100 text-rose-800':st==='LEAVE'?'bg-amber-100 text-amber-800':'bg-slate-100 text-slate-500';
+            return '<div class="flex items-center gap-2 p-2.5"><div class="flex-1 min-w-0"><div class="font-bold text-xs truncate">'+studentEscape(r.student_name)+'</div><div class="text-[9px] text-slate-500">Roll '+studentEscape(r.roll_no||'—')+' · '+studentEscape(r.enroll_no||'—')+'</div></div><span class="px-2 py-1 rounded-full text-[9px] font-bold '+cls+'">'+studentEscape(st)+'</span></div>';
+          }).join(''):'<div class="p-5 text-center text-xs text-slate-400">No active students in this class.</div>')+
+          '</div>';
+        if(window.lucide)lucide.createIcons();
+      }catch(e){
+        host.innerHTML='<div class="p-4 rounded-xl bg-rose-50 border border-rose-200 text-xs text-rose-700">Could not load attendance: '+studentEscape(e.message||e)+'</div>';
+      }
+    }
+    
+async function saveTeacherStudentAttendance(){
       if(!canAccessStudentAttendance()||!supabaseClient)return showToast('Student attendance is available to teaching staff only.','error');const date=document.getElementById('teacher-student-date')?.value;if(!date||!teacherStudentRows.length)return showToast('Select a class with students first.','error');
       try{const {data,error:authError}=await supabaseClient.auth.getUser();if(authError||!data?.user)throw Error('Session expired; sign in again.');
         const marks=Array.from(document.querySelectorAll('#teacher-student-list select[data-student-id]')).map(el=>({school_code:APS_STUDENT_SCHOOL,student_id:el.dataset.studentId,attendance_date:date,status:el.value,marked_by:data.user.id}));
@@ -3665,7 +3743,7 @@ async function assignClassTeacher(){const cls=document.getElementById('assign-cl
     async function assignSubjectTeacher(){const cls=document.getElementById('assign-class-name')?.value,sec=document.getElementById('assign-section')?.value,email=document.getElementById('assign-teacher-email')?.value,subject=document.getElementById('assign-subject-name')?.value?.trim();if(!cls||!sec||!email||!subject)return showToast('Select class, section, teacher and enter subject.','error');try{const {error}=await supabaseClient.from('student_subject_assignments').upsert({school_code:APS_STUDENT_SCHOOL,teacher_email:email.toLowerCase(),class_name:cls,section:sec,subject_name:subject,active:true},{onConflict:'school_code,teacher_email,class_name,section,subject_name'});if(error)throw error;document.getElementById('assign-subject-name').value='';showToast('Subject teacher assignment saved.','success');await loadAdminAssignments();}catch(e){showToast('Subject assignment failed: '+(e.message||e),'error');}}
     async function loadAdminAssignments(){const host=document.getElementById('admin-assignment-list');if(!host||!supabaseClient||currentAuthUser?.type!=='ADMIN')return;const cls=document.getElementById('assign-class-name')?.value||'',sec=document.getElementById('assign-section')?.value||'';try{const [c,s]=await Promise.all([supabaseClient.from('student_class_assignments').select('id,teacher_email,class_name,section,active').eq('school_code',APS_STUDENT_SCHOOL).eq('active',true).order('class_name').order('section'),supabaseClient.from('student_subject_assignments').select('id,teacher_email,class_name,section,subject_name,active').eq('school_code',APS_STUDENT_SCHOOL).eq('active',true).order('class_name').order('section').order('subject_name')]);if(c.error)throw c.error;if(s.error)throw s.error;const all=[...(c.data||[]).map(x=>({...x,type:'Class Teacher'})),...(s.data||[]).map(x=>({...x,type:'Subject Teacher',label:x.subject_name}))].filter(x=>(!cls||x.class_name===cls)&&(!sec||x.section===sec));host.innerHTML=all.length?all.map(x=>'<div class="border rounded-xl p-3 flex items-center gap-2"><div class="flex-1"><b class="text-xs">'+studentEscape(x.class_name)+' - '+studentEscape(x.section)+'</b><p class="text-[10px] text-slate-500">'+studentEscape(x.type)+(x.label?' • '+studentEscape(x.label):'')+' · '+studentEscape(x.teacher_email)+'</p></div><button type="button" onclick="deleteAssignment(\''+studentEscape(x.id)+'\',\''+studentEscape(x.type)+'\')" class="text-rose-600 text-xs font-bold">Delete</button></div>').join(''):'<p class="text-xs text-slate-400">No assignments for this selection.</p>';}catch(e){host.textContent='Assignments unavailable: '+(e.message||e);}}
     async function deleteAssignment(id,type){if(!confirm('Delete this assignment?'))return;const table=type==='Class Teacher'?'student_class_assignments':'student_subject_assignments';try{const {error}=await supabaseClient.from(table).delete().eq('id',id).eq('school_code',APS_STUDENT_SCHOOL);if(error)throw error;showToast('Assignment deleted.','success');await loadAdminAssignments();}catch(e){showToast('Delete failed: '+(e.message||e),'error');}}
-    async function loadAdminStudentAttendance(){const tbody=document.getElementById('admin-student-att-tbody'),status=document.getElementById('admin-student-att-status');if(!tbody||currentAuthUser?.type!=='ADMIN'||!supabaseClient)return;const date=document.getElementById('admin-student-att-date')?.value||studentDateToday(),cls=document.getElementById('admin-student-att-class')?.value?.trim()||'',sec=document.getElementById('admin-student-att-section')?.value?.trim()||'';tbody.innerHTML='';if(status)status.textContent='Loading attendance…';try{let q=supabaseClient.from('student_attendance').select('attendance_date,status,marked_by,student:student_roster!inner(enroll_no,roll_no,student_name,class_name,section,gender,category,status)').eq('school_code',APS_STUDENT_SCHOOL).eq('attendance_date',date);if(cls)q=q.eq('student.class_name',cls);if(sec)q=q.eq('student.section',sec);const {data,error}=await q;if(error)throw error;const rows=data||[];tbody.innerHTML=rows.length?rows.map(r=>'<tr class="border-t"><td class="p-2 font-semibold">'+studentEscape(r.student?.enroll_no||'—')+'</td><td class="p-2">'+studentEscape(r.student?.student_name||'—')+'</td><td class="p-2">'+studentEscape(r.student?.gender||'—')+'</td><td class="p-2">'+studentEscape(r.student?.category||'—')+'</td><td class="p-2">'+studentEscape(r.student?.status||'—')+'</td><td class="p-2 font-bold">'+studentEscape(r.status)+'</td><td class="p-2 text-slate-500">'+studentEscape(r.marked_by||'—')+'</td></tr>').join(''):'<tr><td colspan="7" class="p-4 text-center text-slate-400">No attendance marked for this selection.</td></tr>';if(status)status.textContent=rows.length+' attendance records found for '+date+'.';}catch(e){if(status)status.textContent='Could not load attendance: '+(e.message||e);}}
+    async function loadAdminStudentAttendance(){const adminDate=document.getElementById('admin-student-att-date');if(adminDate&&!adminDate.value)adminDate.value=studentDateToday();const tbody=document.getElementById('admin-student-att-tbody'),status=document.getElementById('admin-student-att-status');if(!tbody||currentAuthUser?.type!=='ADMIN'||!supabaseClient)return;const date=document.getElementById('admin-student-att-date')?.value||studentDateToday(),cls=document.getElementById('admin-student-att-class')?.value?.trim()||'',sec=document.getElementById('admin-student-att-section')?.value?.trim()||'';tbody.innerHTML='';if(status)status.textContent='Loading attendance…';try{let q=supabaseClient.from('student_attendance').select('attendance_date,status,marked_by,student:student_roster!inner(enroll_no,roll_no,student_name,class_name,section,gender,category,status)').eq('school_code',APS_STUDENT_SCHOOL).eq('attendance_date',date);if(cls)q=q.eq('student.class_name',cls);if(sec)q=q.eq('student.section',sec);const {data,error}=await q;if(error)throw error;const rows=data||[];tbody.innerHTML=rows.length?rows.map(r=>'<tr class="border-t"><td class="p-2 font-semibold">'+studentEscape(r.student?.enroll_no||'—')+'</td><td class="p-2">'+studentEscape(r.student?.student_name||'—')+'</td><td class="p-2">'+studentEscape(r.student?.gender||'—')+'</td><td class="p-2">'+studentEscape(r.student?.category||'—')+'</td><td class="p-2">'+studentEscape(r.student?.status||'—')+'</td><td class="p-2 font-bold">'+studentEscape(r.status)+'</td><td class="p-2 text-slate-500">'+studentEscape(r.marked_by||'—')+'</td></tr>').join(''):'<tr><td colspan="7" class="p-4 text-center text-slate-400">No attendance marked for this selection.</td></tr>';if(status)status.textContent=rows.length+' attendance records found for '+date+'.';}catch(e){if(status)status.textContent='Could not load attendance: '+(e.message||e);}}
     let parsedStudentBulkRows = [];
     function closeStudentBulkUploadModal(){document.getElementById('student-bulk-upload-modal')?.classList.add('hidden');const input=document.getElementById('student-bulk-file-input');if(input)input.value='';parsedStudentBulkRows=[];document.getElementById('student-bulk-preview')?.classList.add('hidden');const st=document.getElementById('student-bulk-status');if(st)st.textContent='';}
     function openStudentBulkUploadModal(){if(currentAuthUser?.type!=='ADMIN')return showToast('Administrator session required.','error');document.getElementById('student-bulk-upload-modal')?.classList.remove('hidden');if(window.lucide)lucide.createIcons();}
@@ -3678,6 +3756,13 @@ async function assignClassTeacher(){const cls=document.getElementById('assign-cl
       }catch(e){parsedStudentBulkRows=[];showToast('Student import file error: '+(e.message||e),'error');}
     }
     async function executeStudentBulkUpload(){if(!parsedStudentBulkRows.length)return showToast('No student records to import.','error');if(currentAuthUser?.type!=='ADMIN'||!supabaseClient)return showToast('Administrator cloud session is required.','error');const btn=document.getElementById('btn-confirm-student-bulk');btn.disabled=true;btn.textContent='Importing students…';const st=document.getElementById('student-bulk-status');try{let imported=0;for(let i=0;i<parsedStudentBulkRows.length;i+=500){const chunk=parsedStudentBulkRows.slice(i,i+500),{error}=await supabaseClient.from('student_roster').upsert(chunk,{onConflict:'school_code,enroll_no'});if(error)throw error;imported+=chunk.length;if(st)st.textContent='Imported '+imported+' of '+parsedStudentBulkRows.length+' students…';}showToast('Student bulk import completed: '+imported+' records.','success');await loadAdminStudents();closeStudentBulkUploadModal();}catch(e){showToast('Student bulk import failed: '+(e.message||e),'error');}finally{btn.disabled=false;btn.textContent='Import Students';}}
+    function closeTeacherAttendanceViewer(event){
+      if(event&&event.target&&event.target.id!=='teacher-attendance-viewer-modal')return;
+      const modal=document.getElementById('teacher-attendance-viewer-modal');
+      if(!modal)return;
+      modal.classList.add('hidden');modal.classList.remove('flex');
+    }
+
     async function switchStaffTab(tab) {
       currentStaffTab = tab;
       const punchView = document.getElementById("staff-tab-punch");
