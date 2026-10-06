@@ -880,22 +880,26 @@
                 throw new Error(authResult.error?.message || "Administrator sign-in failed.");
               }
 
-              const { data: adminAuth, error: adminAuthError } =
-                await adminMainClient.rpc("authorize_admin_login");
+              const { data: adminRow, error: adminRowError } = await adminMainClient
+                .from("admin_users")
+                .select("email,role,active")
+                .ilike("email", adminEmail)
+                .eq("active", true)
+                .maybeSingle();
 
-              if (adminAuthError) {
+              if (adminRowError) {
                 await adminMainClient.auth.signOut({ scope: "local" });
-                throw new Error("Administrator authorization check failed: " + (adminAuthError.message || "RPC error"));
+                throw new Error("Administrator authorization check failed: " + (adminRowError.message || "Database error"));
               }
-              if (!adminAuth?.authorized) {
+              if (!adminRow) {
                 await adminMainClient.auth.signOut({ scope: "local" });
                 throw new Error("This Supabase account is not authorized as an Administrator.");
               }
 
               var pendingAdminUser = {
                 type: "ADMIN",
-                username: adminAuth.email || adminEmail,
-                role: adminAuth.role || "ADMIN"
+                username: adminRow.email || adminEmail,
+                role: adminRow.role || "ADMIN"
               };
 
               sessionStorage.setItem("aps_current_auth_session_v1", JSON.stringify(pendingAdminUser));
@@ -3006,7 +3010,7 @@
     // The 4-digit PIN remains the user's credential. Supabase Auth receives
     // only this deterministic, policy-compliant derived password.
     function deriveStaffAuthPassword(staffId, pin) {
-      return `EduPunch!$${String(staffId)}!${String(pin)}`;
+      return `EduPunch!${String(staffId)}!${String(pin)}`;
     }
 
     async function invokeVerifyAttendance(body) {
@@ -3209,14 +3213,15 @@
         // Admin authorization uses the same SECURITY DEFINER RPC as the
         // login bridge. This avoids fragile client-side RLS checks and keeps
         // the Admin role decision server-authoritative.
-        const { data: adminAuth, error: adminAuthError } =
-          await supabaseClient.rpc('authorize_admin_login');
+        const { data: adminRow, error: adminRowError } =
+          await supabaseClient.from('admin_users')
+            .select('email,role,active').ilike('email', email).eq('active', true).maybeSingle();
 
-        if (!adminAuthError && adminAuth?.authorized) {
+        if (!adminRowError && adminRow) {
           currentAuthUser = {
             type: 'ADMIN',
-            username: adminAuth.email || email,
-            role: adminAuth.role || 'ADMIN'
+            username: adminRow.email || email,
+            role: adminRow.role || 'ADMIN'
           };
           currentStaffId = null;
           sessionStorage.setItem(STORAGE_KEY_CURRENT_USER, JSON.stringify(currentAuthUser));
@@ -3233,7 +3238,7 @@
           sessionStorage.removeItem("aps_admin_login_handoff_v1");
           sessionStorage.removeItem("aps_login_handoff_v1");
           throw new Error(
-            adminAuthError?.message || "Administrator authorization could not be verified."
+            adminRowError?.message || "Administrator authorization could not be verified."
           );
         }
 
