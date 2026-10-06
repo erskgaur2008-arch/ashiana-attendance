@@ -565,8 +565,8 @@
           if (window.__ashianaStudentLoginClient) return window.__ashianaStudentLoginClient;
           if (!window.supabase?.createClient) throw new Error("Supabase client library is unavailable.");
           window.__ashianaStudentLoginClient = window.supabase.createClient(
-            DEFAULT_SUPABASE_URL,
-            DEFAULT_SUPABASE_ANON_KEY,
+            "https://oalfzgluqroqbbrulhpr.supabase.co",
+            "sb_publishable_PND9f9FKbNrxlEakSgLKYA_5EsqLHkg",
             { auth: { persistSession: false, autoRefreshToken: false, detectSessionInUrl: false } }
           );
           return window.__ashianaStudentLoginClient;
