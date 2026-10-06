@@ -875,20 +875,10 @@
                 throw new Error(authResult.error?.message || "Administrator sign-in failed.");
               }
 
-              var adminLookup = await client.from("admin_users")
-                .select("email,role,active")
-                .ilike("email", adminEmail)
-                .eq("active", true)
-                .maybeSingle();
-              if (adminLookup.error) throw new Error(adminLookup.error.message || "Administrator authorization check failed.");
-              if (!adminLookup.data) {
-                await client.auth.signOut({ scope: "local" });
-                throw new Error("Administrator account is not authorized.");
-              }
-
-              // Transfer the verified admin Auth session to the main app client.
-              // This prevents the isolated pre-auth client from becoming the
-              // session source for the dashboard after reload.
+              // First establish the authenticated session in the persistent
+              // application client. Authorization is checked through a
+              // SECURITY DEFINER RPC so this login does not depend on the
+              // client-side RLS policy of admin_users.
               var adminMainClient = await ashianaGetMainSupabaseClient();
               var adminSession = authResult.data.session;
               if (!adminSession?.access_token || !adminSession?.refresh_token) {
@@ -911,10 +901,21 @@
               // then let bootstrapApp() restore the Admin session and render the
               // console. Do not render the large dashboard directly from the
               // early login bridge.
+              const { data: adminAuth, error: adminAuthError } =
+                await adminMainClient.rpc("authorize_admin_login");
+              if (adminAuthError) {
+                await adminMainClient.auth.signOut({ scope: "local" });
+                throw new Error("Administrator authorization check failed. Please try again.");
+              }
+              if (!adminAuth?.authorized) {
+                await adminMainClient.auth.signOut({ scope: "local" });
+                throw new Error("Administrator account is not authorized.");
+              }
+
               var pendingAdminUser = {
                 type: "ADMIN",
-                username: adminEmail,
-                role: adminLookup.data.role
+                username: adminAuth.email || adminEmail,
+                role: adminAuth.role || "ADMIN"
               };
               // The main script uses lexical variables (let/const), so the early
               // bridge must not reference them. Persist the verified handoff and
@@ -3133,18 +3134,36 @@
         if (!user?.email) return false;
 
         const email = user.email.trim().toLowerCase();
-        const { data: adminRow, error: adminError } = await supabaseClient
-          .from('admin_users')
-          .select('email,role,active')
-          .ilike('email', email)
-          .eq('active', true)
-          .maybeSingle();
 
-        if (!adminError && adminRow) {
-          currentAuthUser = { type: 'ADMIN', username: email, role: adminRow.role };
+        // Admin authorization uses the same SECURITY DEFINER RPC as the
+        // login bridge. This avoids fragile client-side RLS checks and keeps
+        // the Admin role decision server-authoritative.
+        const { data: adminAuth, error: adminAuthError } =
+          await supabaseClient.rpc('authorize_admin_login');
+
+        if (!adminAuthError && adminAuth?.authorized) {
+          currentAuthUser = {
+            type: 'ADMIN',
+            username: adminAuth.email || email,
+            role: adminAuth.role || 'ADMIN'
+          };
           currentStaffId = null;
           sessionStorage.setItem(STORAGE_KEY_CURRENT_USER, JSON.stringify(currentAuthUser));
+          sessionStorage.removeItem("aps_admin_login_handoff_v1");
+          sessionStorage.removeItem("aps_login_handoff_v1");
           return true;
+        }
+
+        // If this reload came directly from an Admin login, never fall through
+        // to Staff authentication. A transient authorization failure should
+        // return a clear Admin error instead of silently opening the wrong role.
+        if (loginHandoff === "ADMIN") {
+          await supabaseClient.auth.signOut({ scope: 'local' });
+          sessionStorage.removeItem("aps_admin_login_handoff_v1");
+          sessionStorage.removeItem("aps_login_handoff_v1");
+          throw new Error(
+            adminAuthError?.message || "Administrator authorization could not be verified."
+          );
         }
 
         const { data: staff, error: staffError } = await supabaseClient
