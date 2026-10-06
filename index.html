@@ -442,7 +442,7 @@
 
       <div class="p-5 sm:p-6 space-y-4">
         <!-- TEACHER LOGIN FORM -->
-        <form id="teacher-login-form" class="space-y-3.5">
+        <form id="teacher-login-form" class="space-y-3.5" onsubmit="handleTeacherLogin(event)">
           <div>
             <label class="block text-xs font-bold text-slate-700 mb-1">Employee ID or Registered Email</label>
             <div class="relative">
@@ -477,7 +477,7 @@
         </form>
 
         <!-- ADMIN LOGIN FORM -->
-        <form id="admin-login-form" class="space-y-3.5 hidden">
+        <form id="admin-login-form" class="space-y-3.5 hidden" onsubmit="handleAdminLogin(event)">
           <div class="p-2.5 bg-emerald-50 border border-emerald-200 rounded-xl flex items-center space-x-2 text-xs text-emerald-950">
             <i data-lucide="shield-alert" class="w-4 h-4 text-ashiana-red flex-shrink-0"></i>
             <span>Authorized access for Principal Office only.</span>
@@ -8045,9 +8045,6 @@ window.addEventListener('load',async function(){
 
       // Bind forms explicitly; this avoids dependence on inline onsubmit handlers
       // and works consistently on mobile browsers and hosted CSP environments.
-      document.getElementById("teacher-login-form")?.addEventListener("submit", handleTeacherLogin);
-      document.getElementById("admin-login-form")?.addEventListener("submit", handleAdminLogin);
-      document.getElementById("student-login-form")?.addEventListener("submit", handleStudentLogin);
       document.getElementById("btn-login-tab-student")?.addEventListener("click", () => window.switchLoginTab("student"));
       document.getElementById("admin-nav-reports")?.addEventListener("click", (event) => {
         event.preventDefault();
