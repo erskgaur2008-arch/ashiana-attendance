@@ -201,6 +201,15 @@
       #staff-id-card-preview { flex-shrink:0; }
     }
 
+    /* Staff ID preview layout: photo must visually sit between header and name band. */
+    .staff-id-preview-card{box-sizing:border-box;}
+    .staff-id-preview-card .id-top{box-sizing:border-box;flex:0 0 19mm;height:19mm;}
+    .staff-id-preview-card .id-photo-wrap{box-sizing:border-box;flex:0 0 30mm;height:30mm;margin:-1mm auto 0;position:relative;z-index:3;}
+    .staff-id-preview-card .id-photo-wrap img,.staff-id-preview-card .photo-fallback{position:relative;z-index:4;box-sizing:border-box;}
+    .staff-id-preview-card .id-name-band{box-sizing:border-box;flex:0 0 7mm;min-height:7mm;position:relative;z-index:5;}
+    .staff-id-preview-card .id-details{box-sizing:border-box;flex:0 0 18mm;height:18mm;position:relative;z-index:1;}
+    .staff-id-preview-card .id-qr-area{box-sizing:border-box;flex:0 0 12mm;height:12mm;position:relative;z-index:1;}
+
     #staff-id-card-preview {
       display:flex;
       align-items:center;
@@ -5269,17 +5278,18 @@ window.addEventListener('load',async function(){
         const vw = window.innerWidth;
         const vh = window.innerHeight;
         const availableW = Math.max(240, vw - 24);
-        const availableH = Math.max(360, vh - 70);
+        const availableH = Math.max(360, vh - 86);
 
-        // Keep the original 54:85.6 ratio and enlarge as much as the screen allows.
-        const scale = Math.min(
-          availableW / card.offsetWidth,
-          availableH / card.offsetHeight
-        );
+        // Scale from the card's physical dimensions only. Do not change the
+        // internal layout width/height, because that is what caused the photo
+        // to overlap the text band in the preview.
+        const cardWidth = 54 * 3.779527559; // 54mm in CSS px
+        const cardHeight = 85.6 * 3.779527559;
+        const scale = Math.min(availableW / cardWidth, availableH / cardHeight, 3);
 
         card.style.transform = `scale(${scale})`;
-        preview.style.width = `${card.offsetWidth * scale}px`;
-        preview.style.height = `${card.offsetHeight * scale}px`;
+        preview.style.width = `${cardWidth * scale}px`;
+        preview.style.height = `${cardHeight * scale}px`;
       };
 
       requestAnimationFrame(scaleStaffIdCardPreview);
