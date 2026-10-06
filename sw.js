@@ -1,4 +1,4 @@
-const CACHE_NAME = "ashiana-attendance-v31";
+const CACHE_NAME = "ashiana-attendance-v32";
 const APP_SHELL = [
   "./",
   "./index.html",
