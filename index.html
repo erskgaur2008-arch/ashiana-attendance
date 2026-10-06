@@ -97,7 +97,7 @@
     @media (max-width: 640px){
       body:has(#auth-gateway-view:not(.hidden)){overflow-x:hidden;}
       #auth-main{max-width:none;padding:0!important;justify-content:flex-start!important;align-items:stretch!important;}
-      #auth-gateway-view{width:100%!important;max-width:none!important;min-height:calc(100dvh - env(safe-area-inset-top) - env(safe-area-inset-bottom));margin:0!important;border-radius:0!important;border-left:0!important;border-right:0!important;box-shadow:none!important;display:flex;flex-direction:column;}
+      #auth-gateway-view:not(.hidden){width:100%!important;max-width:none!important;min-height:calc(100dvh - env(safe-area-inset-top) - env(safe-area-inset-bottom));margin:0!important;border-radius:0!important;border-left:0!important;border-right:0!important;box-shadow:none!important;display:flex;flex-direction:column;}
       #auth-gateway-view > div:first-child{padding-top:calc(24px + env(safe-area-inset-top));}
       #auth-gateway-view > div:last-child{flex:1;}
     }
