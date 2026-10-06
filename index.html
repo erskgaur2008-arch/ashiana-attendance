@@ -2864,6 +2864,11 @@
     let currentStaffId = null;
     let currentPortal = "staff";
 
+    // Authentication lifecycle state. The UI must not react to transient
+    // Supabase auth events until the initial session/role has been restored.
+    let authHydrationInProgress = true;
+    let authListenerBound = false;
+
     // Staff Directory Selection State
     let selectedStaffIds = new Set();
 
@@ -3091,18 +3096,91 @@
         }
 
         if (savedUser?.type === 'STUDENT') {
-          // Student authentication is RPC-based. Keep a lightweight local
-          // portal session so a normal page refresh does not log the student out.
-          await supabaseClient.auth.signOut({ scope: 'local' });
-          localStorage.setItem("aps_student_session_v1", JSON.stringify(savedUser));
-          sessionStorage.setItem(STORAGE_KEY_CURRENT_USER, JSON.stringify(savedUser));
-          currentAuthUser = savedUser;
+          // Student login is intentionally RPC-based rather than a Supabase
+          // Auth account. On every reload, revalidate the stored credential
+          // against the server before restoring the Student portal. This keeps
+          // refresh persistence without trusting a client-editable role alone.
+          try { await supabaseClient.auth.signOut({ scope: 'local' }); } catch (_) {}
+
+          const student = savedUser.studentRecord || {};
+          const enrollNo = String(student.enroll_no || '').trim().toUpperCase();
+          const dobRaw = String(student.dob || '').slice(0, 10);
+          const dobParts = dobRaw.split('-');
+          const dobPassword = dobParts.length === 3
+            ? (dobParts[2] + dobParts[1] + dobParts[0])
+            : '';
+
+          if (!enrollNo || !/^\d{8}$/.test(dobPassword)) {
+            throw new Error('STUDENT_SESSION_INVALID');
+          }
+
+          const { data: loginCheck, error: loginCheckError } = await supabaseClient.rpc('student_login', {
+            p_school_code: APS_STUDENT_SCHOOL,
+            p_enroll_no: enrollNo,
+            p_dob_password: dobPassword
+          });
+          if (loginCheckError) throw loginCheckError;
+          if (!loginCheck?.success || !loginCheck?.student) {
+            localStorage.removeItem("aps_student_session_v1");
+            sessionStorage.removeItem(STORAGE_KEY_CURRENT_USER);
+            sessionStorage.removeItem("aps_login_handoff_v1");
+            throw new Error('STUDENT_SESSION_EXPIRED');
+          }
+
+          const { data: bundleData, error: bundleError } = await supabaseClient.rpc('student_portal_bundle', {
+            p_enroll_no: enrollNo,
+            p_dob_password: dobPassword
+          });
+          if (bundleError) throw bundleError;
+
+          const restoredStudentUser = {
+            type: 'STUDENT',
+            studentRecord: loginCheck.student,
+            portalData: bundleData || {}
+          };
+          localStorage.setItem("aps_student_session_v1", JSON.stringify(restoredStudentUser));
+          sessionStorage.setItem(STORAGE_KEY_CURRENT_USER, JSON.stringify(restoredStudentUser));
+          sessionStorage.removeItem("aps_login_handoff_v1");
+          currentAuthUser = restoredStudentUser;
           currentStaffId = null;
           return true;
         }
 
-        const { data: sessionData } = await supabaseClient.auth.getSession();
-        const session = sessionData?.session;
+        let { data: sessionData, error: sessionError } = await supabaseClient.auth.getSession();
+        let session = sessionData?.session || null;
+        if (sessionError || !session?.access_token ||
+            (session.expires_at && session.expires_at * 1000 <= Date.now() + 15000)) {
+          const refreshed = await supabaseClient.auth.refreshSession();
+          if (!refreshed.error && refreshed.data?.session?.access_token) {
+            session = refreshed.data.session;
+          } else {
+            session = null;
+          }
+        }
+
+        // getUser() validates the current JWT with Supabase Auth. getSession()
+        // is used first only to obtain/refresh the local session.
+        let { data: verifiedUserData, error: verifiedUserError } = await supabaseClient.auth.getUser();
+        if (verifiedUserError || !verifiedUserData?.user?.email) {
+          const refreshed = await supabaseClient.auth.refreshSession();
+          if (!refreshed.error && refreshed.data?.session?.access_token) {
+            session = refreshed.data.session;
+            const verified = await supabaseClient.auth.getUser();
+            verifiedUserData = verified.data;
+            verifiedUserError = verified.error;
+          }
+        }
+
+        if (verifiedUserError || !verifiedUserData?.user?.email) {
+          if (loginHandoff === "ADMIN") {
+            sessionStorage.removeItem("aps_login_handoff_v1");
+            sessionStorage.removeItem("aps_admin_login_handoff_v1");
+            throw new Error("AUTH_SESSION_EXPIRED");
+          }
+          return false;
+        }
+
+        session = session || (await supabaseClient.auth.getSession()).data?.session || null;
         if (!session?.user && loginHandoff === "ADMIN") {
           sessionStorage.removeItem("aps_login_handoff_v1");
           sessionStorage.removeItem("aps_admin_login_handoff_v1");
@@ -3183,6 +3261,9 @@
         currentAuthUser = null;
         currentStaffId = null;
         sessionStorage.removeItem(STORAGE_KEY_CURRENT_USER);
+        if (String(e?.message || '').includes('STUDENT_SESSION_EXPIRED')) {
+          try { localStorage.removeItem("aps_student_session_v1"); } catch (_) {}
+        }
         return false;
       }
     }
@@ -3287,13 +3368,47 @@
           || window.supabase.createClient(DEFAULT_SUPABASE_URL, DEFAULT_SUPABASE_ANON_KEY);
         window.__ashianaMainSupabaseClient = supabaseClient;
 
-        // Listen for Supabase's secure password-recovery redirect.
-        supabaseClient.auth.onAuthStateChange((event, session) => {
-          if (event === 'PASSWORD_RECOVERY' && session?.user?.email) {
-            window.staffPinRecoveryActive = true;
-            openStaffPinResetModal(true, session.user.email);
-          }
-        });
+        // Register one auth lifecycle listener. INITIAL_SESSION/SIGNED_OUT/
+        // TOKEN_REFRESHED must not race the explicit bootstrap role restore.
+        if (!authListenerBound) {
+          authListenerBound = true;
+          supabaseClient.auth.onAuthStateChange((event, session) => {
+            try {
+              if (event === 'PASSWORD_RECOVERY' && session?.user?.email) {
+                window.staffPinRecoveryActive = true;
+                openStaffPinResetModal(true, session.user.email);
+                return;
+              }
+
+              if (authHydrationInProgress) return;
+
+              if (event === 'SIGNED_OUT') {
+                currentAuthUser = null;
+                currentStaffId = null;
+                sessionStorage.removeItem(STORAGE_KEY_CURRENT_USER);
+                sessionStorage.removeItem("aps_login_handoff_v1");
+                sessionStorage.removeItem("aps_admin_login_handoff_v1");
+                try { applyAuthenticatedUI(); } catch (_) {}
+                return;
+              }
+
+              // A real Supabase sign-in/refresh is authoritative for Admin/
+              // Staff. Rehydrate the portal from the server rather than
+              // trusting a cached role object.
+              if ((event === 'SIGNED_IN' || event === 'TOKEN_REFRESHED' || event === 'USER_UPDATED')
+                  && session?.user?.email
+                  && currentAuthUser?.type !== 'STUDENT') {
+                restoreSupabaseSession().then((restored) => {
+                  if (restored) {
+                    try { applyAuthenticatedUI(); } catch (_) {}
+                  }
+                }).catch((e) => console.warn("Auth event restore warning:", e));
+              }
+            } catch (e) {
+              console.warn("Supabase auth state handler warning:", e);
+            }
+          });
+        }
 
         isCloudConnected = true;
         updateCloudBadge(true, "Cloud Auth Ready");
@@ -4370,6 +4485,8 @@ async function handleTeacherLogin(event) {
       sessionStorage.removeItem("aps_login_handoff_v1");
       localStorage.removeItem("aps_student_session_v1");
       try { localStorage.removeItem("sb-oalfzgluqroqbbrulhpr-auth-token"); } catch (_) {}
+      try { localStorage.removeItem("aps_student_session_expiry_v1"); } catch (_) {}
+      try { sessionStorage.removeItem("aps_student_session_expiry_v1"); } catch (_) {}
       try { sessionStorage.removeItem("sb-oalfzgluqroqbbrulhpr-auth-token"); } catch (_) {}
       showToast("Signed out safely.", "info");
       applyAuthenticatedUI();
@@ -4522,6 +4639,14 @@ async function handleTeacherLogin(event) {
     // successful authentication independent of dashboard widget rendering.
     window.__ashianaOpenAuthenticatedPortal = function (roleType) {
       try {
+        if (!currentAuthUser) {
+          throw new Error("AUTHENTICATION_REQUIRED");
+        }
+        const normalizedUserRole = String(currentAuthUser.type || "").toUpperCase();
+        const requestedRole = String(roleType || "").toUpperCase();
+        if (requestedRole && requestedRole !== normalizedUserRole) {
+          throw new Error("ROLE_MISMATCH");
+        }
         const authGateway = document.getElementById("auth-gateway-view");
         const staffPortal = document.getElementById("staff-portal-view");
         const adminPortal = document.getElementById("admin-portal-view");
@@ -4557,7 +4682,26 @@ async function handleTeacherLogin(event) {
     };
 
     function switchPortal(portal) {
-      currentPortal = portal;
+      if (!currentAuthUser) {
+        currentPortal = "staff";
+        document.getElementById("auth-gateway-view")?.classList.remove("hidden");
+        document.getElementById("staff-portal-view")?.classList.add("hidden");
+        document.getElementById("admin-portal-view")?.classList.add("hidden");
+        document.getElementById("student-portal-view")?.classList.add("hidden");
+        return false;
+      }
+
+      const requestedPortal = String(portal || "").toLowerCase();
+      const allowedPortal =
+        currentAuthUser.type === "ADMIN" ? "admin" :
+        currentAuthUser.type === "STUDENT" ? "student" : "staff";
+
+      if (requestedPortal !== allowedPortal) {
+        console.warn("Blocked unauthorized portal switch:", requestedPortal, "for", currentAuthUser.type);
+        return false;
+      }
+
+      currentPortal = requestedPortal;
       const staffView = document.getElementById("staff-portal-view");
       const adminView = document.getElementById("admin-portal-view");
       const studentView = document.getElementById("student-portal-view");
@@ -8815,9 +8959,12 @@ window.addEventListener('load',async function(){
       }
 
       let restored = false;
+      authHydrationInProgress = true;
       try { restored = await restoreSupabaseSession(); } catch (e) {
         console.error("Session restore error:", e);
         restored = false;
+      } finally {
+        authHydrationInProgress = false;
       }
       if (!restored && !currentAuthUser) {
         currentAuthUser = null;
