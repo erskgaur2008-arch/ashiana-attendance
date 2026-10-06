@@ -6593,6 +6593,22 @@ window.addEventListener('load',async function(){
     }
   });
 <\/script>
+<script>
+  // Keep the installed PWA/service-worker shell in sync with every production
+  // build. This prevents an older cached login page from surviving a deployment.
+  if ("serviceWorker" in navigator && window.location.hostname !== "localhost") {
+    window.addEventListener("load", function () {
+      navigator.serviceWorker.register("./sw.js?v=20261006-26", {
+        scope: "./",
+        updateViaCache: "none"
+      }).then(function (registration) {
+        registration.update().catch(function () {});
+      }).catch(function (error) {
+        console.warn("Ashiana service worker registration failed:", error);
+      });
+    }, { once: true });
+  }
+</script>
 </body>
 </html>`);
       win.document.close();
