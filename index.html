@@ -489,6 +489,45 @@
         </form>
       </div>
 
+      <!-- EARLY MOBILE-SAFE ROLE SWITCHER: runs before the large application script so
+           a later JavaScript error cannot leave the selected role on the wrong form. -->
+      <script>
+      (function () {
+        function applyAshianaLoginRole(role) {
+          var selected = ["teacher", "admin", "student"].indexOf(String(role)) >= 0 ? String(role) : "teacher";
+          var map = {
+            teacher: document.getElementById("teacher-login-form"),
+            admin: document.getElementById("admin-login-form"),
+            student: document.getElementById("student-login-form")
+          };
+          Object.keys(map).forEach(function (key) {
+            if (map[key]) map[key].classList.toggle("hidden", key !== selected);
+          });
+          var selector = document.getElementById("login-role-select");
+          if (selector && selector.value !== selected) selector.value = selected;
+          return false;
+        }
+        window.__ashianaApplyLoginRole = applyAshianaLoginRole;
+        window.switchLoginTab = applyAshianaLoginRole;
+
+        function bindAshianaLoginRole() {
+          var selector = document.getElementById("login-role-select");
+          if (!selector || selector.dataset.earlyRoleBound === "1") return;
+          selector.dataset.earlyRoleBound = "1";
+          selector.addEventListener("change", function () { applyAshianaLoginRole(selector.value); });
+          selector.addEventListener("input", function () { applyAshianaLoginRole(selector.value); });
+          applyAshianaLoginRole(selector.value);
+        }
+
+        if (document.readyState === "loading") {
+          document.addEventListener("DOMContentLoaded", bindAshianaLoginRole, { once: true });
+        } else {
+          bindAshianaLoginRole();
+        }
+        window.addEventListener("pageshow", bindAshianaLoginRole);
+      })();
+      </script>
+
       <div class="bg-slate-50 p-3 text-center border-t border-slate-100 text-[10px] text-slate-500">
         Ashiana Public School • Sector 46-A, Chandigarh
       </div>
