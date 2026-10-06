@@ -5302,7 +5302,7 @@ async function handleTeacherLogin(event) {
       if(window.lucide)lucide.createIcons();
     }
     
-function loadTeacherStudentAttendance(){
+async function loadTeacherStudentAttendance(){
       const sel=document.getElementById('teacher-student-class'),date=document.getElementById('teacher-student-date'),host=document.getElementById('teacher-student-list');if(!sel||!date||!host||!supabaseClient)return;if(!date.value)date.value=studentDateToday();
       const a=teacherStudentAssignments[Number(sel.value)];if(!a){host.textContent='Select an assigned class.';return;}host.textContent='Loading students…';
       try{const {data:students,error}=await supabaseClient.from('student_roster').select('id,enroll_no,student_name,class_name,section,roll_no,gender,category,status').eq('school_code',APS_STUDENT_SCHOOL).eq('class_name',a.class_name).eq('section',a.section).eq('status','ACTIVE').order('roll_no').order('student_name');if(error)throw error;teacherStudentRows=students||[];
