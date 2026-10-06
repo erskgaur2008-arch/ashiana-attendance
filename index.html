@@ -867,49 +867,30 @@
 
             if (role === "admin") {
               var adminEmail = String(document.getElementById("admin-login-user")?.value || "").trim().toLowerCase();
-              var adminPassword = String(document.getElementById("admin-login-pass")?.value || "").trim();
+              var adminPassword = String(document.getElementById("admin-login-pass")?.value || "");
               if (!adminEmail || !adminPassword) throw new Error("Enter the administrator email and password.");
 
-              var authResult = await client.auth.signInWithPassword({ email: adminEmail, password: adminPassword });
+              // Use the SAME persistent Supabase client that the dashboard uses.
+              // This avoids the Android/PWA full-page session handoff failure.
+              var adminMainClient = await ashianaGetMainSupabaseClient();
+              var authResult = await adminMainClient.auth.signInWithPassword({
+                email: adminEmail,
+                password: adminPassword
+              });
               if (authResult.error || !authResult.data?.user) {
                 throw new Error(authResult.error?.message || "Administrator sign-in failed.");
               }
 
-              // First establish the authenticated session in the persistent
-              // application client. Authorization is checked through a
-              // SECURITY DEFINER RPC so this login does not depend on the
-              // client-side RLS policy of admin_users.
-              var adminMainClient = await ashianaGetMainSupabaseClient();
-              var adminSession = authResult.data.session;
-              if (!adminSession?.access_token || !adminSession?.refresh_token) {
-                throw new Error("Administrator authentication returned no secure session.");
-              }
-              var adminSessionResult = await adminMainClient.auth.setSession({
-                access_token: adminSession.access_token,
-                refresh_token: adminSession.refresh_token
-              });
-              if (adminSessionResult.error || !adminSessionResult.data?.user) {
-                throw new Error(adminSessionResult.error?.message || "Administrator session could not be established.");
-              }
-              // Do NOT sign out the pre-auth client here. Both clients hold the
-              // same Auth session; signing out the pre-auth client revokes the
-              // refresh token and makes the transferred main session invalid.
-
-              // Complete the authenticated handoff through the normal application
-              // bootstrap. This is the most reliable path on Android Chrome/PWA:
-              // set the persistent main-client session, verify it was persisted,
-              // then let bootstrapApp() restore the Admin session and render the
-              // console. Do not render the large dashboard directly from the
-              // early login bridge.
               const { data: adminAuth, error: adminAuthError } =
                 await adminMainClient.rpc("authorize_admin_login");
+
               if (adminAuthError) {
                 await adminMainClient.auth.signOut({ scope: "local" });
-                throw new Error("Administrator authorization check failed. Please try again.");
+                throw new Error("Administrator authorization check failed: " + (adminAuthError.message || "RPC error"));
               }
               if (!adminAuth?.authorized) {
                 await adminMainClient.auth.signOut({ scope: "local" });
-                throw new Error("Administrator account is not authorized.");
+                throw new Error("This Supabase account is not authorized as an Administrator.");
               }
 
               var pendingAdminUser = {
@@ -917,19 +898,20 @@
                 username: adminAuth.email || adminEmail,
                 role: adminAuth.role || "ADMIN"
               };
-              // The main script uses lexical variables (let/const), so the early
-              // bridge must not reference them. Persist the verified handoff and
-              // let bootstrap restore the real Auth session after a clean reload.
-              sessionStorage.setItem("aps_current_auth_session_v1", JSON.stringify(pendingAdminUser));
-              sessionStorage.setItem("aps_admin_login_handoff_v1", "1");
-              sessionStorage.setItem("aps_login_handoff_v1", "ADMIN");
 
-              var persistedCheck = await adminMainClient.auth.getSession();
-              if (persistedCheck.error || !persistedCheck.data?.session?.user) {
-                throw new Error("Administrator session was not persisted. Please try again.");
+              sessionStorage.setItem("aps_current_auth_session_v1", JSON.stringify(pendingAdminUser));
+              sessionStorage.setItem("aps_login_handoff_v1", "ADMIN");
+              sessionStorage.setItem("aps_admin_login_handoff_v1", "1");
+
+              // Do not reload the PWA. Complete the portal handoff in-place.
+              if (typeof window.__ashianaFinishAdminLogin === "function") {
+                window.__ashianaFinishAdminLogin(pendingAdminUser);
+                ashianaLoginMessage("Administrator login successful. Console loaded.", "success");
+                return false;
               }
 
-              ashianaLoginMessage("Administrator authentication successful. Opening console…", "success");
+              // Very early/slow page fallback.
+              ashianaLoginMessage("Administrator login successful. Opening console…", "success");
               window.location.replace(window.location.href.split("#")[0]);
               return false;
             }
@@ -4392,6 +4374,27 @@ async function handleTeacherLogin(event) {
       showToast("Signed out safely.", "info");
       applyAuthenticatedUI();
     }
+
+    // Direct Admin login handoff. The lightweight login bridge is declared
+    // earlier in the HTML, so this global lets Android Chrome/PWA open the
+    // console without a fragile full-page reload.
+    window.__ashianaFinishAdminLogin = function (adminUser) {
+      try {
+        currentAuthUser = adminUser;
+        currentStaffId = null;
+        sessionStorage.setItem(STORAGE_KEY_CURRENT_USER, JSON.stringify(adminUser));
+        sessionStorage.removeItem("aps_login_handoff_v1");
+        sessionStorage.removeItem("aps_admin_login_handoff_v1");
+        applyAuthenticatedUI();
+        try { updateAdminDashboardDate(); } catch (_) {}
+        try { if (window.lucide) lucide.createIcons(); } catch (_) {}
+        try { syncAllDataFromSupabase(false); } catch (_) {}
+        return true;
+      } catch (e) {
+        console.error("Ashiana Admin handoff failed:", e);
+        return false;
+      }
+    };
 
     function applyAuthenticatedUI() {
       const authGateway = document.getElementById("auth-gateway-view");
@@ -8801,30 +8804,46 @@ window.addEventListener('load',async function(){
         window.switchAdminTab("corrections");
       });
 
-      await initSupabase();
-      setupConnectivityMonitoring();
-      await loadPersistedData();
+      try { await initSupabase(); } catch (e) {
+        console.error("Ashiana Supabase initialization failed:", e);
+      }
+      try { setupConnectivityMonitoring(); } catch (e) {
+        console.warn("Connectivity setup warning:", e);
+      }
+      try { await loadPersistedData(); } catch (e) {
+        console.warn("Persisted data load warning:", e);
+      }
 
-      const restored = await restoreSupabaseSession();
-      if (!restored) {
+      let restored = false;
+      try { restored = await restoreSupabaseSession(); } catch (e) {
+        console.error("Session restore error:", e);
+        restored = false;
+      }
+      if (!restored && !currentAuthUser) {
         currentAuthUser = null;
         currentStaffId = null;
         sessionStorage.removeItem(STORAGE_KEY_CURRENT_USER);
       }
 
-      // Start cloud synchronization in the background so the local UI becomes
-      // interactive immediately. Supabase remains the authoritative source.
-      if (currentAuthUser) syncAllDataFromSupabase(false);
+      // Never block the authenticated UI on cloud synchronization.
+      if (currentAuthUser) {
+        try { syncAllDataFromSupabase(false); } catch (e) {
+          console.warn("Background cloud sync warning:", e);
+        }
+      }
 
       const sel = document.getElementById("correction-staff-select");
       if (sel) sel.innerHTML = staffDatabase.map(s => `<option value="${s.id}">${s.name} (${s.empId})</option>`).join('');
 
-      startLiveClocks();
-      applyAuthenticatedUI();
-      if (currentAuthUser?.type === 'ADMIN') {
-        loadAdminQRSession();
+      try { startLiveClocks(); } catch (e) { console.warn("Clock startup warning:", e); }
+      try { applyAuthenticatedUI(); } catch (e) {
+        console.error("Authenticated UI startup error:", e);
+        if (currentAuthUser) window.__ashianaOpenAuthenticatedPortal?.(currentAuthUser.type);
       }
-      if (window.lucide) lucide.createIcons();
+      if (currentAuthUser?.type === 'ADMIN') {
+        try { loadAdminQRSession(); } catch (e) {}
+      }
+      try { if (window.lucide) lucide.createIcons(); } catch (_) {}
     }
 
     if (document.readyState === "loading") {
