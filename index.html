@@ -85,6 +85,19 @@
       position:relative;
       z-index:20;
     }
+    #login-role-buttons{
+      position:relative;
+      z-index:999;
+      isolation:isolate;
+      pointer-events:auto;
+    }
+    #login-role-buttons .login-role-button{
+      pointer-events:auto !important;
+    }
+    #auth-gateway-view .login-role-button{
+      -webkit-appearance:none;
+      appearance:none;
+    }
     #auth-gateway-view input,
     #auth-gateway-view button[type="submit"]{
       position:relative;
@@ -901,6 +914,41 @@
           selector.addEventListener("input", function () { applyAshianaLoginRole(selector.value); });
           applyAshianaLoginRole(selector.value);
         }
+
+        // Capture role clicks at the document level. This is intentionally
+        // independent of bubbling/inline handlers so another script cannot
+        // block role selection.
+        document.addEventListener("click", function (event) {
+          var button = event.target && event.target.closest ? event.target.closest("#login-role-buttons [data-login-role]") : null;
+          if (!button) return;
+          event.preventDefault();
+          event.stopPropagation();
+          applyAshianaLoginRole(button.getAttribute("data-login-role"));
+        }, true);
+
+        document.addEventListener("pointerdown", function (event) {
+          var button = event.target && event.target.closest ? event.target.closest("#login-role-buttons [data-login-role]") : null;
+          if (!button) return;
+          event.preventDefault();
+          applyAshianaLoginRole(button.getAttribute("data-login-role"));
+        }, true);
+
+        // Capture form submissions as a second, independent login path.
+        // The role-specific handler remains the single authentication implementation.
+        document.addEventListener("submit", function (event) {
+          var form = event.target;
+          if (!form || !form.id) return;
+          var role = form.id === "teacher-login-form" ? "teacher"
+            : form.id === "admin-login-form" ? "admin"
+            : form.id === "student-login-form" ? "student"
+            : null;
+          if (!role) return;
+          event.preventDefault();
+          event.stopPropagation();
+          if (typeof window.__ashianaStandaloneLogin === "function") {
+            window.__ashianaStandaloneLogin(role, event);
+          }
+        }, true);
 
         if (document.readyState === "loading") {
           document.addEventListener("DOMContentLoaded", bindAshianaLoginRole, { once: true });
