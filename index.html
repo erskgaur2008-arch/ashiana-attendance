@@ -74,12 +74,39 @@
       user-select:none;
       -webkit-user-select:none;
       -webkit-tap-highlight-color:transparent;
+      display:flex;
+      align-items:center;
+      justify-content:center;
+      text-align:center;
     }
-    .login-role-button.active{
+    .login-role-button input{
+      position:absolute;
+      opacity:0;
+      width:1px;
+      height:1px;
+      pointer-events:none;
+    }
+    .login-role-button:has(input:checked){
       background:#064e3b;
       color:#ffffff;
       border-color:#064e3b;
       box-shadow:0 4px 12px rgba(2,44,34,.18);
+    }
+    /* Native role selection controls the forms without requiring JavaScript. */
+    #auth-gateway-view:not(:has(#login-role-admin:checked)):not(:has(#login-role-student:checked)) #teacher-login-form,
+    #auth-gateway-view:has(#login-role-admin:checked) #admin-login-form,
+    #auth-gateway-view:has(#login-role-student:checked) #student-login-form{
+      display:block !important;
+      visibility:visible !important;
+    }
+    #auth-gateway-view:has(#login-role-admin:checked) #teacher-login-form,
+    #auth-gateway-view:has(#login-role-admin:checked) #student-login-form,
+    #auth-gateway-view:has(#login-role-student:checked) #teacher-login-form,
+    #auth-gateway-view:has(#login-role-student:checked) #admin-login-form,
+    #auth-gateway-view:not(:has(#login-role-admin:checked)):not(:has(#login-role-student:checked)) #admin-login-form,
+    #auth-gateway-view:not(:has(#login-role-admin:checked)):not(:has(#login-role-student:checked)) #student-login-form{
+      display:none !important;
+      visibility:hidden !important;
     }
     #auth-gateway-view form{
       position:relative;
@@ -473,30 +500,31 @@
         <div class="w-16 h-0.5 bg-ashiana-red mx-auto my-1.5 rounded-full"></div>
         <p class="text-[11px] text-emerald-200">Sector 46-A, Chandigarh • Faculty Attendance</p>
         
-        <!-- Login Role Selector: explicit buttons are used instead of a native
-             dropdown so role selection remains reliable on desktop and mobile. -->
+        <!-- Login Role Selector: native radio controls + CSS switching.
+             Role selection must remain functional even if application JavaScript has
+             a later error. -->
         <div class="mt-4 relative z-30">
-          <label class="sr-only">Select Login Role</label>
           <div id="login-role-buttons" class="grid grid-cols-3 gap-1.5 p-1.5 rounded-2xl bg-emerald-950/20 border border-emerald-300/60">
-            <button type="button" data-login-role="teacher" aria-pressed="true"
-              onclick="return window.__ashianaSetLoginRole('teacher');"
-              class="login-role-button active">Teacher / Staff</button>
-            <button type="button" data-login-role="admin" aria-pressed="false"
-              onclick="return window.__ashianaSetLoginRole('admin');"
-              class="login-role-button">Administrator</button>
-            <button type="button" data-login-role="student" aria-pressed="false"
-              onclick="return window.__ashianaSetLoginRole('student');"
-              class="login-role-button">Student</button>
+            <label class="login-role-button active">
+              <input id="login-role-teacher" type="radio" name="login-role-native" value="teacher" checked>
+              <span>Teacher / Staff</span>
+            </label>
+            <label class="login-role-button">
+              <input id="login-role-admin" type="radio" name="login-role-native" value="admin">
+              <span>Administrator</span>
+            </label>
+            <label class="login-role-button">
+              <input id="login-role-student" type="radio" name="login-role-native" value="student">
+              <span>Student</span>
+            </label>
           </div>
-          <select id="login-role-select" aria-hidden="true" tabindex="-1"
-            class="absolute w-px h-px opacity-0 pointer-events-none">
+          <select id="login-role-select" aria-hidden="true" tabindex="-1" class="absolute w-px h-px opacity-0 pointer-events-none">
             <option value="teacher">Teacher / Staff</option>
             <option value="admin">Administrator</option>
             <option value="student">Student</option>
           </select>
           <p class="text-[10px] text-emerald-200 mt-1.5 text-center">Select your login role</p>
-        </div>      </div>
-
+        </div>
       <div class="p-5 sm:p-6 space-y-4">
         <!-- TEACHER LOGIN FORM -->
         <form id="teacher-login-form" class="space-y-3.5" onsubmit="return window.__ashianaStandaloneLogin('teacher', event)">
@@ -608,12 +636,8 @@
 
           var selector = document.getElementById("login-role-select");
           if (selector) selector.value = selected;
-
-          document.querySelectorAll("#login-role-buttons [data-login-role]").forEach(function (button) {
-            var activeButton = button.getAttribute("data-login-role") === selected;
-            button.classList.toggle("active", activeButton);
-            button.setAttribute("aria-pressed", activeButton ? "true" : "false");
-          });
+          var nativeRole = document.getElementById("login-role-" + selected);
+          if (nativeRole) nativeRole.checked = true;
 
           var gateway = document.getElementById("auth-gateway-view");
           if (gateway) gateway.setAttribute("data-login-role-active", selected);
@@ -621,14 +645,8 @@
           return false;
         }
 
-        // Dedicated public role setter used directly by the three role buttons.
-        // It deliberately does not depend on the hidden select or event bubbling.
         window.__ashianaSetLoginRole = function (role) {
           applyAshianaLoginRole(role);
-          // Re-assert once after the browser finishes the click event in case
-          // another UI listener touched the forms during the same event cycle.
-          window.requestAnimationFrame(function () { applyAshianaLoginRole(role); });
-          window.setTimeout(function () { applyAshianaLoginRole(role); }, 0);
           return false;
         };
 
