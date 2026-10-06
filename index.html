@@ -859,6 +859,20 @@
               // session to bootstrap through storage and a clean reload.
               sessionStorage.setItem("aps_current_auth_session_v1", JSON.stringify(pendingStaffUser));
               sessionStorage.setItem("aps_login_handoff_v1", "STAFF");
+
+              // Complete the authenticated portal handoff in-place whenever the
+              // main application is already loaded. Android/PWA navigation can
+              // otherwise keep the login gateway visible after successful Auth.
+              if (typeof window.__ashianaFinishStaffLogin === "function") {
+                var staffOpened = window.__ashianaFinishStaffLogin(pendingStaffUser);
+                if (staffOpened) {
+                  ashianaLoginMessage("Staff authentication successful. Staff portal loaded.", "success");
+                  return false;
+                }
+              }
+
+              // Only use a full reload as a fallback when the main application
+              // has not finished loading yet.
               ashianaLoginMessage("Staff authentication successful. Opening your portal…", "success");
               window.location.replace(window.location.href.split("#")[0]);
               return false;
@@ -960,6 +974,17 @@
               localStorage.setItem("aps_student_session_v1", JSON.stringify(pendingStudentUser));
               sessionStorage.setItem("aps_current_auth_session_v1", JSON.stringify(pendingStudentUser));
               sessionStorage.setItem("aps_login_handoff_v1", "STUDENT");
+
+              if (typeof window.__ashianaFinishStudentLogin === "function") {
+                var studentOpened = window.__ashianaFinishStudentLogin(pendingStudentUser);
+                if (studentOpened) {
+                  ashianaLoginMessage("Student authentication successful. Student portal loaded.", "success");
+                  return false;
+                }
+              }
+
+              // Fallback for an unusually early invocation before the main app
+              // has loaded.
               ashianaLoginMessage("Student authentication successful. Opening portal…", "success");
               window.location.replace(window.location.href.split("#")[0]);
               return false;
@@ -4511,6 +4536,47 @@ async function handleTeacherLogin(event) {
       showToast("Signed out safely.", "info");
       applyAuthenticatedUI();
     }
+
+    // Direct Staff/Student login handoffs. These handlers deliberately avoid
+    // a full-page reload after successful authentication. This is important for
+    // Android Chrome/PWA, where a replace() can leave the login gateway visible
+    // even though the Supabase session was already established.
+    window.__ashianaFinishStaffLogin = function (staffUser) {
+      try {
+        if (!staffUser || staffUser.type !== 'STAFF' || !staffUser.staffRecord?.id) return false;
+        currentAuthUser = staffUser;
+        currentStaffId = staffUser.staffRecord.id;
+        currentPortal = "staff";
+        sessionStorage.setItem(STORAGE_KEY_CURRENT_USER, JSON.stringify(staffUser));
+        sessionStorage.removeItem("aps_login_handoff_v1");
+        sessionStorage.removeItem("aps_admin_login_handoff_v1");
+        applyAuthenticatedUI();
+        try { if (window.lucide) lucide.createIcons(); } catch (_) {}
+        try { syncAllDataFromSupabase(false); } catch (_) {}
+        return true;
+      } catch (e) {
+        console.error("Ashiana Staff handoff failed:", e);
+        return false;
+      }
+    };
+
+    window.__ashianaFinishStudentLogin = function (studentUser) {
+      try {
+        if (!studentUser || studentUser.type !== 'STUDENT' || !studentUser.studentRecord?.id) return false;
+        currentAuthUser = studentUser;
+        currentStaffId = null;
+        currentPortal = "student";
+        sessionStorage.setItem(STORAGE_KEY_CURRENT_USER, JSON.stringify(studentUser));
+        sessionStorage.removeItem("aps_login_handoff_v1");
+        sessionStorage.removeItem("aps_admin_login_handoff_v1");
+        applyAuthenticatedUI();
+        try { if (window.lucide) lucide.createIcons(); } catch (_) {}
+        return true;
+      } catch (e) {
+        console.error("Ashiana Student handoff failed:", e);
+        return false;
+      }
+    };
 
     // Direct Admin login handoff. The lightweight login bridge is declared
     // earlier in the HTML, so this global lets Android Chrome/PWA open the
