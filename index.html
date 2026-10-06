@@ -596,6 +596,16 @@
           try {
             var client = await ashianaGetLoginClient();
 
+            // IMPORTANT: login must always start from the anonymous role.
+            // Student RPCs intentionally allow only the anon role; an old
+            // Supabase Auth session would otherwise make this request run as
+            // "authenticated" and PostgreSQL correctly returns:
+            // "permission denied for function student_login".
+            // Teacher's staff_login bridge is also intentionally public.
+            // After successful teacher login, setSession() below establishes
+            // the real authenticated staff session.
+            await client.auth.signOut({ scope: "local" });
+
             if (role === "teacher") {
               var loginId = String(document.getElementById("teacher-login-id")?.value || "").trim();
               var pin = String(document.getElementById("teacher-login-pin")?.value || "").trim();
