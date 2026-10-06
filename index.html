@@ -921,19 +921,62 @@
               // a false "console could not be initialized" error.
               window.__ashianaPendingAdminConsole = true;
 
-              // This login bridge and the main application engine live in the
-              // same script scope. applyAuthenticatedUI is therefore a lexical
-              // function, not a window property. Call it directly once the
-              // authenticated state has been established.
+              // Open the Admin portal with a minimal, deterministic transition.
+              // Do not run dashboard renderers during login: a secondary widget
+              // error must never prevent an authenticated administrator from
+              // reaching the console.
               window.__ashianaPendingAdminConsole = false;
               try {
-                if (typeof applyAuthenticatedUI !== "function") {
-                  throw new Error("Administrator UI engine is not available.");
+                var authGateway = document.getElementById("auth-gateway-view");
+                var adminPortal = document.getElementById("admin-portal-view");
+                var staffPortal = document.getElementById("staff-portal-view");
+                var studentPortal = document.getElementById("student-portal-view");
+                var sessionControls = document.getElementById("authenticated-session-controls");
+                var globalHeader = document.getElementById("global-header");
+                var globalStatusBanner = document.getElementById("global-status-banner");
+
+                authGateway?.classList.add("hidden");
+                staffPortal?.classList.add("hidden");
+                studentPortal?.classList.add("hidden");
+                adminPortal?.classList.remove("hidden");
+                sessionControls?.classList.remove("hidden");
+                globalHeader?.classList.add("hidden");
+                globalStatusBanner?.classList.add("hidden");
+
+                var navAvatar = document.getElementById("nav-user-avatar");
+                var navName = document.getElementById("nav-user-name");
+                var navRole = document.getElementById("nav-user-role");
+                if (navAvatar) {
+                  navAvatar.innerText = "AD";
+                  navAvatar.className = "w-5 h-5 sm:w-6 sm:h-6 rounded-full bg-ashiana-red text-white font-bold flex items-center justify-center text-[10px]";
                 }
-                applyAuthenticatedUI();
+                if (navName) navName.innerText = "Principal Office";
+                if (navRole) navRole.innerText = "Administrator";
+
+                // Only initialize the harmless date/icon elements now. The
+                // dashboard data loaders can run after the console is visible.
+                try { updateAdminDashboardDate(); } catch (_) {}
+                try { if (window.lucide) lucide.createIcons(); } catch (_) {}
+
+                // Run secondary dashboard data loading after the portal is open.
+                setTimeout(function () {
+                  try { loadAdminStaffDirectoryFromSupabase(false); } catch (e) { console.warn("Admin directory load:", e); }
+                  try { renderLiveAttendanceTable(); } catch (e) { console.warn("Admin attendance render:", e); }
+                  try { renderStaffDirectoryTable(); } catch (e) { console.warn("Admin directory render:", e); }
+                  try { updateKPICards(); } catch (e) { console.warn("Admin KPI render:", e); }
+                  try { renderAuditLogs(); } catch (e) { console.warn("Admin audit render:", e); }
+                  try { renderAdminLeaveTable(); } catch (e) { console.warn("Admin leave render:", e); }
+                  try { if (window.lucide) lucide.createIcons(); } catch (_) {}
+                }, 0);
               } catch (uiError) {
-                console.error("Ashiana admin console transition error:", uiError);
-                ashianaLoginMessage("Administrator console failed to open. Please refresh once and try again.", "error");
+                console.error("Ashiana admin portal transition error:", uiError);
+                // Even if optional navigation elements are missing, force the
+                // authenticated Admin portal visible.
+                document.getElementById("auth-gateway-view")?.classList.add("hidden");
+                document.getElementById("staff-portal-view")?.classList.add("hidden");
+                document.getElementById("student-portal-view")?.classList.add("hidden");
+                document.getElementById("admin-portal-view")?.classList.remove("hidden");
+                document.getElementById("authenticated-session-controls")?.classList.remove("hidden");
               }
 
               return false;
