@@ -252,6 +252,8 @@
     .student-id-preview-card .sid-qr-wrap canvas,.student-id-preview-card .sid-qr-wrap img{width:10mm!important;height:10mm!important;display:block!important;}
     .student-id-preview-card .sid-footer{display:flex!important;align-items:flex-end;justify-content:center;flex:1 1 auto;min-height:0;text-align:center;font-size:1.25mm;line-height:1.25;color:#64748b;padding:.8mm 3mm 1.2mm;background:#fff;border-top:.2mm solid #e2e8f0;box-sizing:border-box;}
     /* Student ID preview modal: fixed viewport, no internal scrollbars. */
+    /* Final student ID modal layout: the wrapper grows to the scaled card,
+       never to a fixed 90vh height. This removes the blank top area and clipping. */
     #student-id-card-preview-modal{
       box-sizing:border-box;
       width:100vw;
@@ -259,27 +261,29 @@
       max-height:100dvh;
       padding:clamp(8px,2vw,18px)!important;
       overflow:hidden!important;
+      overflow-x:hidden!important;
       align-items:center!important;
       justify-content:center!important;
     }
     #student-id-card-preview-modal > div{
       box-sizing:border-box;
       width:min(92vw,520px);
-      height:min(90dvh,90vh);
       max-width:92vw;
-      max-height:90dvh;
-      min-height:0;
+      height:auto!important;
+      max-height:90dvh!important;
+      min-height:0!important;
       overflow:hidden!important;
       display:flex;
       flex-direction:column;
       align-items:center;
       justify-content:flex-start;
-      padding:0 8px 8px;
+      padding:8px 8px 10px;
+      position:relative;
     }
     #student-id-card-preview{
       box-sizing:border-box;
       display:flex;
-      align-items:center;
+      align-items:flex-start;
       justify-content:center;
       width:0;
       height:0;
@@ -288,15 +292,18 @@
       flex:0 0 auto;
       overflow:visible!important;
       transform-origin:top center;
+      margin:0 auto!important;
     }
     #student-id-card-preview + div{
       flex:0 0 auto;
-      margin-top:12px!important;
+      margin-top:10px!important;
       width:auto;
       max-width:100%;
+      overflow:visible!important;
     }
     #student-id-card-preview + div button{
       white-space:nowrap;
+      flex:0 0 auto;
     }
     @media (max-width:480px){
       #student-id-card-preview-modal{
@@ -305,9 +312,8 @@
       #student-id-card-preview-modal > div{
         width:100%;
         max-width:100%;
-        height:90dvh;
-        max-height:90dvh;
-        padding:0 2px 6px;
+        max-height:90dvh!important;
+        padding:6px 2px 8px;
       }
       #student-id-card-preview + div{
         margin-top:8px!important;
@@ -3379,20 +3385,22 @@ async function refreshStudentPortalData(){const s=currentAuthUser?.studentRecord
 
       const vw=window.innerWidth;
       const vh=window.innerHeight;
-      const cardWidth=54*3.779527559;   // 54mm CSS pixels
-      const cardHeight=85.6*3.779527559; // 85.6mm CSS pixels
+      const cardWidth=54*3.779527559;
+      const cardHeight=85.6*3.779527559;
 
-      // Reserve space for the two action buttons, margin and a small safety gap.
-      const buttonHeight=buttons ? Math.max(42,buttons.getBoundingClientRect().height) : 44;
-      const availableH=Math.max(260,(vh*0.90)-buttonHeight-28);
-      const availableW=Math.max(220,Math.min(vw*0.92,520)-20);
+      // Calculate against the real 90vh content budget, including buttons.
+      const buttonHeight=buttons ? Math.max(40,buttons.getBoundingClientRect().height) : 44;
+      const horizontalPadding=vw<=480?16:32;
+      const verticalPadding=vh<=700?20:32;
+      const availableW=Math.max(220,Math.min(vw*0.92,520)-horizontalPadding);
+      const availableH=Math.max(280,(vh*0.90)-buttonHeight-verticalPadding-10);
       const scale=Math.min(availableW/cardWidth,availableH/cardHeight,3);
 
       card.style.transform="scale("+scale+")";
       card.style.transformOrigin="top center";
 
-      // The wrapper occupies exactly the transformed card size, so it cannot
-      // create a scrollbar or clip the transformed card.
+      // Make the wrapper exactly the transformed visual size.
+      // The parent therefore has no unused 90vh blank area and no scrollbar.
       preview.style.width=(cardWidth*scale)+"px";
       preview.style.height=(cardHeight*scale)+"px";
       preview.style.flex="0 0 auto";
