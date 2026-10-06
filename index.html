@@ -684,9 +684,33 @@
 
         // Student authentication must never share the persisted Auth session
         // used by Admin/Teacher. This client is anonymous and non-persisting.
+        async function ashianaEnsureSupabaseForLogin() {
+          if (window.supabase?.createClient) return true;
+          try {
+            await new Promise(function (resolve, reject) {
+              var existing = document.querySelector('script[data-supabase-runtime="true"]');
+              if (existing) {
+                if (window.supabase?.createClient) return resolve();
+                existing.addEventListener("load", resolve, { once: true });
+                existing.addEventListener("error", reject, { once: true });
+                return;
+              }
+              var script = document.createElement("script");
+              script.src = "https://cdn.jsdelivr.net/npm/@supabase/supabase-js@2";
+              script.async = true;
+              script.dataset.supabaseRuntime = "true";
+              script.onload = resolve;
+              script.onerror = reject;
+              document.head.appendChild(script);
+            });
+          } catch (_) {}
+          if (!window.supabase?.createClient) throw new Error("Cloud authentication library could not be loaded. Please try again.");
+          return true;
+        }
+
         async function ashianaGetStudentLoginClient() {
           if (window.__ashianaStudentLoginClient) return window.__ashianaStudentLoginClient;
-          if (!window.supabase?.createClient) throw new Error("Supabase client library is unavailable.");
+          await ashianaEnsureSupabaseForLogin();
           window.__ashianaStudentLoginClient = window.supabase.createClient(
             "https://oalfzgluqroqbbrulhpr.supabase.co",
             "sb_publishable_PND9f9FKbNrxlEakSgLKYA_5EsqLHkg",
@@ -699,7 +723,7 @@
         // creates the real authenticated staff session only after PIN validation.
         async function ashianaGetTeacherLoginClient() {
           if (window.__ashianaTeacherLoginClient) return window.__ashianaTeacherLoginClient;
-          if (!window.supabase?.createClient) throw new Error("Supabase client library is unavailable.");
+          await ashianaEnsureSupabaseForLogin();
           window.__ashianaTeacherLoginClient = window.supabase.createClient(
             "https://oalfzgluqroqbbrulhpr.supabase.co",
             "sb_publishable_PND9f9FKbNrxlEakSgLKYA_5EsqLHkg",
@@ -713,7 +737,7 @@
         // application's main persistent client.
         async function ashianaGetAdminLoginClient() {
           if (window.__ashianaAdminLoginClient) return window.__ashianaAdminLoginClient;
-          if (!window.supabase?.createClient) throw new Error("Supabase client library is unavailable.");
+          await ashianaEnsureSupabaseForLogin();
           window.__ashianaAdminLoginClient = window.supabase.createClient(
             "https://oalfzgluqroqbbrulhpr.supabase.co",
             "sb_publishable_PND9f9FKbNrxlEakSgLKYA_5EsqLHkg",
