@@ -92,6 +92,15 @@
       border-color:#064e3b;
       box-shadow:0 4px 12px rgba(2,44,34,.18);
     }
+
+    /* Full-screen mobile login: remove the large vertical white gap around the card. */
+    @media (max-width: 640px){
+      body:has(#auth-gateway-view:not(.hidden)){overflow-x:hidden;}
+      #auth-main{max-width:none;padding:0!important;justify-content:flex-start!important;align-items:stretch!important;}
+      #auth-gateway-view{width:100%!important;max-width:none!important;min-height:calc(100dvh - env(safe-area-inset-top) - env(safe-area-inset-bottom));margin:0!important;border-radius:0!important;border-left:0!important;border-right:0!important;box-shadow:none!important;display:flex;flex-direction:column;}
+      #auth-gateway-view > div:first-child{padding-top:calc(24px + env(safe-area-inset-top));}
+      #auth-gateway-view > div:last-child{flex:1;}
+    }
     /* Role selection uses the native dropdown above. */
     #auth-gateway-view #login-role-select{
       position:relative;
@@ -473,7 +482,7 @@
   <div id="toast-container" class="fixed top-4 right-4 left-4 sm:left-auto sm:right-5 sm:top-5 z-50 flex flex-col space-y-2 pointer-events-none max-w-sm w-full mx-auto sm:mx-0"></div>
 
   <!-- MAIN CONTAINER -->
-  <main class="flex-1 w-full max-w-7xl mx-auto p-2 sm:p-5 flex flex-col items-center justify-center">
+  <main id="auth-main" class="flex-1 w-full max-w-7xl mx-auto p-2 sm:p-5 flex flex-col items-center justify-center">
 
     <!-- 1. AUTHENTICATION GATEWAY (LOGIN) -->
     <div id="auth-gateway-view" class="w-full max-w-md bg-white rounded-3xl shadow-xl border border-slate-200 overflow-hidden my-auto">
