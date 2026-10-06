@@ -585,15 +585,16 @@
           return window.__ashianaTeacherLoginClient;
         }
 
-        // Administrator login uses its own persistent Auth client so an existing
-        // teacher/student session can never interfere with administrator sign-in.
+        // Administrator pre-auth client is anonymous/non-persisting.
+        // After password verification its Auth session is copied into the
+        // application's main persistent client.
         async function ashianaGetAdminLoginClient() {
           if (window.__ashianaAdminLoginClient) return window.__ashianaAdminLoginClient;
           if (!window.supabase?.createClient) throw new Error("Supabase client library is unavailable.");
           window.__ashianaAdminLoginClient = window.supabase.createClient(
             "https://oalfzgluqroqbbrulhpr.supabase.co",
             "sb_publishable_PND9f9FKbNrxlEakSgLKYA_5EsqLHkg",
-            { auth: { persistSession: true, autoRefreshToken: true, detectSessionInUrl: false } }
+            { auth: { persistSession: false, autoRefreshToken: false, detectSessionInUrl: false } }
           );
           return window.__ashianaAdminLoginClient;
         }
@@ -680,7 +681,14 @@
               }
 
               if (loginResult.session?.access_token && loginResult.session?.refresh_token) {
-                var sessionResult = await client.auth.setSession({
+                // The anonymous teacher client is only for pre-auth Edge Function
+                // verification. Put the verified session into the app's main
+                // persistent client so the portal and every cloud query use the
+                // same authenticated Supabase session after reload.
+                var mainClient = window.__ashianaMainSupabaseClient;
+                if (!mainClient) throw new Error("Main Supabase client is not ready.");
+                await mainClient.auth.signOut({ scope: "local" });
+                var sessionResult = await mainClient.auth.setSession({
                   access_token: loginResult.session.access_token,
                   refresh_token: loginResult.session.refresh_token
                 });
@@ -733,9 +741,28 @@
                 .maybeSingle();
               if (adminLookup.error) throw new Error(adminLookup.error.message || "Administrator authorization check failed.");
               if (!adminLookup.data) {
-                await client.auth.signOut();
+                await client.auth.signOut({ scope: "local" });
                 throw new Error("Administrator account is not authorized.");
               }
+
+              // Transfer the verified admin Auth session to the main app client.
+              // This prevents the isolated pre-auth client from becoming the
+              // session source for the dashboard after reload.
+              var adminMainClient = window.__ashianaMainSupabaseClient;
+              if (!adminMainClient) throw new Error("Main Supabase client is not ready.");
+              var adminSession = authResult.data.session;
+              if (!adminSession?.access_token || !adminSession?.refresh_token) {
+                throw new Error("Administrator authentication returned no secure session.");
+              }
+              await adminMainClient.auth.signOut({ scope: "local" });
+              var adminSessionResult = await adminMainClient.auth.setSession({
+                access_token: adminSession.access_token,
+                refresh_token: adminSession.refresh_token
+              });
+              if (adminSessionResult.error || !adminSessionResult.data?.user) {
+                throw new Error(adminSessionResult.error?.message || "Administrator session could not be established.");
+              }
+              await client.auth.signOut({ scope: "local" });
 
               sessionStorage.setItem("aps_current_auth_session_v1", JSON.stringify({
                 type: "ADMIN",
@@ -771,6 +798,13 @@
               });
               if (bundle.error) throw new Error(bundle.error.message || "Student portal data could not be loaded.");
 
+              // Student auth is anonymous. Remove any previous Staff/Admin
+              // Supabase Auth session from the main client before reload so
+              // restoreSupabaseSession cannot reopen the previous staff portal.
+              var studentMainClient = window.__ashianaMainSupabaseClient;
+              if (studentMainClient) {
+                await studentMainClient.auth.signOut({ scope: "local" });
+              }
               sessionStorage.setItem("aps_current_auth_session_v1", JSON.stringify({
                 type: "STUDENT",
                 studentRecord: studentLogin.data.student,
@@ -2827,6 +2861,24 @@
     async function restoreSupabaseSession() {
       if (!supabaseClient) return false;
       try {
+        // The UI session saved by the login bridge is authoritative for the
+        // portal that should open after a full-page reload. In particular,
+        // Student login must never be replaced by a stale Staff/Admin Auth
+        // session left in local storage from an earlier login.
+        const savedRaw = sessionStorage.getItem(STORAGE_KEY_CURRENT_USER);
+        let savedUser = null;
+        try { savedUser = savedRaw ? JSON.parse(savedRaw) : null; } catch (_) { savedUser = null; }
+
+        if (savedUser?.type === 'STUDENT') {
+          // Students authenticate through secure anonymous RPCs, not Supabase
+          // Auth. Clear any old Staff/Admin Auth session before keeping the
+          // student portal active.
+          await supabaseClient.auth.signOut({ scope: 'local' });
+          currentAuthUser = savedUser;
+          currentStaffId = null;
+          return true;
+        }
+
         const { data: sessionData } = await supabaseClient.auth.getSession();
         const session = sessionData?.session;
         const user = session?.user;
@@ -2980,6 +3032,11 @@
         if (!ready) throw new Error("Supabase JS client could not be loaded.");
 
         supabaseClient = window.supabase.createClient(DEFAULT_SUPABASE_URL, DEFAULT_SUPABASE_ANON_KEY);
+        // Expose the main authenticated client to the early login bridge.
+        // The bridge runs before this script block's lexical scope is visible,
+        // so it must use an explicit window reference when it needs to transfer
+        // a verified staff/admin session into the app's real client.
+        window.__ashianaMainSupabaseClient = supabaseClient;
 
         // Listen for Supabase's secure password-recovery redirect.
         supabaseClient.auth.onAuthStateChange((event, session) => {
