@@ -2958,13 +2958,61 @@
     // Authentication Handlers with Live Multi-Device Fallback
     // Explicitly expose the login switch and bind click listeners so the selector
     // continues to work when mobile browsers or hosting CSP block inline handlers.
+    // Keep the login form strictly synchronized with the selected role.
+    // Mobile browsers can restore a <select> value from page history/autofill
+    // without firing the change handler, so the form must also be synchronized
+    // on initial load and pageshow.
     window.switchLoginTab = function(tab) {
-      const forms={teacher:document.getElementById("teacher-login-form"),admin:document.getElementById("admin-login-form"),student:document.getElementById("student-login-form")};
-      Object.entries(forms).forEach(([k,el])=>{if(el)el.classList.toggle("hidden",k!==tab);});
-      const selector=document.getElementById("login-role-select");
-      if(selector)selector.value=tab;
-      if(window.lucide)lucide.createIcons();
-    };;;
+      const allowed = ["teacher", "admin", "student"];
+      const selectedRole = allowed.includes(String(tab)) ? String(tab) : "teacher";
+      const forms = {
+        teacher: document.getElementById("teacher-login-form"),
+        admin: document.getElementById("admin-login-form"),
+        student: document.getElementById("student-login-form")
+      };
+
+      Object.entries(forms).forEach(([role, form]) => {
+        if (form) form.classList.toggle("hidden", role !== selectedRole);
+      });
+
+      const selector = document.getElementById("login-role-select");
+      if (selector && selector.value !== selectedRole) selector.value = selectedRole;
+
+      // Clear stale values from the other role so switching roles never leaves
+      // another role's credentials visible or accidentally submitted.
+      if (selectedRole !== "teacher") {
+        const id = document.getElementById("teacher-login-id");
+        const pin = document.getElementById("teacher-login-pin");
+        if (id) id.value = "";
+        if (pin) pin.value = "";
+      }
+      if (selectedRole !== "admin") {
+        const user = document.getElementById("admin-login-user");
+        const pass = document.getElementById("admin-login-pass");
+        if (user) user.value = "";
+        if (pass) pass.value = "";
+      }
+      if (selectedRole !== "student") {
+        const admission = document.getElementById("student-login-admission");
+        const dob = document.getElementById("student-login-dob");
+        if (admission) admission.value = "";
+        if (dob) dob.value = "";
+      }
+
+      if (window.lucide) lucide.createIcons();
+    };
+
+    function syncLoginRoleUI() {
+      const selector = document.getElementById("login-role-select");
+      const role = selector?.value || "teacher";
+      window.switchLoginTab(role);
+    }
+
+    // The selector is already present when this script runs, but these
+    // listeners also handle browser back/forward restoration on Android.
+    document.addEventListener("DOMContentLoaded", syncLoginRoleUI, { once: true });
+    window.addEventListener("pageshow", syncLoginRoleUI);
+    setTimeout(syncLoginRoleUI, 0);
 
     function togglePinVisibility(id) {
       const input = document.getElementById(id);
