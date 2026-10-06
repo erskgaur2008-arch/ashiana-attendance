@@ -442,7 +442,7 @@
 
       <div class="p-5 sm:p-6 space-y-4">
         <!-- TEACHER LOGIN FORM -->
-        <form id="teacher-login-form" class="space-y-3.5">
+        <form id="teacher-login-form" class="space-y-3.5" onsubmit="return window.__ashianaStandaloneLogin('teacher', event)">
           <div>
             <label class="block text-xs font-bold text-slate-700 mb-1">Employee ID or Registered Email</label>
             <div class="relative">
@@ -477,7 +477,7 @@
         </form>
 
         <!-- ADMIN LOGIN FORM -->
-        <form id="admin-login-form" class="space-y-3.5 hidden">
+        <form id="admin-login-form" class="space-y-3.5 hidden" onsubmit="return window.__ashianaStandaloneLogin('admin', event)">
           <div class="p-2.5 bg-emerald-50 border border-emerald-200 rounded-xl flex items-center space-x-2 text-xs text-emerald-950">
             <i data-lucide="shield-alert" class="w-4 h-4 text-ashiana-red flex-shrink-0"></i>
             <span>Authorized access for Principal Office only.</span>
@@ -515,7 +515,7 @@
             <span>Forgot Administrator Password?</span>
           </button>
         </form>
-        <form id="student-login-form" class="space-y-3.5 hidden" onsubmit="handleStudentLogin(event)">
+        <form id="student-login-form" class="space-y-3.5 hidden" onsubmit="return window.__ashianaStandaloneLogin('student', event)">
           <div class="p-2.5 bg-emerald-50 border border-emerald-200 rounded-xl flex items-center space-x-2 text-xs text-emerald-950"><i data-lucide="graduation-cap" class="w-4 h-4 text-ashiana-green flex-shrink-0"></i><span>Student portal login. Use your Admission No. and Date of Birth.</span></div>
           <div><label class="block text-xs font-bold text-slate-700 mb-1">Admission No.</label><input type="text" id="student-login-admission" required autocomplete="username" placeholder="Enter Admission No." class="w-full text-xs px-3.5 py-2.5 sm:py-3 bg-slate-50 border border-slate-200 rounded-xl focus:ring-2 focus:ring-ashiana-green focus:outline-none focus:bg-white font-medium uppercase"></div>
           <div><label class="block text-xs font-bold text-slate-700 mb-1">Password (DOB)</label><input type="password" id="student-login-dob" required inputmode="numeric" maxlength="8" pattern="[0-9]{8}" autocomplete="current-password" placeholder="DDMMYYYY" class="w-full text-xs px-3.5 py-2.5 sm:py-3 bg-slate-50 border border-slate-200 rounded-xl focus:ring-2 focus:ring-ashiana-green focus:outline-none bg-white font-mono tracking-[0.18em] text-base font-bold"><p class="text-[10px] text-slate-500 mt-1">DOB password format: <b>DDMMYYYY</b></p></div>
