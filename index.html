@@ -125,6 +125,13 @@
       -webkit-appearance:none;
       appearance:none;
     }
+    #auth-gateway-view .login-role-button input{
+      position:absolute;
+      opacity:0;
+      width:1px;
+      height:1px;
+      pointer-events:none;
+    }
     #auth-gateway-view input,
     #auth-gateway-view button[type="submit"]{
       position:relative;
@@ -506,15 +513,15 @@
         <div class="mt-4 relative z-30">
           <div id="login-role-buttons" class="grid grid-cols-3 gap-1.5 p-1.5 rounded-2xl bg-emerald-950/20 border border-emerald-300/60">
             <label class="login-role-button active">
-              <input id="login-role-teacher" type="radio" name="login-role-native" value="teacher" checked>
+              <input id="login-role-teacher" type="radio" name="login-role-native" value="teacher" checked onchange="window.__ashianaSetLoginRole(this.value)">
               <span>Teacher / Staff</span>
             </label>
             <label class="login-role-button">
-              <input id="login-role-admin" type="radio" name="login-role-native" value="admin">
+              <input id="login-role-admin" type="radio" name="login-role-native" value="admin" onchange="window.__ashianaSetLoginRole(this.value)">
               <span>Administrator</span>
             </label>
             <label class="login-role-button">
-              <input id="login-role-student" type="radio" name="login-role-native" value="student">
+              <input id="login-role-student" type="radio" name="login-role-native" value="student" onchange="window.__ashianaSetLoginRole(this.value)">
               <span>Student</span>
             </label>
           </div>
@@ -8404,11 +8411,9 @@ window.addEventListener('load',async function(){
 
       // Bind login controls only after the DOM exists.
 
-      // Bind forms explicitly; this avoids dependence on inline onsubmit handlers
-      // and works consistently on mobile browsers and hosted CSP environments.
-      document.getElementById("teacher-login-form")?.addEventListener("submit", handleTeacherLogin);
-      document.getElementById("admin-login-form")?.addEventListener("submit", handleAdminLogin);
-      document.getElementById("student-login-form")?.addEventListener("submit", handleStudentLogin);
+      // Login forms use the standalone early login bridge declared with the forms.
+      // Do not attach a second submit handler here; two competing auth paths can
+      // race and make a valid login appear to fail.
       document.getElementById("btn-login-tab-student")?.addEventListener("click", () => window.switchLoginTab("student"));
       document.getElementById("admin-nav-reports")?.addEventListener("click", (event) => {
         event.preventDefault();
