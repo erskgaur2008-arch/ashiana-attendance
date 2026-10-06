@@ -228,13 +228,15 @@
     .student-id-preview-card .sid-name-band{flex:0 0 8mm;min-height:8mm;background:#064e3b;color:#fff;padding:1mm 2mm .7mm;text-align:center;box-sizing:border-box;}
     .student-id-preview-card .sid-name{font-size:2.7mm;line-height:1.05;font-weight:900;text-transform:uppercase;white-space:nowrap;overflow:hidden;text-overflow:ellipsis;}
     .student-id-preview-card .sid-class{font-size:1.9mm;line-height:1.05;margin-top:.45mm;font-weight:700;white-space:nowrap;}
-    .student-id-preview-card .sid-details{flex:0 0 31mm;height:31mm;padding:1.1mm 3mm .3mm;background:#fff;box-sizing:border-box;}
+    .student-id-preview-card .sid-details{flex:0 0 28.5mm;height:28.5mm;padding:1.1mm 3mm .3mm;background:#fff;box-sizing:border-box;}
     .student-id-preview-card .sid-row{display:flex;align-items:flex-start;min-height:3.1mm;font-size:1.7mm;line-height:1.15;}
     .student-id-preview-card .sid-row span{flex:0 0 15mm;color:#64748b;font-weight:700;}
     .student-id-preview-card .sid-row b{flex:1;min-width:0;overflow:hidden;white-space:nowrap;text-overflow:ellipsis;}
     .student-id-preview-card .sid-row.address-row{min-height:6mm;}
     .student-id-preview-card .sid-row.address-row b{white-space:normal;display:-webkit-box;-webkit-line-clamp:2;-webkit-box-orient:vertical;}
     .student-id-preview-card .sid-footer{flex:1 1 auto;text-align:center;font-size:1.25mm;line-height:1.2;color:#94a3b8;padding:.3mm 2mm 0;}
+    .student-id-preview-card .sid-qr-wrap{flex:0 0 10mm;width:10mm;height:10mm;display:flex;align-items:center;justify-content:center;background:#fff;margin:0 auto .3mm;z-index:5;}
+    .student-id-preview-card .sid-qr-wrap canvas,.student-id-preview-card .sid-qr-wrap img{width:9mm!important;height:9mm!important;display:block;}
     #student-id-card-preview-modal{overflow:auto;}
     /* Keep the login screen focused: no public/global header or status strip while auth gateway is visible. */
     body:has(#auth-gateway-view:not(.hidden)) #global-header,
@@ -4046,7 +4048,27 @@ async function saveTeacherStudentAttendance(){
     function toggleAllAdminStudents(checked){document.querySelectorAll('.admin-student-check').forEach(x=>x.checked=!!checked);updateStudentSelectedCount();}
     function refreshAdminStudentSections(){const cls=document.getElementById('admin-student-filter-class')?.value||'',sel=document.getElementById('admin-student-filter-section');if(!sel)return;const sections=[...new Set(adminStudentRows.filter(s=>!cls||s.class_name===cls).map(s=>s.section).filter(Boolean))].sort();sel.innerHTML='<option value="">All Sections</option>'+sections.map(s=>'<option>'+studentEscape(s)+'</option>').join('');}
     function refreshAssignmentSections(){const cls=document.getElementById('assign-class-name')?.value||'',sel=document.getElementById('assign-section');if(!sel)return;const sections=[...new Set(adminStudentRows.filter(s=>!cls||s.class_name===cls).map(s=>s.section).filter(Boolean))].sort();sel.innerHTML='<option value="">Select section</option>'+sections.map(s=>'<option value="'+studentEscape(s)+'">'+studentEscape(s)+'</option>').join('');loadAdminAssignments();}
-    async function populateStudentTeacherOptions(){const sel=document.getElementById('assign-teacher-email');if(!sel)return;let rows=[];try{if(supabaseClient&&currentAuthUser?.type==='ADMIN'){const {data,error}=await supabaseClient.from('staff').select('id,emp_id,name,role,email,status').eq('status','ACTIVE').not('email','is',null).order('name',{ascending:true});if(error)throw error;rows=(data||[]).filter(s=>String(s.email||'').trim()).map(s=>({id:s.id,empId:s.emp_id||'',name:s.name||s.email,role:s.role||'',email:s.email,status:s.status||'ACTIVE'}));staffDatabase=rows.length?rows:staffDatabase;} }catch(e){console.warn('Teacher list cloud load error:',e);}if(!rows.length)rows=staffDatabase.filter(s=>s.status==='ACTIVE'&&s.email).map(s=>({id:s.id,empId:s.empId||'',name:s.name||s.email,role:s.role||'',email:s.email,status:s.status}));rows=rows.filter(s=>/teacher|tgt|pgt|prt|pre-primary|special educator|pet/i.test(String(s.role||''))||String(s.role||'').trim()==='');sel.innerHTML='<option value="">Select teacher</option>'+rows.map(s=>'<option value="'+studentEscape(s.email)+'">'+studentEscape(s.name)+(s.empId?' ('+studentEscape(s.empId)+')':'')+'</option>').join('');if(!rows.length)sel.innerHTML='<option value="">No active teachers found</option>';}
+    async function populateStudentTeacherOptions(){
+      const sel=document.getElementById('assign-teacher-email');if(!sel)return;
+      sel.innerHTML='<option value="">Loading teachers…</option>';sel.disabled=true;
+      try{
+        let rows=[];
+        if(supabaseClient&&currentAuthUser?.type==='ADMIN'){
+          const {data,error}=await supabaseClient.from('staff').select('id,emp_id,name,role,email,status').eq('status','ACTIVE').not('email','is',null).order('name',{ascending:true});
+          if(error)throw error;
+          rows=(data||[]).filter(x=>String(x.email||'').trim()).map(x=>({id:x.id,empId:x.emp_id||'',name:x.name||x.email,role:x.role||'',email:String(x.email).trim()}));
+        }
+        if(!rows.length)rows=staffDatabase.filter(x=>x.status==='ACTIVE'&&String(x.email||'').trim()).map(x=>({id:x.id,empId:x.empId||'',name:x.name||x.email,role:x.role||'',email:String(x.email).trim()}));
+        const unique=[];const seen=new Set();
+        rows.forEach(x=>{const key=x.email.toLowerCase();if(!seen.has(key)){seen.add(key);unique.push(x);}});
+        sel.innerHTML='<option value="">Select teacher</option>'+unique.map(x=>'<option value="'+studentEscape(x.email)+'">'+studentEscape(x.name)+(x.empId?' ('+studentEscape(x.empId)+')':'')+(x.role?' — '+studentEscape(x.role):'')+'</option>').join('');
+        if(!unique.length)sel.innerHTML='<option value="">No active staff with email found</option>';
+      }catch(e){
+        console.warn('Teacher list cloud load error:',e);
+        sel.innerHTML='<option value="">Unable to load teachers</option>';
+        showToast('Could not load teacher list: '+(e.message||e),'error');
+      }finally{sel.disabled=false;}
+    }
     function populateStudentClassOptions(){const classes=[...new Set(adminStudentRows.map(s=>s.class_name).filter(Boolean))].sort((a,b)=>String(a).localeCompare(String(b),undefined,{numeric:true}));const a=document.getElementById('admin-student-filter-class'),b=document.getElementById('assign-class-name');if(a){const cur=a.value;a.innerHTML='<option value="">All Classes</option>'+classes.map(c=>'<option value="'+studentEscape(c)+'">'+studentEscape(c)+'</option>').join('');if(classes.includes(cur))a.value=cur;}if(b){const cur=b.value;b.innerHTML='<option value="">Select class</option>'+classes.map(c=>'<option value="'+studentEscape(c)+'">'+studentEscape(c)+'</option>').join('');if(classes.includes(cur))b.value=cur;}refreshAdminStudentSections();refreshAssignmentSections();}
     async function loadAdminStudents(){
       const tbody=document.getElementById('admin-student-tbody');if(!tbody||currentAuthUser?.type!=='ADMIN'||!supabaseClient)return;const statusEl=document.getElementById('admin-student-status');if(statusEl)statusEl.textContent='Loading roster…';
@@ -4088,7 +4110,18 @@ async function saveTeacherStudentAttendance(){
     }
     function makeStudentIdCardHtml(s,photoUrl=''){const photo=photoUrl?'<img src="'+studentEscape(photoUrl)+'" alt="Student Photo">':'<div class="sid-photo-fallback">'+studentEscape(studentIdInitials(s))+'</div>';const val=(x)=>studentEscape(x||'—');return '<div class="student-id-preview-card"><div class="sid-top"><img class="sid-logo" src="'+studentEscape(new URL('logo 2.png',window.location.href).href)+'" alt="Ashiana Public School"><div class="sid-school">ASHIANA PUBLIC SCHOOL</div><div class="sid-sub">SECTOR 46-A, CHANDIGARH</div><div class="sid-line"></div></div><div class="sid-photo-wrap">'+photo+'</div><div class="sid-name-band"><div class="sid-name">'+val(s.student_name)+'</div><div class="sid-class">Class '+val(s.class_name)+' • Section '+val(s.section)+'</div></div><div class="sid-details"><div class="sid-row"><span>Enroll No.</span><b>'+val(s.enroll_no)+'</b></div><div class="sid-row"><span>Roll No.</span><b>'+val(s.roll_no)+'</b></div><div class="sid-row"><span>DOB</span><b>'+studentDobText(s.dob)+'</b></div><div class="sid-row"><span>Father</span><b>'+val(s.father_name)+'</b></div><div class="sid-row"><span>Mother</span><b>'+val(s.mother_name)+'</b></div><div class="sid-row"><span>Phone</span><b>'+val(s.phone_number)+'</b></div><div class="sid-row address-row"><span>Address</span><b>'+val(s.address)+'</b></div></div><div data-student-qr class="sid-qr-wrap"></div><div class="sid-footer">Scan to verify student identity • If found, please return to Ashiana Public School, Sector 46-A, Chandigarh.</div></div>';}
     let currentStudentIdCardId=null;
-    async function createStudentIdCardById(id){const s=adminStudentRows.find(x=>x.id===id);if(!s)return showToast('Student record not found.','error');currentStudentIdCardId=id;const modal=document.getElementById('student-id-card-preview-modal'),preview=document.getElementById('student-id-card-preview');if(!modal||!preview)return;preview.innerHTML='<div class="w-[54mm] h-[85.6mm] flex items-center justify-center bg-white text-slate-500 text-xs">Preparing ID card…</div>';modal.classList.remove('hidden');modal.classList.add('flex');document.body.classList.add('overflow-hidden');const photo=await getStudentPhotoUrl(s);try{await ensureQRCodeLibrary();}catch(e){console.warn('Student ID QR library unavailable:',e);}preview.innerHTML=makeStudentIdCardHtml(s,photo);renderStudentCardQr(preview.querySelector("[data-student-qr]"),s);}
+    async function createStudentIdCardById(id){
+      const s=adminStudentRows.find(x=>x.id===id);if(!s)return showToast('Student record not found.','error');
+      currentStudentIdCardId=id;
+      const modal=document.getElementById('student-id-card-preview-modal'),preview=document.getElementById('student-id-card-preview');if(!modal||!preview)return;
+      if(modal.parentElement!==document.body)document.body.appendChild(modal);
+      modal.classList.remove('hidden');modal.classList.add('flex');document.body.classList.add('overflow-hidden');
+      preview.innerHTML='<div class="w-[54mm] h-[85.6mm] flex items-center justify-center bg-white text-slate-500 text-xs">Preparing ID card…</div>';
+      try{await ensureQRCodeLibrary();}catch(_){}
+      let photo='';try{photo=await getStudentPhotoUrl(s);}catch(_){}
+      preview.innerHTML=makeStudentIdCardHtml(s,photo);
+      renderStudentCardQr(preview.querySelector('[data-student-qr]'),s);
+    }
     function closeStudentIdCardPreview(event){if(event&&event.target&&event.target.id!=='student-id-card-preview-modal')return;const modal=document.getElementById('student-id-card-preview-modal');if(modal){modal.classList.add('hidden');modal.classList.remove('flex');}document.body.classList.remove('overflow-hidden');currentStudentIdCardId=null;}
     async function printCurrentStudentIdCard(){
       if(!currentStudentIdCardId)return;
@@ -4689,6 +4722,7 @@ async function loadAdminStudentAttendance(){const adminDate=document.getElementB
           renderStaffDirectoryTable();
           renderLiveAttendanceTable();
           updateKPICards();
+          populateStudentTeacherOptions();
           return true;
         }
       } catch (e) {
