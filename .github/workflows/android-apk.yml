@@ -6,6 +6,7 @@ on:
     branches: ["main"]
     paths:
       - "index.html"
+      - "assets/vendor/**"
       - "manifest.webmanifest"
       - "sw.js"
       - "logo 2.png"
@@ -39,7 +40,7 @@ jobs:
         run: |
           set -e
           rm -rf mobile/www
-          mkdir -p mobile/www
+          mkdir -p mobile/www/assets/vendor
           cp index.html mobile/www/
           cp manifest.webmanifest mobile/www/
           cp sw.js mobile/www/
