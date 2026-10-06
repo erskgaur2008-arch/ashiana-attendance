@@ -56,6 +56,41 @@
       font-family: 'Inter', sans-serif; 
       -webkit-tap-highlight-color: transparent;
     }
+    /* Login role controls: keep the selector and login forms above decorative layers. */
+    .login-role-button{
+      position:relative;
+      z-index:31;
+      min-height:42px;
+      padding:9px 6px;
+      border-radius:13px;
+      border:1px solid rgba(167,243,208,.35);
+      background:#ffffff;
+      color:#064e3b;
+      font-size:11px;
+      font-weight:800;
+      line-height:1.1;
+      cursor:pointer;
+      touch-action:manipulation;
+      user-select:none;
+      -webkit-user-select:none;
+      -webkit-tap-highlight-color:transparent;
+    }
+    .login-role-button.active{
+      background:#064e3b;
+      color:#ffffff;
+      border-color:#064e3b;
+      box-shadow:0 4px 12px rgba(2,44,34,.18);
+    }
+    #auth-gateway-view form{
+      position:relative;
+      z-index:20;
+    }
+    #auth-gateway-view input,
+    #auth-gateway-view button[type="submit"]{
+      position:relative;
+      z-index:21;
+      pointer-events:auto;
+    }
     .hide-scrollbar::-webkit-scrollbar { display: none; }
     .hide-scrollbar { -ms-overflow-style: none; scrollbar-width: none; }
     @keyframes scanline {
@@ -425,18 +460,30 @@
         <div class="w-16 h-0.5 bg-ashiana-red mx-auto my-1.5 rounded-full"></div>
         <p class="text-[11px] text-emerald-200">Sector 46-A, Chandigarh • Faculty Attendance</p>
         
-        <!-- Role Selector -->
-        <div class="mt-4">
-          <label for="login-role-select" class="sr-only">Select Login Role</label>
-          <div class="relative">
-            <i data-lucide="users-round" class="absolute left-3.5 top-1/2 -translate-y-1/2 w-4 h-4 text-emerald-700 pointer-events-none"></i>
-            <select id="login-role-select" onchange="window.__ashianaApplyLoginRole(this.value)" oninput="window.__ashianaApplyLoginRole(this.value)" class="w-full appearance-none pl-10 pr-10 py-3 rounded-2xl bg-white text-emerald-950 border border-emerald-300 shadow-sm focus:ring-2 focus:ring-emerald-400 focus:outline-none font-bold text-sm">
-              <option value="teacher">Teacher / Staff</option>
-              <option value="admin">Administrator</option>
-              <option value="student">Student</option>
-            </select>
-            <i data-lucide="chevron-down" class="absolute right-3.5 top-1/2 -translate-y-1/2 w-4 h-4 text-emerald-700 pointer-events-none"></i>
+        <!-- Login Role Selector: explicit buttons are used instead of a native
+             dropdown so role selection remains reliable on desktop and mobile. -->
+        <div class="mt-4 relative z-30">
+          <label class="sr-only">Select Login Role</label>
+          <div id="login-role-buttons" class="grid grid-cols-3 gap-1.5 p-1.5 rounded-2xl bg-emerald-950/20 border border-emerald-300/60">
+            <button type="button" data-login-role="teacher" aria-pressed="true"
+              onclick="window.__ashianaApplyLoginRole('teacher'); return false;"
+              onpointerdown="window.__ashianaApplyLoginRole('teacher')"
+              class="login-role-button active">Teacher / Staff</button>
+            <button type="button" data-login-role="admin" aria-pressed="false"
+              onclick="window.__ashianaApplyLoginRole('admin'); return false;"
+              onpointerdown="window.__ashianaApplyLoginRole('admin')"
+              class="login-role-button">Administrator</button>
+            <button type="button" data-login-role="student" aria-pressed="false"
+              onclick="window.__ashianaApplyLoginRole('student'); return false;"
+              onpointerdown="window.__ashianaApplyLoginRole('student')"
+              class="login-role-button">Student</button>
           </div>
+          <select id="login-role-select" aria-hidden="true" tabindex="-1"
+            class="absolute w-px h-px opacity-0 pointer-events-none">
+            <option value="teacher">Teacher / Staff</option>
+            <option value="admin">Administrator</option>
+            <option value="student">Student</option>
+          </select>
           <p class="text-[10px] text-emerald-200 mt-1.5 text-center">Select your login role</p>
         </div>      </div>
 
@@ -550,6 +597,13 @@
 
           var selector = document.getElementById("login-role-select");
           if (selector && selector.value !== selected) selector.value = selected;
+
+          // Keep the visible role buttons synchronized with the active form.
+          document.querySelectorAll("#login-role-buttons [data-login-role]").forEach(function (button) {
+            var activeButton = button.getAttribute("data-login-role") === selected;
+            button.classList.toggle("active", activeButton);
+            button.setAttribute("aria-pressed", activeButton ? "true" : "false");
+          });
           return false;
         }
         window.__ashianaApplyLoginRole = applyAshianaLoginRole;
