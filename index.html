@@ -430,7 +430,7 @@
           <label for="login-role-select" class="sr-only">Select Login Role</label>
           <div class="relative">
             <i data-lucide="users-round" class="absolute left-3.5 top-1/2 -translate-y-1/2 w-4 h-4 text-emerald-700 pointer-events-none"></i>
-            <select id="login-role-select" onchange="window.switchLoginTab(this.value)" class="w-full appearance-none pl-10 pr-10 py-3 rounded-2xl bg-white text-emerald-950 border border-emerald-300 shadow-sm focus:ring-2 focus:ring-emerald-400 focus:outline-none font-bold text-sm">
+            <select id="login-role-select" onchange="window.__ashianaApplyLoginRole(this.value)" oninput="window.__ashianaApplyLoginRole(this.value)" class="w-full appearance-none pl-10 pr-10 py-3 rounded-2xl bg-white text-emerald-950 border border-emerald-300 shadow-sm focus:ring-2 focus:ring-emerald-400 focus:outline-none font-bold text-sm">
               <option value="teacher">Teacher / Staff</option>
               <option value="admin">Administrator</option>
               <option value="student">Student</option>
@@ -534,9 +534,20 @@
             admin: document.getElementById("admin-login-form"),
             student: document.getElementById("student-login-form")
           };
+
+          // Force the visible form with both the Tailwind class and the native
+          // hidden property. This prevents a restored/autofilled select value
+          // from ever becoming out of sync with the login panel.
           Object.keys(map).forEach(function (key) {
-            if (map[key]) map[key].classList.toggle("hidden", key !== selected);
+            var form = map[key];
+            if (!form) return;
+            var active = key === selected;
+            form.classList.toggle("hidden", !active);
+            form.hidden = !active;
+            if (active) form.style.removeProperty("display");
+            else form.style.display = "none";
           });
+
           var selector = document.getElementById("login-role-select");
           if (selector && selector.value !== selected) selector.value = selected;
           return false;
@@ -3403,55 +3414,8 @@
     // Mobile browsers can restore a <select> value from page history/autofill
     // without firing the change handler, so the form must also be synchronized
     // on initial load and pageshow.
-    // Use the same role-switch implementation that is installed by the
-    // mobile-safe login bridge above. Keeping one implementation prevents
-    // the later application script from overwriting the early handler with
-    // a competing copy that can leave the select and visible form out of sync.
-    window.switchLoginTab = function(tab) {
-      return window.__ashianaApplyLoginRole(tab);
-    };
-
-    function syncLoginRoleUI() {
-      const selector = document.getElementById("login-role-select");
-      const role = selector?.value || "teacher";
-      window.switchLoginTab(role);
-    }
-
-    // Bind the role selector with JavaScript as well as the inline onchange.
-    // Some Android WebViews/browsers can preserve the selected option without
-    // reliably executing the inline handler. Delegated change/input handling
-    // makes role switching deterministic.
-    function bindLoginRoleSelector() {
-      const selector = document.getElementById("login-role-select");
-      if (!selector || selector.dataset.roleBound === "1") return;
-      selector.dataset.roleBound = "1";
-
-      const applyRole = () => window.switchLoginTab(selector.value);
-
-      selector.addEventListener("change", applyRole, false);
-      selector.addEventListener("input", applyRole, false);
-      document.addEventListener("change", (event) => {
-        if (event.target === selector) applyRole();
-      }, true);
-      document.addEventListener("input", (event) => {
-        if (event.target === selector) applyRole();
-      }, true);
-    }
-
-    function initializeLoginRoleUI() {
-      bindLoginRoleSelector();
-      syncLoginRoleUI();
-    }
-
-    // Handle normal load, Android WebView restore, and delayed DOM availability.
-    if (document.readyState === "loading") {
-      document.addEventListener("DOMContentLoaded", initializeLoginRoleUI, { once: true });
-    } else {
-      initializeLoginRoleUI();
-    }
-    window.addEventListener("pageshow", initializeLoginRoleUI);
-    setTimeout(initializeLoginRoleUI, 0);
-    setTimeout(initializeLoginRoleUI, 250);
+    // The early mobile-safe role switcher above is the single source of truth.
+    // Do not install a second selector listener here.
 
     function togglePinVisibility(id) {
       const input = document.getElementById(id);
