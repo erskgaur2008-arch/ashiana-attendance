@@ -92,21 +92,11 @@
       border-color:#064e3b;
       box-shadow:0 4px 12px rgba(2,44,34,.18);
     }
-    /* Native role selection controls the forms without requiring JavaScript. */
-    #auth-gateway-view:not(:has(#login-role-admin:checked)):not(:has(#login-role-student:checked)) #teacher-login-form,
-    #auth-gateway-view:has(#login-role-admin:checked) #admin-login-form,
-    #auth-gateway-view:has(#login-role-student:checked) #student-login-form{
-      display:block !important;
-      visibility:visible !important;
-    }
-    #auth-gateway-view:has(#login-role-admin:checked) #teacher-login-form,
-    #auth-gateway-view:has(#login-role-admin:checked) #student-login-form,
-    #auth-gateway-view:has(#login-role-student:checked) #teacher-login-form,
-    #auth-gateway-view:has(#login-role-student:checked) #admin-login-form,
-    #auth-gateway-view:not(:has(#login-role-admin:checked)):not(:has(#login-role-student:checked)) #admin-login-form,
-    #auth-gateway-view:not(:has(#login-role-admin:checked)):not(:has(#login-role-student:checked)) #student-login-form{
-      display:none !important;
-      visibility:hidden !important;
+    /* Role selection uses the native dropdown above. */
+    #auth-gateway-view #login-role-select{
+      position:relative;
+      z-index:999;
+      pointer-events:auto;
     }
     #auth-gateway-view form{
       position:relative;
@@ -507,30 +497,17 @@
         <div class="w-16 h-0.5 bg-ashiana-red mx-auto my-1.5 rounded-full"></div>
         <p class="text-[11px] text-emerald-200">Sector 46-A, Chandigarh • Faculty Attendance</p>
         
-        <!-- Login Role Selector: native radio controls + CSS switching.
-             Role selection must remain functional even if application JavaScript has
-             a later error. -->
+        <!-- Login Role Selector -->
         <div class="mt-4 relative z-30">
-          <div id="login-role-buttons" class="grid grid-cols-3 gap-1.5 p-1.5 rounded-2xl bg-emerald-950/20 border border-emerald-300/60">
-            <label class="login-role-button active">
-              <input id="login-role-teacher" type="radio" name="login-role-native" value="teacher" checked onchange="window.__ashianaSetLoginRole(this.value)">
-              <span>Teacher / Staff</span>
-            </label>
-            <label class="login-role-button">
-              <input id="login-role-admin" type="radio" name="login-role-native" value="admin" onchange="window.__ashianaSetLoginRole(this.value)">
-              <span>Administrator</span>
-            </label>
-            <label class="login-role-button">
-              <input id="login-role-student" type="radio" name="login-role-native" value="student" onchange="window.__ashianaSetLoginRole(this.value)">
-              <span>Student</span>
-            </label>
-          </div>
-          <select id="login-role-select" aria-hidden="true" tabindex="-1" class="absolute w-px h-px opacity-0 pointer-events-none">
+          <label for="login-role-select" class="block text-[10px] font-bold text-emerald-100 mb-1.5 text-center">Login as</label>
+          <select id="login-role-select" onchange="window.__ashianaSetLoginRole(this.value)"
+            class="w-full h-11 px-3 rounded-xl bg-white text-emerald-950 border-2 border-emerald-300/70 font-bold text-sm shadow-sm focus:outline-none focus:ring-2 focus:ring-emerald-300 cursor-pointer">
             <option value="teacher">Teacher / Staff</option>
             <option value="admin">Administrator</option>
             <option value="student">Student</option>
           </select>
           <p class="text-[10px] text-emerald-200 mt-1.5 text-center">Select your login role</p>
+        </div>
         </div>
       <div class="p-5 sm:p-6 space-y-4">
         <!-- TEACHER LOGIN FORM -->
@@ -3736,7 +3713,7 @@ async function loadTeacherPortalContentItems(type){
       const title=studentEscape(x.title||'Untitled');
       const body=studentEscape(type==='notice'?x.body:(x.description||''));
       const meta=type==='notice'?(x.publish_at||x.created_at||''):(('Subject: '+(x.subject_name||'—'))+' • Due: '+(x.due_date||'—'));
-      return '<div class="p-3 mb-2 rounded-2xl border bg-white shadow-sm"><div class="flex items-start justify-between gap-3"><div class="min-w-0 flex-1"><div class="font-bold text-sm text-slate-900 break-words">'+title+'</div><div class="mt-1 text-xs text-slate-600 whitespace-pre-wrap break-words leading-6">'+body+'</div><div class="mt-2 text-[10px] text-slate-400">'+studentEscape(meta)+'</div></div><button type="button" onclick="deleteTeacherPortalContent(\''+studentEscape(x.id)+'\\',\\''+type+'\')" class="shrink-0 px-2.5 py-1.5 rounded-lg bg-rose-50 text-rose-700 border border-rose-200 text-[10px] font-bold hover:bg-rose-100">Delete</button></div></div>';
+       return '<div class="p-3 mb-2 rounded-2xl border bg-white shadow-sm"><div class="flex items-start justify-between gap-3"><div class="min-w-0 flex-1"><div class="font-bold text-sm text-slate-900 break-words">'+title+'</div><div class="mt-1 text-xs text-slate-600 whitespace-pre-wrap break-words leading-6">'+body+'</div><div class="mt-2 text-[10px] text-slate-400">'+studentEscape(meta)+'</div></div><button type="button" onclick="deleteTeacherPortalContent(\''+studentEscape(x.id)+'\',\''+type+'\')" class="shrink-0 px-2.5 py-1.5 rounded-lg bg-rose-50 text-rose-700 border border-rose-200 text-[10px] font-bold hover:bg-rose-100">Delete</button></div></div>';
     }).join('');
 }
 async function deleteTeacherPortalContent(id,type){
