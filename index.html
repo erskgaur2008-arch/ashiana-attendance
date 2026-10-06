@@ -559,6 +559,20 @@
           return window.__ashianaLoginClient;
         }
 
+        // Shared main application client. It is created lazily so the early
+        // login bridge can establish the authenticated session even before
+        // bootstrapApp()/initSupabase() has finished.
+        async function ashianaGetMainSupabaseClient() {
+          if (window.__ashianaMainSupabaseClient) return window.__ashianaMainSupabaseClient;
+          if (!window.supabase?.createClient) throw new Error("Supabase client library is unavailable.");
+          window.__ashianaMainSupabaseClient = window.supabase.createClient(
+            "https://oalfzgluqroqbbrulhpr.supabase.co",
+            "sb_publishable_PND9f9FKbNrxlEakSgLKYA_5EsqLHkg",
+            { auth: { persistSession: true, autoRefreshToken: true, detectSessionInUrl: false } }
+          );
+          return window.__ashianaMainSupabaseClient;
+        }
+
         // Student authentication must never share the persisted Auth session
         // used by Admin/Teacher. This client is anonymous and non-persisting.
         async function ashianaGetStudentLoginClient() {
@@ -685,8 +699,7 @@
                 // verification. Put the verified session into the app's main
                 // persistent client so the portal and every cloud query use the
                 // same authenticated Supabase session after reload.
-                var mainClient = window.__ashianaMainSupabaseClient;
-                if (!mainClient) throw new Error("Main Supabase client is not ready.");
+                var mainClient = await ashianaGetMainSupabaseClient();
                 await mainClient.auth.signOut({ scope: "local" });
                 var sessionResult = await mainClient.auth.setSession({
                   access_token: loginResult.session.access_token,
@@ -748,8 +761,7 @@
               // Transfer the verified admin Auth session to the main app client.
               // This prevents the isolated pre-auth client from becoming the
               // session source for the dashboard after reload.
-              var adminMainClient = window.__ashianaMainSupabaseClient;
-              if (!adminMainClient) throw new Error("Main Supabase client is not ready.");
+              var adminMainClient = await ashianaGetMainSupabaseClient();
               var adminSession = authResult.data.session;
               if (!adminSession?.access_token || !adminSession?.refresh_token) {
                 throw new Error("Administrator authentication returned no secure session.");
@@ -801,10 +813,8 @@
               // Student auth is anonymous. Remove any previous Staff/Admin
               // Supabase Auth session from the main client before reload so
               // restoreSupabaseSession cannot reopen the previous staff portal.
-              var studentMainClient = window.__ashianaMainSupabaseClient;
-              if (studentMainClient) {
-                await studentMainClient.auth.signOut({ scope: "local" });
-              }
+              var studentMainClient = await ashianaGetMainSupabaseClient();
+              await studentMainClient.auth.signOut({ scope: "local" });
               sessionStorage.setItem("aps_current_auth_session_v1", JSON.stringify({
                 type: "STUDENT",
                 studentRecord: studentLogin.data.student,
@@ -3031,11 +3041,11 @@
         const ready = await ensureSupabaseLibrary();
         if (!ready) throw new Error("Supabase JS client could not be loaded.");
 
-        supabaseClient = window.supabase.createClient(DEFAULT_SUPABASE_URL, DEFAULT_SUPABASE_ANON_KEY);
-        // Expose the main authenticated client to the early login bridge.
-        // The bridge runs before this script block's lexical scope is visible,
-        // so it must use an explicit window reference when it needs to transfer
-        // a verified staff/admin session into the app's real client.
+        // Reuse the client that the early login bridge may already have created.
+        // This is critical for Admin/Teacher login because the bridge can run
+        // before bootstrapApp() finishes initializing the main app client.
+        supabaseClient = window.__ashianaMainSupabaseClient
+          || window.supabase.createClient(DEFAULT_SUPABASE_URL, DEFAULT_SUPABASE_ANON_KEY);
         window.__ashianaMainSupabaseClient = supabaseClient;
 
         // Listen for Supabase's secure password-recovery redirect.
