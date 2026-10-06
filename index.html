@@ -900,10 +900,12 @@
               // same Auth session; signing out the pre-auth client revokes the
               // refresh token and makes the transferred main session invalid.
 
-              // Establish the UI session immediately instead of forcing a full-page
-              // reload. On some Android/PWA browsers the reload can race Supabase
-              // Auth persistence, leaving the user on the login gateway even though
-              // authentication succeeded.
+              // Complete the authenticated handoff through the normal application
+              // bootstrap. This is the most reliable path on Android Chrome/PWA:
+              // set the persistent main-client session, verify it was persisted,
+              // then let bootstrapApp() restore the Admin session and render the
+              // console. Do not render the large dashboard directly from the
+              // early login bridge.
               currentAuthUser = {
                 type: "ADMIN",
                 username: adminEmail,
@@ -911,73 +913,20 @@
               };
               currentStaffId = null;
               sessionStorage.setItem("aps_current_auth_session_v1", JSON.stringify(currentAuthUser));
+              sessionStorage.setItem("aps_admin_login_handoff_v1", "1");
 
               ashianaLoginMessage("Administrator authentication successful. Opening console…", "success");
 
-              // The login bridge runs before the main application script is
-              // evaluated on the static GitHub Pages build, so applyAuthenticatedUI()
-              // is not available at this exact point. Queue the transition and wait
-              // for the main app/bootstrap to finish initializing instead of showing
-              // a false "console could not be initialized" error.
-              window.__ashianaPendingAdminConsole = true;
-
-              // Open the Admin portal with a minimal, deterministic transition.
-              // Do not run dashboard renderers during login: a secondary widget
-              // error must never prevent an authenticated administrator from
-              // reaching the console.
-              window.__ashianaPendingAdminConsole = false;
-              try {
-                var authGateway = document.getElementById("auth-gateway-view");
-                var adminPortal = document.getElementById("admin-portal-view");
-                var staffPortal = document.getElementById("staff-portal-view");
-                var studentPortal = document.getElementById("student-portal-view");
-                var sessionControls = document.getElementById("authenticated-session-controls");
-                var globalHeader = document.getElementById("global-header");
-                var globalStatusBanner = document.getElementById("global-status-banner");
-
-                authGateway?.classList.add("hidden");
-                staffPortal?.classList.add("hidden");
-                studentPortal?.classList.add("hidden");
-                adminPortal?.classList.remove("hidden");
-                sessionControls?.classList.remove("hidden");
-                globalHeader?.classList.add("hidden");
-                globalStatusBanner?.classList.add("hidden");
-
-                var navAvatar = document.getElementById("nav-user-avatar");
-                var navName = document.getElementById("nav-user-name");
-                var navRole = document.getElementById("nav-user-role");
-                if (navAvatar) {
-                  navAvatar.innerText = "AD";
-                  navAvatar.className = "w-5 h-5 sm:w-6 sm:h-6 rounded-full bg-ashiana-red text-white font-bold flex items-center justify-center text-[10px]";
-                }
-                if (navName) navName.innerText = "Principal Office";
-                if (navRole) navRole.innerText = "Administrator";
-
-                // Only initialize the harmless date/icon elements now. The
-                // dashboard data loaders can run after the console is visible.
-                try { updateAdminDashboardDate(); } catch (_) {}
-                try { if (window.lucide) lucide.createIcons(); } catch (_) {}
-
-                // Run secondary dashboard data loading after the portal is open.
-                setTimeout(function () {
-                  try { loadAdminStaffDirectoryFromSupabase(false); } catch (e) { console.warn("Admin directory load:", e); }
-                  try { renderLiveAttendanceTable(); } catch (e) { console.warn("Admin attendance render:", e); }
-                  try { renderStaffDirectoryTable(); } catch (e) { console.warn("Admin directory render:", e); }
-                  try { updateKPICards(); } catch (e) { console.warn("Admin KPI render:", e); }
-                  try { renderAuditLogs(); } catch (e) { console.warn("Admin audit render:", e); }
-                  try { renderAdminLeaveTable(); } catch (e) { console.warn("Admin leave render:", e); }
-                  try { if (window.lucide) lucide.createIcons(); } catch (_) {}
-                }, 0);
-              } catch (uiError) {
-                console.error("Ashiana admin portal transition error:", uiError);
-                // Even if optional navigation elements are missing, force the
-                // authenticated Admin portal visible.
-                document.getElementById("auth-gateway-view")?.classList.add("hidden");
-                document.getElementById("staff-portal-view")?.classList.add("hidden");
-                document.getElementById("student-portal-view")?.classList.add("hidden");
-                document.getElementById("admin-portal-view")?.classList.remove("hidden");
-                document.getElementById("authenticated-session-controls")?.classList.remove("hidden");
+              var persistedCheck = await adminMainClient.auth.getSession();
+              if (persistedCheck.error || !persistedCheck.data?.session?.user) {
+                throw new Error("Administrator session was not persisted. Please try again.");
               }
+
+              // Give the browser one task turn to flush Auth storage before the
+              // reload. The bootstrap restore path then becomes the single source
+              // of truth for opening the Admin portal.
+              await new Promise(function(resolve) { setTimeout(resolve, 50); });
+              window.location.reload();
 
               return false;
             }
