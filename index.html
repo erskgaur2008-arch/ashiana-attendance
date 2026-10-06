@@ -4360,61 +4360,116 @@ async function handleTeacherLogin(event) {
       const globalHeader = document.getElementById("global-header");
       const globalStatusBanner = document.getElementById("global-status-banner");
 
-      if (!currentAuthUser) {
-        authGateway.classList.remove("hidden");
-        staffPortal.classList.add("hidden");
-        adminPortal.classList.add("hidden");
-        studentPortal?.classList.add("hidden");
-        sessionControls.classList.add("hidden");
-        // Keep the login screen clean: hide the public navigation/status strip.
+      // Keep this function fail-safe: authentication must never be reported as
+      // failed just because a secondary dashboard widget cannot render.
+      try {
+        if (!currentAuthUser) {
+          authGateway?.classList.remove("hidden");
+          staffPortal?.classList.add("hidden");
+          adminPortal?.classList.add("hidden");
+          studentPortal?.classList.add("hidden");
+          sessionControls?.classList.add("hidden");
+          globalHeader?.classList.add("hidden");
+          globalStatusBanner?.classList.add("hidden");
+          return;
+        }
+
+        authGateway?.classList.add("hidden");
+        sessionControls?.classList.remove("hidden");
         globalHeader?.classList.add("hidden");
         globalStatusBanner?.classList.add("hidden");
-        return;
+
+        const navAvatar = document.getElementById("nav-user-avatar");
+        const navName = document.getElementById("nav-user-name");
+        const navRole = document.getElementById("nav-user-role");
+
+        if (currentAuthUser.type === 'ADMIN') {
+          if (navAvatar) {
+            navAvatar.innerText = "AD";
+            navAvatar.className = "w-5 h-5 sm:w-6 sm:h-6 rounded-full bg-ashiana-red text-white font-bold flex items-center justify-center text-[10px]";
+          }
+          if (navName) navName.innerText = "Principal Office";
+          if (navRole) navRole.innerText = "Administrator";
+
+          // Show the Admin portal first. Secondary data loads must not be able
+          // to block the transition from the login screen.
+          try { switchPortal('admin'); } catch (e) {
+            console.warn("Admin portal view switch warning:", e);
+            adminPortal?.classList.remove("hidden");
+            staffPortal?.classList.add("hidden");
+            studentPortal?.classList.add("hidden");
+          }
+
+          try { updateAdminDashboardDate(); } catch (e) { console.warn("Admin date render warning:", e); }
+          try { loadAdminStaffDirectoryFromSupabase(false); } catch (e) { console.warn("Admin directory load warning:", e); }
+          try { if (window.lucide) lucide.createIcons(); } catch (e) {}
+        } else if (currentAuthUser.type === 'STUDENT') {
+          if (navAvatar) {
+            navAvatar.innerText="ST";
+            navAvatar.className="w-5 h-5 sm:w-6 sm:h-6 rounded-full bg-emerald-600 text-white font-bold flex items-center justify-center text-[10px] overflow-hidden";
+          }
+          if (navName) navName.innerText=currentAuthUser.studentRecord?.student_name || "Student";
+          if (navRole) navRole.innerText="Student";
+          try { switchPortal("student"); } catch (e) {
+            console.warn("Student portal view switch warning:", e);
+            studentPortal?.classList.remove("hidden");
+            staffPortal?.classList.add("hidden");
+            adminPortal?.classList.add("hidden");
+            try { populateStudentPortal(currentAuthUser.studentRecord); } catch (_) {}
+          }
+          return;
+        } else {
+          const s = currentAuthUser.staffRecord || {};
+          if (navAvatar) {
+            navAvatar.className = "w-5 h-5 sm:w-6 sm:h-6 rounded-full bg-ashiana-green text-white font-bold flex items-center justify-center text-[10px] overflow-hidden";
+            try { renderStaffAvatar("nav-user-avatar", s); } catch (e) {}
+          }
+          if (navName) navName.innerText = s.name || "Staff";
+          if (navRole) navRole.innerText = s.role || "Teacher / Staff";
+          try { switchPortal('staff'); } catch (e) {
+            console.warn("Staff portal view switch warning:", e);
+            staffPortal?.classList.remove("hidden");
+            adminPortal?.classList.add("hidden");
+            studentPortal?.classList.add("hidden");
+          }
+        }
+
+        // These are non-critical redraws. Each is isolated so one broken
+        // widget cannot prevent the authenticated portal from opening.
+        const safe = (fn, label) => {
+          try { fn(); } catch (e) { console.warn(label + " render warning:", e); }
+        };
+        safe(refreshStaffUI, "Staff UI");
+        safe(renderLiveAttendanceTable, "Live attendance");
+        safe(renderStaffDirectoryTable, "Staff directory");
+        safe(renderAuditLogs, "Audit logs");
+        safe(renderAdminLeaveTable, "Leave table");
+        safe(updateKPICards, "KPI cards");
+        safe(() => { if (window.lucide) lucide.createIcons(); }, "Icons");
+      } catch (fatal) {
+        // Last-resort recovery: never strand an authenticated user on the
+        // login gateway because of a dashboard rendering error.
+        console.error("Ashiana authenticated UI recovery:", fatal);
+        if (currentAuthUser?.type === 'ADMIN') {
+          authGateway?.classList.add("hidden");
+          staffPortal?.classList.add("hidden");
+          studentPortal?.classList.add("hidden");
+          adminPortal?.classList.remove("hidden");
+          sessionControls?.classList.remove("hidden");
+        } else if (currentAuthUser?.type === 'STUDENT') {
+          authGateway?.classList.add("hidden");
+          staffPortal?.classList.add("hidden");
+          adminPortal?.classList.add("hidden");
+          studentPortal?.classList.remove("hidden");
+          sessionControls?.classList.remove("hidden");
+        } else if (currentAuthUser) {
+          authGateway?.classList.add("hidden");
+          adminPortal?.classList.add("hidden");
+          studentPortal?.classList.add("hidden");
+          staffPortal?.classList.remove("hidden");
+          sessionControls?.classList.remove("hidden");
+        }
       }
-
-      authGateway.classList.add("hidden");
-      sessionControls.classList.remove("hidden");
-      // Authenticated portals have their own navigation/header.
-      globalHeader?.classList.add("hidden");
-      globalStatusBanner?.classList.add("hidden");
-
-      const navAvatar = document.getElementById("nav-user-avatar");
-      const navName = document.getElementById("nav-user-name");
-      const navRole = document.getElementById("nav-user-role");
-
-      if (currentAuthUser.type === 'ADMIN') {
-        navAvatar.innerText = "AD";
-        navAvatar.className = "w-5 h-5 sm:w-6 sm:h-6 rounded-full bg-ashiana-red text-white font-bold flex items-center justify-center text-[10px]";
-        navName.innerText = "Principal Office";
-        navRole.innerText = "Administrator";
-        switchPortal('admin');
-        updateAdminDashboardDate();
-        loadAdminStaffDirectoryFromSupabase(false);
-        if (window.lucide) lucide.createIcons();
-      } else if (currentAuthUser.type === 'STUDENT') {
-        navAvatar.innerText="ST";
-        navAvatar.className="w-5 h-5 sm:w-6 sm:h-6 rounded-full bg-emerald-600 text-white font-bold flex items-center justify-center text-[10px] overflow-hidden";
-        navName.innerText=currentAuthUser.studentRecord.student_name;
-        navRole.innerText="Student";
-        switchPortal("student");
-        populateStudentPortal(currentAuthUser.studentRecord);
-        return;
-      } else {
-        const s = currentAuthUser.staffRecord;
-        navAvatar.className = "w-5 h-5 sm:w-6 sm:h-6 rounded-full bg-ashiana-green text-white font-bold flex items-center justify-center text-[10px] overflow-hidden";
-        renderStaffAvatar("nav-user-avatar", s);
-        navName.innerText = s.name;
-        navRole.innerText = s.role;
-        switchPortal('staff');
-      }
-
-      refreshStaffUI();
-      renderLiveAttendanceTable();
-      renderStaffDirectoryTable();
-      renderAuditLogs();
-      renderAdminLeaveTable();
-      updateKPICards();
-      if (window.lucide) lucide.createIcons();
     }
 
     function switchPortal(portal) {
