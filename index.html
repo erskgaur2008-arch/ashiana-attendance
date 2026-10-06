@@ -967,19 +967,20 @@
         </div>
         <div class="admin-dashboard-actions">
           <div class="admin-live-pill"><span></span><strong>LIVE</strong><small>Cloud Sync</small></div>
-          <button onclick="pollLatestPunches(true)" class="admin-header-action" title="Sync now"><i data-lucide="refresh-cw"></i><span>Sync</span></button>
-          <button onclick="handleLogout()" class="admin-header-action admin-logout-action" title="Sign out"><i data-lucide="log-out"></i><span>Sign Out</span></button>
+          <button type="button" onclick="pollLatestPunches(true)" class="admin-header-action" title="Sync now"><i data-lucide="refresh-cw"></i><span>Sync</span></button>
+          <button type="button" onclick="handleLogout()" class="admin-header-action admin-logout-action" title="Sign out"><i data-lucide="log-out"></i><span>Sign Out</span></button>
         </div>
       </div>
 
-      <div class="admin-quick-actions"><button onclick="switchAdminTab('students')"><i data-lucide="graduation-cap"></i><span>Students</span></button>
+      <div class="admin-quick-actions">
+        <button type="button" onclick="window.switchAdminTab('students')"><i data-lucide="graduation-cap"></i><span>Students</span></button>
         <button type="button" onclick="openAdminStudentAttendanceReport()" title="Students Attendance Report"><i data-lucide="clipboard-list"></i><span>Attendance Report</span></button>
-        <button onclick="switchAdminTab('live')"><i data-lucide="radio"></i><span>Live Attendance</span></button>
-        <button onclick="switchAdminTab('qr')"><i data-lucide="qr-code"></i><span>Daily QR</span></button>
-        <button onclick="switchAdminTab('directory')"><i data-lucide="users"></i><span>Faculty</span></button>
-        <button onclick="switchAdminTab('reports')"><i data-lucide="file-spreadsheet"></i><span>Reports</span></button>
-        <button onclick="switchAdminTab('leave')"><i data-lucide="calendar-check"></i><span>Leaves</span></button>
-        <button onclick="switchAdminTab('corrections')"><i data-lucide="file-pen"></i><span>Corrections</span></button>
+        <button type="button" onclick="window.switchAdminTab('live')"><i data-lucide="radio"></i><span>Live Attendance</span></button>
+        <button type="button" onclick="window.switchAdminTab('qr')"><i data-lucide="qr-code"></i><span>Daily QR</span></button>
+        <button type="button" onclick="window.switchAdminTab('directory')"><i data-lucide="users"></i><span>Faculty</span></button>
+        <button type="button" onclick="window.switchAdminTab('reports')"><i data-lucide="file-spreadsheet"></i><span>Reports</span></button>
+        <button type="button" onclick="window.switchAdminTab('leave')" title="Faculty Leave Applications"><i data-lucide="calendar-check"></i><span>Leaves</span></button>
+        <button type="button" onclick="window.switchAdminTab('corrections')" title="Manual Attendance Corrections"><i data-lucide="file-pen"></i><span>Corrections</span></button>
       </div>
 
       <!-- Top KPI Row -->
@@ -6048,38 +6049,65 @@ window.addEventListener('load',async function(){
     }
 
     function switchAdminTab(tab) {
-      // Quick-action buttons do not have the legacy tab-btn-* IDs, so
-      // toggle the content views independently of the optional tab buttons.
-      ['live', 'qr', 'directory', 'corrections', 'leave', 'audit', 'reports', 'students'].forEach(t => {
+      const allowedTabs = ['live', 'qr', 'directory', 'corrections', 'leave', 'audit', 'reports', 'students'];
+      if (!allowedTabs.includes(tab)) return;
+
+      // Quick-action buttons use the same single-page tab controller as the
+      // legacy navigation. Keep the view switch synchronous so the selected
+      // panel is shown even if a panel-specific data refresh fails.
+      allowedTabs.forEach(t => {
         const btn = document.getElementById(`tab-btn-${t}`);
         const view = document.getElementById(`admin-tab-${t}`);
 
-        if (view) {
-          view.classList.toggle("hidden", t !== tab);
-        }
+        if (view) view.classList.toggle("hidden", t !== tab);
 
         if (btn) {
-          if (t === tab) {
-            btn.className = "px-3.5 py-1.5 rounded-xl text-xs font-bold bg-ashiana-green text-white shadow flex items-center space-x-1.5";
-          } else {
-            btn.className = "px-3.5 py-1.5 rounded-xl text-xs font-bold text-slate-600 hover:bg-slate-100 flex items-center space-x-1.5";
-          }
+          btn.className = t === tab
+            ? "px-3.5 py-1.5 rounded-xl text-xs font-bold bg-ashiana-green text-white shadow flex items-center space-x-1.5"
+            : "px-3.5 py-1.5 rounded-xl text-xs font-bold text-slate-600 hover:bg-slate-100 flex items-center space-x-1.5";
         }
       });
 
-      if (tab === 'students' && currentAuthUser?.type === 'ADMIN') { populateStudentTeacherOptions(); loadAdminStudents(); }
-      if (tab === 'directory' && currentAuthUser?.type === 'ADMIN') {
-        loadAdminStaffDirectoryFromSupabase(true);
+      try {
+        if (tab === 'students' && currentAuthUser?.type === 'ADMIN') {
+          populateStudentTeacherOptions();
+          loadAdminStudents();
+        }
+
+        if (tab === 'directory' && currentAuthUser?.type === 'ADMIN') {
+          loadAdminStaffDirectoryFromSupabase(true);
+        }
+
+        if (tab === 'qr') {
+          renderQRCode();
+          loadAdminQRSession();
+        }
+
+        if (tab === 'reports') {
+          runAdminReportGeneration();
+        }
+
+        if (tab === 'leave') {
+          renderAdminLeaveTable();
+          if (window.lucide) lucide.createIcons();
+        }
+
+        if (tab === 'corrections') {
+          const sel = document.getElementById("correction-staff-select");
+          if (sel && staffDatabase.length) {
+            sel.innerHTML = staffDatabase.map(s => `<option value="${s.id}">${s.name} (${s.empId})</option>`).join('');
+          }
+        }
+      } catch (err) {
+        console.error("Admin tab load error:", tab, err);
+        showToast(`Unable to load ${tab} panel: ${err?.message || err}`, "error");
       }
-      if (tab === 'qr') {
-        renderQRCode();
-        loadAdminQRSession();
-      }
-      if (tab === 'reports') {
-        runAdminReportGeneration();
-      }
+
       if (window.lucide) lucide.createIcons();
     }
+
+    // Expose the tab controller explicitly for inline/mobile browser handlers.
+    window.switchAdminTab = switchAdminTab;
 
     // =========================================================================
     // 📊 ADVANCED ATTENDANCE REPORT GENERATION & EXPORT ENGINE
