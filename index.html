@@ -926,8 +926,8 @@
 
                 var ready =
                   typeof window.applyAuthenticatedUI === "function" &&
-                  typeof window.supabaseClient !== "undefined" &&
-                  window.supabaseClient;
+                  typeof supabaseClient !== "undefined" &&
+                  !!supabaseClient;
 
                 if (ready) {
                   window.__ashianaPendingAdminConsole = false;
