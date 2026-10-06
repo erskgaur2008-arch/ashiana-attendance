@@ -978,10 +978,25 @@
           } catch (err) {
             console.error("Ashiana standalone login error:", err);
             var message = String(err?.message || err || "Login failed.");
-            if (message.includes("RATE_LIMIT")) message = "Too many PIN attempts. Please wait a few minutes and try again.";
-            if (message.includes("ID_CARD_EXPIRED")) message = "ID card expired. Please contact the school administrator.";
-            if (message.includes("INVALID_PIN") || message.includes("STAFF_NOT_FOUND")) message = "Incorrect Employee ID/email or PIN.";
-            ashianaLoginMessage(message, "error");
+            if (message.includes("RATE_LIMIT")) {
+              message = "Too many PIN attempts. Please wait a few minutes and try again.";
+            } else if (message.includes("ID_CARD_EXPIRED")) {
+              message = "ID card expired. Please contact the school administrator.";
+            } else if (message.includes("INVALID_PIN") || message.includes("STAFF_NOT_FOUND")) {
+              message = "Incorrect Employee ID/email or PIN.";
+            } else if (message.includes("ADMIN_ACCOUNT")) {
+              // An administrator may also exist in the staff roster. The staff
+              // PIN endpoint deliberately refuses that account because Admin
+              // accounts authenticate with their own Auth password.
+              var adminEmailInput = document.getElementById("admin-login-user");
+              if (adminEmailInput && !adminEmailInput.value) {
+                var staffLoginValue = String(document.getElementById("teacher-login-id")?.value || "").trim();
+                if (staffLoginValue.includes("@")) adminEmailInput.value = staffLoginValue.toLowerCase();
+              }
+              applyAshianaLoginRole("admin");
+              message = "This account is an administrator. Enter the administrator password to continue.";
+            }
+            ashianaLoginMessage(message, message.includes("administrator") ? "info" : "error");
           } finally {
             window.__ashianaLoginBusy = false;
             ashianaLoginButton(form, false, "");
