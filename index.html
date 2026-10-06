@@ -544,6 +544,201 @@
         window.__ashianaApplyLoginRole = applyAshianaLoginRole;
         window.switchLoginTab = applyAshianaLoginRole;
 
+        // HARDENED LOGIN BRIDGE:
+        // Keep authentication independent from the large application script.
+        // If a later dashboard script is delayed or throws, login still works.
+        window.__ashianaLoginClient = window.__ashianaLoginClient || null;
+        window.__ashianaLoginBusy = false;
+
+        async function ashianaGetLoginClient() {
+          if (window.__ashianaLoginClient) return window.__ashianaLoginClient;
+          if (!window.supabase?.createClient) throw new Error("Supabase client library is unavailable.");
+          const url = "https://oalfzgluqroqbbrulhpr.supabase.co";
+          const key = "sb_publishable_PND9f9FKbNrxlEakSgLKYA_5EsqLHkg";
+          window.__ashianaLoginClient = window.supabase.createClient(url, key);
+          return window.__ashianaLoginClient;
+        }
+
+        function ashianaLoginMessage(message, type) {
+          if (typeof window.showToast === "function") {
+            window.showToast(message, type || "info");
+            return;
+          }
+          var el = document.getElementById("ashiana-login-status");
+          if (!el) {
+            el = document.createElement("div");
+            el.id = "ashiana-login-status";
+            el.style.cssText = "position:fixed;left:16px;right:16px;bottom:18px;z-index:99999;padding:12px 14px;border-radius:12px;background:#022c22;color:#fff;font:600 13px Inter,Arial,sans-serif;box-shadow:0 12px 30px rgba(0,0,0,.25)";
+            document.body.appendChild(el);
+          }
+          el.textContent = message;
+          el.style.background = type === "error" ? "#991b1b" : "#022c22";
+        }
+
+        function ashianaLoginButton(form, busy, label) {
+          var btn = form?.querySelector('button[type="submit"]');
+          if (!btn) return;
+          btn.disabled = !!busy;
+          btn.dataset.originalText = btn.dataset.originalText || btn.innerText;
+          btn.innerText = busy ? label : btn.dataset.originalText;
+        }
+
+        async function ashianaStandaloneLogin(role, event) {
+          if (event) {
+            event.preventDefault();
+            event.stopImmediatePropagation();
+          }
+          if (window.__ashianaLoginBusy) return false;
+          window.__ashianaLoginBusy = true;
+          var form = event?.currentTarget || document.getElementById(role + "-login-form");
+          ashianaLoginButton(form, true, "Verifying…");
+
+          try {
+            var client = await ashianaGetLoginClient();
+
+            if (role === "teacher") {
+              var loginId = String(document.getElementById("teacher-login-id")?.value || "").trim();
+              var pin = String(document.getElementById("teacher-login-pin")?.value || "").trim();
+              if (!loginId || !/^\d{4}$/.test(pin)) throw new Error("Enter your Employee ID/email and exactly 4 digits.");
+
+              var result = await client.functions.invoke("verify-attendance", {
+                body: { action: "staff_login", login_id: loginId, pin: pin }
+              });
+              if (result.error) {
+                var edgeMessage = result.error.message || "Staff authentication failed.";
+                try {
+                  var ctx = result.error.context;
+                  if (ctx) {
+                    var payload = await ctx.clone().json();
+                    edgeMessage = payload?.error || payload?.message || edgeMessage;
+                  }
+                } catch (_) {}
+                throw new Error(edgeMessage);
+              }
+              var loginResult = result.data;
+              if (!loginResult?.success || !loginResult?.staff?.email || !loginResult?.staff?.id) {
+                throw new Error(loginResult?.error || "Staff authentication failed.");
+              }
+
+              if (loginResult.session?.access_token && loginResult.session?.refresh_token) {
+                var sessionResult = await client.auth.setSession({
+                  access_token: loginResult.session.access_token,
+                  refresh_token: loginResult.session.refresh_token
+                });
+                if (sessionResult.error || !sessionResult.data?.user) {
+                  throw new Error(sessionResult.error?.message || "Supabase Auth session could not be established.");
+                }
+              } else {
+                throw new Error("Staff authentication returned no secure session.");
+              }
+
+              var staff = loginResult.staff;
+              sessionStorage.setItem("aps_current_auth_session_v1", JSON.stringify({
+                type: "STAFF",
+                staffRecord: {
+                  id: staff.id,
+                  empId: staff.emp_id,
+                  name: staff.name,
+                  department: staff.department,
+                  role: staff.role,
+                  email: staff.email,
+                  avatarUrl: staff.avatar_url || "",
+                  gender: staff.gender || "",
+                  dob: staff.dob || "",
+                  validThru: staff.valid_thru || "",
+                  phone: staff.phone || "",
+                  address: staff.address || "",
+                  pinHash: "",
+                  status: staff.status || "ACTIVE"
+                }
+              }));
+              ashianaLoginMessage("Staff authentication successful. Opening your portal…", "success");
+              window.location.reload();
+              return false;
+            }
+
+            if (role === "admin") {
+              var adminEmail = String(document.getElementById("admin-login-user")?.value || "").trim().toLowerCase();
+              var adminPassword = String(document.getElementById("admin-login-pass")?.value || "").trim();
+              if (!adminEmail || !adminPassword) throw new Error("Enter the administrator email and password.");
+
+              var authResult = await client.auth.signInWithPassword({ email: adminEmail, password: adminPassword });
+              if (authResult.error || !authResult.data?.user) {
+                throw new Error(authResult.error?.message || "Administrator sign-in failed.");
+              }
+
+              var adminLookup = await client.from("admin_users")
+                .select("email,role,active")
+                .ilike("email", adminEmail)
+                .eq("active", true)
+                .maybeSingle();
+              if (adminLookup.error) throw new Error(adminLookup.error.message || "Administrator authorization check failed.");
+              if (!adminLookup.data) {
+                await client.auth.signOut();
+                throw new Error("Administrator account is not authorized.");
+              }
+
+              sessionStorage.setItem("aps_current_auth_session_v1", JSON.stringify({
+                type: "ADMIN",
+                username: adminEmail,
+                role: adminLookup.data.role
+              }));
+              ashianaLoginMessage("Administrator authentication successful. Opening console…", "success");
+              window.location.reload();
+              return false;
+            }
+
+            if (role === "student") {
+              var admission = String(document.getElementById("student-login-admission")?.value || "").trim().toUpperCase();
+              var dob = String(document.getElementById("student-login-dob")?.value || "").replace(/\D/g, "");
+              if (!admission || !/^\d{8}$/.test(dob)) {
+                throw new Error("Enter Admission No. and DOB password in DDMMYYYY format.");
+              }
+
+              var studentLogin = await client.rpc("student_login", {
+                p_school_code: "ashiana",
+                p_enroll_no: admission,
+                p_dob_password: dob
+              });
+              if (studentLogin.error) throw new Error(studentLogin.error.message || "Student login failed.");
+              if (!studentLogin.data?.success || !studentLogin.data?.student) {
+                throw new Error("Incorrect Admission No. or DOB password.");
+              }
+
+              var bundle = await client.rpc("student_portal_bundle", {
+                p_enroll_no: admission,
+                p_dob_password: dob
+              });
+              if (bundle.error) throw new Error(bundle.error.message || "Student portal data could not be loaded.");
+
+              sessionStorage.setItem("aps_current_auth_session_v1", JSON.stringify({
+                type: "STUDENT",
+                studentRecord: studentLogin.data.student,
+                portalData: bundle.data || {}
+              }));
+              ashianaLoginMessage("Student authentication successful. Opening portal…", "success");
+              window.location.reload();
+              return false;
+            }
+
+            throw new Error("Unknown login role.");
+          } catch (err) {
+            console.error("Ashiana standalone login error:", err);
+            var message = String(err?.message || err || "Login failed.");
+            if (message.includes("RATE_LIMIT")) message = "Too many PIN attempts. Please wait a few minutes and try again.";
+            if (message.includes("ID_CARD_EXPIRED")) message = "ID card expired. Please contact the school administrator.";
+            if (message.includes("INVALID_PIN") || message.includes("STAFF_NOT_FOUND")) message = "Incorrect Employee ID/email or PIN.";
+            ashianaLoginMessage(message, "error");
+          } finally {
+            window.__ashianaLoginBusy = false;
+            ashianaLoginButton(form, false, "");
+          }
+          return false;
+        }
+
+        window.__ashianaStandaloneLogin = ashianaStandaloneLogin;
+
+
         function bindAshianaLoginRole() {
           var selector = document.getElementById("login-role-select");
           if (!selector || selector.dataset.earlyRoleBound === "1") return;
