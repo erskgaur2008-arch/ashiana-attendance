@@ -3008,11 +3008,41 @@
       window.switchLoginTab(role);
     }
 
-    // The selector is already present when this script runs, but these
-    // listeners also handle browser back/forward restoration on Android.
-    document.addEventListener("DOMContentLoaded", syncLoginRoleUI, { once: true });
-    window.addEventListener("pageshow", syncLoginRoleUI);
-    setTimeout(syncLoginRoleUI, 0);
+    // Bind the role selector with JavaScript as well as the inline onchange.
+    // Some Android WebViews/browsers can preserve the selected option without
+    // reliably executing the inline handler. Delegated change/input handling
+    // makes role switching deterministic.
+    function bindLoginRoleSelector() {
+      const selector = document.getElementById("login-role-select");
+      if (!selector || selector.dataset.roleBound === "1") return;
+      selector.dataset.roleBound = "1";
+
+      const applyRole = () => window.switchLoginTab(selector.value);
+
+      selector.addEventListener("change", applyRole, false);
+      selector.addEventListener("input", applyRole, false);
+      document.addEventListener("change", (event) => {
+        if (event.target === selector) applyRole();
+      }, true);
+      document.addEventListener("input", (event) => {
+        if (event.target === selector) applyRole();
+      }, true);
+    }
+
+    function initializeLoginRoleUI() {
+      bindLoginRoleSelector();
+      syncLoginRoleUI();
+    }
+
+    // Handle normal load, Android WebView restore, and delayed DOM availability.
+    if (document.readyState === "loading") {
+      document.addEventListener("DOMContentLoaded", initializeLoginRoleUI, { once: true });
+    } else {
+      initializeLoginRoleUI();
+    }
+    window.addEventListener("pageshow", initializeLoginRoleUI);
+    setTimeout(initializeLoginRoleUI, 0);
+    setTimeout(initializeLoginRoleUI, 250);
 
     function togglePinVisibility(id) {
       const input = document.getElementById(id);
