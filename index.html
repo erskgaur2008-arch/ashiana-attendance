@@ -883,8 +883,15 @@
 <div id="staff-tab-students" class="staff-dashboard-scroll staff-dashboard-content hidden flex-1 overflow-y-auto space-y-3">
   <div class="bg-white rounded-2xl p-4 border">
     <div class="flex items-center justify-between gap-2">
-      <div><h4 class="font-bold">Student Attendance</h4><p class="text-[10px] text-slate-500 mt-0.5">Mark attendance and view previously marked records for your assigned class.</p></div>
-      <span id="teacher-student-marked-badge" class="text-[9px] font-bold px-2 py-1 rounded-full bg-slate-100 text-slate-500">Not loaded</span>
+      <div class="flex items-center justify-between gap-2">
+      <div><h4 class="font-bold">Student Attendance</h4><p class="text-[10px] text-slate-500 mt-0.5">Scan student ID cards to mark attendance, or use the manual list.</p></div>
+      <div class="flex items-center gap-2">
+        <span id="teacher-student-marked-badge" class="text-[9px] font-bold px-2 py-1 rounded-full bg-slate-100 text-slate-500">Not loaded</span>
+        <button type="button" onclick="openStudentQrAttendanceScanner()" class="p-2.5 bg-ashiana-green hover:bg-[#08693A] text-white rounded-xl shadow-sm flex items-center gap-1.5 text-[10px] font-bold" title="Scan Student QR">
+          <i data-lucide="scan-line" class="w-4 h-4"></i><span>Scan QR</span>
+        </button>
+      </div>
+    </div>
     </div>
     <div class="grid grid-cols-2 gap-2 mt-3">
       <select id="teacher-student-class" onchange="loadTeacherStudentAttendance()" class="w-full p-2 border rounded"><option value="">Loading classes…</option></select>
@@ -906,6 +913,28 @@
     <div id="teacher-portal-editor" class="mt-3 space-y-2"></div>
     <div class="mt-4 border-t pt-3"><h5 class="font-bold text-xs mb-2">Student Leave Requests</h5><div id="teacher-leave-requests" class="space-y-2 text-xs">Loading…</div></div>
   </div>
+<div id="student-qr-attendance-modal" class="hidden fixed inset-0 z-[116] bg-slate-950/80 backdrop-blur-sm p-3 items-center justify-center" onclick="closeStudentQrAttendanceScanner(event)">
+  <div class="bg-white w-full max-w-md rounded-3xl shadow-2xl overflow-hidden" onclick="event.stopPropagation()">
+    <div class="bg-gradient-to-r from-emerald-950 to-[#064E3B] p-4 text-white flex items-center justify-between border-b-2 border-ashiana-red">
+      <div><h3 class="text-sm font-bold">Scan Student ID</h3><p class="text-[10px] text-emerald-200">Scan the student's QR code to mark today's attendance</p></div>
+      <button type="button" onclick="closeStudentQrAttendanceScanner()" class="w-8 h-8 rounded-full bg-white/10 flex items-center justify-center"><i data-lucide="x" class="w-4 h-4"></i></button>
+    </div>
+    <div class="p-4 space-y-3">
+      <div class="relative aspect-square bg-black rounded-2xl overflow-hidden border border-slate-300">
+        <div id="student-qr-scanner-reader" class="w-full h-full"></div>
+        <div class="absolute inset-0 border-2 border-emerald-400/60 rounded-2xl pointer-events-none"></div>
+        <div class="scanner-line absolute left-4 right-4 h-0.5 bg-red-500 shadow-[0_0_8px_rgba(217,45,49,0.8)] pointer-events-none"></div>
+      </div>
+      <div id="student-qr-scanner-status" class="text-center text-xs text-slate-600 font-medium">Point the camera at the student's ID card QR code.</div>
+      <div id="student-qr-result" class="hidden rounded-2xl border p-3"></div>
+      <div class="grid grid-cols-2 gap-2">
+        <button type="button" onclick="toggleStudentQrCamera()" class="p-2.5 bg-slate-100 hover:bg-slate-200 text-slate-700 rounded-xl text-xs font-bold flex items-center justify-center gap-1.5"><i data-lucide="refresh-cw" class="w-4 h-4"></i>Flip Camera</button>
+        <button type="button" onclick="closeStudentQrAttendanceScanner()" class="p-2.5 bg-slate-800 hover:bg-slate-900 text-white rounded-xl text-xs font-bold">Close</button>
+      </div>
+    </div>
+  </div>
+</div>
+
 </div><div id="teacher-attendance-viewer-modal" class="hidden fixed inset-0 z-[115] bg-slate-950/70 backdrop-blur-sm p-3 items-center justify-center" onclick="closeTeacherAttendanceViewer(event)">
   <div class="bg-white w-full max-w-lg max-h-[92vh] rounded-2xl shadow-2xl overflow-hidden" onclick="event.stopPropagation()">
     <div class="bg-gradient-to-r from-emerald-950 to-[#064E3B] p-3.5 text-white flex items-center justify-between border-b-2 border-ashiana-red">
@@ -4001,6 +4030,139 @@ async function handleTeacherLogin(event) {
     let teacherStudentAssignments=[], teacherStudentRows=[], adminStudentRows=[];
     function studentDateToday(){const d=new Date();return d.getFullYear()+'-'+String(d.getMonth()+1).padStart(2,'0')+'-'+String(d.getDate()).padStart(2,'0');}
     function studentEscape(v){return String(v??'').replace(/[&<>"']/g,ch=>({'&':'&amp;','<':'&lt;','>':'&gt;','"':'&quot;',"'":'&#39;'}[ch]));}
+    let studentQrScannerInstance=null;
+    let studentQrScannerRunning=false;
+    let studentQrCameraFacingMode="environment";
+    let studentQrScanLocked=false;
+
+    function parseStudentAttendanceQr(decodedText){
+      const parts=String(decodedText||'').trim().split('|').map(x=>x.trim());
+      if(parts.length!==3)return null;
+      if(parts[0].toUpperCase()!=='ASHIANA' || parts[1].toUpperCase()!=='STUDENT')return null;
+      const enroll=parts[2].toUpperCase();
+      if(!enroll || enroll.length>64 || !/^[A-Z0-9._/-]+$/.test(enroll))return null;
+      return {enroll_no:enroll};
+    }
+
+    async function startStudentQrScanner(){
+      await ensureScannerLibrary();
+      if(typeof Html5Qrcode==='undefined')throw Error('QR scanner library could not be loaded.');
+      await stopStudentQrScanner();
+      const secure=location.protocol==='https:'||location.hostname==='localhost'||location.hostname==='127.0.0.1';
+      if(!secure)throw Error('Camera access requires HTTPS.');
+      const host=document.getElementById('student-qr-scanner-reader');
+      if(!host)throw Error('Scanner area is unavailable.');
+      studentQrScannerInstance=new Html5Qrcode('student-qr-scanner-reader');
+      await studentQrScannerInstance.start(
+        {facingMode:studentQrCameraFacingMode},
+        {fps:12,qrbox:function(viewWidth,viewHeight){const size=Math.floor(Math.min(viewWidth,viewHeight)*0.68);return {width:Math.max(160,Math.min(size,280)),height:Math.max(160,Math.min(size,280))};}},
+        async decoded=>{
+          if(studentQrScanLocked)return;
+          studentQrScanLocked=true;
+          await stopStudentQrScanner();
+          await handleStudentAttendanceQr(decoded);
+        },
+        ()=>{}
+      );
+      studentQrScannerRunning=true;
+    }
+
+    async function stopStudentQrScanner(){
+      if(studentQrScannerInstance){
+        try{
+          if(studentQrScannerRunning)await studentQrScannerInstance.stop();
+          studentQrScannerInstance.clear();
+        }catch(_){}
+      }
+      studentQrScannerInstance=null;
+      studentQrScannerRunning=false;
+    }
+
+    async function toggleStudentQrCamera(){
+      studentQrCameraFacingMode=studentQrCameraFacingMode==='environment'?'user':'environment';
+      const status=document.getElementById('student-qr-scanner-status');
+      if(status)status.textContent='Switching camera…';
+      try{await startStudentQrScanner();if(status)status.textContent='Point the camera at the student\'s ID card QR code.';}
+      catch(e){if(status)status.textContent=e.message||'Could not start camera.';}
+    }
+
+    async function openStudentQrAttendanceScanner(){
+      if(!canAccessStudentAttendance()||!supabaseClient){
+        showToast('Student QR attendance is available to teaching staff only.','error');return;
+      }
+      studentQrScanLocked=false;
+      const modal=document.getElementById('student-qr-attendance-modal');
+      const result=document.getElementById('student-qr-result');
+      const status=document.getElementById('student-qr-scanner-status');
+      if(!modal)return;
+      if(result){result.className='hidden rounded-2xl border p-3';result.innerHTML='';}
+      if(status)status.textContent='Point the camera at the student\'s ID card QR code.';
+      modal.classList.remove('hidden');modal.classList.add('flex');
+      if(window.lucide)lucide.createIcons();
+      try{await startStudentQrScanner();}
+      catch(e){if(status)status.innerHTML='<span class="text-rose-600 font-bold">'+studentEscape(e.message||'Could not start camera.')+'</span>';}
+    }
+
+    async function closeStudentQrAttendanceScanner(event){
+      if(event&&event.target!==event.currentTarget)return;
+      await stopStudentQrScanner();
+      studentQrScanLocked=false;
+      document.getElementById('student-qr-attendance-modal')?.classList.add('hidden');
+      document.getElementById('student-qr-attendance-modal')?.classList.remove('flex');
+    }
+
+    async function handleStudentAttendanceQr(decodedText){
+      const status=document.getElementById('student-qr-scanner-status');
+      const result=document.getElementById('student-qr-result');
+      const parsed=parseStudentAttendanceQr(decodedText);
+      if(!parsed){
+        studentQrScanLocked=false;
+        if(status)status.innerHTML='<span class="text-rose-600 font-bold">Invalid student QR.</span><br><span class="text-[10px] text-slate-500">Scan an Ashiana student ID card QR.</span>';
+        setTimeout(()=>{if(document.getElementById('student-qr-attendance-modal')&&!document.getElementById('student-qr-attendance-modal').classList.contains('hidden'))startStudentQrScanner().catch(()=>{});},700);
+        return;
+      }
+
+      if(status)status.innerHTML='<span class="text-emerald-700 font-bold">QR verified.</span> Checking student assignment…';
+      try{
+        const {data,error}=await supabaseClient.rpc('mark_student_attendance_by_qr',{p_school_code:APS_STUDENT_SCHOOL,p_enroll_no:parsed.enroll_no});
+        if(error)throw error;
+        if(!data?.success){
+          const msg=data?.code==='NOT_ASSIGNED'?'This student is not assigned to your class.':(data?.message||'Attendance could not be marked.');
+          if(result){
+            result.className='rounded-2xl border border-rose-200 bg-rose-50 p-3';
+            result.innerHTML='<div class="font-bold text-rose-800">✕ Attendance not marked</div><div class="text-xs text-rose-700 mt-1">'+studentEscape(msg)+'</div>'+
+              (data?.student?'<div class="text-xs text-slate-700 mt-2 font-semibold">'+studentEscape(data.student.student_name)+' · '+studentEscape(data.student.class_name)+' - '+studentEscape(data.student.section)+'</div>':'');
+          }
+          if(status)status.textContent='Scan another student ID card.';
+        }else{
+          const st=data.student||{};
+          const already=data.code==='ALREADY_MARKED';
+          if(result){
+            result.className=(already?'rounded-2xl border border-amber-200 bg-amber-50 p-3':'rounded-2xl border border-emerald-200 bg-emerald-50 p-3');
+            result.innerHTML='<div class="font-bold '+(already?'text-amber-800':'text-emerald-800')+'">'+(already?'⚠ Already marked':'✓ Attendance marked')+'</div>'+
+              '<div class="text-sm font-black text-slate-900 mt-1">'+studentEscape(st.student_name||'Student')+'</div>'+
+              '<div class="text-xs text-slate-600 mt-1">Admission No. '+studentEscape(st.enroll_no||parsed.enroll_no)+' · Class '+studentEscape(st.class_name||'—')+' - '+studentEscape(st.section||'—')+'</div>'+
+              '<div class="text-xs font-bold mt-1 '+(already?'text-amber-700':'text-emerald-700')+'">'+studentEscape(data.status||'PRESENT')+'</div>';
+          }
+          if(status)status.textContent=already?'This student was already marked today.':'Ready for the next student.';
+          if(!already)playTone('SUCCESS');
+          showToast(already?'Student already marked.':'Student attendance marked.','success');
+          await loadTeacherStudentAttendance();
+        }
+      }catch(e){
+        if(result){result.className='rounded-2xl border border-rose-200 bg-rose-50 p-3';result.innerHTML='<div class="font-bold text-rose-800">Unable to mark attendance</div><div class="text-xs text-rose-700 mt-1">'+studentEscape(e.message||e)+'</div>';}
+        if(status)status.textContent='Please try the scan again.';
+      }
+      setTimeout(async()=>{
+        const modal=document.getElementById('student-qr-attendance-modal');
+        if(modal&&!modal.classList.contains('hidden')){
+          studentQrScanLocked=false;
+          try{await startStudentQrScanner();}catch(_){}
+        }
+      },900);
+    }
+
+
     async function loadTeacherStudentAssignments(){
       const sel=document.getElementById('teacher-student-class');
       const host=document.getElementById('teacher-student-list');
