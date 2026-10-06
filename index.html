@@ -2902,7 +2902,7 @@
           .maybeSingle();
 
         if (staffError || !staff) {
-          await supabaseClient.auth.signOut();
+          await supabaseClient.auth.signOut({ scope: 'local' });
           return false;
         }
 
@@ -3600,7 +3600,7 @@
 
         if (!result?.success) throw new Error(result?.error || 'PIN update failed.');
 
-        await supabaseClient.auth.signOut();
+        await supabaseClient.auth.signOut({ scope: 'local' });
         window.staffPinRecoveryActive = false;
         closeStaffPinResetModal();
 
@@ -4053,7 +4053,7 @@ async function handleTeacherLogin(event) {
           .eq('active', true)
           .maybeSingle();
         if (adminError || !adminRow) {
-          await supabaseClient.auth.signOut();
+          await supabaseClient.auth.signOut({ scope: 'local' });
           throw new Error("Administrator account is not authorized.");
         }
 
@@ -4072,7 +4072,7 @@ async function handleTeacherLogin(event) {
     }
 
     async function handleLogout() {
-      try { if (supabaseClient) await supabaseClient.auth.signOut(); } catch (e) {}
+      try { if (supabaseClient) await supabaseClient.auth.signOut({ scope: 'local' }); } catch (e) {}
       currentAuthUser = null;
       currentStaffId = null;
       sessionStorage.removeItem(STORAGE_KEY_CURRENT_USER);
