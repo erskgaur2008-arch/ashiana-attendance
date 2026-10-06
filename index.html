@@ -251,15 +251,73 @@
     .student-id-preview-card .sid-qr-wrap{position:absolute;right:2.5mm;bottom:1.2mm;width:11mm!important;height:11mm!important;display:flex;align-items:center;justify-content:center;z-index:5;background:#fff;}
     .student-id-preview-card .sid-qr-wrap canvas,.student-id-preview-card .sid-qr-wrap img{width:10mm!important;height:10mm!important;display:block!important;}
     .student-id-preview-card .sid-footer{display:flex!important;align-items:flex-end;justify-content:center;flex:1 1 auto;min-height:0;text-align:center;font-size:1.25mm;line-height:1.25;color:#64748b;padding:.8mm 3mm 1.2mm;background:#fff;border-top:.2mm solid #e2e8f0;box-sizing:border-box;}
-    #student-id-card-preview-modal{overflow:auto;}
-    #student-id-card-preview{display:flex;align-items:center;justify-content:center;width:54mm;height:85.6mm;flex:0 0 auto;transform-origin:center center;}
-    #student-id-card-preview-modal > div{max-width:100%;max-height:100%;overflow:auto;}
-    @media (max-width:480px){
-      #student-id-card-preview-modal{padding:8px!important;overflow:hidden!important;align-items:center!important;justify-content:center!important;}
-      #student-id-card-preview-modal > div{width:100%;max-width:100%;max-height:calc(100dvh - 16px);overflow-y:auto;overflow-x:hidden;padding:0 2px 6px;box-sizing:border-box;}
-      #student-id-card-preview{width:54mm;height:85.6mm;transform:none;margin:0 auto;flex:0 0 auto;}
+    /* Student ID preview modal: fixed viewport, no internal scrollbars. */
+    #student-id-card-preview-modal{
+      box-sizing:border-box;
+      width:100vw;
+      height:100dvh;
+      max-height:100dvh;
+      padding:clamp(8px,2vw,18px)!important;
+      overflow:hidden!important;
+      align-items:center!important;
+      justify-content:center!important;
     }
-
+    #student-id-card-preview-modal > div{
+      box-sizing:border-box;
+      width:min(92vw,520px);
+      height:min(90dvh,90vh);
+      max-width:92vw;
+      max-height:90dvh;
+      min-height:0;
+      overflow:hidden!important;
+      display:flex;
+      flex-direction:column;
+      align-items:center;
+      justify-content:flex-start;
+      padding:0 8px 8px;
+    }
+    #student-id-card-preview{
+      box-sizing:border-box;
+      display:flex;
+      align-items:center;
+      justify-content:center;
+      width:0;
+      height:0;
+      min-width:0;
+      min-height:0;
+      flex:0 0 auto;
+      overflow:visible!important;
+      transform-origin:top center;
+    }
+    #student-id-card-preview + div{
+      flex:0 0 auto;
+      margin-top:12px!important;
+      width:auto;
+      max-width:100%;
+    }
+    #student-id-card-preview + div button{
+      white-space:nowrap;
+    }
+    @media (max-width:480px){
+      #student-id-card-preview-modal{
+        padding:6px!important;
+      }
+      #student-id-card-preview-modal > div{
+        width:100%;
+        max-width:100%;
+        height:90dvh;
+        max-height:90dvh;
+        padding:0 2px 6px;
+      }
+      #student-id-card-preview + div{
+        margin-top:8px!important;
+        gap:6px!important;
+      }
+      #student-id-card-preview + div button{
+        padding-left:16px!important;
+        padding-right:16px!important;
+      }
+    }
 </style>
 </head>
 <body class="bg-slate-100 text-slate-800 antialiased min-h-screen min-h-screen-safe flex flex-col selection:bg-emerald-600 selection:text-white">
@@ -1136,7 +1194,7 @@
   <div class="relative flex flex-col items-center max-h-[95vh]" onclick="event.stopPropagation()">
     <button type="button" onclick="closeStudentIdCardPreview()" class="absolute -top-3 -right-3 z-10 w-9 h-9 rounded-full bg-white text-slate-700 shadow-lg flex items-center justify-center">✕</button>
     <div id="student-id-card-preview" class="bg-white shadow-2xl"></div>
-    <div class="mt-3 flex gap-2"><button type="button" onclick="printCurrentStudentIdCard()" class="px-4 py-2 bg-emerald-700 text-white rounded-xl text-xs font-bold shadow">Print ID Card</button><button type="button" onclick="closeStudentIdCardPreview()" class="px-4 py-2 bg-white text-slate-700 rounded-xl text-xs font-bold shadow">Close</button></div>
+    <div class="mt-3 flex gap-2 flex-shrink-0 justify-center"><button type="button" onclick="printCurrentStudentIdCard()" class="px-4 py-2 bg-emerald-700 text-white rounded-xl text-xs font-bold shadow">Print ID Card</button><button type="button" onclick="closeStudentIdCardPreview()" class="px-4 py-2 bg-white text-slate-700 rounded-xl text-xs font-bold shadow">Close</button></div>
   </div>
 </div>
 
@@ -3315,20 +3373,31 @@ async function refreshStudentPortalData(){const s=currentAuthUser?.studentRecord
     function scaleStudentIdCardPreview(){
       const preview=document.getElementById("student-id-card-preview");
       const card=preview?.querySelector(".student-id-preview-card");
-      if(!preview||!card)return;
+      const modalInner=preview?.parentElement;
+      const buttons=preview?.nextElementSibling;
+      if(!preview||!card||!modalInner)return;
+
       const vw=window.innerWidth;
       const vh=window.innerHeight;
-      // Leave enough room for the modal controls and safe-area padding.
-      const availableW=Math.max(240,vw-24);
-      const availableH=Math.max(360,vh-150);
-      const cardWidth=54*3.779527559;
-      const cardHeight=85.6*3.779527559;
+      const cardWidth=54*3.779527559;   // 54mm CSS pixels
+      const cardHeight=85.6*3.779527559; // 85.6mm CSS pixels
+
+      // Reserve space for the two action buttons, margin and a small safety gap.
+      const buttonHeight=buttons ? Math.max(42,buttons.getBoundingClientRect().height) : 44;
+      const availableH=Math.max(260,(vh*0.90)-buttonHeight-28);
+      const availableW=Math.max(220,Math.min(vw*0.92,520)-20);
       const scale=Math.min(availableW/cardWidth,availableH/cardHeight,3);
+
       card.style.transform="scale("+scale+")";
       card.style.transformOrigin="top center";
+
+      // The wrapper occupies exactly the transformed card size, so it cannot
+      // create a scrollbar or clip the transformed card.
       preview.style.width=(cardWidth*scale)+"px";
       preview.style.height=(cardHeight*scale)+"px";
+      preview.style.flex="0 0 auto";
       preview.style.overflow="visible";
+      preview.style.margin="0 auto";
     }
 
 
@@ -4175,6 +4244,7 @@ async function saveTeacherStudentAttendance(){
       window.setTimeout(scaleStudentIdCardPreview,120);
     }
     window.addEventListener("resize",()=>{if(!document.getElementById("student-id-card-preview-modal")?.classList.contains("hidden"))scaleStudentIdCardPreview();});
+    window.addEventListener("orientationchange",()=>{window.setTimeout(scaleStudentIdCardPreview,120);});
 
     function closeStudentIdCardPreview(event){if(event&&event.target&&event.target.id!=='student-id-card-preview-modal')return;const modal=document.getElementById('student-id-card-preview-modal');if(modal){modal.classList.add('hidden');modal.classList.remove('flex');}document.body.classList.remove('overflow-hidden');currentStudentIdCardId=null;}
     async function printCurrentStudentIdCard(){
