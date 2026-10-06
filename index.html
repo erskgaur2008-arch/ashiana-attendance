@@ -677,9 +677,8 @@
           return window.__ashianaMainSupabaseClient;
         }
 
-        // Student auth is RPC-based, so clear only the browser's stored
-        // Supabase Auth session. Calling auth.signOut() here would revoke a
-        // Staff/Admin session on the server.
+        // Student auth is RPC-based. This helper is the fallback storage
+        // cleanup used after a local Auth sign-out when switching roles.
         async function ashianaClearMainAuthStorage() {
           const storageKey = "sb-oalfzgluqroqbbrulhpr-auth-token";
           try { window.localStorage.removeItem(storageKey); } catch (_) {}
@@ -976,6 +975,10 @@
               message = "ID card expired. Please contact the school administrator.";
             } else if (message.includes("INVALID_PIN") || message.includes("STAFF_NOT_FOUND")) {
               message = "Incorrect Employee ID/email or PIN.";
+            } else if (/invalid login credentials|invalid password|user not found/i.test(message)) {
+              message = role === "admin"
+                ? "Invalid Administrator email or password."
+                : "Invalid Employee ID/email or PIN.";
             } else if (message.includes("ADMIN_ACCOUNT")) {
               // An administrator may also exist in the staff roster. The staff
               // PIN endpoint deliberately refuses that account because Admin
