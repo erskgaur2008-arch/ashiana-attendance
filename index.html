@@ -164,6 +164,17 @@
       }
     }
 
+    /* Teacher student-management quick actions + compact data controls */
+    .teacher-student-quick-btn{min-height:58px;padding:10px;border:1px solid;border-radius:14px;display:flex;align-items:center;justify-content:center;gap:7px;text-align:center;font-size:10px;font-weight:800;line-height:1.15;transition:transform .15s ease,box-shadow .15s ease,background .15s ease}
+    .teacher-student-quick-btn:hover{transform:translateY(-1px);box-shadow:0 5px 14px rgba(15,23,42,.08)}
+    .teacher-student-quick-btn svg{width:17px;height:17px;flex:0 0 17px}
+    #teacher-student-data-list.is-collapsed{display:none}
+    #student-qr-scanner-reader{width:100%!important;aspect-ratio:1/1!important;height:auto!important;min-height:0!important;max-height:none!important;position:relative;overflow:hidden;border-radius:1rem;background:#000}
+    #student-qr-scanner-reader video{width:100%!important;height:100%!important;aspect-ratio:1/1!important;object-fit:cover!important;display:block!important}
+    #student-qr-scanner-reader canvas{max-width:none!important}
+    #student-qr-scanner-reader #qr-shaded-region{position:absolute!important}
+    @media(max-width:640px){.teacher-student-quick-btn{min-height:54px;padding:8px;font-size:9px}.teacher-student-quick-btn svg{width:16px;height:16px}}
+    
     /* Staff side navigation drawer */
     .staff-drawer-backdrop{position:fixed;inset:0;z-index:180;background:rgba(2,44,34,.48);backdrop-filter:blur(2px);opacity:0;pointer-events:none;transition:opacity .2s ease}
     .staff-drawer-backdrop.open{opacity:1;pointer-events:auto}
@@ -1291,7 +1302,32 @@
         </div>
 
 <div id="staff-tab-students" class="staff-dashboard-scroll staff-dashboard-content hidden flex-1 overflow-y-auto space-y-3">
-  <div class="bg-white rounded-2xl p-4 border">
+  <!-- Student tools quick navigation -->
+  <div class="bg-white rounded-2xl p-3 border border-slate-200 shadow-sm">
+    <div class="flex items-center justify-between gap-2 mb-2">
+      <div>
+        <h3 class="text-sm font-black text-slate-800">Student Tools</h3>
+        <p class="text-[10px] text-slate-500">Quick access to every teacher student-management option.</p>
+      </div>
+      <span class="px-2 py-1 rounded-full bg-emerald-50 text-emerald-700 text-[9px] font-bold">Teacher Access</span>
+    </div>
+    <div class="grid grid-cols-2 sm:grid-cols-4 gap-2">
+      <button type="button" onclick="focusTeacherStudentsSection('attendance')" class="teacher-student-quick-btn bg-emerald-50 border-emerald-100 text-emerald-800">
+        <i data-lucide="calendar-check-2"></i><span>Student Attendance</span>
+      </button>
+      <button type="button" onclick="focusTeacherStudentsSection('portal')" class="teacher-student-quick-btn bg-blue-50 border-blue-100 text-blue-800">
+        <i data-lucide="layout-dashboard"></i><span>Student Portal Management</span>
+      </button>
+      <button type="button" onclick="focusTeacherStudentsSection('leave')" class="teacher-student-quick-btn bg-rose-50 border-rose-100 text-rose-800">
+        <i data-lucide="file-check-2"></i><span>Student Leave Requests</span>
+      </button>
+      <button type="button" onclick="focusTeacherStudentsSection('data')" class="teacher-student-quick-btn bg-slate-50 border-slate-200 text-slate-800">
+        <i data-lucide="list-collapse"></i><span>Student Data</span>
+      </button>
+    </div>
+  </div>
+
+  <div id="teacher-student-attendance-section" class="bg-white rounded-2xl p-4 border border-slate-200 shadow-sm">
     <div class="flex items-center justify-between gap-2">
       <div><h4 class="font-bold">Student Attendance</h4><p class="text-[10px] text-slate-500 mt-0.5">Scan student ID cards to mark attendance, or use the manual list.</p></div>
       <div class="flex items-center gap-2">
@@ -1301,12 +1337,21 @@
         </button>
       </div>
     </div>
-    </div>
     <div class="grid grid-cols-2 gap-2 mt-3">
       <select id="teacher-student-class" onchange="loadTeacherStudentAttendance()" class="w-full p-2 border rounded"><option value="">Loading classes…</option></select>
       <input id="teacher-student-date" type="date" onchange="loadTeacherStudentAttendance()" class="w-full p-2 border rounded">
     </div>
-    <div id="teacher-student-list" class="mt-3">Choose a class.</div>
+
+    <div class="flex items-center justify-between gap-2 mt-3">
+      <div class="text-[10px] font-bold text-slate-600">Student Data</div>
+      <button type="button" id="teacher-student-list-toggle" onclick="toggleTeacherStudentDataList()" class="px-3 py-1.5 bg-slate-100 hover:bg-slate-200 text-slate-700 rounded-lg text-[10px] font-bold flex items-center gap-1.5">
+        <i data-lucide="chevron-up" class="w-3.5 h-3.5"></i><span>Collapse</span>
+      </button>
+    </div>
+    <div id="teacher-student-data-list" class="mt-2">
+      <div id="teacher-student-list">Choose a class.</div>
+    </div>
+
     <div class="grid grid-cols-2 gap-2 mt-3">
       <button type="button" onclick="saveTeacherStudentAttendance()" class="p-3 bg-ashiana-green text-white rounded-xl font-bold text-xs flex items-center justify-center gap-2 shadow-sm">
         <i data-lucide="save" class="w-4 h-4"></i><span>Save Attendance</span>
@@ -1316,13 +1361,32 @@
       </button>
     </div>
   </div>
-  <div class="bg-white rounded-2xl p-4 border">
-    <div class="flex items-center justify-between"><h4 class="font-bold">Student Portal Management</h4><span class="text-[10px] text-slate-500">Assigned classes only</span></div>
-    <div class="grid grid-cols-2 gap-2 mt-3"><select id="teacher-portal-class" onchange="loadTeacherPortalStudents()" class="p-2 border rounded"><option value="">Select class & section</option></select><select id="teacher-portal-type" onchange="renderTeacherPortalEditor()" class="p-2 border rounded"><option value="notice">Notice</option><option value="homework">Homework</option><option value="timetable">Timetable</option><option value="calendar">Calendar Event</option><option value="report">Report Card</option></select></div>
+
+  <div id="teacher-student-portal-section" class="bg-white rounded-2xl p-4 border border-slate-200 shadow-sm">
+    <div class="flex items-center justify-between gap-2">
+      <div><h4 class="font-bold">Student Portal Management</h4><p class="text-[10px] text-slate-500">Notice, homework, timetable, calendar and report cards.</p></div>
+      <span class="px-2 py-1 rounded-full bg-blue-50 text-blue-700 text-[9px] font-bold">Assigned classes only</span>
+    </div>
+    <div class="grid grid-cols-2 gap-2 mt-3">
+      <select id="teacher-portal-class" onchange="loadTeacherPortalStudents()" class="p-2 border rounded"><option value="">Select class & section</option></select>
+      <select id="teacher-portal-type" onchange="renderTeacherPortalEditor()" class="p-2 border rounded">
+        <option value="notice">Notice</option><option value="homework">Homework</option><option value="timetable">Timetable</option><option value="calendar">Calendar Event</option><option value="report">Report Card</option>
+      </select>
+    </div>
     <div id="teacher-portal-editor" class="mt-3 space-y-2"></div>
-    <div class="mt-4 border-t pt-3"><h5 class="font-bold text-xs mb-2">Student Leave Requests</h5><div id="teacher-leave-requests" class="space-y-2 text-xs">Loading…</div></div>
   </div>
-<div id="student-qr-attendance-modal" class="hidden fixed inset-0 z-[116] bg-slate-950/80 backdrop-blur-sm p-3 items-center justify-center" onclick="closeStudentQrAttendanceScanner(event)">
+
+  <div id="teacher-student-leave-section" class="bg-white rounded-2xl p-4 border border-slate-200 shadow-sm">
+    <div class="flex items-center justify-between gap-2">
+      <div><h4 class="font-bold">Student Leave Requests</h4><p class="text-[10px] text-slate-500">Review leave applications from your assigned students.</p></div>
+      <button type="button" onclick="loadTeacherLeaveRequests()" class="px-3 py-2 bg-rose-50 hover:bg-rose-100 border border-rose-200 text-rose-700 rounded-xl text-[10px] font-bold flex items-center gap-1.5">
+        <i data-lucide="refresh-cw" class="w-3.5 h-3.5"></i><span>Refresh</span>
+      </button>
+    </div>
+    <div id="teacher-leave-requests" class="mt-3 space-y-2 text-xs">Loading…</div>
+  </div>
+
+  <div id="student-qr-attendance-modal" class="hidden fixed inset-0 z-[116] bg-slate-950/80 backdrop-blur-sm p-3 items-center justify-center" onclick="closeStudentQrAttendanceScanner(event)">
   <div class="bg-white w-full max-w-md rounded-3xl shadow-2xl overflow-hidden" onclick="event.stopPropagation()">
     <div class="bg-gradient-to-r from-emerald-950 to-[#064E3B] p-4 text-white flex items-center justify-between border-b-2 border-ashiana-red">
       <div><h3 class="text-sm font-bold">Scan Student ID</h3><p class="text-[10px] text-emerald-200">Scan the student's QR code to mark today's attendance</p></div>
@@ -4813,7 +4877,34 @@ async function handleTeacherLogin(event) {
         if(host)host.textContent=e.message||'Could not load assigned classes.';
       }
     }
-    async function loadTeacherStudentAttendance(){
+    async function focusTeacherStudentsSection(section){
+      const map={
+        attendance:'teacher-student-attendance-section',
+        portal:'teacher-student-portal-section',
+        leave:'teacher-student-leave-section',
+        data:'teacher-student-data-list'
+      };
+      const id=map[section]||map.attendance;
+      const target=document.getElementById(id);
+      if(!target)return;
+      if(section==='data'){
+        const list=document.getElementById('teacher-student-data-list');
+        if(list?.classList.contains('is-collapsed'))toggleTeacherStudentDataList();
+      }
+      target.scrollIntoView({behavior:'smooth',block:'start'});
+    }
+    function toggleTeacherStudentDataList(){
+      const list=document.getElementById('teacher-student-data-list');
+      const btn=document.getElementById('teacher-student-list-toggle');
+      if(!list||!btn)return;
+      const collapsed=list.classList.toggle('is-collapsed');
+      btn.innerHTML=collapsed
+        ? '<i data-lucide="chevron-down" class="w-3.5 h-3.5"></i><span>Expand</span>'
+        : '<i data-lucide="chevron-up" class="w-3.5 h-3.5"></i><span>Collapse</span>';
+      if(window.lucide)lucide.createIcons();
+    }
+    
+function loadTeacherStudentAttendance(){
       const sel=document.getElementById('teacher-student-class'),date=document.getElementById('teacher-student-date'),host=document.getElementById('teacher-student-list');if(!sel||!date||!host||!supabaseClient)return;if(!date.value)date.value=studentDateToday();
       const a=teacherStudentAssignments[Number(sel.value)];if(!a){host.textContent='Select an assigned class.';return;}host.textContent='Loading students…';
       try{const {data:students,error}=await supabaseClient.from('student_roster').select('id,enroll_no,student_name,class_name,section,roll_no,gender,category,status').eq('school_code',APS_STUDENT_SCHOOL).eq('class_name',a.class_name).eq('section',a.section).eq('status','ACTIVE').order('roll_no').order('student_name');if(error)throw error;teacherStudentRows=students||[];
