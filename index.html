@@ -922,12 +922,42 @@
                 throw new Error("Administrator session was not persisted. Please try again.");
               }
 
-              // Give the browser one task turn to flush Auth storage before the
-              // reload. The bootstrap restore path then becomes the single source
-              // of truth for opening the Admin portal.
-              await new Promise(function(resolve) { setTimeout(resolve, 50); });
-              window.location.reload();
+              // Open the Admin portal immediately after the verified Auth
+              // session is established. Do not force a full-page reload here:
+              // Android Chrome/PWA can restore the login shell from a stale
+              // document during the reload and make a successful authentication
+              // look like a failed login.
+              var authGateway = document.getElementById("auth-gateway-view");
+              var staffPortal = document.getElementById("staff-portal-view");
+              var adminPortal = document.getElementById("admin-portal-view");
+              var studentPortal = document.getElementById("student-portal-view");
+              var sessionControls = document.getElementById("authenticated-session-controls");
+              if (authGateway) authGateway.classList.add("hidden");
+              if (staffPortal) staffPortal.classList.add("hidden");
+              if (studentPortal) studentPortal.classList.add("hidden");
+              if (adminPortal) {
+                adminPortal.classList.remove("hidden");
+                adminPortal.style.display = "";
+              }
+              if (sessionControls) sessionControls.classList.remove("hidden");
 
+              try {
+                if (typeof switchPortal === "function") {
+                  switchPortal("admin");
+                }
+              } catch (portalError) {
+                console.warn("Admin portal initial render warning:", portalError);
+                if (adminPortal) adminPortal.classList.remove("hidden");
+              }
+
+              try {
+                if (typeof updateAdminDashboardDate === "function") updateAdminDashboardDate();
+              } catch (_) {}
+              try {
+                if (window.lucide) lucide.createIcons();
+              } catch (_) {}
+
+              ashianaLoginMessage("Administrator login successful. Admin console opened.", "success");
               return false;
             }
 
