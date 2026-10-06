@@ -921,36 +921,20 @@
               // a false "console could not be initialized" error.
               window.__ashianaPendingAdminConsole = true;
 
-              (function openAdminWhenReady(attempt) {
-                if (!window.__ashianaPendingAdminConsole) return;
-
-                var ready =
-                  typeof window.applyAuthenticatedUI === "function" &&
-                  typeof supabaseClient !== "undefined" &&
-                  !!supabaseClient;
-
-                if (ready) {
-                  window.__ashianaPendingAdminConsole = false;
-                  try {
-                    window.applyAuthenticatedUI();
-                  } catch (uiError) {
-                    console.error("Ashiana admin console transition error:", uiError);
-                    window.__ashianaPendingAdminConsole = false;
-                    ashianaLoginMessage("Administrator console failed to open. Please refresh once and try again.", "error");
-                  }
-                  return;
+              // This login bridge and the main application engine live in the
+              // same script scope. applyAuthenticatedUI is therefore a lexical
+              // function, not a window property. Call it directly once the
+              // authenticated state has been established.
+              window.__ashianaPendingAdminConsole = false;
+              try {
+                if (typeof applyAuthenticatedUI !== "function") {
+                  throw new Error("Administrator UI engine is not available.");
                 }
-
-                if (attempt >= 100) {
-                  window.__ashianaPendingAdminConsole = false;
-                  ashianaLoginMessage("Administrator console is still loading. Please refresh once and try again.", "error");
-                  return;
-                }
-
-                window.setTimeout(function () {
-                  openAdminWhenReady(attempt + 1);
-                }, 100);
-              })(0);
+                applyAuthenticatedUI();
+              } catch (uiError) {
+                console.error("Ashiana admin console transition error:", uiError);
+                ashianaLoginMessage("Administrator console failed to open. Please refresh once and try again.", "error");
+              }
 
               return false;
             }
