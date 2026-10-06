@@ -4056,7 +4056,7 @@ async function saveTeacherStudentAttendance(){
         if(supabaseClient&&currentAuthUser?.type==='ADMIN'){
           const {data,error}=await supabaseClient.from('staff').select('id,emp_id,name,role,email,status').eq('status','ACTIVE').not('email','is',null).order('name',{ascending:true});
           if(error)throw error;
-          rows=(data||[]).filter(x=>String(x.email||'').trim()).map(x=>({id:x.id,empId:x.emp_id||'',name:x.name||x.email,role:x.role||'',email:String(x.email).trim()}));
+          rows=(data||[]).filter(x=>String(x.email||'').trim()).map(x=>({id:x.id,empId:x.emp_id||'',name:x.name||x.email,role:x.role||'',email:String(x.email).trim(),status:x.status||'ACTIVE'}));
         }
         if(!rows.length)rows=staffDatabase.filter(x=>x.status==='ACTIVE'&&String(x.email||'').trim()).map(x=>({id:x.id,empId:x.empId||'',name:x.name||x.email,role:x.role||'',email:String(x.email).trim()}));
         const unique=[];const seen=new Set();
