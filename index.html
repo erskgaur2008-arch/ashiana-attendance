@@ -940,9 +940,16 @@
               });
               if (bundle.error) throw new Error(bundle.error.message || "Student portal data could not be loaded.");
 
-              // Student auth is anonymous. Remove any previous Staff/Admin
-              // Supabase Auth session from the main client before reload so
-              // restoreSupabaseSession cannot reopen the previous staff portal.
+              // Student authentication is RPC-based. Explicitly end any
+              // previous Staff/Admin Supabase Auth session before switching
+              // roles, then clear storage as a fallback. This avoids leaving
+              // a stale in-memory Auth session in the main client.
+              try {
+                var mainClientBeforeStudent = await ashianaGetMainSupabaseClient();
+                await mainClientBeforeStudent.auth.signOut({ scope: "local" });
+              } catch (e) {
+                console.warn("Local Auth cleanup before Student login:", e);
+              }
               await ashianaClearMainAuthStorage();
               var pendingStudentUser = {
                 type: "STUDENT",
@@ -2868,6 +2875,7 @@
     // Supabase auth events until the initial session/role has been restored.
     let authHydrationInProgress = true;
     let authListenerBound = false;
+    let authRestoreEventBusy = false;
 
     // Staff Directory Selection State
     let selectedStaffIds = new Set();
@@ -3398,11 +3406,16 @@
               if ((event === 'SIGNED_IN' || event === 'TOKEN_REFRESHED' || event === 'USER_UPDATED')
                   && session?.user?.email
                   && currentAuthUser?.type !== 'STUDENT') {
-                restoreSupabaseSession().then((restored) => {
-                  if (restored) {
-                    try { applyAuthenticatedUI(); } catch (_) {}
-                  }
-                }).catch((e) => console.warn("Auth event restore warning:", e));
+                if (authRestoreEventBusy) return;
+                authRestoreEventBusy = true;
+                restoreSupabaseSession()
+                  .then((restored) => {
+                    if (restored) {
+                      try { applyAuthenticatedUI(); } catch (_) {}
+                    }
+                  })
+                  .catch((e) => console.warn("Auth event restore warning:", e))
+                  .finally(() => { authRestoreEventBusy = false; });
               }
             } catch (e) {
               console.warn("Supabase auth state handler warning:", e);
