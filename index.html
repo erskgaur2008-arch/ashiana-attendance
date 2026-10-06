@@ -914,13 +914,43 @@
 
               ashianaLoginMessage("Administrator authentication successful. Opening console…", "success");
 
-              // Open the authenticated console in the same page. This also makes
-              // the transition deterministic on mobile Chrome/WebView.
-              if (typeof applyAuthenticatedUI === "function") {
-                applyAuthenticatedUI();
-              } else {
-                throw new Error("Administrator console could not be initialized. Please refresh and try again.");
-              }
+              // The login bridge runs before the main application script is
+              // evaluated on the static GitHub Pages build, so applyAuthenticatedUI()
+              // is not available at this exact point. Queue the transition and wait
+              // for the main app/bootstrap to finish initializing instead of showing
+              // a false "console could not be initialized" error.
+              window.__ashianaPendingAdminConsole = true;
+
+              (function openAdminWhenReady(attempt) {
+                if (!window.__ashianaPendingAdminConsole) return;
+
+                var ready =
+                  typeof window.applyAuthenticatedUI === "function" &&
+                  typeof window.supabaseClient !== "undefined" &&
+                  window.supabaseClient;
+
+                if (ready) {
+                  window.__ashianaPendingAdminConsole = false;
+                  try {
+                    window.applyAuthenticatedUI();
+                  } catch (uiError) {
+                    console.error("Ashiana admin console transition error:", uiError);
+                    window.__ashianaPendingAdminConsole = false;
+                    ashianaLoginMessage("Administrator console failed to open. Please refresh once and try again.", "error");
+                  }
+                  return;
+                }
+
+                if (attempt >= 100) {
+                  window.__ashianaPendingAdminConsole = false;
+                  ashianaLoginMessage("Administrator console is still loading. Please refresh once and try again.", "error");
+                  return;
+                }
+
+                window.setTimeout(function () {
+                  openAdminWhenReady(attempt + 1);
+                }, 100);
+              })(0);
 
               return false;
             }
