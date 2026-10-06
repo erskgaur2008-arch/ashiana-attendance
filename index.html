@@ -2762,6 +2762,8 @@
     let isCloudConnected = false;
     let realtimeChannel = null;
     let autoPollingInterval = null;
+    let syncInFlight = false;
+    let connectivityMonitoringBound = false;
     let html5QrScannerInstance = null;
     let isScannerRunning = false;
     let currentCameraFacingMode = "environment";
@@ -3209,9 +3211,45 @@
     }
 
     // Background Delta Polling ensures sync works across all devices & browsers
+    function setupConnectivityMonitoring() {
+      if (connectivityMonitoringBound) return;
+      connectivityMonitoringBound = true;
+
+      const refreshConnectivityState = () => {
+        if (!navigator.onLine) {
+          updateCloudBadge(false, "Offline — cached mode");
+          return;
+        }
+        if (currentAuthUser) {
+          updateCloudBadge(true, "Cloud Live");
+          syncAllDataFromSupabase(false);
+        }
+      };
+
+      window.addEventListener("offline", () => {
+        updateCloudBadge(false, "Offline — cached mode");
+      }, { passive: true });
+
+      window.addEventListener("online", refreshConnectivityState, { passive: true });
+
+      document.addEventListener("visibilitychange", () => {
+        if (!document.hidden && navigator.onLine && currentAuthUser) {
+          syncAllDataFromSupabase(false);
+        }
+      }, { passive: true });
+
+      if (!navigator.onLine) {
+        updateCloudBadge(false, "Offline — cached mode");
+      }
+    }
+
     function startBackgroundPolling() {
       if (autoPollingInterval) clearInterval(autoPollingInterval);
       autoPollingInterval = setInterval(() => {
+        // Do not wake the database or redraw dashboards while the app is
+        // backgrounded. A visibility/online event will sync when the user
+        // returns.
+        if (document.hidden || !navigator.onLine || !currentAuthUser) return;
         syncAllDataFromSupabase(false);
       }, 30000);
     }
@@ -3230,6 +3268,21 @@
       const sessionUser = currentAuthUser;
       if (!sessionUser) return;
 
+      // Prevent duplicate manual/background/realtime syncs from competing with
+      // each other. This is especially important on mobile networks where a
+      // slow request can otherwise overlap the next 30-second poll.
+      if (syncInFlight) {
+        if (notifyManual) showToast("A cloud sync is already in progress.", "info");
+        return;
+      }
+
+      if (!navigator.onLine) {
+        updateCloudBadge(false, "Offline — cached mode");
+        if (notifyManual) showToast("You are offline. Showing cached data.", "info");
+        return;
+      }
+
+      syncInFlight = true;
       let anyChange = false;
 
       try {
@@ -3237,7 +3290,7 @@
         // 1. SYNC STAFF TABLE (Accounts, Names, Roles, Updated PINs)
         const { data: remoteStaff, error: staffErr } = await supabaseClient
           .from('staff')
-          .select('*')
+          .select('id,emp_id,name,department,role,email,avatar_url,gender,dob,valid_thru,phone,address,status')
           .order('name', { ascending: true });
 
         if (staffErr) {
@@ -3266,11 +3319,14 @@
           });
 
           // Check if differences exist
-          if (remoteStaff.length !== staffDatabase.length || 
-              remoteStaff.some(s => {
-                const loc = staffDatabase.find(x => x.id === s.id);
-                return !loc || loc.name !== s.name || loc.status !== s.status || loc.email !== s.email;
-              })) {
+          const localStaffMap = new Map(staffDatabase.map(s => [s.id, s]));
+          const staffChanged = remoteStaff.length !== staffDatabase.length ||
+            remoteStaff.some(s => {
+              const loc = localStaffMap.get(s.id);
+              return !loc || loc.name !== s.name || loc.status !== s.status || loc.email !== s.email;
+            });
+
+          if (staffChanged) {
             staffDatabase = Array.from(remoteMap.values());
             anyChange = true;
           }
@@ -3283,17 +3339,23 @@
         // 2. SYNC ATTENDANCE PUNCHES (All dates so history and reports work on any device)
         const { data: remotePunches, error: punchErr } = await supabaseClient
           .from('attendance_punches')
-          .select('*')
+          .select('id,staff_id,staff_name,emp_id,attendance_date,type,timestamp,method,created_at')
           .order('created_at', { ascending: true });
 
         if (punchErr) {
           console.warn("Supabase punches sync notice:", punchErr);
         } else if (remotePunches) {
+          const punchKeys = new Set();
+          punchLedger.forEach(p => {
+            punchKeys.add(String(p.id));
+            punchKeys.add([p.staffId, p.attendanceDate, p.timestamp, p.type].join("|"));
+          });
+
           remotePunches.forEach(rp => {
-            const exists = punchLedger.some(p => 
-              p.id === rp.id || 
-              (p.staffId === rp.staff_id && p.attendanceDate === rp.attendance_date && p.timestamp === rp.timestamp && p.type === rp.type)
-            );
+            const idKey = String(rp.id);
+            const compositeKey = [rp.staff_id, rp.attendance_date, rp.timestamp, rp.type].join("|");
+            const exists = punchKeys.has(idKey) || punchKeys.has(compositeKey);
+
             if (!exists) {
               punchLedger.push({
                 id: rp.id,
@@ -3305,6 +3367,8 @@
                 timestamp: rp.timestamp,
                 method: rp.method || "QR_CAMERA"
               });
+              punchKeys.add(idKey);
+              punchKeys.add(compositeKey);
               anyChange = true;
             }
           });
@@ -3313,7 +3377,7 @@
         // 3. SYNC LEAVE REQUESTS
         const { data: remoteLeaves, error: leaveErr } = await supabaseClient
           .from('leave_requests')
-          .select('*')
+          .select('id,staff_id,staff_name,type,from_date,to_date,reason,status,created_at')
           .order('created_at', { ascending: false });
 
         if (leaveErr) {
@@ -3361,8 +3425,10 @@
         updateCloudBadge(true, "Cloud Live");
       } catch (err) {
         console.warn("Global sync error:", err);
-        updateCloudBadge(false, "Sync Error");
+        updateCloudBadge(false, navigator.onLine ? "Sync Error" : "Offline — cached mode");
         if (notifyManual) showToast("Sync error: " + err.message, "error");
+      } finally {
+        syncInFlight = false;
       }
     }
 
@@ -8479,6 +8545,7 @@ window.addEventListener('load',async function(){
       });
 
       await initSupabase();
+      setupConnectivityMonitoring();
       await loadPersistedData();
 
       const restored = await restoreSupabaseSession();
