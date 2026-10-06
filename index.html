@@ -572,6 +572,32 @@
           return window.__ashianaStudentLoginClient;
         }
 
+        // Teacher login also uses a fresh anonymous client. The Edge Function
+        // creates the real authenticated staff session only after PIN validation.
+        async function ashianaGetTeacherLoginClient() {
+          if (window.__ashianaTeacherLoginClient) return window.__ashianaTeacherLoginClient;
+          if (!window.supabase?.createClient) throw new Error("Supabase client library is unavailable.");
+          window.__ashianaTeacherLoginClient = window.supabase.createClient(
+            "https://oalfzgluqroqbbrulhpr.supabase.co",
+            "sb_publishable_PND9f9FKbNrxlEakSgLKYA_5EsqLHkg",
+            { auth: { persistSession: false, autoRefreshToken: false, detectSessionInUrl: false } }
+          );
+          return window.__ashianaTeacherLoginClient;
+        }
+
+        // Administrator login uses its own persistent Auth client so an existing
+        // teacher/student session can never interfere with administrator sign-in.
+        async function ashianaGetAdminLoginClient() {
+          if (window.__ashianaAdminLoginClient) return window.__ashianaAdminLoginClient;
+          if (!window.supabase?.createClient) throw new Error("Supabase client library is unavailable.");
+          window.__ashianaAdminLoginClient = window.supabase.createClient(
+            "https://oalfzgluqroqbbrulhpr.supabase.co",
+            "sb_publishable_PND9f9FKbNrxlEakSgLKYA_5EsqLHkg",
+            { auth: { persistSession: true, autoRefreshToken: true, detectSessionInUrl: false } }
+          );
+          return window.__ashianaAdminLoginClient;
+        }
+
         function ashianaLoginMessage(message, type) {
           if (typeof window.showToast === "function") {
             window.showToast(message, type || "info");
@@ -607,7 +633,11 @@
           ashianaLoginButton(form, true, "Verifying…");
 
           try {
-            var client = await ashianaGetLoginClient();
+            var client = role === "teacher"
+              ? await ashianaGetTeacherLoginClient()
+              : role === "admin"
+                ? await ashianaGetAdminLoginClient()
+                : await ashianaGetLoginClient();
 
             // IMPORTANT: login must always start from the anonymous role.
             // Student RPCs intentionally allow only the anon role; an old
@@ -617,7 +647,13 @@
             // Teacher's staff_login bridge is also intentionally public.
             // After successful teacher login, setSession() below establishes
             // the real authenticated staff session.
-            await client.auth.signOut({ scope: "local" });
+            if (role === "teacher") {
+              // Teacher client is non-persisting and therefore has no stale Auth session.
+            } else if (role === "admin") {
+              await client.auth.signOut({ scope: "local" });
+            } else {
+              await client.auth.signOut({ scope: "local" });
+            }
 
             if (role === "teacher") {
               var loginId = String(document.getElementById("teacher-login-id")?.value || "").trim();
