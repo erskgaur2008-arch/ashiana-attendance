@@ -479,16 +479,13 @@
           <label class="sr-only">Select Login Role</label>
           <div id="login-role-buttons" class="grid grid-cols-3 gap-1.5 p-1.5 rounded-2xl bg-emerald-950/20 border border-emerald-300/60">
             <button type="button" data-login-role="teacher" aria-pressed="true"
-              onclick="window.__ashianaApplyLoginRole('teacher'); return false;"
-              onpointerdown="window.__ashianaApplyLoginRole('teacher')"
+              onclick="return window.__ashianaSetLoginRole('teacher');"
               class="login-role-button active">Teacher / Staff</button>
             <button type="button" data-login-role="admin" aria-pressed="false"
-              onclick="window.__ashianaApplyLoginRole('admin'); return false;"
-              onpointerdown="window.__ashianaApplyLoginRole('admin')"
+              onclick="return window.__ashianaSetLoginRole('admin');"
               class="login-role-button">Administrator</button>
             <button type="button" data-login-role="student" aria-pressed="false"
-              onclick="window.__ashianaApplyLoginRole('student'); return false;"
-              onpointerdown="window.__ashianaApplyLoginRole('student')"
+              onclick="return window.__ashianaSetLoginRole('student');"
               class="login-role-button">Student</button>
           </div>
           <select id="login-role-select" aria-hidden="true" tabindex="-1"
@@ -595,30 +592,46 @@
             student: document.getElementById("student-login-form")
           };
 
-          // Force the visible form with both the Tailwind class and the native
-          // hidden property. This prevents a restored/autofilled select value
-          // from ever becoming out of sync with the login panel.
           Object.keys(map).forEach(function (key) {
             var form = map[key];
             if (!form) return;
             var active = key === selected;
-            form.classList.toggle("hidden", !active);
+
+            // Use inline !important display as the final authority. This avoids
+            // conflicts between Tailwind .hidden, the native hidden attribute,
+            // browser form defaults, or another stylesheet.
             form.hidden = !active;
-            if (active) form.style.removeProperty("display");
-            else form.style.display = "none";
+            form.classList.toggle("hidden", !active);
+            form.style.setProperty("display", active ? "block" : "none", "important");
+            form.setAttribute("aria-hidden", active ? "false" : "true");
           });
 
           var selector = document.getElementById("login-role-select");
-          if (selector && selector.value !== selected) selector.value = selected;
+          if (selector) selector.value = selected;
 
-          // Keep the visible role buttons synchronized with the active form.
           document.querySelectorAll("#login-role-buttons [data-login-role]").forEach(function (button) {
             var activeButton = button.getAttribute("data-login-role") === selected;
             button.classList.toggle("active", activeButton);
             button.setAttribute("aria-pressed", activeButton ? "true" : "false");
           });
+
+          var gateway = document.getElementById("auth-gateway-view");
+          if (gateway) gateway.setAttribute("data-login-role-active", selected);
+
           return false;
         }
+
+        // Dedicated public role setter used directly by the three role buttons.
+        // It deliberately does not depend on the hidden select or event bubbling.
+        window.__ashianaSetLoginRole = function (role) {
+          applyAshianaLoginRole(role);
+          // Re-assert once after the browser finishes the click event in case
+          // another UI listener touched the forms during the same event cycle.
+          window.requestAnimationFrame(function () { applyAshianaLoginRole(role); });
+          window.setTimeout(function () { applyAshianaLoginRole(role); }, 0);
+          return false;
+        };
+
         window.__ashianaApplyLoginRole = applyAshianaLoginRole;
         window.switchLoginTab = applyAshianaLoginRole;
 
@@ -914,41 +927,6 @@
           selector.addEventListener("input", function () { applyAshianaLoginRole(selector.value); });
           applyAshianaLoginRole(selector.value);
         }
-
-        // Capture role clicks at the document level. This is intentionally
-        // independent of bubbling/inline handlers so another script cannot
-        // block role selection.
-        document.addEventListener("click", function (event) {
-          var button = event.target && event.target.closest ? event.target.closest("#login-role-buttons [data-login-role]") : null;
-          if (!button) return;
-          event.preventDefault();
-          event.stopPropagation();
-          applyAshianaLoginRole(button.getAttribute("data-login-role"));
-        }, true);
-
-        document.addEventListener("pointerdown", function (event) {
-          var button = event.target && event.target.closest ? event.target.closest("#login-role-buttons [data-login-role]") : null;
-          if (!button) return;
-          event.preventDefault();
-          applyAshianaLoginRole(button.getAttribute("data-login-role"));
-        }, true);
-
-        // Capture form submissions as a second, independent login path.
-        // The role-specific handler remains the single authentication implementation.
-        document.addEventListener("submit", function (event) {
-          var form = event.target;
-          if (!form || !form.id) return;
-          var role = form.id === "teacher-login-form" ? "teacher"
-            : form.id === "admin-login-form" ? "admin"
-            : form.id === "student-login-form" ? "student"
-            : null;
-          if (!role) return;
-          event.preventDefault();
-          event.stopPropagation();
-          if (typeof window.__ashianaStandaloneLogin === "function") {
-            window.__ashianaStandaloneLogin(role, event);
-          }
-        }, true);
 
         if (document.readyState === "loading") {
           document.addEventListener("DOMContentLoaded", bindAshianaLoginRole, { once: true });
