@@ -4036,11 +4036,14 @@ async function handleTeacherLogin(event) {
 
     function parseStudentAttendanceQr(decodedText){
       const parts=String(decodedText||'').trim().split('|').map(x=>x.trim());
-      if(parts.length!==3)return null;
+      // Student ID cards currently encode:
+      // ASHIANA|STUDENT|ENROLLMENT_NO|STUDENT_NAME
+      // Accept the name field but NEVER use it for identity/authorization.
+      if(parts.length!==4)return null;
       if(parts[0].toUpperCase()!=='ASHIANA' || parts[1].toUpperCase()!=='STUDENT')return null;
       const enroll=parts[2].toUpperCase();
       if(!enroll || enroll.length>64 || !/^[A-Z0-9._/-]+$/.test(enroll))return null;
-      return {enroll_no:enroll};
+      return {enroll_no:enroll, student_name:parts[3]||''};
     }
 
     async function startStudentQrScanner(){
