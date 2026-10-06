@@ -3102,6 +3102,10 @@
 
         const { data: sessionData } = await supabaseClient.auth.getSession();
         const session = sessionData?.session;
+        // Admin handoff is deliberately restored from the persisted Supabase
+        // Auth session, then re-authorized against admin_users. Use a
+        // case-insensitive email match because Auth normalizes emails while
+        // legacy admin records may preserve their original casing.
         const user = session?.user;
         if (!user?.email) return false;
 
@@ -3109,7 +3113,7 @@
         const { data: adminRow, error: adminError } = await supabaseClient
           .from('admin_users')
           .select('email,role,active')
-          .eq('email', email)
+          .ilike('email', email)
           .eq('active', true)
           .maybeSingle();
 
