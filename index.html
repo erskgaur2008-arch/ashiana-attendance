@@ -3669,13 +3669,18 @@
 function teacherPortalClass(){const el=document.getElementById('teacher-portal-class');const a=teacherStudentAssignments[Number(el?.value)];return a||null;}
 async function loadTeacherPortalManager(){
       if(!supabaseClient||!canAccessStudentAttendance())return;
-      if(!teacherStudentAssignments.length) await loadTeacherStudentAssignments();
+      // Always refresh assignments when the Student Portal manager opens so a
+      // previous teacher's cached class list can never leak into this session.
+      teacherStudentAssignments=[];
+      await loadTeacherStudentAssignments();
       const sel=document.getElementById('teacher-portal-class');
       if(sel){
-        sel.innerHTML='<option value="">Select assigned class</option>'+
-          teacherStudentAssignments.map((a,i)=>'<option value="'+i+'">'+studentEscape(a.class_name)+' - '+studentEscape(a.section)+'</option>').join('');
-        if(teacherStudentAssignments.length===1){
-          sel.value='0';
+        if(teacherStudentAssignments.length){
+          sel.innerHTML='<option value="">Select assigned class</option>'+
+            teacherStudentAssignments.map((a,i)=>'<option value="'+i+'">'+studentEscape(a.class_name)+' - '+studentEscape(a.section)+'</option>').join('');
+          if(teacherStudentAssignments.length===1)sel.value='0';
+        }else{
+          sel.innerHTML='<option value="">No assigned classes found</option>';
         }
       }
       renderTeacherPortalEditor();
@@ -3857,8 +3862,54 @@ function closeStudentDashboardSection(){
   if(panel)panel.classList.add("hidden");
   document.body.classList.remove("overflow-hidden");
 }
-async function submitStudentLeave(event){event.preventDefault();const s=currentAuthUser?.studentRecord;if(!s||!supabaseClient)return;const {data,error}=await supabaseClient.rpc("student_submit_leave",{p_enroll_no:s.enroll_no,p_dob_password:document.getElementById("student-leave-dob").value,p_from_date:document.getElementById("student-leave-from").value,p_to_date:document.getElementById("student-leave-to").value,p_reason:document.getElementById("student-leave-reason").value});if(error||!data?.success)return showToast(data?.message||error?.message||"Leave request failed.","error");showToast("Leave request submitted.","success");await refreshStudentPortalData();}
-async function refreshStudentPortalData(){const s=currentAuthUser?.studentRecord;if(!s)return;const dob=document.getElementById("student-leave-dob")?.value||"";if(!/^[0-9]{8}$/.test(dob))return;const {data}=await supabaseClient.rpc("student_portal_bundle",{p_enroll_no:s.enroll_no,p_dob_password:dob});if(data?.success){currentAuthUser.portalData=data;populateStudentPortal(s);}}
+async function submitStudentLeave(event){
+  event.preventDefault();
+  const form=event.currentTarget;
+  if(form?.dataset.submitting==="1")return false;
+  const s=currentAuthUser?.studentRecord;
+  if(!s||!supabaseClient)return false;
+  const from=document.getElementById("student-leave-from")?.value||"";
+  const to=document.getElementById("student-leave-to")?.value||"";
+  const reason=(document.getElementById("student-leave-reason")?.value||"").trim();
+  const dob=document.getElementById("student-leave-dob")?.value||"";
+  if(!from||!to||!reason||!/^[0-9]{8}$/.test(dob)){showToast("Please complete all leave details.","error");return false;}
+  if(from>to){showToast("From date cannot be after To date.","error");return false;}
+  form.dataset.submitting="1";
+  const btn=event.submitter||form.querySelector('button[type="submit"]');
+  if(btn){btn.disabled=true;btn.dataset.originalText=btn.textContent;btn.textContent="Submitting…";}
+  try{
+    const {data,error}=await supabaseClient.rpc("student_submit_leave",{
+      p_enroll_no:s.enroll_no,p_dob_password:dob,p_from_date:from,p_to_date:to,p_reason:reason
+    });
+    if(error||!data?.success){
+      const msg=String(data?.message||error?.message||"Leave request failed.");
+      if(String(error?.code)==="23505" || /duplicate|already.*pending|already.*request/i.test(msg)){
+        showToast("A leave request for these dates is already pending.","error");
+      }else{
+        showToast(msg,"error");
+      }
+      return false;
+    }
+    showToast("Leave request submitted.","success");
+    await refreshStudentPortalData(dob);
+    await studentDashboardSection("leave");
+    return false;
+  }catch(err){
+    showToast(err?.message||"Leave request failed.","error");
+    return false;
+  }finally{
+    if(form?.isConnected)form.dataset.submitting="0";
+    if(btn?.isConnected){btn.disabled=false;btn.textContent=btn.dataset.originalText||"Submit Leave Request";}
+  }
+}
+async function refreshStudentPortalData(dobOverride){
+  const s=currentAuthUser?.studentRecord;
+  if(!s||!supabaseClient)return;
+  const dob=dobOverride||document.getElementById("student-leave-dob")?.value||"";
+  if(!/^[0-9]{8}$/.test(dob))return;
+  const {data}=await supabaseClient.rpc("student_portal_bundle",{p_enroll_no:s.enroll_no,p_dob_password:dob});
+  if(data?.success){currentAuthUser.portalData=data;populateStudentPortal(s);}
+}
 
     function scaleStudentIdCardPreview(){
       const preview=document.getElementById("student-id-card-preview");
@@ -5138,7 +5189,6 @@ async function loadAdminStudentAttendance(){
         punchView?.classList.add('hidden');historyView?.classList.add('hidden');studentsView?.classList.remove('hidden');
 
         const date=document.getElementById('teacher-student-date');if(date&&!date.value)date.value=studentDateToday();
-        await loadTeacherStudentAssignments();
         await loadTeacherPortalManager();
       }
       if (window.lucide) lucide.createIcons();
