@@ -45,7 +45,7 @@ jobs:
           cp manifest.webmanifest mobile/www/
           cp sw.js mobile/www/
           cp "logo 2.png" mobile/www/
-          cp -R assets/vendor mobile/www/assets/vendor
+          cp -R assets/vendor/. mobile/www/assets/vendor
           test -f mobile/www/index.html
           test -s mobile/www/assets/vendor/supabase.js
 
