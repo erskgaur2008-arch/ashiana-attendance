@@ -836,7 +836,7 @@
               }
 
               var staff = loginResult.staff;
-              sessionStorage.setItem("aps_current_auth_session_v1", JSON.stringify({
+              currentAuthUser = {
                 type: "STAFF",
                 staffRecord: {
                   id: staff.id,
@@ -854,9 +854,15 @@
                   pinHash: "",
                   status: staff.status || "ACTIVE"
                 }
-              }));
+              };
+              currentStaffId = staff.id;
+              sessionStorage.setItem("aps_current_auth_session_v1", JSON.stringify(currentAuthUser));
               ashianaLoginMessage("Staff authentication successful. Opening your portal…", "success");
-              window.location.reload();
+              if (typeof window.__ashianaOpenAuthenticatedPortal === "function") {
+                window.__ashianaOpenAuthenticatedPortal("STAFF");
+              } else {
+                window.location.reload();
+              }
               return false;
             }
 
@@ -922,42 +928,13 @@
                 throw new Error("Administrator session was not persisted. Please try again.");
               }
 
-              // Open the Admin portal immediately after the verified Auth
-              // session is established. Do not force a full-page reload here:
-              // Android Chrome/PWA can restore the login shell from a stale
-              // document during the reload and make a successful authentication
-              // look like a failed login.
-              var authGateway = document.getElementById("auth-gateway-view");
-              var staffPortal = document.getElementById("staff-portal-view");
-              var adminPortal = document.getElementById("admin-portal-view");
-              var studentPortal = document.getElementById("student-portal-view");
-              var sessionControls = document.getElementById("authenticated-session-controls");
-              if (authGateway) authGateway.classList.add("hidden");
-              if (staffPortal) staffPortal.classList.add("hidden");
-              if (studentPortal) studentPortal.classList.add("hidden");
-              if (adminPortal) {
-                adminPortal.classList.remove("hidden");
-                adminPortal.style.display = "";
+              if (typeof window.__ashianaOpenAuthenticatedPortal === "function") {
+                window.__ashianaOpenAuthenticatedPortal("ADMIN");
+              } else {
+                // The main app may still be booting. A reload is only a fallback;
+                // normally the central opener handles all three roles without it.
+                window.location.reload();
               }
-              if (sessionControls) sessionControls.classList.remove("hidden");
-
-              try {
-                if (typeof switchPortal === "function") {
-                  switchPortal("admin");
-                }
-              } catch (portalError) {
-                console.warn("Admin portal initial render warning:", portalError);
-                if (adminPortal) adminPortal.classList.remove("hidden");
-              }
-
-              try {
-                if (typeof updateAdminDashboardDate === "function") updateAdminDashboardDate();
-              } catch (_) {}
-              try {
-                if (window.lucide) lucide.createIcons();
-              } catch (_) {}
-
-              ashianaLoginMessage("Administrator login successful. Admin console opened.", "success");
               return false;
             }
 
@@ -989,18 +966,20 @@
               // Supabase Auth session from the main client before reload so
               // restoreSupabaseSession cannot reopen the previous staff portal.
               await ashianaClearMainAuthStorage();
-              localStorage.setItem("aps_student_session_v1", JSON.stringify({
+              currentAuthUser = {
                 type: "STUDENT",
                 studentRecord: studentLogin.data.student,
                 portalData: bundle.data || {}
-              }));
-              sessionStorage.setItem("aps_current_auth_session_v1", JSON.stringify({
-                type: "STUDENT",
-                studentRecord: studentLogin.data.student,
-                portalData: bundle.data || {}
-              }));
+              };
+              currentStaffId = null;
+              localStorage.setItem("aps_student_session_v1", JSON.stringify(currentAuthUser));
+              sessionStorage.setItem("aps_current_auth_session_v1", JSON.stringify(currentAuthUser));
               ashianaLoginMessage("Student authentication successful. Opening portal…", "success");
-              window.location.reload();
+              if (typeof window.__ashianaOpenAuthenticatedPortal === "function") {
+                window.__ashianaOpenAuthenticatedPortal("STUDENT");
+              } else {
+                window.location.reload();
+              }
               return false;
             }
 
@@ -4512,6 +4491,45 @@ async function handleTeacherLogin(event) {
         }
       }
     }
+
+    // Single authenticated portal handoff for Admin, Staff/Teacher and Student.
+    // Keeping this in one place prevents role-specific login races and makes
+    // successful authentication independent of dashboard widget rendering.
+    window.__ashianaOpenAuthenticatedPortal = function (roleType) {
+      try {
+        const authGateway = document.getElementById("auth-gateway-view");
+        const staffPortal = document.getElementById("staff-portal-view");
+        const adminPortal = document.getElementById("admin-portal-view");
+        const studentPortal = document.getElementById("student-portal-view");
+        const sessionControls = document.getElementById("authenticated-session-controls");
+
+        authGateway?.classList.add("hidden");
+        staffPortal?.classList.add("hidden");
+        adminPortal?.classList.add("hidden");
+        studentPortal?.classList.add("hidden");
+        sessionControls?.classList.remove("hidden");
+
+        const normalized = String(roleType || "").toUpperCase();
+        const portal = normalized === "ADMIN" ? "admin" : normalized === "STUDENT" ? "student" : "staff";
+        const target = portal === "admin" ? adminPortal : portal === "student" ? studentPortal : staffPortal;
+        target?.classList.remove("hidden");
+        if (target) target.style.display = "";
+
+        try {
+          switchPortal(portal);
+        } catch (e) {
+          console.warn("Portal switch warning:", e);
+          target?.classList.remove("hidden");
+        }
+
+        try { updateAdminDashboardDate?.(); } catch (_) {}
+        try { if (window.lucide) lucide.createIcons(); } catch (_) {}
+        return true;
+      } catch (e) {
+        console.error("Authenticated portal handoff failed:", e);
+        return false;
+      }
+    };
 
     function switchPortal(portal) {
       currentPortal = portal;
