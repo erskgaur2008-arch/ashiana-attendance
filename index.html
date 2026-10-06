@@ -918,6 +918,11 @@
               // Supabase Auth session from the main client before reload so
               // restoreSupabaseSession cannot reopen the previous staff portal.
               await ashianaClearMainAuthStorage();
+              localStorage.setItem("aps_student_session_v1", JSON.stringify({
+                type: "STUDENT",
+                studentRecord: studentLogin.data.student,
+                portalData: bundle.data || {}
+              }));
               sessionStorage.setItem("aps_current_auth_session_v1", JSON.stringify({
                 type: "STUDENT",
                 studentRecord: studentLogin.data.student,
@@ -2979,14 +2984,21 @@
         // Student login must never be replaced by a stale Staff/Admin Auth
         // session left in local storage from an earlier login.
         const savedRaw = sessionStorage.getItem(STORAGE_KEY_CURRENT_USER);
+        const savedStudentRaw = localStorage.getItem("aps_student_session_v1");
         let savedUser = null;
-        try { savedUser = savedRaw ? JSON.parse(savedRaw) : null; } catch (_) { savedUser = null; }
+        try {
+          savedUser = savedRaw ? JSON.parse(savedRaw) : null;
+          if (!savedUser && savedStudentRaw) savedUser = JSON.parse(savedStudentRaw);
+        } catch (_) {
+          savedUser = null;
+        }
 
         if (savedUser?.type === 'STUDENT') {
-          // Students authenticate through secure anonymous RPCs, not Supabase
-          // Auth. Clear any old Staff/Admin Auth session before keeping the
-          // student portal active.
+          // Student authentication is RPC-based. Keep a lightweight local
+          // portal session so a normal page refresh does not log the student out.
           await supabaseClient.auth.signOut({ scope: 'local' });
+          localStorage.setItem("aps_student_session_v1", JSON.stringify(savedUser));
+          sessionStorage.setItem(STORAGE_KEY_CURRENT_USER, JSON.stringify(savedUser));
           currentAuthUser = savedUser;
           currentStaffId = null;
           return true;
@@ -4166,6 +4178,7 @@ async function handleTeacherLogin(event) {
       currentAuthUser = null;
       currentStaffId = null;
       sessionStorage.removeItem(STORAGE_KEY_CURRENT_USER);
+      localStorage.removeItem("aps_student_session_v1");
       showToast("Signed out safely.", "info");
       applyAuthenticatedUI();
     }
