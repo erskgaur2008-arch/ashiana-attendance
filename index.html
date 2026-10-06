@@ -559,6 +559,19 @@
           return window.__ashianaLoginClient;
         }
 
+        // Student authentication must never share the persisted Auth session
+        // used by Admin/Teacher. This client is anonymous and non-persisting.
+        async function ashianaGetStudentLoginClient() {
+          if (window.__ashianaStudentLoginClient) return window.__ashianaStudentLoginClient;
+          if (!window.supabase?.createClient) throw new Error("Supabase client library is unavailable.");
+          window.__ashianaStudentLoginClient = window.supabase.createClient(
+            DEFAULT_SUPABASE_URL,
+            DEFAULT_SUPABASE_ANON_KEY,
+            { auth: { persistSession: false, autoRefreshToken: false, detectSessionInUrl: false } }
+          );
+          return window.__ashianaStudentLoginClient;
+        }
+
         function ashianaLoginMessage(message, type) {
           if (typeof window.showToast === "function") {
             window.showToast(message, type || "info");
@@ -705,7 +718,8 @@
                 throw new Error("Enter Admission No. and DOB password in DDMMYYYY format.");
               }
 
-              var studentLogin = await client.rpc("student_login", {
+              var studentClient = await ashianaGetStudentLoginClient();
+              var studentLogin = await studentClient.rpc("student_login", {
                 p_school_code: "ashiana",
                 p_enroll_no: admission,
                 p_dob_password: dob
@@ -715,7 +729,7 @@
                 throw new Error("Incorrect Admission No. or DOB password.");
               }
 
-              var bundle = await client.rpc("student_portal_bundle", {
+              var bundle = await studentClient.rpc("student_portal_bundle", {
                 p_enroll_no: admission,
                 p_dob_password: dob
               });
