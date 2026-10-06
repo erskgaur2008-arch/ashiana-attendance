@@ -978,9 +978,9 @@
         <button type="button" onclick="window.switchAdminTab('live')"><i data-lucide="radio"></i><span>Live Attendance</span></button>
         <button type="button" onclick="window.switchAdminTab('qr')"><i data-lucide="qr-code"></i><span>Daily QR</span></button>
         <button type="button" onclick="window.switchAdminTab('directory')"><i data-lucide="users"></i><span>Faculty</span></button>
-        <button type="button" onclick="window.switchAdminTab('reports')"><i data-lucide="file-spreadsheet"></i><span>Reports</span></button>
-        <button type="button" onclick="window.switchAdminTab('leave')" title="Faculty Leave Applications"><i data-lucide="calendar-check"></i><span>Leaves</span></button>
-        <button type="button" onclick="window.switchAdminTab('corrections')" title="Manual Attendance Corrections"><i data-lucide="file-pen"></i><span>Corrections</span></button>
+        <button type="button" id="admin-nav-reports" onclick="window.switchAdminTab('reports')"><i data-lucide="file-spreadsheet"></i><span>Reports</span></button>
+        <button type="button" id="admin-nav-leave" onclick="window.switchAdminTab('leave')" title="Faculty Leave Applications"><i data-lucide="calendar-check"></i><span>Leaves</span></button>
+        <button type="button" id="admin-nav-corrections" onclick="window.switchAdminTab('corrections')" title="Manual Attendance Corrections"><i data-lucide="file-pen"></i><span>Corrections</span></button>
       </div>
 
       <!-- Top KPI Row -->
@@ -6052,19 +6052,31 @@ window.addEventListener('load',async function(){
       const allowedTabs = ['live', 'qr', 'directory', 'corrections', 'leave', 'audit', 'reports', 'students'];
       if (!allowedTabs.includes(tab)) return;
 
-      // Quick-action buttons use the same single-page tab controller as the
-      // legacy navigation. Keep the view switch synchronous so the selected
-      // panel is shown even if a panel-specific data refresh fails.
+      // Force the panel visibility with both the utility class and inline display.
+      // This avoids browsers retaining a stale hidden/flex state after SPA navigation.
       allowedTabs.forEach(t => {
-        const btn = document.getElementById(`tab-btn-${t}`);
         const view = document.getElementById(`admin-tab-${t}`);
+        if (view) {
+          const active = t === tab;
+          view.classList.toggle("hidden", !active);
+          view.style.display = active ? "" : "none";
+        }
 
-        if (view) view.classList.toggle("hidden", t !== tab);
-
+        const btn = document.getElementById(`tab-btn-${t}`);
         if (btn) {
           btn.className = t === tab
             ? "px-3.5 py-1.5 rounded-xl text-xs font-bold bg-ashiana-green text-white shadow flex items-center space-x-1.5"
             : "px-3.5 py-1.5 rounded-xl text-xs font-bold text-slate-600 hover:bg-slate-100 flex items-center space-x-1.5";
+        }
+      });
+
+      // Keep the selected quick-action visibly active.
+      ["reports","leave","corrections"].forEach(t => {
+        const quickBtn = document.getElementById(`admin-nav-${t}`);
+        if (quickBtn) {
+          quickBtn.style.borderColor = t === tab ? "#0A7E46" : "";
+          quickBtn.style.background = t === tab ? "#F0FDF4" : "";
+          quickBtn.style.color = t === tab ? "#047857" : "";
         }
       });
 
@@ -6089,7 +6101,6 @@ window.addEventListener('load',async function(){
 
         if (tab === 'leave') {
           renderAdminLeaveTable();
-          if (window.lucide) lucide.createIcons();
         }
 
         if (tab === 'corrections') {
@@ -6105,7 +6116,6 @@ window.addEventListener('load',async function(){
 
       if (window.lucide) lucide.createIcons();
     }
-
     // Expose the tab controller explicitly for inline/mobile browser handlers.
     window.switchAdminTab = switchAdminTab;
 
@@ -7960,6 +7970,18 @@ window.addEventListener('load',async function(){
       document.getElementById("admin-login-form")?.addEventListener("submit", handleAdminLogin);
       document.getElementById("student-login-form")?.addEventListener("submit", handleStudentLogin);
       document.getElementById("btn-login-tab-student")?.addEventListener("click", () => window.switchLoginTab("student"));
+      document.getElementById("admin-nav-reports")?.addEventListener("click", (event) => {
+        event.preventDefault();
+        window.switchAdminTab("reports");
+      });
+      document.getElementById("admin-nav-leave")?.addEventListener("click", (event) => {
+        event.preventDefault();
+        window.switchAdminTab("leave");
+      });
+      document.getElementById("admin-nav-corrections")?.addEventListener("click", (event) => {
+        event.preventDefault();
+        window.switchAdminTab("corrections");
+      });
 
       await initSupabase();
       await loadPersistedData();
