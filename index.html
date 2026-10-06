@@ -550,15 +550,6 @@
         window.__ashianaLoginClient = window.__ashianaLoginClient || null;
         window.__ashianaLoginBusy = false;
 
-        async function ashianaGetLoginClient() {
-          if (window.__ashianaLoginClient) return window.__ashianaLoginClient;
-          if (!window.supabase?.createClient) throw new Error("Supabase client library is unavailable.");
-          const url = "https://oalfzgluqroqbbrulhpr.supabase.co";
-          const key = "sb_publishable_PND9f9FKbNrxlEakSgLKYA_5EsqLHkg";
-          window.__ashianaLoginClient = window.supabase.createClient(url, key);
-          return window.__ashianaLoginClient;
-        }
-
         // Shared main application client. It is created lazily so the early
         // login bridge can establish the authenticated session even before
         // bootstrapApp()/initSupabase() has finished.
@@ -571,6 +562,15 @@
             { auth: { persistSession: true, autoRefreshToken: true, detectSessionInUrl: false } }
           );
           return window.__ashianaMainSupabaseClient;
+        }
+
+        // Student auth is RPC-based, so clear only the browser's stored
+        // Supabase Auth session. Calling auth.signOut() here would revoke a
+        // Staff/Admin session on the server.
+        async function ashianaClearMainAuthStorage() {
+          const storageKey = "sb-oalfzgluqroqbbrulhpr-auth-token";
+          try { window.localStorage.removeItem(storageKey); } catch (_) {}
+          try { window.sessionStorage.removeItem(storageKey); } catch (_) {}
         }
 
         // Student authentication must never share the persisted Auth session
@@ -652,25 +652,11 @@
               ? await ashianaGetTeacherLoginClient()
               : role === "admin"
                 ? await ashianaGetAdminLoginClient()
-                : await ashianaGetLoginClient();
+                : await ashianaGetStudentLoginClient();
 
-            // IMPORTANT: login must always start from the anonymous role.
-            // Student RPCs intentionally allow only the anon role; an old
-            // Supabase Auth session would otherwise make this request run as
-            // "authenticated" and PostgreSQL correctly returns:
-            // "permission denied for function student_login".
-            // Teacher's staff_login bridge is also intentionally public.
-            // After successful teacher login, setSession() below establishes
-            // the real authenticated staff session.
-            if (role === "teacher") {
-              // Teacher client is non-persisting and therefore has no stale Auth session.
-            } else if (role === "admin") {
-              await client.auth.signOut({ scope: "local" });
-            } else {
-              await client.auth.signOut({ scope: "local" });
-            }
-
-            if (role === "teacher") {
+            // Each role uses an isolated pre-auth client. Teacher/Admin clients
+            // are non-persisting, while Student uses anonymous RPCs. Do not
+            // sign out here: there is no pre-auth session to revoke.            if (role === "teacher") {
               var loginId = String(document.getElementById("teacher-login-id")?.value || "").trim();
               var pin = String(document.getElementById("teacher-login-pin")?.value || "").trim();
               if (!loginId || !/^\d{4}$/.test(pin)) throw new Error("Enter your Employee ID/email and exactly 4 digits.");
@@ -700,7 +686,6 @@
                 // persistent client so the portal and every cloud query use the
                 // same authenticated Supabase session after reload.
                 var mainClient = await ashianaGetMainSupabaseClient();
-                await mainClient.auth.signOut({ scope: "local" });
                 var sessionResult = await mainClient.auth.setSession({
                   access_token: loginResult.session.access_token,
                   refresh_token: loginResult.session.refresh_token
@@ -766,7 +751,6 @@
               if (!adminSession?.access_token || !adminSession?.refresh_token) {
                 throw new Error("Administrator authentication returned no secure session.");
               }
-              await adminMainClient.auth.signOut({ scope: "local" });
               var adminSessionResult = await adminMainClient.auth.setSession({
                 access_token: adminSession.access_token,
                 refresh_token: adminSession.refresh_token
@@ -774,7 +758,9 @@
               if (adminSessionResult.error || !adminSessionResult.data?.user) {
                 throw new Error(adminSessionResult.error?.message || "Administrator session could not be established.");
               }
-              await client.auth.signOut({ scope: "local" });
+              // Do NOT sign out the pre-auth client here. Both clients hold the
+              // same Auth session; signing out the pre-auth client revokes the
+              // refresh token and makes the transferred main session invalid.
 
               sessionStorage.setItem("aps_current_auth_session_v1", JSON.stringify({
                 type: "ADMIN",
@@ -813,8 +799,7 @@
               // Student auth is anonymous. Remove any previous Staff/Admin
               // Supabase Auth session from the main client before reload so
               // restoreSupabaseSession cannot reopen the previous staff portal.
-              var studentMainClient = await ashianaGetMainSupabaseClient();
-              await studentMainClient.auth.signOut({ scope: "local" });
+              await ashianaClearMainAuthStorage();
               sessionStorage.setItem("aps_current_auth_session_v1", JSON.stringify({
                 type: "STUDENT",
                 studentRecord: studentLogin.data.student,
