@@ -900,13 +900,28 @@
               // same Auth session; signing out the pre-auth client revokes the
               // refresh token and makes the transferred main session invalid.
 
-              sessionStorage.setItem("aps_current_auth_session_v1", JSON.stringify({
+              // Establish the UI session immediately instead of forcing a full-page
+              // reload. On some Android/PWA browsers the reload can race Supabase
+              // Auth persistence, leaving the user on the login gateway even though
+              // authentication succeeded.
+              currentAuthUser = {
                 type: "ADMIN",
                 username: adminEmail,
                 role: adminLookup.data.role
-              }));
+              };
+              currentStaffId = null;
+              sessionStorage.setItem("aps_current_auth_session_v1", JSON.stringify(currentAuthUser));
+
               ashianaLoginMessage("Administrator authentication successful. Opening console…", "success");
-              window.location.reload();
+
+              // Open the authenticated console in the same page. This also makes
+              // the transition deterministic on mobile Chrome/WebView.
+              if (typeof applyAuthenticatedUI === "function") {
+                applyAuthenticatedUI();
+              } else {
+                throw new Error("Administrator console could not be initialized. Please refresh and try again.");
+              }
+
               return false;
             }
 
