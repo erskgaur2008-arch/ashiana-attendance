@@ -3288,13 +3288,29 @@ async function handleTeacherLogin(event) {
           throw new Error("Staff authentication failed.");
         }
 
-        const authPassword = deriveStaffAuthPassword(loginResult.staff.id, pinVal);
-        const { data: authData, error: authError } = await supabaseClient.auth.signInWithPassword({
-          email: loginResult.staff.email,
-          password: authPassword
-        });
-        if (authError || !authData?.user) {
-          throw new Error(authError?.message || "Supabase Auth sign-in failed.");
+        // The login bridge now returns a real Auth session after verifying the PIN.
+        // Prefer it directly so mobile browsers do not lose the session between the
+        // Edge Function password sync and the second browser-side password login.
+        let authUser = loginResult?.session?.user || null;
+        if (loginResult?.session?.access_token && loginResult?.session?.refresh_token) {
+          const { data: sessionData, error: sessionError } = await supabaseClient.auth.setSession({
+            access_token: loginResult.session.access_token,
+            refresh_token: loginResult.session.refresh_token
+          });
+          if (sessionError || !sessionData?.user) {
+            throw new Error(sessionError?.message || "Supabase Auth session could not be established.");
+          }
+          authUser = sessionData.user;
+        } else {
+          const authPassword = deriveStaffAuthPassword(loginResult.staff.id, pinVal);
+          const { data: authData, error: authError } = await supabaseClient.auth.signInWithPassword({
+            email: loginResult.staff.email,
+            password: authPassword
+          });
+          if (authError || !authData?.user) {
+            throw new Error(authError?.message || "Supabase Auth sign-in failed.");
+          }
+          authUser = authData.user;
         }
 
         const matched = {
