@@ -796,7 +796,8 @@
 
             // Each role uses an isolated pre-auth client. Teacher/Admin clients
             // are non-persisting, while Student uses anonymous RPCs. Do not
-            // sign out here: there is no pre-auth session to revoke.            if (role === "teacher") {
+            // sign out here: there is no pre-auth session to revoke.
+            if (role === "teacher") {
               var loginId = String(document.getElementById("teacher-login-id")?.value || "").trim();
               var pin = String(document.getElementById("teacher-login-pin")?.value || "").trim();
               if (!loginId || !/^\d{4}$/.test(pin)) throw new Error("Enter your Employee ID/email and exactly 4 digits.");
