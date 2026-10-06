@@ -3312,6 +3312,26 @@ function closeStudentDashboardSection(){
 async function submitStudentLeave(event){event.preventDefault();const s=currentAuthUser?.studentRecord;if(!s||!supabaseClient)return;const {data,error}=await supabaseClient.rpc("student_submit_leave",{p_enroll_no:s.enroll_no,p_dob_password:document.getElementById("student-leave-dob").value,p_from_date:document.getElementById("student-leave-from").value,p_to_date:document.getElementById("student-leave-to").value,p_reason:document.getElementById("student-leave-reason").value});if(error||!data?.success)return showToast(data?.message||error?.message||"Leave request failed.","error");showToast("Leave request submitted.","success");await refreshStudentPortalData();}
 async function refreshStudentPortalData(){const s=currentAuthUser?.studentRecord;if(!s)return;const dob=document.getElementById("student-leave-dob")?.value||"";if(!/^[0-9]{8}$/.test(dob))return;const {data}=await supabaseClient.rpc("student_portal_bundle",{p_enroll_no:s.enroll_no,p_dob_password:dob});if(data?.success){currentAuthUser.portalData=data;populateStudentPortal(s);}}
 
+    function scaleStudentIdCardPreview(){
+      const preview=document.getElementById("student-id-card-preview");
+      const card=preview?.querySelector(".student-id-preview-card");
+      if(!preview||!card)return;
+      const vw=window.innerWidth;
+      const vh=window.innerHeight;
+      // Leave enough room for the modal controls and safe-area padding.
+      const availableW=Math.max(240,vw-24);
+      const availableH=Math.max(360,vh-150);
+      const cardWidth=54*3.779527559;
+      const cardHeight=85.6*3.779527559;
+      const scale=Math.min(availableW/cardWidth,availableH/cardHeight,3);
+      card.style.transform="scale("+scale+")";
+      card.style.transformOrigin="top center";
+      preview.style.width=(cardWidth*scale)+"px";
+      preview.style.height=(cardHeight*scale)+"px";
+      preview.style.overflow="visible";
+    }
+
+
     async function createStudentPortalIdCard(){
       // Student ID card must use the student's own portal record, never staff/teacher data.
       const s=currentAuthUser?.portalData?.student||currentAuthUser?.studentRecord;
@@ -3347,10 +3367,13 @@ async function refreshStudentPortalData(){const s=currentAuthUser?.studentRecord
       }
       preview.innerHTML=makeStudentIdCardHtml(s,photoUrl);
       // QR is optional enhancement. Never wait for the external QR library before showing the card.
-      renderStudentCardQr(preview.querySelector("[data-student-qr]"),s);
+      const qrHost=preview.querySelector("[data-student-qr]");
+      renderStudentCardQr(qrHost,s);
       if(typeof QRCode==="undefined"){
-        ensureQRCodeLibrary().then(()=>renderStudentCardQr(preview.querySelector("[data-student-qr]"),s)).catch(()=>{});
+        ensureQRCodeLibrary().then(()=>renderStudentCardQr(qrHost,s)).catch(()=>{});
       }
+      requestAnimationFrame(scaleStudentIdCardPreview);
+      window.setTimeout(scaleStudentIdCardPreview,120);
     }
 async function handleTeacherLogin(event) {
       event.preventDefault();
@@ -4076,12 +4099,38 @@ async function saveTeacherStudentAttendance(){
     }
     function renderStudentCardQr(container,student){
       if(!container)return;
-      if(typeof QRCode==="undefined"){container.innerHTML='<span class="text-[7px] text-slate-400">QR</span>';return;}
+      // Always clear the target first. This prevents duplicate QR canvases/images
+      // when the preview is re-rendered or the QR library loads asynchronously.
+      container.replaceChildren();
+      if(typeof QRCode==="undefined"){
+        container.innerHTML='<span class="text-[7px] text-slate-400">QR</span>';
+        return;
+      }
       try{
-        container.innerHTML="";
-        new QRCode(container,{text:"ASHIANA|STUDENT|"+String(student.enroll_no||"")+"|"+String(student.student_name||""),width:52,height:52,colorDark:"#064e3b",colorLight:"#ffffff",correctLevel:QRCode.CorrectLevel.M});
-      }catch(e){container.innerHTML='<span class="text-[7px] text-slate-400">QR</span>';}
+        const qrText="ASHIANA|STUDENT|"+String(student.enroll_no||"")+"|"+String(student.student_name||"");
+        new QRCode(container,{
+          text:qrText,
+          width:52,
+          height:52,
+          colorDark:"#064e3b",
+          colorLight:"#ffffff",
+          correctLevel:QRCode.CorrectLevel.M
+        });
+        // qrcode.js variants may create more than one rendering node.
+        // Keep exactly one visual QR element.
+        const nodes=Array.from(container.querySelectorAll("canvas,img"));
+        nodes.slice(1).forEach(node=>node.remove());
+        const first=nodes[0];
+        if(first){
+          first.style.width="10mm";
+          first.style.height="10mm";
+          first.style.display="block";
+        }
+      }catch(e){
+        container.innerHTML='<span class="text-[7px] text-slate-400">QR</span>';
+      }
     }
+
     function makeStudentIdCardHtml(s,photoUrl=''){
       const photo=photoUrl?'<img src="'+studentEscape(photoUrl)+'" alt="Student Photo">':'<div class="sid-photo-fallback">'+studentEscape(studentIdInitials(s))+'</div>';
       const val=(x)=>studentEscape(x||'—');
@@ -4122,7 +4171,11 @@ async function saveTeacherStudentAttendance(){
       let photo='';try{photo=await getStudentPhotoUrl(s);}catch(_){}
       preview.innerHTML=makeStudentIdCardHtml(s,photo);
       renderStudentCardQr(preview.querySelector('[data-student-qr]'),s);
+      requestAnimationFrame(scaleStudentIdCardPreview);
+      window.setTimeout(scaleStudentIdCardPreview,120);
     }
+    window.addEventListener("resize",()=>{if(!document.getElementById("student-id-card-preview-modal")?.classList.contains("hidden"))scaleStudentIdCardPreview();});
+
     function closeStudentIdCardPreview(event){if(event&&event.target&&event.target.id!=='student-id-card-preview-modal')return;const modal=document.getElementById('student-id-card-preview-modal');if(modal){modal.classList.add('hidden');modal.classList.remove('flex');}document.body.classList.remove('overflow-hidden');currentStudentIdCardId=null;}
     async function printCurrentStudentIdCard(){
       if(!currentStudentIdCardId)return;
