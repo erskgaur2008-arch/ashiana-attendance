@@ -836,7 +836,7 @@
               }
 
               var staff = loginResult.staff;
-              var pendingStaffUser = {
+              currentAuthUser = {
                 type: "STAFF",
                 staffRecord: {
                   id: staff.id,
@@ -855,10 +855,14 @@
                   status: staff.status || "ACTIVE"
                 }
               };
-              sessionStorage.setItem("aps_current_auth_session_v1", JSON.stringify(pendingStaffUser));
-              sessionStorage.setItem("aps_login_handoff_v1", "STAFF");
+              currentStaffId = staff.id;
+              sessionStorage.setItem("aps_current_auth_session_v1", JSON.stringify(currentAuthUser));
               ashianaLoginMessage("Staff authentication successful. Opening your portal…", "success");
-              window.location.replace(window.location.href.split("#")[0]);
+              if (typeof window.__ashianaOpenAuthenticatedPortal === "function") {
+                window.__ashianaOpenAuthenticatedPortal("STAFF");
+              } else {
+                window.location.reload();
+              }
               return false;
             }
 
@@ -908,14 +912,14 @@
               // then let bootstrapApp() restore the Admin session and render the
               // console. Do not render the large dashboard directly from the
               // early login bridge.
-              var pendingAdminUser = {
+              currentAuthUser = {
                 type: "ADMIN",
                 username: adminEmail,
                 role: adminLookup.data.role
               };
-              sessionStorage.setItem("aps_current_auth_session_v1", JSON.stringify(pendingAdminUser));
+              currentStaffId = null;
+              sessionStorage.setItem("aps_current_auth_session_v1", JSON.stringify(currentAuthUser));
               sessionStorage.setItem("aps_admin_login_handoff_v1", "1");
-              sessionStorage.setItem("aps_login_handoff_v1", "ADMIN");
 
               ashianaLoginMessage("Administrator authentication successful. Opening console…", "success");
 
@@ -924,7 +928,13 @@
                 throw new Error("Administrator session was not persisted. Please try again.");
               }
 
-              window.location.replace(window.location.href.split("#")[0]);
+              if (typeof window.__ashianaOpenAuthenticatedPortal === "function") {
+                window.__ashianaOpenAuthenticatedPortal("ADMIN");
+              } else {
+                // The main app may still be booting. A reload is only a fallback;
+                // normally the central opener handles all three roles without it.
+                window.location.reload();
+              }
               return false;
             }
 
@@ -956,16 +966,20 @@
               // Supabase Auth session from the main client before reload so
               // restoreSupabaseSession cannot reopen the previous staff portal.
               await ashianaClearMainAuthStorage();
-              var pendingStudentUser = {
+              currentAuthUser = {
                 type: "STUDENT",
                 studentRecord: studentLogin.data.student,
                 portalData: bundle.data || {}
               };
-              localStorage.setItem("aps_student_session_v1", JSON.stringify(pendingStudentUser));
-              sessionStorage.setItem("aps_current_auth_session_v1", JSON.stringify(pendingStudentUser));
-              sessionStorage.setItem("aps_login_handoff_v1", "STUDENT");
+              currentStaffId = null;
+              localStorage.setItem("aps_student_session_v1", JSON.stringify(currentAuthUser));
+              sessionStorage.setItem("aps_current_auth_session_v1", JSON.stringify(currentAuthUser));
               ashianaLoginMessage("Student authentication successful. Opening portal…", "success");
-              window.location.replace(window.location.href.split("#")[0]);
+              if (typeof window.__ashianaOpenAuthenticatedPortal === "function") {
+                window.__ashianaOpenAuthenticatedPortal("STUDENT");
+              } else {
+                window.location.reload();
+              }
               return false;
             }
 
