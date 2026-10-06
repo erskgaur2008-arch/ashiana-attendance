@@ -880,26 +880,22 @@
                 throw new Error(authResult.error?.message || "Administrator sign-in failed.");
               }
 
-              const { data: adminRow, error: adminRowError } = await adminMainClient
-                .from("admin_users")
-                .select("email,role,active")
-                .ilike("email", adminEmail)
-                .eq("active", true)
-                .maybeSingle();
+              const { data: adminAuthz, error: adminAuthzError } =
+                await adminMainClient.rpc("authorize_admin_login");
 
-              if (adminRowError) {
+              if (adminAuthzError) {
                 await adminMainClient.auth.signOut({ scope: "local" });
-                throw new Error("Administrator authorization check failed: " + (adminRowError.message || "Database error"));
+                throw new Error("Administrator authorization check failed: " + (adminAuthzError.message || "Database error"));
               }
-              if (!adminRow) {
+              if (!adminAuthz?.authorized) {
                 await adminMainClient.auth.signOut({ scope: "local" });
                 throw new Error("This Supabase account is not authorized as an Administrator.");
               }
 
               var pendingAdminUser = {
                 type: "ADMIN",
-                username: adminRow.email || adminEmail,
-                role: adminRow.role || "ADMIN"
+                username: adminAuthz.email || adminEmail,
+                role: adminAuthz.role || "ADMIN"
               };
 
               sessionStorage.setItem("aps_current_auth_session_v1", JSON.stringify(pendingAdminUser));
@@ -3213,15 +3209,14 @@
         // Admin authorization uses the same SECURITY DEFINER RPC as the
         // login bridge. This avoids fragile client-side RLS checks and keeps
         // the Admin role decision server-authoritative.
-        const { data: adminRow, error: adminRowError } =
-          await supabaseClient.from('admin_users')
-            .select('email,role,active').ilike('email', email).eq('active', true).maybeSingle();
+        const { data: adminAuthz, error: adminAuthzError } =
+          await supabaseClient.rpc('authorize_admin_login');
 
-        if (!adminRowError && adminRow) {
+        if (!adminAuthzError && adminAuthz?.authorized) {
           currentAuthUser = {
             type: 'ADMIN',
-            username: adminRow.email || email,
-            role: adminRow.role || 'ADMIN'
+            username: adminAuthz.email || email,
+            role: adminAuthz.role || 'ADMIN'
           };
           currentStaffId = null;
           sessionStorage.setItem(STORAGE_KEY_CURRENT_USER, JSON.stringify(currentAuthUser));
@@ -3238,7 +3233,7 @@
           sessionStorage.removeItem("aps_admin_login_handoff_v1");
           sessionStorage.removeItem("aps_login_handoff_v1");
           throw new Error(
-            adminRowError?.message || "Administrator authorization could not be verified."
+            adminAuthzError?.message || "Administrator authorization could not be verified."
           );
         }
 
@@ -4472,18 +4467,22 @@ async function handleTeacherLogin(event) {
         });
         if (error || !data?.user) throw new Error(error?.message || "Administrator sign-in failed.");
 
-        const { data: adminRow, error: adminError } = await supabaseClient
-          .from('admin_users')
-          .select('email,role,active')
-          .ilike('email', userVal)
-          .eq('active', true)
-          .maybeSingle();
-        if (adminError || !adminRow) {
+        const { data: adminAuthz, error: adminAuthzError } =
+          await supabaseClient.rpc('authorize_admin_login');
+        if (adminAuthzError) {
+          await supabaseClient.auth.signOut({ scope: 'local' });
+          throw new Error("Administrator authorization check failed: " + (adminAuthzError.message || "Database error"));
+        }
+        if (!adminAuthz?.authorized) {
           await supabaseClient.auth.signOut({ scope: 'local' });
           throw new Error("Administrator account is not authorized.");
         }
 
-        currentAuthUser = { type: 'ADMIN', username: userVal, role: adminRow.role };
+        currentAuthUser = {
+          type: 'ADMIN',
+          username: adminAuthz.email || userVal,
+          role: adminAuthz.role || 'ADMIN'
+        };
         currentStaffId = null;
         sessionStorage.setItem(STORAGE_KEY_CURRENT_USER, JSON.stringify(currentAuthUser));
         await syncAllDataFromSupabase(false);
