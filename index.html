@@ -1512,6 +1512,7 @@
         <button type="button" id="admin-nav-reports" onclick="window.switchAdminTab('reports')"><i data-lucide="file-spreadsheet"></i><span>Reports</span></button>
         <button type="button" id="admin-nav-leave" onclick="window.switchAdminTab('leave')" title="Faculty Leave Applications"><i data-lucide="calendar-check"></i><span>Leaves</span></button>
         <button type="button" id="admin-nav-corrections" onclick="window.switchAdminTab('corrections')" title="Manual Attendance Corrections"><i data-lucide="file-pen"></i><span>Corrections</span></button>
+        <button type="button" id="admin-nav-student-attendance" onclick="openAdminStudentAttendanceRecordsModal()" title="View Students Attendance"><i data-lucide="clipboard-check"></i><span>View Students Attendance</span></button>
       </div>
 
       <!-- Top KPI Row -->
@@ -1738,26 +1739,6 @@
       <p id="admin-assignment-status" class="text-xs mt-2"></p><div id="admin-assignment-list" class="mt-3 grid grid-cols-1 lg:grid-cols-2 gap-2"></div>
     </div>
     <p id="admin-student-status" class="text-xs mt-3"></p>
-  <div class="mt-4 pt-4 border-t border-slate-200">
-    <div class="flex flex-wrap items-center justify-between gap-2">
-      <div><h4 class="font-bold text-slate-800">Student Attendance</h4><p class="text-[10px] text-slate-500">Attendance marked by teachers. Click below to view records.</p></div>
-      <button type="button" onclick="toggleAdminStudentAttendancePanel()" class="px-4 py-2 bg-emerald-900 hover:bg-emerald-950 text-white rounded-xl text-xs font-bold flex items-center gap-1.5 shadow-sm">
-        <i data-lucide="eye" class="w-3.5 h-3.5"></i><span>View Attendance</span>
-      </button>
-    </div>
-    <div id="admin-student-attendance-panel" class="hidden mt-3 rounded-2xl border border-slate-200 bg-slate-50 p-3">
-      <div class="flex flex-wrap items-center gap-2">
-        <label class="text-xs font-bold">Date</label>
-        <input id="admin-student-att-date" type="date" class="p-2 border rounded-xl text-xs">
-        <input id="admin-student-att-class" placeholder="Class" class="p-2 border rounded-xl text-xs">
-        <input id="admin-student-att-section" placeholder="Section" class="p-2 border rounded-xl text-xs w-24">
-        <button type="button" onclick="loadAdminStudentAttendance()" class="px-3 py-2 bg-emerald-900 hover:bg-emerald-950 text-white rounded-xl text-xs font-bold">Load</button>
-      </div>
-      <p id="admin-student-att-status" class="text-xs mt-2"></p>
-      <div class="overflow-x-auto mt-2"><table class="w-full text-xs text-left bg-white"><thead class="bg-slate-100"><tr><th class="p-2">Enroll</th><th class="p-2">Student</th><th class="p-2">Class</th><th class="p-2">Section</th><th class="p-2">Attendance</th><th class="p-2">Marked By</th></tr></thead><tbody id="admin-student-att-tbody"></tbody></table></div>
-    </div>
-  </div>
-
     <div class="mt-4 border-t pt-3">
       <div class="flex flex-wrap items-center justify-between gap-2 mb-2">
         <div>
@@ -1774,6 +1755,25 @@
       </div>
     </div>
   </div>
+<div id="admin-student-attendance-records-modal" class="hidden fixed inset-0 z-[170] bg-slate-950/70 backdrop-blur-sm p-2 sm:p-5 overflow-y-auto" onclick="closeAdminStudentAttendanceRecordsModal(event)">
+  <div class="max-w-7xl mx-auto bg-white rounded-2xl shadow-2xl overflow-hidden" onclick="event.stopPropagation()">
+    <div class="p-4 bg-emerald-950 text-white flex items-center justify-between">
+      <div><h3 class="font-black">Students Attendance</h3><p class="text-[10px] text-emerald-200">Attendance marked by teachers</p></div>
+      <button type="button" onclick="closeAdminStudentAttendanceRecordsModal()" class="w-9 h-9 rounded-xl bg-white/10 hover:bg-white/20">✕</button>
+    </div>
+    <div class="p-3 space-y-3">
+      <div class="flex flex-wrap items-center gap-2">
+        <label class="text-xs font-bold">Date</label>
+        <input id="admin-student-att-date" type="date" class="p-2 border rounded-xl text-xs">
+        <input id="admin-student-att-class" placeholder="Class" class="p-2 border rounded-xl text-xs">
+        <input id="admin-student-att-section" placeholder="Section" class="p-2 border rounded-xl text-xs w-24">
+        <button type="button" onclick="loadAdminStudentAttendance()" class="px-3 py-2 bg-emerald-900 hover:bg-emerald-950 text-white rounded-xl text-xs font-bold">Load</button>
+      </div>
+      <p id="admin-student-att-status" class="text-xs mt-2"></p>
+      <div class="overflow-x-auto border border-slate-200 rounded-xl"><table class="w-full text-xs text-left bg-white"><thead class="bg-slate-100"><tr><th class="p-2">Enroll</th><th class="p-2">Student</th><th class="p-2">Class</th><th class="p-2">Section</th><th class="p-2">Attendance</th><th class="p-2">Marked By</th></tr></thead><tbody id="admin-student-att-tbody"></tbody></table></div>
+    </div>
+  </div>
+</div>
 <div id="admin-student-attendance-report-modal" class="hidden fixed inset-0 z-[160] bg-slate-950/70 backdrop-blur-sm p-2 sm:p-5 overflow-y-auto"><div class="max-w-7xl mx-auto bg-white rounded-2xl shadow-2xl overflow-hidden"><div class="p-4 bg-emerald-950 text-white flex items-center justify-between"><div><h3 class="font-black">Students Attendance Report</h3><p class="text-[10px] text-emerald-200">Class-wise attendance summary</p></div><button type="button" onclick="closeAdminStudentAttendanceReport()" class="w-9 h-9 rounded-xl bg-white/10">✕</button></div><div class="p-3 space-y-3"><div class="flex flex-wrap items-center gap-2"><label class="text-xs font-bold">Attendance Date</label><input id="admin-student-report-date" type="date" class="p-2 border rounded-xl text-xs"><button type="button" onclick="loadAdminStudentAttendanceReport()" class="px-4 py-2 bg-emerald-800 text-white rounded-xl text-xs font-bold">Generate</button><button type="button" onclick="printAdminStudentAttendanceReport()" class="px-4 py-2 bg-slate-800 text-white rounded-xl text-xs font-bold">Print</button></div><p id="admin-student-report-status" class="text-xs text-slate-500"></p><div class="overflow-x-auto border border-slate-300"><table id="admin-student-attendance-report-table" class="w-full border-collapse text-[10px] sm:text-xs"><thead class="text-center font-bold"><tr><th rowspan="2" class="border border-slate-500 px-2 py-2 bg-[#0b4054] text-white">Sr</th><th rowspan="2" class="border border-slate-500 px-3 py-2 bg-[#0b4054] text-white">Class</th><th colspan="7" class="border border-slate-500 px-2 py-2 bg-emerald-700 text-white">Present</th><th colspan="7" class="border border-slate-500 px-2 py-2 bg-rose-600 text-white">Absent</th><th colspan="2" class="border border-slate-500 px-2 py-2 bg-[#0b4054] text-white">Total</th></tr><tr><th class="border border-slate-500">M</th><th class="border border-slate-500">F</th><th class="border border-slate-500">TG</th><th class="border border-slate-500">G</th><th class="border border-slate-500">SC</th><th class="border border-slate-500">ST</th><th class="border border-slate-500">OBC</th><th class="border border-slate-500">M</th><th class="border border-slate-500">F</th><th class="border border-slate-500">TG</th><th class="border border-slate-500">G</th><th class="border border-slate-500">SC</th><th class="border border-slate-500">ST</th><th class="border border-slate-500">OBC</th><th class="border border-slate-500">M</th><th class="border border-slate-500">F</th></tr></thead><tbody id="admin-student-report-tbody"></tbody><tfoot id="admin-student-report-tfoot"></tfoot></table></div></div></div></div><div id="student-edit-modal" class="hidden fixed inset-0 z-[85] bg-slate-950/60 backdrop-blur-sm p-4 overflow-y-auto">
   <div class="max-w-2xl mx-auto bg-white rounded-2xl shadow-2xl mt-6">
     <div class="p-4 border-b flex items-center justify-between"><div><h3 class="font-bold">Edit Student Details</h3><p class="text-[10px] text-slate-500">Update student profile, parent/contact details and photo.</p></div><button type="button" onclick="closeStudentEditModal()" class="p-2 rounded-lg hover:bg-slate-100">✕</button></div>
@@ -5811,6 +5811,22 @@ async function loadAdminStudentAttendanceReport(){
   }catch(e){status.textContent="Unable to load report: "+(e?.message||e);showToast("Unable to load students attendance report: "+(e?.message||e),"error");}
 }
 function printAdminStudentAttendanceReport(){const t=document.getElementById("admin-student-attendance-report-table"),d=document.getElementById("admin-student-report-date")?.value||"",w=window.open("","_blank");if(!t||!w)return;w.document.write('<html><head><title>Students Attendance Report</title><style>body{font-family:Arial;padding:10px}h2,p{text-align:center}table{width:100%;border-collapse:collapse;font-size:10px}th,td{border:1px solid #555;padding:4px;text-align:center}</style></head><body><h2>ASHIANA PUBLIC SCHOOL</h2><p>Students Attendance Report • '+d+'</p>'+t.outerHTML+'</body></html>');w.document.close();w.focus();setTimeout(()=>w.print(),300);}
+function openAdminStudentAttendanceRecordsModal(){
+  if(currentAuthUser?.type!=='ADMIN')return;
+  const m=document.getElementById('admin-student-attendance-records-modal');
+  const d=document.getElementById('admin-student-att-date');
+  if(d&&!d.value)d.value=studentDateToday();
+  m?.classList.remove('hidden');
+  document.body.classList.add('overflow-hidden');
+  loadAdminStudentAttendance();
+  if(window.lucide)lucide.createIcons();
+}
+function closeAdminStudentAttendanceRecordsModal(event){
+  if(event && event.target!==event.currentTarget)return;
+  document.getElementById('admin-student-attendance-records-modal')?.classList.add('hidden');
+  document.body.classList.remove('overflow-hidden');
+}
+
 function toggleAdminStudentAttendancePanel(){
   const panel=document.getElementById('admin-student-attendance-panel');
   if(!panel)return;
