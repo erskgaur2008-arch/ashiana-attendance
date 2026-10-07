@@ -9916,5 +9916,115 @@ window.addEventListener('load',async function(){
       bootstrapApp();
     }
   </script>
+
+<!-- AI Assistant v1: secure Gemini gateway. Student access remains disabled until student authentication is upgraded to a verifiable Auth session. -->
+<style>
+  #ashiana-ai-launcher{position:fixed;right:16px;bottom:18px;z-index:220;display:none;align-items:center;gap:8px;padding:11px 14px;border:0;border-radius:999px;background:#064e3b;color:#fff;font-size:12px;font-weight:900;box-shadow:0 10px 28px rgba(2,44,34,.28);cursor:pointer}
+  #ashiana-ai-launcher:hover{transform:translateY(-1px)}
+  #ashiana-ai-modal{position:fixed;inset:0;z-index:230;display:none;align-items:center;justify-content:center;padding:14px;background:rgba(2,44,34,.5);backdrop-filter:blur(4px)}
+  #ashiana-ai-modal.open{display:flex}
+  #ashiana-ai-card{width:min(94vw,620px);max-height:min(86dvh,760px);display:flex;flex-direction:column;overflow:hidden;background:#fff;border-radius:24px;box-shadow:0 24px 70px rgba(15,23,42,.25)}
+  #ashiana-ai-messages{flex:1;min-height:180px;max-height:52dvh;overflow-y:auto;padding:14px}
+  .ashiana-ai-msg{max-width:88%;padding:10px 12px;border-radius:16px;margin:6px 0;font-size:13px;line-height:1.55;white-space:pre-wrap}
+  .ashiana-ai-msg.user{margin-left:auto;background:#064e3b;color:#fff;border-bottom-right-radius:5px}
+  .ashiana-ai-msg.bot{margin-right:auto;background:#f1f5f9;color:#0f172a;border-bottom-left-radius:5px}
+  #ashiana-ai-input{min-height:44px;max-height:120px;resize:vertical}
+  @media(max-width:640px){#ashiana-ai-launcher{right:12px;bottom:12px}#ashiana-ai-card{width:100%;max-height:92dvh;border-radius:20px}#ashiana-ai-messages{max-height:60dvh}}
+</style>
+<button id="ashiana-ai-launcher" type="button" aria-label="Open AI Assistant">
+  <span>✦</span><span>AI Assistant</span>
+</button>
+<div id="ashiana-ai-modal" role="dialog" aria-modal="true" aria-labelledby="ashiana-ai-title">
+  <div id="ashiana-ai-card">
+    <div class="px-4 py-3 bg-gradient-to-r from-emerald-950 via-[#064E3B] to-emerald-800 text-white flex items-center justify-between gap-3">
+      <div>
+        <div id="ashiana-ai-title" class="font-extrabold text-base">Ashiana AI Assistant</div>
+        <div class="text-[10px] text-emerald-200">Gemini • General school and study help</div>
+      </div>
+      <button id="ashiana-ai-close" type="button" class="w-9 h-9 rounded-full bg-white/10 hover:bg-white/20 font-bold" aria-label="Close AI Assistant">×</button>
+    </div>
+    <div id="ashiana-ai-messages">
+      <div class="ashiana-ai-msg bot">Hello! I can help with homework explanations, study questions, writing, lesson ideas, notices, and general school tasks. Please do not enter passwords, PINs, admission numbers, DOBs, addresses, or other private information.</div>
+    </div>
+    <div class="px-3 pb-2 text-[10px] text-slate-500">AI answers can be wrong. Verify important information before using it.</div>
+    <form id="ashiana-ai-form" class="p-3 border-t bg-slate-50 flex gap-2 items-end">
+      <textarea id="ashiana-ai-input" class="flex-1 border border-slate-200 rounded-xl px-3 py-2 text-sm outline-none focus:ring-2 focus:ring-emerald-200" rows="2" maxlength="4000" placeholder="Ask something…" required></textarea>
+      <button id="ashiana-ai-send" type="submit" class="px-4 py-3 rounded-xl bg-emerald-700 text-white text-xs font-extrabold disabled:opacity-50">Send</button>
+    </form>
+  </div>
+</div>
+<script>
+(function(){
+  const launcher=document.getElementById("ashiana-ai-launcher");
+  const modal=document.getElementById("ashiana-ai-modal");
+  const close=document.getElementById("ashiana-ai-close");
+  const form=document.getElementById("ashiana-ai-form");
+  const input=document.getElementById("ashiana-ai-input");
+  const send=document.getElementById("ashiana-ai-send");
+  const messages=document.getElementById("ashiana-ai-messages");
+
+  function signedStaffUser(){
+    try{
+      return typeof currentAuthUser!=="undefined" && currentAuthUser &&
+        ["ADMIN","TEACHER","STAFF"].includes(String(currentAuthUser.type||"").toUpperCase());
+    }catch(_){return false;}
+  }
+  function refreshAiVisibility(){
+    if(launcher) launcher.style.display=signedStaffUser()?"flex":"none";
+    if(!signedStaffUser() && modal) modal.classList.remove("open");
+  }
+  function addMessage(text,type){
+    const el=document.createElement("div");
+    el.className="ashiana-ai-msg "+type;
+    el.textContent=String(text||"");
+    messages.appendChild(el);
+    messages.scrollTop=messages.scrollHeight;
+  }
+  function openAi(){
+    if(!signedStaffUser()) return;
+    modal.classList.add("open");
+    setTimeout(function(){input.focus();},50);
+  }
+  function closeAi(){modal.classList.remove("open");}
+  launcher?.addEventListener("click",openAi);
+  close?.addEventListener("click",closeAi);
+  modal?.addEventListener("click",function(e){if(e.target===modal)closeAi();});
+  document.addEventListener("keydown",function(e){if(e.key==="Escape")closeAi();});
+
+  form?.addEventListener("submit",async function(e){
+    e.preventDefault();
+    if(!signedStaffUser()) return;
+    const message=String(input.value||"").trim();
+    if(!message)return;
+    addMessage(message,"user");
+    input.value="";
+    send.disabled=true;
+    addMessage("Thinking…","bot");
+    const pending=messages.lastElementChild;
+    try{
+      if(!window.supabaseClient?.functions?.invoke) throw new Error("Supabase client is not ready. Please try again.");
+      const result=await window.supabaseClient.functions.invoke("ai-assistant",{body:{message:message}});
+      if(pending) pending.remove();
+      if(result.error){
+        let detail=result.error.message||"AI request failed.";
+        try{
+          if(result.error.context){const payload=await result.error.context.clone().json();detail=payload?.message||payload?.error||detail;}
+        }catch(_){}
+        throw new Error(detail);
+      }
+      addMessage(result.data?.answer||"I could not generate an answer. Please try again.","bot");
+    }catch(err){
+      if(pending) pending.remove();
+      addMessage("AI is not available right now: "+(err?.message||"Please try again."),"bot");
+    }finally{
+      send.disabled=false;
+      input.focus();
+    }
+  });
+
+  refreshAiVisibility();
+  setInterval(refreshAiVisibility,1200);
+})();
+</script>
 </body>
 </html>
