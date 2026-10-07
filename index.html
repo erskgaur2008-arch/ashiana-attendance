@@ -4553,6 +4553,12 @@ async function handleStudentLogin(event){
   if(Number.isNaN(d.getTime()))return String(value);
   return d.toLocaleString("en-IN",{day:"2-digit",month:"short",year:"numeric",hour:"2-digit",minute:"2-digit"});
 }
+function formatStudentHomeworkDueDate(value){
+  if(!value)return "—";
+  const d=new Date(value+"T00:00:00");
+  if(Number.isNaN(d.getTime()))return String(value);
+  return d.toLocaleDateString("en-IN",{day:"2-digit",month:"short",year:"numeric"});
+}
 function populateStudentPortal(s){if(!s)return;const set=(id,v)=>{const e=document.getElementById(id);if(e)e.textContent=v||"—";};set("student-portal-name",s.student_name);set("student-portal-class","Class "+(s.class_name||"—")+" • Section "+(s.section||"—"));set("student-portal-admission",s.enroll_no);set("student-portal-roll",s.roll_no);set("student-portal-section",s.section);set("student-portal-category",s.category);set("student-portal-dob",s.dob?new Date(s.dob+"T00:00:00").toLocaleDateString("en-IN",{day:"2-digit",month:"short",year:"numeric"}):"—");set("student-portal-father",s.father_name);set("student-portal-mother",s.mother_name);set("student-portal-phone",s.phone_number);set("student-portal-address",s.address);const av=document.getElementById("student-portal-avatar-content");if(av){av.textContent=(s.student_name||"ST").split(/\s+/).map(x=>x[0]).join("").slice(0,2).toUpperCase();getStudentPhotoUrl(s).then(url=>{if(url)av.innerHTML='<img src="'+studentEscape(url)+'" class="w-full h-full object-cover" alt="Student photo">';}).catch(()=>{});}const d=currentAuthUser?.portalData||{};document.getElementById("student-count-notices").textContent=(d.notices||[]).length+" notices";document.getElementById("student-count-attendance").textContent=(d.attendance||[]).length+" records";document.getElementById("student-count-homework").textContent=(d.homework||[]).length+" items";document.getElementById("student-count-report").textContent=(d.report_cards||[]).length+" published";}
 
 async function studentDashboardSection(type){
@@ -4604,7 +4610,7 @@ async function studentDashboardSection(type){
     host.innerHTML='<div class="grid grid-cols-3 gap-2"><div class="p-4 bg-emerald-50 rounded-2xl border"><b class="text-lg">'+present+'</b><span class="block text-[10px]">Present</span></div><div class="p-4 bg-rose-50 rounded-2xl border"><b class="text-lg">'+abs+'</b><span class="block text-[10px]">Absent</span></div><div class="p-4 bg-amber-50 rounded-2xl border"><b class="text-lg">'+leave+'</b><span class="block text-[10px]">Leave</span></div></div>'+(a.map(x=>'<div class="flex justify-between bg-white border rounded-xl px-4 py-3"><span>'+studentEscape(x.attendance_date)+'</span><b>'+studentEscape(x.status)+'</b></div>').join("")||'<div class="p-6 bg-white border rounded-2xl text-center text-slate-400">No attendance records.</div>');
   }else if(type==="homework"){
     const homework=fresh.homework||[];
-    host.innerHTML=homework.map(x=>'<article class="p-4 sm:p-5 bg-white border border-slate-200 rounded-2xl shadow-sm"><div class="flex items-start justify-between gap-3"><div class="min-w-0 flex-1"><div class="flex flex-wrap items-center gap-2"><span class="px-2 py-1 rounded-lg bg-blue-50 text-blue-700 text-[10px] font-extrabold">'+studentEscape(x.subject_name||"Subject")+'</span><span class="text-[10px] text-slate-400">Due: '+studentEscape(formatStudentPortalDate(x.due_date||""))+'</span></div><h4 class="mt-2 text-base sm:text-lg font-extrabold text-slate-900 break-words leading-snug">'+studentEscape(x.title)+'</h4><div class="mt-3 text-[13px] sm:text-sm text-slate-700 whitespace-pre-wrap break-words leading-7">'+studentEscape(x.description||"")+'</div></div></div></article>').join("")||'<div class="p-6 bg-white border rounded-2xl text-center text-slate-400">No homework.</div>';
+    host.innerHTML=homework.map(x=>'<article class="p-4 sm:p-5 bg-white border border-slate-200 rounded-2xl shadow-sm"><div class="flex items-start justify-between gap-3"><div class="min-w-0 flex-1"><div class="flex flex-wrap items-center gap-2"><span class="px-2 py-1 rounded-lg bg-blue-50 text-blue-700 text-[10px] font-extrabold">'+studentEscape(x.subject_name||"Subject")+'</span><span class="text-[10px] text-slate-400">Due: '+studentEscape(formatStudentHomeworkDueDate(x.due_date||""))+'</span></div><h4 class="mt-2 text-base sm:text-lg font-extrabold text-slate-900 break-words leading-snug">'+studentEscape(x.title)+'</h4><div class="mt-3 text-[13px] sm:text-sm text-slate-700 whitespace-pre-wrap break-words leading-7">'+studentEscape(x.description||"")+'</div></div></div></article>').join("")||'<div class="p-6 bg-white border rounded-2xl text-center text-slate-400">No homework.</div>';
   }else if(type==="timetable"){
     const days=["","Monday","Tuesday","Wednesday","Thursday","Friday","Saturday","Sunday"];
     host.innerHTML=(fresh.timetable||[]).map(x=>'<div class="flex gap-3 bg-white border rounded-xl px-4 py-3"><b class="w-20">'+days[x.day_of_week]+'</b><span>Period '+x.period_no+' · '+studentEscape(x.subject_name)+' · '+studentEscape(x.teacher_name||"")+' '+studentEscape(x.room||"")+'</span></div>').join("")||'<div class="p-6 bg-white border rounded-2xl text-center text-slate-400">No timetable published.</div>';
@@ -5488,7 +5494,7 @@ async function handleTeacherLogin(event) {
 
     // Student attendance feature; Supabase RLS is the authorization boundary.
     const APS_STUDENT_SCHOOL='ashiana';
-    let teacherStudentAssignments=[], teacherStudentRows=[], adminStudentRows=[];
+    let teacherStudentAssignments=[], teacherAttendanceClasses=[], teacherStudentRows=[], adminStudentRows=[];
     function studentDateToday(){const d=new Date();return d.getFullYear()+'-'+String(d.getMonth()+1).padStart(2,'0')+'-'+String(d.getDate()).padStart(2,'0');}
     function studentEscape(v){return String(v??'').replace(/[&<>"']/g,ch=>({'&':'&amp;','<':'&lt;','>':'&gt;','"':'&quot;',"'":'&#39;'}[ch]));}
     let studentQrScannerInstance=null;
@@ -5628,84 +5634,39 @@ async function handleTeacherLogin(event) {
 
 
     async function loadTeacherStudentAssignments(){
-      const sel=document.getElementById('teacher-student-class');
-      const host=document.getElementById('teacher-student-list');
+      const sel=document.getElementById('teacher-student-class'),host=document.getElementById('teacher-student-list');
       if(!sel||!supabaseClient||!canAccessStudentAttendance())return;
       sel.innerHTML='<option value="">Loading classes…</option>';
       try{
         const {data:authData,error:authError}=await supabaseClient.auth.getUser();
         if(authError||!authData?.user)throw Error('Your cloud session has expired. Please sign in again.');
-        const authEmail=String(authData.user.email||'').trim().toLowerCase();
-        const staffEmail=String(currentAuthUser?.staffRecord?.email||'').trim().toLowerCase();
-        const emails=[...new Set([authEmail,staffEmail].filter(Boolean))];
+        const authEmail=String(authData.user.email||'').trim().toLowerCase(),staffEmail=String(currentAuthUser?.staffRecord?.email||'').trim().toLowerCase(),emails=[...new Set([authEmail,staffEmail].filter(Boolean))];
         if(!emails.length)throw Error('Staff email is unavailable.');
-
-        const [classResult,subjectResult]=await Promise.all([
-          supabaseClient.from('student_class_assignments')
-            .select('class_name,section')
-            .eq('school_code',APS_STUDENT_SCHOOL).in('teacher_email',emails).eq('active',true)
-            .order('class_name').order('section'),
-          supabaseClient.from('student_subject_assignments')
-            .select('class_name,section,subject_name')
-            .eq('school_code',APS_STUDENT_SCHOOL).in('teacher_email',emails).eq('active',true)
-            .order('class_name').order('section').order('subject_name')
+        const [classResult,subjectResult,allClassResult]=await Promise.all([
+          supabaseClient.from('student_class_assignments').select('class_name,section').eq('school_code',APS_STUDENT_SCHOOL).in('teacher_email',emails).eq('active',true).order('class_name').order('section'),
+          supabaseClient.from('student_subject_assignments').select('class_name,section,subject_name').eq('school_code',APS_STUDENT_SCHOOL).in('teacher_email',emails).eq('active',true).order('class_name').order('section').order('subject_name'),
+          supabaseClient.rpc('teacher_attendance_classes')
         ]);
-        if(classResult.error)throw classResult.error;
-        if(subjectResult.error)throw subjectResult.error;
-
+        if(classResult.error)throw classResult.error;if(subjectResult.error)throw subjectResult.error;if(allClassResult.error)throw allClassResult.error;
         const merged=new Map();
-        (classResult.data||[]).forEach(a=>{
-          const key=String(a.class_name||'').trim()+'|'+String(a.section||'').trim();
-          if(!key||key==='|')return;
-          merged.set(key,{class_name:String(a.class_name||'').trim(),section:String(a.section||'').trim(),isClassTeacher:true,subjects:[]});
-        });
-        (subjectResult.data||[]).forEach(a=>{
-          const cls=String(a.class_name||'').trim(),sec=String(a.section||'').trim(),sub=String(a.subject_name||'').trim();
-          const key=cls+'|'+sec;
-          if(!cls||!sec)return;
-          const row=merged.get(key)||{class_name:cls,section:sec,isClassTeacher:false,subjects:[]};
-          if(sub&&!row.subjects.some(x=>x.toLowerCase()===sub.toLowerCase()))row.subjects.push(sub);
-          merged.set(key,row);
-        });
-
-        teacherStudentAssignments=[...merged.values()].sort((a,b)=>
-          String(a.class_name).localeCompare(String(b.class_name),undefined,{numeric:true})||
-          String(a.section).localeCompare(String(b.section),undefined,{numeric:true})
-        );
-
-        const classTeacher=teacherStudentAssignments.some(a=>a.isClassTeacher);
-        const attendanceQr=document.getElementById('teacher-student-qr-btn');
-        const attendanceSave=document.getElementById('teacher-student-save-btn');
-        const attendanceHelp=document.getElementById('teacher-student-attendance-help');
-        if(attendanceQr)attendanceQr.classList.toggle('hidden',!classTeacher);
-        if(attendanceSave)attendanceSave.classList.toggle('hidden',!classTeacher);
-        if(attendanceHelp)attendanceHelp.textContent=classTeacher?'Scan student ID cards or use the manual list to mark attendance.':'View attendance for your assigned class. Marking attendance is restricted to Class Teachers.';
-        const leaveSection=document.getElementById('teacher-student-leave-section');
-        const leaveQuick=document.getElementById('teacher-student-leave-quick-btn');
-        if(leaveSection)leaveSection.classList.toggle('hidden',!classTeacher);
-        if(leaveQuick)leaveQuick.classList.toggle('hidden',!classTeacher);
-
-        if(!teacherStudentAssignments.length){
-          sel.innerHTML='<option value="">No assigned classes found</option>';
-          if(host)host.textContent='No active student classes are assigned to your teacher account.';
-          return;
-        }
-
-        sel.innerHTML='<option value="">Select assigned class</option>'+
-          teacherStudentAssignments.map((a,i)=>{
-            const subjectLabel=!a.isClassTeacher&&a.subjects.length?' • '+a.subjects.join(', '):'';
-            return '<option value="'+i+'">'+studentEscape(a.class_name)+' - '+studentEscape(a.section)+studentEscape(subjectLabel)+'</option>';
-          }).join('');
-
-        if(teacherStudentAssignments.length===1){
-          sel.value='0';
-          await loadTeacherStudentAttendance();
-        }
-      }catch(e){
-        console.error('Teacher class/subject assignment load failed:',e);
-        sel.innerHTML='<option value="">Unable to load assignments</option>';
-        if(host)host.textContent=e.message||'Could not load assigned classes.';
-      }
+        (classResult.data||[]).forEach(a=>{const cls=String(a.class_name||'').trim(),sec=String(a.section||'').trim(),key=cls+'|'+sec;if(cls&&sec)merged.set(key,{class_name:cls,section:sec,isClassTeacher:true,subjects:[]});});
+        (subjectResult.data||[]).forEach(a=>{const cls=String(a.class_name||'').trim(),sec=String(a.section||'').trim(),sub=String(a.subject_name||'').trim(),key=cls+'|'+sec;if(!cls||!sec)return;const row=merged.get(key)||{class_name:cls,section:sec,isClassTeacher:false,subjects:[]};if(sub&&!row.subjects.some(x=>x.toLowerCase()===sub.toLowerCase()))row.subjects.push(sub);merged.set(key,row);});
+        teacherStudentAssignments=[...merged.values()].sort((a,b)=>String(a.class_name).localeCompare(String(b.class_name),undefined,{numeric:true})||String(a.section).localeCompare(String(b.section),undefined,{numeric:true}));
+        teacherAttendanceClasses=(allClassResult.data||[]).map(a=>{const cls=String(a.class_name||'').trim(),sec=String(a.section||'').trim(),assignment=merged.get(cls+'|'+sec);return {class_name:cls,section:sec,isClassTeacher:!!assignment?.isClassTeacher};}).filter(a=>a.class_name&&a.section);
+        const classTeacher=teacherStudentAssignments.some(a=>a.isClassTeacher),qr=document.getElementById('teacher-student-qr-btn'),save=document.getElementById('teacher-student-save-btn');
+        if(qr)qr.classList.toggle('hidden',!classTeacher);if(save)save.classList.toggle('hidden',!classTeacher);
+        const leave=document.getElementById('teacher-student-leave-section'),leaveQuick=document.getElementById('teacher-student-leave-quick-btn');if(leave)leave.classList.toggle('hidden',!classTeacher);if(leaveQuick)leaveQuick.classList.toggle('hidden',!classTeacher);
+        if(!teacherAttendanceClasses.length){sel.innerHTML='<option value="">No active classes found</option>';if(host)host.textContent='No active student classes are available.';return;}
+        sel.innerHTML='<option value="">Select class & section</option>'+teacherAttendanceClasses.map((a,i)=>'<option value="'+i+'">'+studentEscape(a.class_name+' - '+a.section+(a.isClassTeacher?' • Class Teacher':' • View only'))+'</option>').join('');
+        if(teacherAttendanceClasses.length===1){sel.value='0';await loadTeacherStudentAttendance();}else if(host)host.textContent='Select a class to view attendance.';
+        updateTeacherAttendanceEditControls();
+      }catch(e){console.error('Teacher class/subject assignment load failed:',e);sel.innerHTML='<option value="">Unable to load classes</option>';if(host)host.textContent=e.message||'Could not load classes.';}
+    }
+    function updateTeacherAttendanceEditControls(){
+      const sel=document.getElementById('teacher-student-class'),a=teacherAttendanceClasses[Number(sel?.value)],canEdit=!!a?.isClassTeacher;
+      const qr=document.getElementById('teacher-student-qr-btn'),save=document.getElementById('teacher-student-save-btn'),help=document.getElementById('teacher-student-attendance-help');
+      if(qr)qr.classList.toggle('hidden',!canEdit);if(save)save.classList.toggle('hidden',!canEdit);
+      if(help)help.textContent=canEdit?'Class Teacher: mark and view attendance for this assigned class.':'View-only: this class can be viewed, but attendance cannot be marked.';
     }
     function teacherCanManageSubject(assignment,subject){
       if(!assignment)return false;
@@ -5745,71 +5706,35 @@ async function handleTeacherLogin(event) {
     }
     
 async function loadTeacherStudentAttendance(){
-      const sel=document.getElementById('teacher-student-class'),date=document.getElementById('teacher-student-date'),host=document.getElementById('teacher-student-list');if(!sel||!date||!host||!supabaseClient)return;const today=studentDateToday();date.value=today;date.min=today;date.max=today;
-      const a=teacherStudentAssignments[Number(sel.value)];if(!a){host.textContent='Select an assigned class.';return;}host.textContent='Loading students…';
-      try{const {data:students,error}=await supabaseClient.from('student_roster').select('id,enroll_no,student_name,class_name,section,roll_no,gender,category,status').eq('school_code',APS_STUDENT_SCHOOL).eq('class_name',a.class_name).eq('section',a.section).eq('status','ACTIVE').order('roll_no').order('student_name');if(error)throw error;teacherStudentRows=students||[];
-        const {data:marks,error:me}=await supabaseClient.from('student_attendance').select('student_id,status').eq('school_code',APS_STUDENT_SCHOOL).eq('attendance_date',date.value);if(me)throw me;const byId=Object.fromEntries((marks||[]).map(m=>[m.student_id,m.status]));const markedBadge=document.getElementById('teacher-student-marked-badge');if(markedBadge)markedBadge.textContent=(marks||[]).filter(m=>teacherStudentRows.some(s=>s.id===m.student_id)).length+' marked';
-        host.innerHTML=teacherStudentRows.length?teacherStudentRows.map(s=>'<div class="flex items-center gap-2 p-2 border rounded-xl"><div class="flex-1 min-w-0"><b class="text-xs">'+studentEscape(s.student_name)+'</b><p class="text-[10px] text-slate-500">Roll '+studentEscape(s.roll_no||'—')+' · '+studentEscape(s.gender||'—')+' · '+studentEscape(s.category||'—')+'</p></div><select data-student-id="'+s.id+'" class="student-attendance-status text-xs p-2 border rounded-lg"><option value="PRESENT" '+((byId[s.id]||'PRESENT')==='PRESENT'?'selected':'')+'>Present</option><option value="ABSENT" '+(byId[s.id]==='ABSENT'?'selected':'')+'>Absent</option><option value="LEAVE" '+(byId[s.id]==='LEAVE'?'selected':'')+'>Leave</option></select></div>').join(''):'<p class="text-xs text-slate-400 text-center py-5">No active students in this class.</p>';
-      }catch(e){host.textContent='Could not load students: '+(e.message||e);}
+      const sel=document.getElementById('teacher-student-class'),date=document.getElementById('teacher-student-date'),host=document.getElementById('teacher-student-list');if(!sel||!date||!host||!supabaseClient)return;
+      const today=studentDateToday();date.value=today;date.min=today;date.max=today;const a=teacherAttendanceClasses[Number(sel.value)];updateTeacherAttendanceEditControls();if(!a){host.textContent='Select a class to view attendance.';return;}host.textContent='Loading attendance…';
+      try{
+        let students=[],marks=[];
+        if(a.isClassTeacher){
+          const {data,error}=await supabaseClient.from('student_roster').select('id,enroll_no,student_name,class_name,section,roll_no,gender,category,status').eq('school_code',APS_STUDENT_SCHOOL).eq('class_name',a.class_name).eq('section',a.section).eq('status','ACTIVE').order('roll_no').order('student_name');if(error)throw error;students=data||[];
+          const {data:md,error:me}=await supabaseClient.from('student_attendance').select('student_id,status').eq('school_code',APS_STUDENT_SCHOOL).eq('attendance_date',date.value);if(me)throw me;marks=md||[];
+        }else{
+          const {data,error}=await supabaseClient.rpc('teacher_view_student_attendance',{p_class_name:a.class_name,p_section:a.section,p_attendance_date:date.value});if(error)throw error;students=(data||[]).map(x=>({...x,status:x.status||'ACTIVE'}));marks=students.filter(x=>x.attendance_status).map(x=>({student_id:x.id,status:x.attendance_status}));
+        }
+        teacherStudentRows=students;const byId=Object.fromEntries(marks.map(m=>[m.student_id,m.status])),badge=document.getElementById('teacher-student-marked-badge');if(badge)badge.textContent=marks.filter(m=>students.some(s=>s.id===m.student_id)).length+' marked';
+        host.innerHTML=students.length?students.map(st=>{const status=byId[st.id]||'NOT MARKED';if(!a.isClassTeacher){const cls=status==='PRESENT'?'bg-emerald-100 text-emerald-800':status==='ABSENT'?'bg-rose-100 text-rose-800':status==='LEAVE'?'bg-amber-100 text-amber-800':'bg-slate-100 text-slate-500';return '<div class="flex items-center gap-2 p-2 border rounded-xl"><div class="flex-1 min-w-0"><b class="text-xs">'+studentEscape(st.student_name)+'</b><p class="text-[10px] text-slate-500">Roll '+studentEscape(st.roll_no||'—')+' · '+studentEscape(st.gender||'—')+' · '+studentEscape(st.category||'—')+'</p></div><span class="px-2 py-1 rounded-full text-[9px] font-bold '+cls+'">'+studentEscape(status)+'</span></div>';}return '<div class="flex items-center gap-2 p-2 border rounded-xl"><div class="flex-1 min-w-0"><b class="text-xs">'+studentEscape(st.student_name)+'</b><p class="text-[10px] text-slate-500">Roll '+studentEscape(st.roll_no||'—')+' · '+studentEscape(st.gender||'—')+' · '+studentEscape(st.category||'—')+'</p></div><select data-student-id="'+st.id+'" class="student-attendance-status text-xs p-2 border rounded-lg"><option value="PRESENT" '+(status==='PRESENT'?'selected':'')+'>Present</option><option value="ABSENT" '+(status==='ABSENT'?'selected':'')+'>Absent</option><option value="LEAVE" '+(status==='LEAVE'?'selected':'')+'>Leave</option></select></div>';}).join(''):'<p class="text-xs text-slate-400 text-center py-5">No active students in this class.</p>';
+      }catch(e){host.textContent='Could not load attendance: '+(e.message||e);}
     }
     async function viewTeacherStudentAttendance(){
       if(!canAccessStudentAttendance()||!supabaseClient)return showToast('Student attendance is available to teaching staff only.','error');
-      const sel=document.getElementById('teacher-student-class'),date=document.getElementById('teacher-student-date');
-      const host=document.getElementById('teacher-attendance-viewer-body');
-      const modal=document.getElementById('teacher-attendance-viewer-modal');
-      const a=teacherStudentAssignments[Number(sel?.value)];
-      const selectedDate=studentDateToday();
-      if(date){date.value=selectedDate;date.min=selectedDate;date.max=selectedDate;}
-      if(!a)return showToast('Select an assigned class first.','error');
-      if(!host||!modal)return;
-      host.innerHTML='<div class="py-8 text-center text-slate-400 text-xs">Loading marked attendance…</div>';
-      modal.classList.remove('hidden');modal.classList.add('flex');
-      try{
-        const {data:students,error:studentError}=await supabaseClient.from('student_roster')
-          .select('id,enroll_no,student_name,class_name,section,roll_no,gender,category,status')
-          .eq('school_code',APS_STUDENT_SCHOOL).eq('class_name',a.class_name).eq('section',a.section)
-          .eq('status','ACTIVE').order('roll_no').order('student_name');
-        if(studentError)throw studentError;
-        const {data:marks,error:markError}=await supabaseClient.from('student_attendance')
-          .select('student_id,status,marked_by,updated_at')
-          .eq('school_code',APS_STUDENT_SCHOOL).eq('attendance_date',selectedDate);
-        if(markError)throw markError;
-        const byId=Object.fromEntries((marks||[]).map(m=>[m.student_id,m]));
-        const rows=(students||[]).map(s=>({...s,attendance:byId[s.id]||null}));
-        const marked=rows.filter(r=>r.attendance).length;
-        const present=rows.filter(r=>r.attendance?.status==='PRESENT').length;
-        const absent=rows.filter(r=>r.attendance?.status==='ABSENT').length;
-        const leave=rows.filter(r=>r.attendance?.status==='LEAVE').length;
-        const badge=document.getElementById('teacher-student-marked-badge');
-        if(badge)badge.textContent=marked+' marked';
-        host.innerHTML='<div class="grid grid-cols-4 gap-2 mb-3">'+
-          '<div class="p-2 rounded-xl bg-slate-50 border text-center"><b class="text-sm">'+rows.length+'</b><span class="block text-[9px] text-slate-500">Students</span></div>'+
-          '<div class="p-2 rounded-xl bg-emerald-50 border border-emerald-100 text-center"><b class="text-sm text-emerald-700">'+present+'</b><span class="block text-[9px] text-slate-500">Present</span></div>'+
-          '<div class="p-2 rounded-xl bg-rose-50 border border-rose-100 text-center"><b class="text-sm text-rose-700">'+absent+'</b><span class="block text-[9px] text-slate-500">Absent</span></div>'+
-          '<div class="p-2 rounded-xl bg-amber-50 border border-amber-100 text-center"><b class="text-sm text-amber-700">'+leave+'</b><span class="block text-[9px] text-slate-500">Leave</span></div></div>'+
-          '<div class="text-[10px] text-slate-500 mb-2">Class <b class="text-slate-800">'+studentEscape(a.class_name)+' - '+studentEscape(a.section)+'</b> · Date <b class="text-slate-800">'+studentEscape(selectedDate)+'</b> · Marked <b class="text-slate-800">'+marked+'/'+rows.length+'</b></div>'+
-          '<div class="max-h-[55vh] overflow-y-auto border rounded-xl divide-y">'+
-          (rows.length?rows.map(r=>{
-            const st=r.attendance?.status||'NOT MARKED';
-            const cls=st==='PRESENT'?'bg-emerald-100 text-emerald-800':st==='ABSENT'?'bg-rose-100 text-rose-800':st==='LEAVE'?'bg-amber-100 text-amber-800':'bg-slate-100 text-slate-500';
-            return '<div class="flex items-center gap-2 p-2.5"><div class="flex-1 min-w-0"><div class="font-bold text-xs truncate">'+studentEscape(r.student_name)+'</div><div class="text-[9px] text-slate-500">Roll '+studentEscape(r.roll_no||'—')+' · '+studentEscape(r.enroll_no||'—')+'</div></div><span class="px-2 py-1 rounded-full text-[9px] font-bold '+cls+'">'+studentEscape(st)+'</span></div>';
-          }).join(''):'<div class="p-5 text-center text-xs text-slate-400">No active students in this class.</div>')+
-          '</div>';
-        if(window.lucide)lucide.createIcons();
-      }catch(e){
-        host.innerHTML='<div class="p-4 rounded-xl bg-rose-50 border border-rose-200 text-xs text-rose-700">Could not load attendance: '+studentEscape(e.message||e)+'</div>';
-      }
+      const sel=document.getElementById('teacher-student-class'),date=document.getElementById('teacher-student-date'),host=document.getElementById('teacher-attendance-viewer-body'),modal=document.getElementById('teacher-attendance-viewer-modal'),a=teacherAttendanceClasses[Number(sel?.value)],selectedDate=studentDateToday();
+      if(date){date.value=selectedDate;date.min=selectedDate;date.max=selectedDate;}if(!a)return showToast('Select a class first.','error');if(!host||!modal)return;
+      host.innerHTML='<div class="py-8 text-center text-slate-400 text-xs">Loading marked attendance…</div>';modal.classList.remove('hidden');modal.classList.add('flex');
+      try{const {data,error}=await supabaseClient.rpc('teacher_view_student_attendance',{p_class_name:a.class_name,p_section:a.section,p_attendance_date:selectedDate});if(error)throw error;const rows=data||[],marked=rows.filter(r=>r.attendance_status).length,present=rows.filter(r=>r.attendance_status==='PRESENT').length,absent=rows.filter(r=>r.attendance_status==='ABSENT').length,leave=rows.filter(r=>r.attendance_status==='LEAVE').length;
+        host.innerHTML='<div class="grid grid-cols-4 gap-2 mb-3"><div class="p-2 rounded-xl bg-slate-50 border text-center"><b class="text-sm">'+rows.length+'</b><span class="block text-[9px] text-slate-500">Students</span></div><div class="p-2 rounded-xl bg-emerald-50 border border-emerald-100 text-center"><b class="text-sm text-emerald-700">'+present+'</b><span class="block text-[9px] text-slate-500">Present</span></div><div class="p-2 rounded-xl bg-rose-50 border border-rose-100 text-center"><b class="text-sm text-rose-700">'+absent+'</b><span class="block text-[9px] text-slate-500">Absent</span></div><div class="p-2 rounded-xl bg-amber-50 border border-amber-100 text-center"><b class="text-sm text-amber-700">'+leave+'</b><span class="block text-[9px] text-slate-500">Leave</span></div></div><div class="text-[10px] text-slate-500 mb-2">Class <b class="text-slate-800">'+studentEscape(a.class_name)+' - '+studentEscape(a.section)+'</b> · Date <b class="text-slate-800">'+studentEscape(selectedDate)+'</b> · Marked <b class="text-slate-800">'+marked+'/'+rows.length+'</b></div><div class="max-h-[55vh] overflow-y-auto border rounded-xl divide-y">'+(rows.length?rows.map(r=>{const st=r.attendance_status||'NOT MARKED',cls=st==='PRESENT'?'bg-emerald-100 text-emerald-800':st==='ABSENT'?'bg-rose-100 text-rose-800':st==='LEAVE'?'bg-amber-100 text-amber-800':'bg-slate-100 text-slate-500';return '<div class="flex items-center gap-2 p-2.5"><div class="flex-1 min-w-0"><div class="font-bold text-xs truncate">'+studentEscape(r.student_name)+'</div><div class="text-[9px] text-slate-500">Roll '+studentEscape(r.roll_no||'—')+' · '+studentEscape(r.enroll_no||'—')+'</div></div><span class="px-2 py-1 rounded-full text-[9px] font-bold '+cls+'">'+studentEscape(st)+'</span></div>';}).join(''):'<div class="p-5 text-center text-xs text-slate-400">No active students in this class.</div>')+'</div>';if(window.lucide)lucide.createIcons();
+      }catch(e){host.innerHTML='<div class="p-4 rounded-xl bg-rose-50 border border-rose-200 text-xs text-rose-700">Could not load attendance: '+studentEscape(e.message||e)+'</div>';}
     }
-    
-async function saveTeacherStudentAttendance(){
-      if(!teacherIsClassTeacher())return showToast('Only Class Teachers can mark student attendance.','error');
-      if(!canAccessStudentAttendance()||!supabaseClient)return showToast('Student attendance is available to teaching staff only.','error');const date=studentDateToday();const dateInput=document.getElementById('teacher-student-date');if(dateInput){dateInput.value=date;dateInput.min=date;dateInput.max=date;}if(!teacherStudentRows.length)return showToast('Select a class with students first.','error');
-      try{const {data,error:authError}=await supabaseClient.auth.getUser();if(authError||!data?.user)throw Error('Session expired; sign in again.');
-        const marks=Array.from(document.querySelectorAll('#teacher-student-list select[data-student-id]')).map(el=>({school_code:APS_STUDENT_SCHOOL,student_id:el.dataset.studentId,attendance_date:date,status:el.value,marked_by:data.user.id,marked_by_name:(currentAuthUser?.staffRecord?.name||currentAuthUser?.name||currentAuthUser?.email||'Teacher')}));
-        const {error}=await supabaseClient.from('student_attendance').upsert(marks,{onConflict:'school_code,student_id,attendance_date'});if(error)throw error;const markedBadge=document.getElementById('teacher-student-marked-badge');if(markedBadge)markedBadge.textContent=marks.length+' marked';showToast('Student attendance saved.','success');playTone('SUCCESS');
-      }catch(e){showToast('Save failed: '+(e.message||e),'error');}
+    async function saveTeacherStudentAttendance(){
+      const sel=document.getElementById('teacher-student-class'),assignment=teacherAttendanceClasses[Number(sel?.value)];if(!assignment?.isClassTeacher)return showToast('Only the Class Teacher can mark attendance for this class.','error');
+      if(!canAccessStudentAttendance()||!supabaseClient)return showToast('Student attendance is available to teaching staff only.','error');const date=studentDateToday(),dateInput=document.getElementById('teacher-student-date');if(dateInput){dateInput.value=date;dateInput.min=date;dateInput.max=date;}if(!teacherStudentRows.length)return showToast('Select a class with students first.','error');
+      try{const {data,error:authError}=await supabaseClient.auth.getUser();if(authError||!data?.user)throw Error('Session expired; sign in again.');const marks=Array.from(document.querySelectorAll('#teacher-student-list select[data-student-id]')).map(el=>({school_code:APS_STUDENT_SCHOOL,student_id:el.dataset.studentId,attendance_date:date,status:el.value,marked_by:data.user.id,marked_by_name:(currentAuthUser?.staffRecord?.name||currentAuthUser?.name||currentAuthUser?.email||'Teacher')}));const {error}=await supabaseClient.from('student_attendance').upsert(marks,{onConflict:'school_code,student_id,attendance_date'});if(error)throw error;const badge=document.getElementById('teacher-student-marked-badge');if(badge)badge.textContent=marks.length+' marked';showToast('Student attendance saved.','success');playTone('SUCCESS');}catch(e){showToast('Save failed: '+(e.message||e),'error');}
     }
-    function studentSelectedIds(){return Array.from(document.querySelectorAll('.admin-student-check:checked')).map(x=>x.value);}
+        function studentSelectedIds(){return Array.from(document.querySelectorAll('.admin-student-check:checked')).map(x=>x.value);}
     function updateStudentSelectedCount(){const el=document.getElementById('admin-student-selected-count');if(el)el.textContent=studentSelectedIds().length+' selected';}
     function toggleAllAdminStudents(checked){document.querySelectorAll('.admin-student-check').forEach(x=>x.checked=!!checked);updateStudentSelectedCount();}
     function refreshAdminStudentSections(){const cls=document.getElementById('admin-student-filter-class')?.value||'',sel=document.getElementById('admin-student-filter-section');if(!sel)return;const sections=[...new Set(adminStudentRows.filter(s=>!cls||s.class_name===cls).map(s=>s.section).filter(Boolean))].sort();sel.innerHTML='<option value="">All Sections</option>'+sections.map(s=>'<option>'+studentEscape(s)+'</option>').join('');}
