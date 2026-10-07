@@ -2,6 +2,7 @@ import { createSupabaseContext } from "npm:@supabase/server@1";
 
 const PRIMARY_MODEL = "gemini-3.8-flash";
 const FALLBACK_MODEL = "gemini-3.7-flash";
+const LAST_RESORT_MODEL = "gemini-3.5-flash-lite";
 const MAX_INPUT_CHARS = 4000;
 const MAX_OUTPUT_TOKENS = 800;
 const GEMINI_TIMEOUT_MS = 12000;
@@ -25,6 +26,7 @@ async function requestGemini(
   model: string,
   apiKey: string,
   prompt: string,
+  useThinking = true,
 ): Promise<{ response?: Response; timedOut?: boolean }> {
   const controller = new AbortController();
   const timeoutId = setTimeout(() => controller.abort(), GEMINI_TIMEOUT_MS);
@@ -42,7 +44,7 @@ async function requestGemini(
           contents: [{ role: "user", parts: [{ text: prompt }] }],
           generationConfig: {
             maxOutputTokens: MAX_OUTPUT_TOKENS,
-            thinkingConfig: { thinkingLevel: "low" },
+            ...(useThinking ? { thinkingConfig: { thinkingLevel: "low" } } : {}),
           },
         }),
         signal: controller.signal,
@@ -114,6 +116,13 @@ Deno.serve(async (req: Request) => {
       console.error(`Gemini ${PRIMARY_MODEL} still unavailable; trying ${FALLBACK_MODEL}`);
       await wait(1000);
       result = await requestGemini(FALLBACK_MODEL, apiKey, prompt);
+    }
+
+    if (result.timedOut || result.response?.status === 503) {
+      selectedModel = LAST_RESORT_MODEL;
+      console.error(`Gemini ${FALLBACK_MODEL} unavailable; trying ${LAST_RESORT_MODEL}`);
+      await wait(1000);
+      result = await requestGemini(LAST_RESORT_MODEL, apiKey, prompt, false);
     }
 
     if (result.timedOut) {
