@@ -10182,6 +10182,19 @@ function addMessage(text,type){
     document.getElementById('staff-comm-subject')?.focus();
   };
   window.hideStaffCommComposer=function(){document.getElementById('staff-comm-compose-form')?.classList.add('hidden');};
+  async function ensureStaffCommAuth(){
+    if(!supabaseClient) throw new Error('SUPABASE_CLIENT_NOT_READY');
+    let {data,error}=await supabaseClient.auth.getSession();
+    let session=data?.session||null;
+    if(error || !session?.access_token || (session.expires_at && session.expires_at*1000<=Date.now()+15000)){
+      const refreshed=await supabaseClient.auth.refreshSession();
+      if(!refreshed.error && refreshed.data?.session) session=refreshed.data.session;
+    }
+    if(!session?.access_token) throw new Error('AUTHENTICATION_REQUIRED: Your staff login session has expired. Please sign in again.');
+    const verified=await supabaseClient.auth.getUser();
+    if(verified.error || !verified.data?.user?.email) throw new Error('AUTHENTICATION_REQUIRED: Your staff login session could not be verified. Please sign in again.');
+    return verified.data.user.email.trim().toLowerCase();
+  }
   window.submitStaffCommNew=async function(e){
     e.preventDefault(); if(!supabaseClient)return;
     const subject=document.getElementById('staff-comm-subject').value.trim(), body=document.getElementById('staff-comm-body').value.trim();
@@ -10189,13 +10202,27 @@ function addMessage(text,type){
     const category=document.getElementById('staff-comm-category').value, priority=document.getElementById('staff-comm-priority').value;
     const recipient=document.getElementById('staff-comm-recipient').value||'ALL';
     const admin=commIsAdmin();
-    const payload={subject,category,priority,status:'OPEN',audience:admin&&recipient==='ALL'?'ALL_STAFF':'DIRECT',created_by_email:commEmail(),created_by_role:admin?'ADMIN':commRole(),recipient_staff_id:admin&&recipient!=='ALL'?recipient:null};
-    const {data:thread,error}=await supabaseClient.from('staff_communication_threads').insert(payload).select().single();
-    if(error){alert('Could not create message: '+error.message);return;}
-    const {error:msgError}=await supabaseClient.from('staff_communication_messages').insert({thread_id:thread.id,sender_email:commEmail(),sender_role:admin?'ADMIN':commRole(),body});
+    let verifiedEmail='';
+    try{ verifiedEmail=await ensureStaffCommAuth(); }
+    catch(err){ alert(err?.message||'Your login session could not be verified. Please sign in again.'); return; }
+    const normalizedRole=admin?'ADMIN':(commRole()==='TEACHER'?'TEACHER':'STAFF');
+    const threadId=(typeof crypto!=='undefined'&&crypto.randomUUID)?crypto.randomUUID():generateUUID();
+    const payload={id:threadId,subject,category,priority,status:'OPEN',audience:admin&&recipient==='ALL'?'ALL_STAFF':'DIRECT',created_by_email:verifiedEmail,created_by_role:normalizedRole,recipient_staff_id:admin&&recipient!=='ALL'?recipient:null};
+    const {error}=await supabaseClient.from('staff_communication_threads').insert(payload);
+    if(error){
+      if(String(error.message||'').toLowerCase().includes('row-level security')){
+        const refreshed=await supabaseClient.auth.refreshSession();
+        if(!refreshed.error&&refreshed.data?.session){
+          const retry=await supabaseClient.from('staff_communication_threads').insert(payload);
+          if(!retry.error){ await loadStaffComm(); await openStaffCommThread(threadId); e.target.reset(); document.getElementById('staff-comm-compose-form').classList.add('hidden'); return; }
+        }
+      }
+      alert('Could not create message: '+error.message); return;
+    }
+    const {error:msgError}=await supabaseClient.from('staff_communication_messages').insert({thread_id:threadId,sender_email:verifiedEmail,sender_role:normalizedRole,body});
     if(msgError){alert('Message could not be sent: '+msgError.message);return;}
     e.target.reset(); document.getElementById('staff-comm-compose-form').classList.add('hidden');
-    await loadStaffComm(); await openStaffCommThread(thread.id);
+    await loadStaffComm(); await openStaffCommThread(threadId);
   };
   window.sendStaffCommReply=async function(e){
     e.preventDefault(); if(!staffCommCurrentThread)return;
