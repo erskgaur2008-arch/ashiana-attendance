@@ -211,7 +211,7 @@ end;
 $function$;
 
 revoke all on function public.student_login(text,text,text) from public;
-grant execute on function public.student_login(text,text,text) to anon, authenticated;
+grant execute on function public.student_login(text,text,text) to anon;
 
 -- Student portal bundle: same credential rate limit, cleared after success.
 create or replace function public.student_portal_bundle(
@@ -442,5 +442,34 @@ $function$;
 
 revoke execute on function public.record_attendance_punch_service(text,date,text,text,text) from public, anon, authenticated;
 grant execute on function public.record_attendance_punch_service(text,date,text,text,text) to service_role;
+
+-- Legacy helper is no longer callable through the Data API; pin its definer path too.
+create or replace function public.student_portal_data(p_student_id uuid)
+returns jsonb
+language plpgsql
+security definer
+set search_path = ''
+as $function$
+declare
+  s public.student_roster%rowtype;
+begin
+  select * into s
+  from public.student_roster
+  where id=p_student_id and school_code='ashiana' and status='ACTIVE';
+  if not found then return jsonb_build_object('success',false); end if;
+  return jsonb_build_object(
+    'success',true,
+    'student',jsonb_build_object(
+      'id',s.id,'enroll_no',s.enroll_no,'student_name',s.student_name,
+      'class_name',s.class_name,'section',s.section,'roll_no',s.roll_no,
+      'category',s.category,'dob',s.dob,'mother_name',s.mother_name,
+      'father_name',s.father_name,'address',s.address,'phone_number',s.phone_number,
+      'photo_path',s.photo_path
+    )
+  );
+end;
+$function$;
+
+revoke all on function public.student_portal_data(uuid) from public, anon, authenticated;
 
 notify pgrst, 'reload schema';
