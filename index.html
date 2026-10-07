@@ -9,7 +9,25 @@
   <meta name="apple-mobile-web-app-capable" content="yes">
   <meta name="apple-mobile-web-app-status-bar-style" content="black-translucent">
   <meta name="apple-mobile-web-app-title" content="Ashiana Attendance">
-  <link rel="manifest" href="manifest.webmanifest">
+  <link id="ashiana-manifest" rel="manifest">
+  <script>
+    // Select a role-specific PWA manifest before the browser installs the app.
+    (function () {
+      try {
+        var p = new URLSearchParams(window.location.search || "");
+        var role = String(p.get("login") || "").trim().toLowerCase();
+        var manifest = role === "admin"
+          ? "manifest-admin.webmanifest"
+          : role === "staff" || role === "teacher"
+            ? "manifest-staff.webmanifest"
+            : role === "student"
+              ? "manifest-student.webmanifest"
+              : "manifest.webmanifest";
+        var link = document.getElementById("ashiana-manifest");
+        if (link) link.href = manifest;
+      } catch (_) {}
+    })();
+  </script>
   
   <!-- Inter, Cinzel & Mono Fonts -->
   <link rel="preconnect" href="https://fonts.googleapis.com">
@@ -104,6 +122,34 @@
     /* Direct role-login links hide the selector only when a dedicated login URL is used. */
     #auth-gateway-view.login-route-only #login-role-select-wrap{display:none!important;}
     #auth-gateway-view.login-route-only .login-route-label{display:block;}
+    /* Installed/PWA login pages: use the full mobile viewport without a trailing blank area. */
+    @media (max-width: 640px){
+      #auth-main{
+        min-height:calc(100dvh - env(safe-area-inset-top) - env(safe-area-inset-bottom));
+        padding:0!important;
+        justify-content:flex-start!important;
+        align-items:stretch!important;
+      }
+      #auth-gateway-view:not(.hidden){
+        width:100%!important;
+        max-width:none!important;
+        min-height:100%!important;
+        margin:0!important;
+        border-radius:0!important;
+        border-left:0!important;
+        border-right:0!important;
+        box-shadow:none!important;
+      }
+      #auth-gateway-view:not(.hidden) > div:nth-child(2){
+        min-height:0;
+      }
+    }
+    /* Keep role-specific PWA login routes stable when launched from Android standalone mode. */
+    @media (display-mode: standalone){
+      #auth-gateway-view:not(.hidden){
+        border-radius:0!important;
+      }
+    }
     /* Role selection uses the native dropdown above. */
     #auth-gateway-view #login-role-select{
       position:relative;

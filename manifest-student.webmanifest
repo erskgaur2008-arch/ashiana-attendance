@@ -1,0 +1,17 @@
+{
+  "name": "Ashiana Public School • Student",
+  "short_name": "Ashiana Student",
+  "id": "./?login=student",
+  "start_url": "./?login=student",
+  "scope": "./",
+  "display": "standalone",
+  "orientation": "portrait",
+  "background_color": "#064E3B",
+  "theme_color": "#064E3B",
+  "description": "Student portal for Ashiana Public School",
+  "categories": ["education"],
+  "icons": [
+    {"src": "logo 2.png", "sizes": "192x192", "type": "image/png"},
+    {"src": "logo 2.png", "sizes": "512x512", "type": "image/png"}
+  ]
+}
