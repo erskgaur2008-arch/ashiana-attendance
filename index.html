@@ -3653,16 +3653,25 @@
 
       try {
         updateCloudBadge(true, "Syncing…");
-        // 1. SYNC STAFF TABLE (Accounts, Names, Roles, Updated PINs)
-        const { data: remoteStaff, error: staffErr } = await supabaseClient
-          .from('staff')
-          .select('id,emp_id,name,department,role,email,avatar_url,gender,dob,valid_thru,phone,address,status')
-          .order('name', { ascending: true });
+        // Run independent cloud reads in parallel so the first sync does not
+        // wait for staff, punches, and leave requests one after another.
+        const [staffResult, punchResult, leaveResult] = await Promise.all([
+          supabaseClient.from('staff')
+            .select('id,emp_id,name,department,role,email,avatar_url,gender,dob,valid_thru,phone,address,status')
+            .order('name', { ascending: true }),
+          supabaseClient.from('attendance_punches')
+            .select('id,staff_id,staff_name,emp_id,attendance_date,type,timestamp,method,created_at')
+            .order('created_at', { ascending: true }),
+          supabaseClient.from('leave_requests')
+            .select('id,staff_id,staff_name,type,from_date,to_date,reason,status,created_at')
+            .order('created_at', { ascending: false })
+        ]);
 
+        // 1. SYNC STAFF TABLE
+        const { data: remoteStaff, error: staffErr } = staffResult;
         if (staffErr) {
           console.warn("Supabase staff sync notice:", staffErr);
         } else if (remoteStaff && remoteStaff.length > 0) {
-          // Compare remote staff with local staff
           const remoteMap = new Map();
           remoteStaff.forEach(s => {
             const mapped = {
@@ -3684,7 +3693,6 @@
             remoteMap.set(mapped.id, mapped);
           });
 
-          // Check if differences exist
           const localStaffMap = new Map(staffDatabase.map(s => [s.id, s]));
           const staffChanged = remoteStaff.length !== staffDatabase.length ||
             remoteStaff.some(s => {
@@ -3697,17 +3705,11 @@
             anyChange = true;
           }
         } else if (remoteStaff && remoteStaff.length === 0 && staffDatabase.length > 0) {
-          // Do not auto-seed or write the roster from a browser session.
-          // The roster is authoritative in Supabase and is managed by the Admin portal.
           console.info("Supabase staff query returned no visible rows; no automatic roster write performed.");
         }
 
-        // 2. SYNC ATTENDANCE PUNCHES (All dates so history and reports work on any device)
-        const { data: remotePunches, error: punchErr } = await supabaseClient
-          .from('attendance_punches')
-          .select('id,staff_id,staff_name,emp_id,attendance_date,type,timestamp,method,created_at')
-          .order('created_at', { ascending: true });
-
+        // 2. SYNC ATTENDANCE PUNCHES
+        const { data: remotePunches, error: punchErr } = punchResult;
         if (punchErr) {
           console.warn("Supabase punches sync notice:", punchErr);
         } else if (remotePunches) {
@@ -3741,17 +3743,10 @@
         }
 
         // 3. SYNC LEAVE REQUESTS
-        const { data: remoteLeaves, error: leaveErr } = await supabaseClient
-          .from('leave_requests')
-          .select('id,staff_id,staff_name,type,from_date,to_date,reason,status,created_at')
-          .order('created_at', { ascending: false });
-
+        const { data: remoteLeaves, error: leaveErr } = leaveResult;
         if (leaveErr) {
           console.warn("Supabase leaves sync notice:", leaveErr);
         } else if (remoteLeaves) {
-          // Supabase is the authoritative source for leave data. Replace the
-          // local cache instead of merging it, so deleted/expired/demo leave
-          // records cannot keep appearing on the Admin dashboard.
           const mappedLeaves = remoteLeaves.map(rl => ({
             id: rl.id,
             staffId: rl.staff_id,
@@ -9315,7 +9310,7 @@ window.addEventListener('load',async function(){
       if(!sel||!supabaseClient||currentAuthUser?.type!=='ADMIN') return;
       try{
         const {data,error}=await supabaseClient.from('student_roster')
-          .select('class_name,section').eq('school_code',APS_STUDENT_SCHOOL);
+          .select('class_name,section').eq('school_code',APS_STUDENT_SCHOOL).range(0,4999);
         if(error) throw error;
         const classOrder=['PRE NUR','NUR','LKG','UKG','I','II','III','IV','V','VI','VII','VIII','IX','X','XI','XII'];
         const rank=cls=>{const i=classOrder.indexOf(cls.toUpperCase());return i===-1?999:i;};
