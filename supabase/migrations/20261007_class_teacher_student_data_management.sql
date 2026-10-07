@@ -15,7 +15,7 @@ create or replace function public.teacher_update_student_profile(
 returns jsonb
 language plpgsql
 security definer
-set search_path = public
+set search_path = ''
 as $function$
 declare
   v_email text := lower(trim(coalesce(auth.jwt() ->> 'email','')));
