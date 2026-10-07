@@ -10169,11 +10169,12 @@ function addMessage(text,type){
     const t=staffCommThreads.find(x=>x.id===id); if(!t)return; staffCommCurrentThread=t; renderCommThreads();
     const head=document.getElementById('staff-comm-thread-head'), msgs=document.getElementById('staff-comm-messages'), reply=document.getElementById('staff-comm-reply-form');
     head.classList.remove('hidden'); head.innerHTML='<div class="flex items-center justify-between gap-2"><div class="min-w-0"><div class="font-extrabold text-sm text-slate-800 truncate">'+esc(t.subject)+'</div><div class="text-[9px] text-slate-500 mt-0.5">'+esc(t.category)+' • '+esc(t.priority)+' • '+esc(t.status)+'</div></div>'+(commIsAdmin()?'<select onchange="updateStaffCommStatus(\''+t.id+'\',this.value)" class="border rounded-lg p-1.5 text-[10px]"><option '+(t.status==='OPEN'?'selected':'')+'>OPEN</option><option '+(t.status==='IN_PROGRESS'?'selected':'')+'>IN_PROGRESS</option><option '+(t.status==='RESOLVED'?'selected':'')+'>RESOLVED</option><option '+(t.status==='CLOSED'?'selected':'')+'>CLOSED</option></select>':'')+'</div>';
-    const {data,error}=await supabaseClient.from('staff_communication_messages').select('id,sender_email,sender_role,body,created_at').eq('thread_id',id).order('created_at',{ascending:true});
+    const verifiedEmail=await ensureStaffCommAuth();
+    const {data,error}=await supabaseClient.from('staff_communication_messages').select('id,sender_email,sender_name,sender_role,body,created_at').eq('thread_id',id).order('created_at',{ascending:true});
     if(error){msgs.innerHTML='<div class="text-xs text-rose-600 p-4">'+esc(error.message)+'</div>';return;}
-    msgs.innerHTML=(data||[]).map(x=>'<div class="staff-comm-msg '+(x.sender_email.toLowerCase()===commEmail()?'mine':'theirs')+'"><div class="text-[9px] font-extrabold text-slate-500 mb-1">'+(x.sender_email.toLowerCase()===commEmail()?'You':esc(x.sender_role))+' • '+new Date(x.created_at).toLocaleString('en-IN',{day:'numeric',month:'short',hour:'2-digit',minute:'2-digit'})+'</div>'+esc(x.body)+'</div>').join('')||'<div class="staff-comm-empty"><div>No messages yet.</div></div>';
+    msgs.innerHTML=(data||[]).map(x=>'<div class="staff-comm-msg '+(x.sender_email.toLowerCase()===verifiedEmail?'mine':'theirs')+'"><div class="text-[9px] font-extrabold text-slate-500 mb-1">'+(esc(x.sender_name||((x.sender_email.toLowerCase()===verifiedEmail)?'You':x.sender_role)))+' • '+new Date(x.created_at).toLocaleString('en-IN',{day:'numeric',month:'short',hour:'2-digit',minute:'2-digit'})+'</div>'+esc(x.body)+'</div>').join('')||'<div class="staff-comm-empty"><div>No messages yet.</div></div>';
     msgs.scrollTop=msgs.scrollHeight; reply.classList.remove('hidden');
-    await supabaseClient.from('staff_communication_reads').upsert({thread_id:id,reader_email:commEmail(),last_read_at:new Date().toISOString()},{onConflict:'thread_id,reader_email'});
+    await supabaseClient.from('staff_communication_reads').upsert({thread_id:id,reader_email:verifiedEmail,last_read_at:new Date().toISOString()},{onConflict:'thread_id,reader_email'});
   };
   window.showStaffCommComposer=async function(){
     const form=document.getElementById('staff-comm-compose-form'); if(!form)return;
@@ -10182,6 +10183,19 @@ function addMessage(text,type){
     document.getElementById('staff-comm-subject')?.focus();
   };
   window.hideStaffCommComposer=function(){document.getElementById('staff-comm-compose-form')?.classList.add('hidden');};
+  async function ensureStaffCommAuth(){
+    if(!supabaseClient) throw new Error('SUPABASE_CLIENT_NOT_READY');
+    let {data,error}=await supabaseClient.auth.getSession();
+    let session=data?.session||null;
+    if(error || !session?.access_token || (session.expires_at && session.expires_at*1000<=Date.now()+15000)){
+      const refreshed=await supabaseClient.auth.refreshSession();
+      if(!refreshed.error && refreshed.data?.session) session=refreshed.data.session;
+    }
+    if(!session?.access_token) throw new Error('AUTHENTICATION_REQUIRED: Your staff login session has expired. Please sign in again.');
+    const verified=await supabaseClient.auth.getUser();
+    if(verified.error || !verified.data?.user?.email) throw new Error('AUTHENTICATION_REQUIRED: Your staff login session could not be verified. Please sign in again.');
+    return verified.data.user.email.trim().toLowerCase();
+  }
   window.submitStaffCommNew=async function(e){
     e.preventDefault(); if(!supabaseClient)return;
     const subject=document.getElementById('staff-comm-subject').value.trim(), body=document.getElementById('staff-comm-body').value.trim();
@@ -10189,25 +10203,53 @@ function addMessage(text,type){
     const category=document.getElementById('staff-comm-category').value, priority=document.getElementById('staff-comm-priority').value;
     const recipient=document.getElementById('staff-comm-recipient').value||'ALL';
     const admin=commIsAdmin();
-    const payload={subject,category,priority,status:'OPEN',audience:admin&&recipient==='ALL'?'ALL_STAFF':'DIRECT',created_by_email:commEmail(),created_by_role:admin?'ADMIN':commRole(),recipient_staff_id:admin&&recipient!=='ALL'?recipient:null};
-    const {data:thread,error}=await supabaseClient.from('staff_communication_threads').insert(payload).select().single();
+    let verifiedEmail='';
+    try{ verifiedEmail=await ensureStaffCommAuth(); }
+    catch(err){ alert(err?.message||'Your login session could not be verified. Please sign in again.'); return; }
+    const normalizedRole=admin?'ADMIN':(commRole()==='TEACHER'?'TEACHER':'STAFF');
+    const threadId=(typeof crypto!=='undefined'&&crypto.randomUUID)?crypto.randomUUID():generateUUID();
+    const payload={id:threadId,subject,category,priority,status:'OPEN',audience:admin&&recipient==='ALL'?'ALL_STAFF':'DIRECT',created_by_email:verifiedEmail,created_by_role:normalizedRole,recipient_staff_id:admin&&recipient!=='ALL'?recipient:null};
+    let {error}=await supabaseClient.from('staff_communication_threads').insert(payload);
+    if(error && String(error.message||'').toLowerCase().includes('row-level security')){
+      const refreshed=await supabaseClient.auth.refreshSession();
+      if(!refreshed.error&&refreshed.data?.session){
+        const retry=await supabaseClient.from('staff_communication_threads').insert(payload);
+        error=retry.error;
+      }
+    }
     if(error){alert('Could not create message: '+error.message);return;}
-    const {error:msgError}=await supabaseClient.from('staff_communication_messages').insert({thread_id:thread.id,sender_email:commEmail(),sender_role:admin?'ADMIN':commRole(),body});
+    const {error:msgError}=await supabaseClient.from('staff_communication_messages').insert({thread_id:threadId,sender_email:verifiedEmail,sender_role:normalizedRole,body});
     if(msgError){alert('Message could not be sent: '+msgError.message);return;}
     e.target.reset(); document.getElementById('staff-comm-compose-form').classList.add('hidden');
-    await loadStaffComm(); await openStaffCommThread(thread.id);
+    await loadStaffComm(); await openStaffCommThread(threadId);
   };
   window.sendStaffCommReply=async function(e){
     e.preventDefault(); if(!staffCommCurrentThread)return;
     const input=document.getElementById('staff-comm-reply'),body=input.value.trim(); if(!body)return;
-    const {error}=await supabaseClient.from('staff_communication_messages').insert({thread_id:staffCommCurrentThread.id,sender_email:commEmail(),sender_role:commIsAdmin()?'ADMIN':commRole(),body});
+    let verifiedEmail='';
+    try{verifiedEmail=await ensureStaffCommAuth();}catch(err){alert(err?.message||'Your login session could not be verified. Please sign in again.');return;}
+    const normalizedRole=commIsAdmin()?'ADMIN':(commRole()==='TEACHER'?'TEACHER':'STAFF');
+    const {error}=await supabaseClient.from('staff_communication_messages').insert({thread_id:staffCommCurrentThread.id,sender_email:verifiedEmail,sender_role:normalizedRole,body});
     if(error){alert('Reply could not be sent: '+error.message);return;}
     input.value=''; await loadStaffComm(); await openStaffCommThread(staffCommCurrentThread.id);
   };
   window.updateStaffCommStatus=async function(id,status){
     if(!commIsAdmin())return;
     const {error}=await supabaseClient.from('staff_communication_threads').update({status}).eq('id',id);
-    if(error)alert('Status update failed: '+error.message); else await loadStaffComm();
+    if(error){alert('Status update failed: '+error.message);return;}
+    const current=staffCommThreads.find(t=>t.id===id);
+    if(current) current.status=status;
+    if(staffCommCurrentThread?.id===id) staffCommCurrentThread.status=status;
+    const head=document.getElementById('staff-comm-thread-head');
+    if(head){
+      const select=head.querySelector('select[onchange*="updateStaffCommStatus"]');
+      if(select) select.value=status;
+      const meta=head.querySelector('[data-staff-comm-status]');
+      if(meta) meta.textContent=status;
+    }
+    renderCommThreads();
+    await loadStaffComm();
+    if(staffCommCurrentThread?.id===id) await openStaffCommThread(id);
   };
   function setupCommRealtime(){
     if(window.__ashianaStaffCommChannel||!supabaseClient)return;
