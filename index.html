@@ -10002,8 +10002,8 @@ window.addEventListener('load',async function(){
     addMessage("Thinking…","bot");
     const pending=messages.lastElementChild;
     try{
-      if(!window.supabaseClient?.functions?.invoke) throw new Error("Supabase client is not ready. Please try again.");
-      const result=await window.supabaseClient.functions.invoke("ai-assistant",{body:{message:message}});
+      if(typeof supabaseClient==="undefined" || !supabaseClient?.functions?.invoke) throw new Error("Supabase client is not ready. Please try again.");
+      const result=await supabaseClient.functions.invoke("ai-assistant",{body:{message:message}});
       if(pending) pending.remove();
       if(result.error){
         let detail=result.error.message||"AI request failed.";
