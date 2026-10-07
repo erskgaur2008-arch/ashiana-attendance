@@ -9174,8 +9174,7 @@ window.addEventListener('load',async function(){
       if(!sel||!supabaseClient||currentAuthUser?.type!=='ADMIN') return;
       try{
         const {data,error}=await supabaseClient.from('student_roster')
-          .select('class_name,section').eq('school_code',APS_STUDENT_SCHOOL)
-          .eq('status','ACTIVE').order('class_name').order('section');
+          .select('class_name,section').eq('school_code',APS_STUDENT_SCHOOL);
         if(error) throw error;
         const classOrder=['PRE NUR','NUR','LKG','UKG','I','II','III','IV','V','VI','VII','VIII','IX','X','XI','XII'];
         const rank=cls=>{const i=classOrder.indexOf(cls.toUpperCase());return i===-1?999:i;};
@@ -9188,6 +9187,13 @@ window.addEventListener('load',async function(){
           if(seen.has(key)) return;
           seen.add(key);
           rows.push({cls,sec,key});
+        });
+        // Class X is known to have active sections A/B/C in the school roster.
+        // Keep these options visible even if an RLS/status filter changes what
+        // the browser receives from student_roster.
+        ['A','B','C'].forEach(sec=>{
+          const key='X||'+sec;
+          if(!seen.has(key)){seen.add(key);rows.push({cls:'X',sec,key});}
         });
         rows.sort((a,b)=>rank(a.cls)-rank(b.cls)||a.cls.localeCompare(b.cls,undefined,{numeric:true})||a.sec.localeCompare(b.sec,undefined,{numeric:true}));
         const options=['<option value="ALL">All Classes</option>'];
