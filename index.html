@@ -9927,7 +9927,7 @@ window.addEventListener('load',async function(){
   #ashiana-ai-messages{flex:1;min-height:180px;max-height:52dvh;overflow-y:auto;padding:14px}
   .ashiana-ai-msg{max-width:88%;padding:10px 12px;border-radius:16px;margin:6px 0;font-size:13px;line-height:1.55;white-space:pre-wrap}
   .ashiana-ai-msg.user{margin-left:auto;background:#064e3b;color:#fff;border-bottom-right-radius:5px}
-  .ashiana-ai-msg.bot{margin-right:auto;background:#f1f5f9;color:#0f172a;border-bottom-left-radius:5px}
+  .ashiana-ai-msg.bot{margin-right:auto;background:#f1f5f9;color:#0f172a;border-bottom-left-radius:5px}\n  .ashiana-ai-msg.bot h3{margin:0 0 7px;font-weight:800;font-size:16px;line-height:1.3}.ashiana-ai-msg.bot p{margin:0 0 8px}.ashiana-ai-msg.bot p:last-child{margin-bottom:0}.ashiana-ai-msg.bot ul,.ashiana-ai-msg.bot ol{margin:5px 0 9px;padding-left:22px}.ashiana-ai-msg.bot li{margin:3px 0}.ashiana-ai-msg.bot hr{border:0;border-top:1px solid #cbd5e1;margin:9px 0}.ashiana-ai-msg.bot code{background:#e2e8f0;border-radius:4px;padding:1px 4px;font-size:.92em}.ashiana-ai-msg.bot pre{white-space:pre-wrap;background:#e2e8f0;padding:8px;border-radius:8px;overflow:auto}
   #ashiana-ai-input{min-height:44px;max-height:120px;resize:vertical}
   @media(max-width:640px){#ashiana-ai-launcher{right:12px;bottom:12px}#ashiana-ai-card{width:100%;max-height:92dvh;border-radius:20px}#ashiana-ai-messages{max-height:60dvh}}
 </style>
@@ -9973,10 +9973,50 @@ window.addEventListener('load',async function(){
     if(launcher) launcher.style.display=signedStaffUser()?"flex":"none";
     if(!signedStaffUser() && modal) modal.classList.remove("open");
   }
+  function escapeHtml(value){
+    const el=document.createElement("span");
+    el.textContent=String(value||"");
+    return el.innerHTML;
+  }
+  function renderAiMarkdown(value){
+    const lines=String(value||"").replace(/\r/g,"").split("\n");
+    let html="",inUl=false,inOl=false,inCode=false,codeLines=[];
+    function closeLists(){if(inUl){html+="</ul>";inUl=false;}if(inOl){html+="</ol>";inOl=false;}}
+    function inline(md){
+      let s=escapeHtml(md);
+      s=s.replace(/\*\*(.+?)\*\*/g,"<strong>$1</strong>");
+      s=s.replace(/\*([^*\n]+?)\*/g,"<em>$1</em>");
+      s=s.replace(/\x60([^\x60\n]+)\x60/g,"<code>$1</code>");
+      return s;
+    }
+    for(let i=0;i<lines.length;i++){
+      const line=lines[i];
+      if(line.trim().startsWith("\x60\x60\x60")){
+        closeLists();
+        if(!inCode){inCode=true;codeLines=[];}
+        else{html+="<pre><code>"+escapeHtml(codeLines.join("\n"))+"</code></pre>";inCode=false;}
+        continue;
+      }
+      if(inCode){codeLines.push(line);continue;}
+      if(/^\s*\*{3,}\s*$/.test(line)||/^\s*---+\s*$/.test(line)){closeLists();html+="<hr>";continue;}
+      let m=line.match(/^\s*#{1,3}\s+(.+)$/);
+      if(m){closeLists();html+="<h3>"+inline(m[1])+"</h3>";continue;}
+      m=line.match(/^\s*[-*]\s+(.+)$/);
+      if(m){if(inOl){html+="</ol>";inOl=false;}if(!inUl){html+="<ul>";inUl=true;}html+="<li>"+inline(m[1])+"</li>";continue;}
+      m=line.match(/^\s*\d+[.)]\s+(.+)$/);
+      if(m){if(inUl){html+="</ul>";inUl=false;}if(!inOl){html+="<ol>";inOl=true;}html+="<li>"+inline(m[1])+"</li>";continue;}
+      if(!line.trim()){closeLists();continue;}
+      closeLists();html+="<p>"+inline(line)+"</p>";
+    }
+    if(inCode)html+="<pre><code>"+escapeHtml(codeLines.join("\n"))+"</code></pre>";
+    closeLists();
+    return html;
+  }
   function addMessage(text,type){
     const el=document.createElement("div");
     el.className="ashiana-ai-msg "+type;
-    el.textContent=String(text||"");
+    if(type==="bot") el.innerHTML=renderAiMarkdown(text);
+    else el.textContent=String(text||"");
     messages.appendChild(el);
     messages.scrollTop=messages.scrollHeight;
   }
