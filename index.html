@@ -1938,136 +1938,75 @@
       <div id="admin-tab-student-portal" class="hidden space-y-4">
         <div class="bg-white rounded-2xl border border-slate-200 shadow-sm p-4 sm:p-5">
           <div class="flex flex-col sm:flex-row sm:items-center justify-between gap-3">
-            <div>
-              <div class="flex items-center gap-2">
-                <i data-lucide="panels-top-left" class="w-5 h-5 text-ashiana-green"></i>
-                <h3 class="text-base font-extrabold text-slate-900">Student Portal Management</h3>
-              </div>
-              <p class="text-xs text-slate-500 mt-1">Manage content directly for students. Changes appear in the student portal without changing login or session code.</p>
-            </div>
-            <span class="inline-flex items-center rounded-full bg-emerald-50 px-2.5 py-1 text-[10px] font-bold text-emerald-700 border border-emerald-200">Phase 3 • Timetable</span>
+            <div><div class="flex items-center gap-2"><i data-lucide="panels-top-left" class="w-5 h-5 text-ashiana-green"></i><h3 class="text-base font-extrabold text-slate-900">Student Portal Management</h3></div>
+            <p class="text-xs text-slate-500 mt-1">Admin-controlled content reflected directly in the Student Portal.</p></div>
+            <span class="inline-flex rounded-full bg-emerald-50 px-2.5 py-1 text-[10px] font-bold text-emerald-700 border border-emerald-200">Complete • Notices · Timetable · Calendar · Report Cards</span>
           </div>
         </div>
 
         <div class="bg-white rounded-2xl border border-slate-200 shadow-sm p-4 sm:p-5">
           <div class="grid grid-cols-1 md:grid-cols-2 gap-3">
-            <div>
-              <label class="block text-[11px] font-bold text-slate-700 mb-1.5">Target Class / Section</label>
-              <select id="admin-student-portal-class" onchange="loadAdminStudentPortalContent()" class="w-full text-xs p-2.5 bg-white border border-slate-200 rounded-xl text-slate-700">
-                <option value="ALL">All Classes</option>
-              </select>
-              <p class="text-[10px] text-slate-400 mt-1.5">Notices can target all classes. Timetable entries require one specific class/section.</p>
+            <div><label class="block text-[11px] font-bold text-slate-700 mb-1.5">Target Class / Section</label>
+              <select id="admin-student-portal-class" onchange="loadAdminStudentPortalContent()" class="w-full text-xs p-2.5 bg-white border border-slate-200 rounded-xl"><option value="ALL">All Classes</option></select>
+              <p class="text-[10px] text-slate-400 mt-1.5">All Classes applies to school-wide notices/calendar events. Timetable and report cards use a specific class/student.</p>
             </div>
-            <div>
-              <label class="block text-[11px] font-bold text-slate-700 mb-1.5">Content Type</label>
-              <select id="admin-student-portal-type" onchange="loadAdminStudentPortalContent()" class="w-full text-xs p-2.5 bg-white border border-slate-200 rounded-xl text-slate-700">
-                <option value="notice">Notice</option>
-                <option value="timetable">Timetable</option>
-                <option value="calendar" disabled>Calendar • Next Phase</option>
-                <option value="report" disabled>Report Card • Next Phase</option>
+            <div><label class="block text-[11px] font-bold text-slate-700 mb-1.5">Content Type</label>
+              <select id="admin-student-portal-type" onchange="loadAdminStudentPortalContent()" class="w-full text-xs p-2.5 bg-white border border-slate-200 rounded-xl">
+                <option value="notice">Notice</option><option value="timetable">Timetable</option><option value="calendar">Calendar</option><option value="report">Report Card</option>
               </select>
             </div>
           </div>
         </div>
 
         <div id="admin-student-portal-notice-section" class="space-y-4">
-          <div class="bg-white rounded-2xl border border-slate-200 shadow-sm p-4 sm:p-5">
-            <div class="flex items-center justify-between gap-2">
-              <div>
-                <h4 class="text-sm font-extrabold text-slate-900">Publish Notice</h4>
-                <p class="text-[10px] text-slate-500 mt-0.5">The notice is stored in the existing student portal table and appears to the selected students.</p>
-              </div>
-              <span id="admin-student-portal-notice-status" class="text-[10px] font-bold text-slate-400">Ready</span>
-            </div>
-            <div class="grid grid-cols-1 gap-3 mt-4">
-              <div>
-                <label class="block text-[11px] font-bold text-slate-700 mb-1.5">Notice Title</label>
-                <input id="admin-student-portal-notice-title" type="text" maxlength="180" class="w-full text-xs p-2.5 bg-white border border-slate-200 rounded-xl" placeholder="Enter notice title">
-              </div>
-              <div>
-                <label class="block text-[11px] font-bold text-slate-700 mb-1.5">Notice Message</label>
-                <textarea id="admin-student-portal-notice-body" rows="5" maxlength="5000" class="w-full text-xs p-2.5 bg-white border border-slate-200 rounded-xl resize-y" placeholder="Enter the notice message for students"></textarea>
-              </div>
-              <div class="flex flex-col sm:flex-row sm:items-center sm:justify-between gap-2">
-                <p class="text-[10px] text-slate-500">Published by the authenticated Admin account.</p>
-                <button type="button" onclick="publishAdminStudentPortalNotice()" class="inline-flex items-center justify-center gap-2 px-4 py-2.5 rounded-xl bg-ashiana-green text-white text-xs font-extrabold hover:bg-ashiana-green-dark">
-                  <i data-lucide="send" class="w-4 h-4"></i>Publish Notice
-                </button>
-              </div>
-            </div>
+          <div class="bg-white rounded-2xl border border-slate-200 shadow-sm p-4 sm:p-5"><div class="flex items-center justify-between gap-2"><div><h4 class="text-sm font-extrabold text-slate-900">Publish Notice</h4><p class="text-[10px] text-slate-500">Visible to all students or the selected class/section.</p></div><span id="admin-student-portal-notice-status" class="text-[10px] font-bold text-slate-400">Ready</span></div>
+            <div class="grid gap-3 mt-4"><input id="admin-student-portal-notice-title" type="text" maxlength="180" class="w-full text-xs p-2.5 border border-slate-200 rounded-xl" placeholder="Notice title">
+            <textarea id="admin-student-portal-notice-body" rows="5" maxlength="5000" class="w-full text-xs p-2.5 border border-slate-200 rounded-xl resize-y" placeholder="Notice message"></textarea>
+            <div class="flex justify-end"><button type="button" onclick="publishAdminStudentPortalNotice()" class="inline-flex items-center gap-2 px-4 py-2.5 rounded-xl bg-ashiana-green text-white text-xs font-extrabold"><i data-lucide="send" class="w-4 h-4"></i>Publish Notice</button></div></div>
           </div>
-          <div class="bg-white rounded-2xl border border-slate-200 shadow-sm p-4 sm:p-5">
-            <div class="flex items-center justify-between gap-2">
-              <div><h4 class="text-sm font-extrabold text-slate-900">Published Notices</h4><p class="text-[10px] text-slate-500">Filtered by the selected target.</p></div>
-              <button type="button" onclick="loadAdminStudentPortalNotices()" class="text-[10px] font-extrabold text-emerald-700 hover:text-emerald-900">Refresh</button>
-            </div>
-            <div id="admin-student-portal-notice-list" class="mt-3 space-y-2">
-              <div class="text-xs text-slate-400">Open Student Portal Management to load notices.</div>
-            </div>
-          </div>
+          <div class="bg-white rounded-2xl border border-slate-200 shadow-sm p-4 sm:p-5"><div class="flex items-center justify-between"><h4 class="text-sm font-extrabold">Published Notices</h4><button type="button" onclick="loadAdminStudentPortalNotices()" class="text-[10px] font-extrabold text-emerald-700">Refresh</button></div><div id="admin-student-portal-notice-list" class="mt-3 space-y-2"></div></div>
         </div>
 
         <div id="admin-student-portal-timetable-section" class="hidden space-y-4">
-          <div class="bg-white rounded-2xl border border-slate-200 shadow-sm p-4 sm:p-5">
-            <div class="flex items-center justify-between gap-2">
-              <div>
-                <h4 class="text-sm font-extrabold text-slate-900">Manage Class Timetable</h4>
-                <p class="text-[10px] text-slate-500 mt-0.5">Add timetable periods for one class/section. Students see active entries immediately after their next portal refresh.</p>
-              </div>
-              <span id="admin-student-portal-timetable-status" class="text-[10px] font-bold text-slate-400">Ready</span>
-            </div>
+          <div class="bg-white rounded-2xl border border-slate-200 shadow-sm p-4 sm:p-5"><div class="flex items-center justify-between"><div><h4 class="text-sm font-extrabold">Manage Class Timetable</h4><p class="text-[10px] text-slate-500">Add periods for one class/section.</p></div><span id="admin-student-portal-timetable-status" class="text-[10px] text-slate-400">Ready</span></div>
             <div class="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-4 gap-3 mt-4">
-              <div>
-                <label class="block text-[11px] font-bold text-slate-700 mb-1.5">Day</label>
-                <select id="admin-student-portal-timetable-day" class="w-full text-xs p-2.5 bg-white border border-slate-200 rounded-xl">
-                  <option value="1">Monday</option><option value="2">Tuesday</option><option value="3">Wednesday</option><option value="4">Thursday</option><option value="5">Friday</option><option value="6">Saturday</option><option value="7">Sunday</option>
-                </select>
-              </div>
-              <div>
-                <label class="block text-[11px] font-bold text-slate-700 mb-1.5">Period No.</label>
-                <input id="admin-student-portal-timetable-period" type="number" min="1" max="20" step="1" class="w-full text-xs p-2.5 bg-white border border-slate-200 rounded-xl" placeholder="1">
-              </div>
-              <div>
-                <label class="block text-[11px] font-bold text-slate-700 mb-1.5">Start Time</label>
-                <input id="admin-student-portal-timetable-start" type="time" class="w-full text-xs p-2.5 bg-white border border-slate-200 rounded-xl">
-              </div>
-              <div>
-                <label class="block text-[11px] font-bold text-slate-700 mb-1.5">End Time</label>
-                <input id="admin-student-portal-timetable-end" type="time" class="w-full text-xs p-2.5 bg-white border border-slate-200 rounded-xl">
-              </div>
+              <select id="admin-student-portal-timetable-day" class="text-xs p-2.5 border rounded-xl"><option value="1">Monday</option><option value="2">Tuesday</option><option value="3">Wednesday</option><option value="4">Thursday</option><option value="5">Friday</option><option value="6">Saturday</option><option value="7">Sunday</option></select>
+              <input id="admin-student-portal-timetable-period" type="number" min="1" max="20" class="text-xs p-2.5 border rounded-xl" placeholder="Period No.">
+              <input id="admin-student-portal-timetable-start" type="time" class="text-xs p-2.5 border rounded-xl">
+              <input id="admin-student-portal-timetable-end" type="time" class="text-xs p-2.5 border rounded-xl">
             </div>
             <div class="grid grid-cols-1 sm:grid-cols-3 gap-3 mt-3">
-              <div>
-                <label class="block text-[11px] font-bold text-slate-700 mb-1.5">Subject</label>
-                <input id="admin-student-portal-timetable-subject" type="text" maxlength="120" class="w-full text-xs p-2.5 bg-white border border-slate-200 rounded-xl" placeholder="Mathematics">
-              </div>
-              <div>
-                <label class="block text-[11px] font-bold text-slate-700 mb-1.5">Teacher</label>
-                <select id="admin-student-portal-timetable-teacher" class="w-full text-xs p-2.5 bg-white border border-slate-200 rounded-xl">
-                  <option value="">Select teacher</option>
-                </select>
-              </div>
-              <div>
-                <label class="block text-[11px] font-bold text-slate-700 mb-1.5">Room</label>
-                <input id="admin-student-portal-timetable-room" type="text" maxlength="80" class="w-full text-xs p-2.5 bg-white border border-slate-200 rounded-xl" placeholder="Room 12">
-              </div>
+              <input id="admin-student-portal-timetable-subject" type="text" maxlength="120" class="text-xs p-2.5 border rounded-xl" placeholder="Subject">
+              <select id="admin-student-portal-timetable-teacher" class="text-xs p-2.5 border rounded-xl"><option value="">Select teacher</option></select>
+              <input id="admin-student-portal-timetable-room" type="text" maxlength="80" class="text-xs p-2.5 border rounded-xl" placeholder="Room">
             </div>
-            <div class="flex flex-col sm:flex-row sm:items-center sm:justify-between gap-2 mt-4">
-              <p class="text-[10px] text-slate-500">Admin-only management. Existing timetable rows are never overwritten automatically.</p>
-              <button type="button" onclick="publishAdminStudentPortalTimetable()" class="inline-flex items-center justify-center gap-2 px-4 py-2.5 rounded-xl bg-ashiana-green text-white text-xs font-extrabold hover:bg-ashiana-green-dark">
-                <i data-lucide="calendar-plus" class="w-4 h-4"></i>Add Timetable Entry
-              </button>
-            </div>
+            <div class="flex justify-end mt-4"><button type="button" onclick="publishAdminStudentPortalTimetable()" class="inline-flex items-center gap-2 px-4 py-2.5 rounded-xl bg-ashiana-green text-white text-xs font-extrabold"><i data-lucide="calendar-plus" class="w-4 h-4"></i>Add Timetable Entry</button></div>
           </div>
-          <div class="bg-white rounded-2xl border border-slate-200 shadow-sm p-4 sm:p-5">
-            <div class="flex items-center justify-between gap-2">
-              <div><h4 class="text-sm font-extrabold text-slate-900">Published Timetable</h4><p class="text-[10px] text-slate-500">Only active entries for the selected class/section are shown.</p></div>
-              <button type="button" onclick="loadAdminStudentPortalTimetable()" class="text-[10px] font-extrabold text-emerald-700 hover:text-emerald-900">Refresh</button>
-            </div>
-            <div id="admin-student-portal-timetable-list" class="mt-3 space-y-2">
-              <div class="text-xs text-slate-400">Select a class/section to load timetable entries.</div>
-            </div>
+          <div class="bg-white rounded-2xl border p-4 sm:p-5"><div class="flex justify-between"><h4 class="text-sm font-extrabold">Published Timetable</h4><button type="button" onclick="loadAdminStudentPortalTimetable()" class="text-[10px] font-extrabold text-emerald-700">Refresh</button></div><div id="admin-student-portal-timetable-list" class="mt-3 space-y-2"></div></div>
+        </div>
+
+        <div id="admin-student-portal-calendar-section" class="hidden space-y-4">
+          <div class="bg-white rounded-2xl border p-4 sm:p-5"><div class="flex items-center justify-between"><div><h4 class="text-sm font-extrabold">Publish Calendar Event</h4><p class="text-[10px] text-slate-500">School-wide or class-specific event.</p></div><span id="admin-student-portal-calendar-status" class="text-[10px] text-slate-400">Ready</span></div>
+            <div class="grid grid-cols-1 sm:grid-cols-3 gap-3 mt-4"><input id="admin-student-portal-calendar-date" type="date" class="text-xs p-2.5 border rounded-xl"><input id="admin-student-portal-calendar-title" type="text" maxlength="180" class="text-xs p-2.5 border rounded-xl" placeholder="Event title"><input id="admin-student-portal-calendar-body" type="text" maxlength="1000" class="text-xs p-2.5 border rounded-xl" placeholder="Description"></div>
+            <div class="flex justify-end mt-4"><button type="button" onclick="publishAdminStudentPortalCalendar()" class="px-4 py-2.5 rounded-xl bg-ashiana-green text-white text-xs font-extrabold">Publish Event</button></div>
           </div>
+          <div class="bg-white rounded-2xl border p-4 sm:p-5"><div class="flex justify-between"><h4 class="text-sm font-extrabold">Published Calendar Events</h4><button type="button" onclick="loadAdminStudentPortalCalendar()" class="text-[10px] font-extrabold text-emerald-700">Refresh</button></div><div id="admin-student-portal-calendar-list" class="mt-3 space-y-2"></div></div>
+        </div>
+
+        <div id="admin-student-portal-report-section" class="hidden space-y-4">
+          <div class="bg-white rounded-2xl border p-4 sm:p-5"><div class="flex items-center justify-between"><div><h4 class="text-sm font-extrabold">Manage Report Card</h4><p class="text-[10px] text-slate-500">Select a class, then a student, and publish/update the report card.</p></div><span id="admin-student-portal-report-status" class="text-[10px] text-slate-400">Ready</span></div>
+            <div class="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-4 gap-3 mt-4">
+              <select id="admin-student-portal-report-student" class="text-xs p-2.5 border rounded-xl"><option value="">Select student</option></select>
+              <input id="admin-student-portal-report-year" type="text" maxlength="20" value="2026-27" class="text-xs p-2.5 border rounded-xl" placeholder="Academic year">
+              <input id="admin-student-portal-report-term" type="text" maxlength="50" class="text-xs p-2.5 border rounded-xl" placeholder="Term">
+              <input id="admin-student-portal-report-grade" type="text" maxlength="30" class="text-xs p-2.5 border rounded-xl" placeholder="Overall grade">
+            </div>
+            <textarea id="admin-student-portal-report-subjects" rows="5" class="w-full mt-3 text-xs p-2.5 border rounded-xl font-mono" placeholder='Subjects JSON, e.g. [{"subject":"English","marks":85,"grade":"A"}]'></textarea>
+            <textarea id="admin-student-portal-report-remarks" rows="3" maxlength="2000" class="w-full mt-3 text-xs p-2.5 border rounded-xl" placeholder="Remarks"></textarea>
+            <label class="inline-flex items-center gap-2 mt-3 text-xs font-bold"><input id="admin-student-portal-report-published" type="checkbox" checked> Publish to student</label>
+            <div class="flex justify-end mt-4"><button type="button" onclick="publishAdminStudentPortalReport()" class="px-4 py-2.5 rounded-xl bg-ashiana-green text-white text-xs font-extrabold">Save Report Card</button></div>
+          </div>
+          <div class="bg-white rounded-2xl border p-4 sm:p-5"><div class="flex justify-between"><h4 class="text-sm font-extrabold">Report Cards</h4><button type="button" onclick="loadAdminStudentPortalReports()" class="text-[10px] font-extrabold text-emerald-700">Refresh</button></div><div id="admin-student-portal-report-list" class="mt-3 space-y-2"></div></div>
         </div>
       </div>
 
@@ -7338,6 +7277,9 @@ window.addEventListener('load',async function(){
             sel.innerHTML = staffDatabase.map(s => `<option value="${s.id}">${s.name} (${s.empId})</option>`).join('');
           }
         }
+        if (tab === 'student-portal' && currentAuthUser?.type === 'ADMIN') {
+          loadAdminStudentPortalClasses().then(() => loadAdminStudentPortalContent());
+        }
       } catch (err) {
         console.error("Admin tab load error:", tab, err);
         showToast(`Unable to load ${tab} panel: ${err?.message || err}`, "error");
@@ -9297,23 +9239,15 @@ window.addEventListener('load',async function(){
     // Phase 3: Admin Student Portal timetable management. Kept isolated from auth/bootstrap/session code.
     let adminStudentPortalTeachersLoaded = false;
 
-    function adminStudentPortalContentType(){
-      return document.getElementById('admin-student-portal-type')?.value || 'notice';
-    }
-
+    function adminStudentPortalContentType(){ return document.getElementById('admin-student-portal-type')?.value || 'notice'; }
     async function loadAdminStudentPortalContent(){
       if(currentAuthUser?.type!=='ADMIN') return;
       const type=adminStudentPortalContentType();
-      const noticeSection=document.getElementById('admin-student-portal-notice-section');
-      const timetableSection=document.getElementById('admin-student-portal-timetable-section');
-      if(noticeSection) noticeSection.classList.toggle('hidden',type!=='notice');
-      if(timetableSection) timetableSection.classList.toggle('hidden',type!=='timetable');
-      if(type==='notice'){
-        await loadAdminStudentPortalNotices();
-      }else if(type==='timetable'){
-        await loadAdminStudentPortalTeachers();
-        await loadAdminStudentPortalTimetable();
-      }
+      ['notice','timetable','calendar','report'].forEach(x=>{const el=document.getElementById('admin-student-portal-'+x+'-section');if(el)el.classList.toggle('hidden',x!==type);});
+      if(type==='notice') await loadAdminStudentPortalNotices();
+      if(type==='timetable'){await loadAdminStudentPortalTeachers();await loadAdminStudentPortalTimetable();}
+      if(type==='calendar') await loadAdminStudentPortalCalendar();
+      if(type==='report'){await loadAdminStudentPortalReportStudents();await loadAdminStudentPortalReports();}
     }
 
     async function loadAdminStudentPortalTeachers(){
@@ -9420,6 +9354,54 @@ window.addEventListener('load',async function(){
         showToast('Timetable entry deleted.','success');
         await loadAdminStudentPortalTimetable();
       }catch(e){showToast('Timetable delete failed: '+(e.message||e),'error');}
+    }
+
+    async function loadAdminStudentPortalCalendar(){
+      const host=document.getElementById('admin-student-portal-calendar-list'),status=document.getElementById('admin-student-portal-calendar-status');
+      if(!host||!supabaseClient||currentAuthUser?.type!=='ADMIN')return;
+      const target=adminStudentPortalTarget();let q=supabaseClient.from('student_calendar_events').select('id,event_date,title,description,class_name,section,active,created_at').eq('school_code',APS_STUDENT_SCHOOL).eq('active',true).order('event_date',{ascending:false}).limit(100);
+      if(target.class_name===null)q=q.is('class_name',null).is('section',null);else q=q.eq('class_name',target.class_name).eq('section',target.section);
+      const {data,error}=await q;if(error){host.innerHTML='<div class="text-xs text-rose-600">'+studentEscape(error.message)+'</div>';return;}
+      if(status)status.textContent=(data||[]).length+' event(s)';
+      host.innerHTML=(data||[]).map(x=>'<div class="border rounded-xl p-3 flex justify-between gap-2"><div><b class="text-xs">'+studentEscape(x.event_date)+' • '+studentEscape(x.title)+'</b><p class="text-[10px] text-slate-600 mt-1">'+studentEscape(x.description||'')+'</p></div><button type="button" onclick="deleteAdminStudentPortalCalendar(\''+studentEscape(x.id)+'\')" class="text-[10px] font-extrabold text-rose-600">Delete</button></div>').join('')||'<div class="text-xs text-slate-400 p-4 text-center">No events for this target.</div>';
+    }
+    async function publishAdminStudentPortalCalendar(){
+      if(currentAuthUser?.type!=='ADMIN'||!supabaseClient)return showToast('Administrator cloud session is required.','error');
+      const date=document.getElementById('admin-student-portal-calendar-date')?.value,title=document.getElementById('admin-student-portal-calendar-title')?.value.trim(),body=document.getElementById('admin-student-portal-calendar-body')?.value.trim()||null,target=adminStudentPortalTarget();
+      if(!date||!title)return showToast('Enter event date and title.','error');
+      try{const {error}=await supabaseClient.from('student_calendar_events').insert({school_code:APS_STUDENT_SCHOOL,event_date:date,title,description:body,class_name:target.class_name,section:target.section,created_by:String(currentAuthUser.email||'ADMIN').trim().toLowerCase(),active:true});if(error)throw error;document.getElementById('admin-student-portal-calendar-title').value='';document.getElementById('admin-student-portal-calendar-body').value='';showToast('Calendar event published.','success');await loadAdminStudentPortalCalendar();}catch(e){showToast('Calendar publish failed: '+(e.message||e),'error');}
+    }
+    async function deleteAdminStudentPortalCalendar(id){
+      if(currentAuthUser?.type!=='ADMIN'||!supabaseClient||!id)return;if(!confirm('Delete this calendar event?'))return;
+      try{const {error}=await supabaseClient.from('student_calendar_events').delete().eq('id',id).eq('school_code',APS_STUDENT_SCHOOL);if(error)throw error;showToast('Calendar event deleted.','success');await loadAdminStudentPortalCalendar();}catch(e){showToast('Calendar delete failed: '+(e.message||e),'error');}
+    }
+    async function loadAdminStudentPortalReportStudents(){
+      const sel=document.getElementById('admin-student-portal-report-student');if(!sel||!supabaseClient||currentAuthUser?.type!=='ADMIN')return;
+      const target=adminStudentPortalTarget();if(!target.class_name||!target.section){sel.innerHTML='<option value="">Select a specific class first</option>';return;}
+      const {data,error}=await supabaseClient.from('student_roster').select('id,student_name,enroll_no').eq('school_code',APS_STUDENT_SCHOOL).eq('status','ACTIVE').eq('class_name',target.class_name).eq('section',target.section).order('roll_no').order('student_name');
+      if(error){sel.innerHTML='<option value="">Unable to load students</option>';return;}
+      sel.innerHTML='<option value="">Select student</option>'+(data||[]).map(x=>'<option value="'+studentEscape(x.id)+'">'+studentEscape(x.student_name)+' ('+studentEscape(x.enroll_no)+')</option>').join('');
+    }
+    async function loadAdminStudentPortalReports(){
+      const host=document.getElementById('admin-student-portal-report-list'),status=document.getElementById('admin-student-portal-report-status');if(!host||!supabaseClient||currentAuthUser?.type!=='ADMIN')return;
+      const target=adminStudentPortalTarget();if(!target.class_name||!target.section){host.innerHTML='<div class="text-xs text-amber-700 bg-amber-50 rounded-xl p-3">Select a class/section to view report cards.</div>';return;}
+      const {data:students}=await supabaseClient.from('student_roster').select('id,student_name,enroll_no').eq('school_code',APS_STUDENT_SCHOOL).eq('status','ACTIVE').eq('class_name',target.class_name).eq('section',target.section);
+      const ids=(students||[]).map(x=>x.id);if(!ids.length){host.innerHTML='<div class="text-xs text-slate-400 p-4 text-center">No active students.</div>';return;}
+      const {data,error}=await supabaseClient.from('student_report_cards').select('id,student_id,academic_year,term,overall_grade,remarks,published,updated_at').eq('school_code',APS_STUDENT_SCHOOL).in('student_id',ids).order('updated_at',{ascending:false});
+      if(error){host.innerHTML='<div class="text-xs text-rose-600">'+studentEscape(error.message)+'</div>';return;}
+      const map=new Map((students||[]).map(x=>[x.id,x]));if(status)status.textContent=(data||[]).length+' report(s)';
+      host.innerHTML=(data||[]).map(x=>{const st=map.get(x.student_id)||{};return '<div class="border rounded-xl p-3"><div class="flex justify-between gap-2"><div><b class="text-xs">'+studentEscape(st.student_name||x.student_id)+'</b><div class="text-[10px] text-slate-600">'+studentEscape(x.academic_year)+' • '+studentEscape(x.term)+' • '+studentEscape(x.overall_grade||'')+'</div><div class="text-[10px] mt-1 '+(x.published?'text-emerald-700':'text-amber-700')+'">'+(x.published?'Published':'Draft')+'</div></div><button type="button" onclick="deleteAdminStudentPortalReport(\''+studentEscape(x.id)+'\')" class="text-[10px] font-extrabold text-rose-600">Delete</button></div><p class="text-[10px] text-slate-500 mt-1">'+studentEscape(x.remarks||'')+'</p></div>';}).join('')||'<div class="text-xs text-slate-400 p-4 text-center">No report cards for this class.</div>';
+    }
+    async function publishAdminStudentPortalReport(){
+      if(currentAuthUser?.type!=='ADMIN'||!supabaseClient)return showToast('Administrator cloud session is required.','error');
+      const studentId=document.getElementById('admin-student-portal-report-student')?.value,year=document.getElementById('admin-student-portal-report-year')?.value.trim(),term=document.getElementById('admin-student-portal-report-term')?.value.trim(),grade=document.getElementById('admin-student-portal-report-grade')?.value.trim()||null,remarks=document.getElementById('admin-student-portal-report-remarks')?.value.trim()||null;
+      if(!studentId||!year||!term)return showToast('Select student and complete academic year and term.','error');
+      let subjects=[];try{subjects=JSON.parse(document.getElementById('admin-student-portal-report-subjects')?.value||'[]');if(!Array.isArray(subjects))throw Error();}catch(e){return showToast('Subjects must be a valid JSON array.','error');}
+      const target=adminStudentPortalTarget();try{const {error}=await supabaseClient.from('student_report_cards').upsert({school_code:APS_STUDENT_SCHOOL,student_id:studentId,academic_year:year,term,subjects,overall_grade:grade,remarks,published:!!document.getElementById('admin-student-portal-report-published')?.checked,published_by:String(currentAuthUser.email||'ADMIN').trim().toLowerCase()},{onConflict:'school_code,student_id,academic_year,term'});if(error)throw error;showToast('Report card saved and reflected in Student Portal.','success');await loadAdminStudentPortalReports();}catch(e){showToast('Report card save failed: '+(e.message||e),'error');}
+    }
+    async function deleteAdminStudentPortalReport(id){
+      if(currentAuthUser?.type!=='ADMIN'||!supabaseClient||!id)return;if(!confirm('Delete this report card?'))return;
+      try{const {error}=await supabaseClient.from('student_report_cards').delete().eq('id',id).eq('school_code',APS_STUDENT_SCHOOL);if(error)throw error;showToast('Report card deleted.','success');await loadAdminStudentPortalReports();}catch(e){showToast('Report card delete failed: '+(e.message||e),'error');}
     }
 
     // App Initialization
