@@ -482,7 +482,7 @@
 .staff-comm-msg.theirs{margin-right:auto;background:#fff;border:1px solid #e2e8f0;border-bottom-left-radius:5px}
 .staff-comm-compose{border-top:1px solid #e2e8f0;padding:10px;background:#fff}
 .staff-comm-compose textarea{min-height:72px;max-height:150px;resize:vertical}
-.staff-comm-pill{display:inline-flex;align-items:center;padding:3px 7px;border-radius:999px;font-size:9px;font-weight:800}
+.staff-comm-pill{display:inline-flex;align-items:center;padding:3px 7px;border-radius:999px;font-size:9px;font-weight:800}.staff-comm-recipient-picker{position:relative}.staff-comm-recipient-trigger{width:100%;min-height:42px;display:flex;align-items:center;justify-content:space-between;gap:8px;text-align:left;border:1px solid #e2e8f0;border-radius:12px;background:#fff;padding:9px 11px;font-size:11px}.staff-comm-recipient-panel{position:absolute;left:0;right:0;top:calc(100% + 5px);z-index:30;background:#fff;border:1px solid #e2e8f0;border-radius:14px;box-shadow:0 18px 40px rgba(15,23,42,.16);max-height:250px;overflow:auto;padding:6px}.staff-comm-recipient-row{display:flex;align-items:center;gap:8px;padding:9px 8px;border-radius:10px;font-size:11px}.staff-comm-recipient-row:hover{background:#f0fdf4}.staff-comm-recipient-row input{accent-color:#0a7e46}
 .staff-comm-empty{height:100%;display:flex;align-items:center;justify-content:center;text-align:center;color:#64748b;padding:30px}
 @media(max-width:700px){.staff-comm-card{height:94dvh;border-radius:20px}.staff-comm-body{grid-template-columns:1fr}.staff-comm-list{height:34%;max-height:260px;border-right:0;border-bottom:1px solid #e2e8f0}.staff-comm-conversation{min-height:0}.staff-comm-msg{max-width:90%}}
 </style>
@@ -10108,7 +10108,11 @@ function addMessage(text,type){
         <form id="staff-comm-compose-form" class="staff-comm-compose hidden" onsubmit="submitStaffCommNew(event)">
           <div class="grid grid-cols-1 sm:grid-cols-2 gap-2 mb-2">
             <input id="staff-comm-subject" required maxlength="200" class="border border-slate-200 rounded-xl p-2.5 text-xs" placeholder="Subject">
-            <select id="staff-comm-recipient" class="border border-slate-200 rounded-xl p-2.5 text-xs"></select>
+            <div id="staff-comm-recipient-picker" class="staff-comm-recipient-picker">
+  <input type="hidden" id="staff-comm-recipient" value="ALL">
+  <button type="button" id="staff-comm-recipient-trigger" class="staff-comm-recipient-trigger" onclick="toggleStaffCommRecipientPicker()"><span id="staff-comm-recipient-label">All Active Staff — Announcement</span><span>▾</span></button>
+  <div id="staff-comm-recipient-panel" class="staff-comm-recipient-panel hidden"></div>
+</div>
             <select id="staff-comm-category" class="border border-slate-200 rounded-xl p-2.5 text-xs"><option value="GENERAL">General</option><option value="REQUEST">Request</option><option value="ISSUE">Issue</option><option value="SUGGESTION">Suggestion</option><option value="STUDENT_CONCERN">Student Concern</option><option value="ACADEMIC">Academic</option><option value="IT">IT / Technical</option><option value="INFRASTRUCTURE">Infrastructure</option><option value="URGENT">Urgent</option></select>
             <select id="staff-comm-priority" class="border border-slate-200 rounded-xl p-2.5 text-xs"><option value="NORMAL">Normal Priority</option><option value="IMPORTANT">Important</option><option value="URGENT">Urgent</option></select>
           </div>
@@ -10151,8 +10155,11 @@ function addMessage(text,type){
   async function loadCommStaff(){
     const {data,error}=await supabaseClient.from('staff').select('id,name,emp_id,role,department,email').eq('status','ACTIVE').order('name',{ascending:true});
     if(!error)staffCommStaff=data||[];
-    const r=document.getElementById('staff-comm-recipient');
-    if(r&&commIsAdmin())r.innerHTML='<option value="ALL">All Active Staff — Announcement</option>'+staffCommStaff.map(x=>'<option value="'+esc(x.id)+'">'+esc(x.name||x.emp_id)+' • '+esc(x.role||'Staff')+'</option>').join('');
+    const r=document.getElementById('staff-comm-recipient-panel');
+    if(r&&commIsAdmin()){
+      r.innerHTML='<label class="staff-comm-recipient-row font-extrabold"><input type="checkbox" data-recipient-mode="all" onchange="setStaffCommAllRecipients(this.checked)"> <span>All Active Staff — Announcement</span></label>'+staffCommStaff.map(x=>'<label class="staff-comm-recipient-row"><input type="checkbox" data-recipient-id="'+esc(x.id)+'" onchange="updateStaffCommRecipientSelection()"> <span class="min-w-0"><span class="font-bold">'+esc(x.name||x.emp_id)+'</span><span class="block text-[9px] text-slate-500">'+esc(x.role||'Staff')+(x.department?' • '+esc(x.department):'')+'</span></span></label>').join('');
+      updateStaffCommRecipientSelection();
+    }
   }
   function renderCommThreads(){
     const list=document.getElementById('staff-comm-list'); if(!list)return;
@@ -10161,7 +10168,7 @@ function addMessage(text,type){
     list.innerHTML=staffCommThreads.map(t=>{
       const unread=t.last_message_at && t.created_by_email?.toLowerCase()!==email;
       const recipient=staffCommStaff.find(x=>x.id===t.recipient_staff_id);
-      const target= t.audience==='ALL_STAFF'?'All Staff':(recipient?.name||'Administration');
+      const target= t.audience==='ALL_STAFF'?'All Staff':(recipient?.name||(commIsAdmin()&&t.created_by_role==='ADMIN'?'Multiple Staff':'Administration'));
       return '<button type="button" class="staff-comm-list-item '+(staffCommCurrentThread?.id===t.id?'active':'')+'" onclick="openStaffCommThread(\''+t.id+'\')"><div class="flex items-center justify-between gap-2"><span class="font-extrabold text-[11px] text-slate-800 truncate">'+esc(t.subject)+'</span>'+(unread?'<span class="staff-comm-pill bg-emerald-100 text-emerald-700">NEW</span>':'')+'</div><div class="text-[9px] text-slate-500 mt-1 truncate">'+esc(target)+' • '+esc(t.category)+'</div><div class="flex items-center gap-1 mt-1"><span class="staff-comm-pill '+(t.priority==='URGENT'?'bg-rose-100 text-rose-700':t.priority==='IMPORTANT'?'bg-amber-100 text-amber-700':'bg-slate-100 text-slate-600')+'">'+esc(t.priority)+'</span><span class="text-[9px] text-slate-400">'+new Date(t.last_message_at).toLocaleString('en-IN',{day:'numeric',month:'short',hour:'2-digit',minute:'2-digit'})+'</span></div></button>';
     }).join('');
   }
@@ -10183,6 +10190,26 @@ function addMessage(text,type){
     document.getElementById('staff-comm-subject')?.focus();
   };
   window.hideStaffCommComposer=function(){document.getElementById('staff-comm-compose-form')?.classList.add('hidden');};
+  window.toggleStaffCommRecipientPicker=function(){document.getElementById('staff-comm-recipient-panel')?.classList.toggle('hidden');};
+  window.setStaffCommAllRecipients=function(checked){
+    const panel=document.getElementById('staff-comm-recipient-panel'); if(!panel)return;
+    panel.querySelectorAll('input[data-recipient-id]').forEach(x=>x.checked=false);
+    const hidden=document.getElementById('staff-comm-recipient'); if(hidden)hidden.value=checked?'ALL':'';
+    const label=document.getElementById('staff-comm-recipient-label'); if(label)label.textContent=checked?'All Active Staff — Announcement':'Select staff members';
+  };
+  window.updateStaffCommRecipientSelection=function(){
+    const panel=document.getElementById('staff-comm-recipient-panel'); if(!panel)return;
+    const all=panel.querySelector('input[data-recipient-mode="all"]');
+    const ids=[...panel.querySelectorAll('input[data-recipient-id]:checked')].map(x=>x.getAttribute('data-recipient-id')).filter(Boolean);
+    if(all)all.checked=false;
+    const hidden=document.getElementById('staff-comm-recipient'); if(hidden)hidden.value=ids.join(',');
+    const label=document.getElementById('staff-comm-recipient-label');
+    if(label)label.textContent=ids.length===1?(staffCommStaff.find(x=>String(x.id)===String(ids[0]))?.name||'1 staff selected'):(ids.length?ids.length+' staff selected':'Select staff members');
+  };
+  document.addEventListener('click',function(ev){
+    const picker=document.getElementById('staff-comm-recipient-picker');
+    if(picker && !picker.contains(ev.target))document.getElementById('staff-comm-recipient-panel')?.classList.add('hidden');
+  });
   async function ensureStaffCommAuth(){
     if(!supabaseClient) throw new Error('SUPABASE_CLIENT_NOT_READY');
     let {data,error}=await supabaseClient.auth.getSession();
@@ -10201,14 +10228,18 @@ function addMessage(text,type){
     const subject=document.getElementById('staff-comm-subject').value.trim(), body=document.getElementById('staff-comm-body').value.trim();
     if(!subject||!body)return;
     const category=document.getElementById('staff-comm-category').value, priority=document.getElementById('staff-comm-priority').value;
-    const recipient=document.getElementById('staff-comm-recipient').value||'ALL';
+    const recipientValue=document.getElementById('staff-comm-recipient').value||'';
+    const selectedRecipients=recipientValue==='ALL'?'ALL':recipientValue.split(',').map(x=>x.trim()).filter(Boolean);
     const admin=commIsAdmin();
+    if(admin && selectedRecipients!=='ALL' && !selectedRecipients.length){alert('Please select at least one staff member.');return;}
     let verifiedEmail='';
     try{ verifiedEmail=await ensureStaffCommAuth(); }
     catch(err){ alert(err?.message||'Your login session could not be verified. Please sign in again.'); return; }
     const normalizedRole=admin?'ADMIN':(commRole()==='TEACHER'?'TEACHER':'STAFF');
     const threadId=(typeof crypto!=='undefined'&&crypto.randomUUID)?crypto.randomUUID():generateUUID();
-    const payload={id:threadId,subject,category,priority,status:'OPEN',audience:admin&&recipient==='ALL'?'ALL_STAFF':'DIRECT',created_by_email:verifiedEmail,created_by_role:normalizedRole,recipient_staff_id:admin&&recipient!=='ALL'?recipient:null};
+    const isAllStaff=admin&&selectedRecipients==='ALL';
+    const selectedIds=admin&&selectedRecipients!=='ALL'?selectedRecipients:[];
+    const payload={id:threadId,subject,category,priority,status:'OPEN',audience:isAllStaff?'ALL_STAFF':'DIRECT',created_by_email:verifiedEmail,created_by_role:normalizedRole,recipient_staff_id:admin&&selectedIds.length===1?selectedIds[0]:null};
     let {error}=await supabaseClient.from('staff_communication_threads').insert(payload);
     if(error && String(error.message||'').toLowerCase().includes('row-level security')){
       const refreshed=await supabaseClient.auth.refreshSession();
@@ -10218,6 +10249,10 @@ function addMessage(text,type){
       }
     }
     if(error){alert('Could not create message: '+error.message);return;}
+    if(admin && selectedIds.length>1){
+      const {error:recipientError}=await supabaseClient.from('staff_communication_recipients').insert(selectedIds.map(staff_id=>({thread_id:threadId,staff_id})));
+      if(recipientError){await supabaseClient.from('staff_communication_threads').delete().eq('id',threadId);alert('Could not save selected staff: '+recipientError.message);return;}
+    }
     const {error:msgError}=await supabaseClient.from('staff_communication_messages').insert({thread_id:threadId,sender_email:verifiedEmail,sender_role:normalizedRole,body});
     if(msgError){alert('Message could not be sent: '+msgError.message);return;}
     e.target.reset(); document.getElementById('staff-comm-compose-form').classList.add('hidden');
