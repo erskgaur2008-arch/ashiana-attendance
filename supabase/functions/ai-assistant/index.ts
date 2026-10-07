@@ -3,6 +3,7 @@ import { createSupabaseContext } from "npm:@supabase/server@1";
 const MODEL = "gemini-3.8-flash";
 const MAX_INPUT_CHARS = 4000;
 const MAX_OUTPUT_TOKENS = 800;
+const GEMINI_TIMEOUT_MS = 25000;
 
 const corsHeaders = {
   "Access-Control-Allow-Origin": "*",
@@ -55,23 +56,32 @@ Deno.serve(async (req: Request) => {
   ].join("\n");
 
   try {
-    const response = await fetch(
-      `https://generativelanguage.googleapis.com/v1beta/models/${MODEL}:generateContent`,
-      {
-        method: "POST",
-        headers: {
-          "Content-Type": "application/json",
-          "x-goog-api-key": apiKey,
-        },
-        body: JSON.stringify({
-          contents: [{ role: "user", parts: [{ text: prompt }] }],
-          generationConfig: {
-            temperature: 0.4,
-            maxOutputTokens: MAX_OUTPUT_TOKENS,
+    const controller = new AbortController();
+    const timeoutId = setTimeout(() => controller.abort(), GEMINI_TIMEOUT_MS);
+
+    let response: Response;
+    try {
+      response = await fetch(
+        `https://generativelanguage.googleapis.com/v1beta/models/${MODEL}:generateContent`,
+        {
+          method: "POST",
+          headers: {
+            "Content-Type": "application/json",
+            "x-goog-api-key": apiKey,
           },
-        }),
-      },
-    );
+          body: JSON.stringify({
+            contents: [{ role: "user", parts: [{ text: prompt }] }],
+            generationConfig: {
+              temperature: 0.4,
+              maxOutputTokens: MAX_OUTPUT_TOKENS,
+            },
+          }),
+          signal: controller.signal,
+        },
+      );
+    } finally {
+      clearTimeout(timeoutId);
+    }
 
     const data = await response.json();
     if (!response.ok) {
@@ -87,6 +97,14 @@ Deno.serve(async (req: Request) => {
     if (!answer) return json({ error: "EMPTY_AI_RESPONSE" }, 502);
     return json({ answer, model: MODEL });
   } catch (error) {
+    if (error instanceof DOMException && error.name === "AbortError") {
+      console.error(`Gemini request timed out after ${GEMINI_TIMEOUT_MS}ms`);
+      return json(
+        { error: "AI_TIMEOUT", message: "The AI service took too long to respond. Please try again." },
+        504,
+      );
+    }
+
     console.error("Gemini function error:", error instanceof Error ? error.message : String(error));
     return json({ error: "AI_REQUEST_FAILED", message: "AI service is temporarily unavailable." }, 502);
   }
