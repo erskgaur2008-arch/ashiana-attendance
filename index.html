@@ -1067,6 +1067,9 @@
                 p_dob_password: dob
               });
               if (studentLogin.error) throw new Error(studentLogin.error.message || "Student login failed.");
+              if (studentLogin.data?.code === "RATE_LIMIT") {
+                throw new Error("RATE_LIMIT");
+              }
               if (!studentLogin.data?.success || !studentLogin.data?.student) {
                 throw new Error("Incorrect Admission No. or DOB password.");
               }
@@ -1076,6 +1079,9 @@
                 p_dob_password: dob
               });
               if (bundle.error) throw new Error(bundle.error.message || "Student portal data could not be loaded.");
+              if (bundle.data?.code === "RATE_LIMIT") {
+                throw new Error("RATE_LIMIT");
+              }
 
               // Student authentication is RPC-based. Explicitly end any
               // previous Staff/Admin Supabase Auth session before switching
