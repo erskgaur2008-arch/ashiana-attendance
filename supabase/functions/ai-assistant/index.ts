@@ -5,7 +5,11 @@ const FALLBACK_MODEL = "gemini-3.7-flash";
 const LAST_RESORT_MODEL = "gemini-3.5-flash-lite";
 const MAX_INPUT_CHARS = 4000;
 const MAX_OUTPUT_TOKENS = 800;
-const GEMINI_TIMEOUT_MS = 12000;
+
+// Keep each provider attempt short so a transient Gemini outage does not
+// leave the Staff/Teacher UI stuck on "Thinking..." for a long time.
+const GEMINI_TIMEOUT_MS = 7000;
+const MAX_RETRY_ATTEMPTS = 1;
 
 const corsHeaders = {
   "Access-Control-Allow-Origin": "*",
@@ -20,6 +24,15 @@ function json(body: unknown, status = 200) {
 
 function wait(ms: number) {
   return new Promise((resolve) => setTimeout(resolve, ms));
+}
+
+function isTransientStatus(status?: number) {
+  return status === 408 || status === 429 || (status !== undefined && status >= 500 && status <= 599);
+}
+
+function backoffDelay(attempt: number) {
+  const base = 500 * (2 ** attempt);
+  return base + Math.floor(Math.random() * 400);
 }
 
 async function requestGemini(
@@ -60,6 +73,28 @@ async function requestGemini(
   } finally {
     clearTimeout(timeoutId);
   }
+}
+
+async function requestWithRetry(
+  model: string,
+  apiKey: string,
+  prompt: string,
+  useThinking = true,
+) {
+  for (let attempt = 0; attempt <= MAX_RETRY_ATTEMPTS; attempt += 1) {
+    const result = await requestGemini(model, apiKey, prompt, useThinking);
+
+    if (!result.timedOut && !isTransientStatus(result.response?.status)) {
+      return result;
+    }
+
+    if (attempt < MAX_RETRY_ATTEMPTS) {
+      console.error(`Gemini ${model} transient failure; retrying with backoff`);
+      await wait(backoffDelay(attempt));
+    }
+  }
+
+  return requestGemini(model, apiKey, prompt, useThinking);
 }
 
 Deno.serve(async (req: Request) => {
@@ -103,31 +138,25 @@ Deno.serve(async (req: Request) => {
 
   try {
     let selectedModel = PRIMARY_MODEL;
-    let result = await requestGemini(PRIMARY_MODEL, apiKey, prompt);
+    let result = await requestWithRetry(PRIMARY_MODEL, apiKey, prompt);
 
-    if (result.timedOut || result.response?.status === 503) {
-      console.error(`Gemini ${PRIMARY_MODEL} unavailable; retrying once before fallback`);
-      await wait(1000);
-      result = await requestGemini(PRIMARY_MODEL, apiKey, prompt);
-    }
-
-    if (result.timedOut || result.response?.status === 503) {
+    if (result.timedOut || isTransientStatus(result.response?.status)) {
       selectedModel = FALLBACK_MODEL;
-      console.error(`Gemini ${PRIMARY_MODEL} still unavailable; trying ${FALLBACK_MODEL}`);
-      await wait(1000);
-      result = await requestGemini(FALLBACK_MODEL, apiKey, prompt);
+      console.error(`Gemini ${PRIMARY_MODEL} unavailable after bounded retry; trying ${FALLBACK_MODEL}`);
+      await wait(backoffDelay(1));
+      result = await requestWithRetry(FALLBACK_MODEL, apiKey, prompt, false);
     }
 
-    if (result.timedOut || result.response?.status === 503) {
+    if (result.timedOut || isTransientStatus(result.response?.status)) {
       selectedModel = LAST_RESORT_MODEL;
       console.error(`Gemini ${FALLBACK_MODEL} unavailable; trying ${LAST_RESORT_MODEL}`);
-      await wait(1000);
+      await wait(backoffDelay(2));
       result = await requestGemini(LAST_RESORT_MODEL, apiKey, prompt, false);
     }
 
     if (result.timedOut) {
       return json(
-        { error: "AI_TIMEOUT", message: "The AI service took too long to respond. Please try again." },
+        { error: "AI_TIMEOUT", message: "The AI service is temporarily busy. Please try again in a moment." },
         504,
       );
     }
@@ -145,7 +174,10 @@ Deno.serve(async (req: Request) => {
         response.status,
         data?.error?.status || data?.error?.message,
       );
-      return json({ error: "AI_PROVIDER_ERROR", message: "Gemini could not answer right now. Please try again." }, 502);
+      return json(
+        { error: "AI_PROVIDER_ERROR", message: "The AI service is temporarily busy. Please try again in a moment." },
+        502,
+      );
     }
 
     const answer = data?.candidates?.[0]?.content?.parts
