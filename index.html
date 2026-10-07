@@ -1943,48 +1943,68 @@
                 <i data-lucide="panels-top-left" class="w-5 h-5 text-ashiana-green"></i>
                 <h3 class="text-base font-extrabold text-slate-900">Student Portal Management</h3>
               </div>
-              <p class="text-xs text-slate-500 mt-1">Admin controls for content that appears in student portals.</p>
+              <p class="text-xs text-slate-500 mt-1">Publish notices directly to all students or one selected class/section.</p>
             </div>
-            <span class="inline-flex items-center rounded-full bg-amber-50 px-2.5 py-1 text-[10px] font-bold text-amber-700 border border-amber-200">Phase 1 • UI only</span>
-          </div>
-        </div>
-
-        <div class="grid grid-cols-1 md:grid-cols-3 gap-3">
-          <div class="bg-white rounded-2xl border border-slate-200 shadow-sm p-4">
-            <label class="block text-[11px] font-bold text-slate-700 mb-1.5">Target Class</label>
-            <select id="admin-student-portal-class" disabled class="w-full text-xs p-2.5 bg-slate-50 border border-slate-200 rounded-xl text-slate-500">
-              <option>All Classes</option>
-            </select>
-            <p class="text-[10px] text-slate-400 mt-1.5">Class selection will be enabled in Phase 2.</p>
-          </div>
-          <div class="bg-white rounded-2xl border border-slate-200 shadow-sm p-4">
-            <label class="block text-[11px] font-bold text-slate-700 mb-1.5">Content Type</label>
-            <select id="admin-student-portal-type" disabled class="w-full text-xs p-2.5 bg-slate-50 border border-slate-200 rounded-xl text-slate-500">
-              <option>Notice</option>
-              <option>Timetable</option>
-              <option>Calendar</option>
-              <option>Report Card</option>
-            </select>
-          </div>
-          <div class="bg-emerald-50 rounded-2xl border border-emerald-100 p-4">
-            <p class="text-[10px] font-bold uppercase tracking-wider text-emerald-700">Safety Status</p>
-            <p class="text-xs font-semibold text-emerald-900 mt-1">No authentication or database changes</p>
-            <p class="text-[10px] text-emerald-700 mt-1">This phase only adds the Admin navigation and UI shell.</p>
+            <span class="inline-flex items-center rounded-full bg-emerald-50 px-2.5 py-1 text-[10px] font-bold text-emerald-700 border border-emerald-200">Phase 2 • Notices</span>
           </div>
         </div>
 
         <div class="bg-white rounded-2xl border border-slate-200 shadow-sm p-4 sm:p-5">
-          <h4 class="text-sm font-extrabold text-slate-900">Planned management areas</h4>
-          <div class="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-4 gap-3 mt-3">
-            <div class="rounded-xl border border-slate-200 bg-slate-50 p-3"><p class="text-xs font-bold text-slate-800">Notice</p><p class="text-[10px] text-slate-500 mt-1">Publish notices to all or selected classes.</p></div>
-            <div class="rounded-xl border border-slate-200 bg-slate-50 p-3"><p class="text-xs font-bold text-slate-800">Timetable</p><p class="text-[10px] text-slate-500 mt-1">Manage class timetable information.</p></div>
-            <div class="rounded-xl border border-slate-200 bg-slate-50 p-3"><p class="text-xs font-bold text-slate-800">Calendar</p><p class="text-[10px] text-slate-500 mt-1">Publish school or class calendar events.</p></div>
-            <div class="rounded-xl border border-slate-200 bg-slate-50 p-3"><p class="text-xs font-bold text-slate-800">Report Cards</p><p class="text-[10px] text-slate-500 mt-1">Manage student report-card publication.</p></div>
+          <div class="grid grid-cols-1 md:grid-cols-2 gap-3">
+            <div>
+              <label class="block text-[11px] font-bold text-slate-700 mb-1.5">Target Class / Section</label>
+              <select id="admin-student-portal-class" onchange="loadAdminStudentPortalNotices()" class="w-full text-xs p-2.5 bg-white border border-slate-200 rounded-xl text-slate-700">
+                <option value="ALL">All Classes</option>
+              </select>
+              <p class="text-[10px] text-slate-400 mt-1.5">“All Classes” creates a school-wide notice visible in student portals.</p>
+            </div>
+            <div>
+              <label class="block text-[11px] font-bold text-slate-700 mb-1.5">Content Type</label>
+              <select id="admin-student-portal-type" disabled class="w-full text-xs p-2.5 bg-slate-50 border border-slate-200 rounded-xl text-slate-500">
+                <option>Notice</option><option>Timetable</option><option>Calendar</option><option>Report Card</option>
+              </select>
+              <p class="text-[10px] text-slate-400 mt-1.5">Notice management is enabled in this phase. Other content types come in later phases.</p>
+            </div>
+          </div>
+        </div>
+
+        <div class="bg-white rounded-2xl border border-slate-200 shadow-sm p-4 sm:p-5">
+          <div class="flex items-center justify-between gap-2">
+            <div>
+              <h4 class="text-sm font-extrabold text-slate-900">Publish Notice</h4>
+              <p class="text-[10px] text-slate-500 mt-0.5">The notice is stored in the existing student portal table and appears to the selected students.</p>
+            </div>
+            <span id="admin-student-portal-notice-status" class="text-[10px] font-bold text-slate-400">Ready</span>
+          </div>
+          <div class="grid grid-cols-1 gap-3 mt-4">
+            <div>
+              <label class="block text-[11px] font-bold text-slate-700 mb-1.5">Notice Title</label>
+              <input id="admin-student-portal-notice-title" type="text" maxlength="180" class="w-full text-xs p-2.5 bg-white border border-slate-200 rounded-xl" placeholder="Enter notice title">
+            </div>
+            <div>
+              <label class="block text-[11px] font-bold text-slate-700 mb-1.5">Notice Message</label>
+              <textarea id="admin-student-portal-notice-body" rows="5" maxlength="5000" class="w-full text-xs p-2.5 bg-white border border-slate-200 rounded-xl resize-y" placeholder="Enter the notice message for students"></textarea>
+            </div>
+            <div class="flex flex-col sm:flex-row sm:items-center sm:justify-between gap-2">
+              <p class="text-[10px] text-slate-500">Published by the authenticated Admin account.</p>
+              <button type="button" onclick="publishAdminStudentPortalNotice()" class="inline-flex items-center justify-center gap-2 px-4 py-2.5 rounded-xl bg-ashiana-green text-white text-xs font-extrabold hover:bg-ashiana-green-dark">
+                <i data-lucide="send" class="w-4 h-4"></i>Publish Notice
+              </button>
+            </div>
+          </div>
+        </div>
+
+        <div class="bg-white rounded-2xl border border-slate-200 shadow-sm p-4 sm:p-5">
+          <div class="flex items-center justify-between gap-2">
+            <div><h4 class="text-sm font-extrabold text-slate-900">Published Notices</h4><p class="text-[10px] text-slate-500">Filtered by the selected target.</p></div>
+            <button type="button" onclick="loadAdminStudentPortalNotices()" class="text-[10px] font-extrabold text-emerald-700 hover:text-emerald-900">Refresh</button>
+          </div>
+          <div id="admin-student-portal-notice-list" class="mt-3 space-y-2">
+            <div class="text-xs text-slate-400">Open Student Portal Management to load notices.</div>
           </div>
         </div>
       </div>
 
-      <!-- TAB 7: REPORTS & EXPORTS (DAILY, MONTHLY & FACULTY) -->
       <div id="admin-tab-reports" class="hidden space-y-4">
         
         <!-- Controls & Parameter Config Card -->
@@ -9099,6 +9119,113 @@ window.addEventListener('load',async function(){
       } catch (e) {
         console.warn("Back button handler could not be initialized:", e);
       }
+    }
+
+    // Phase 2: Admin Student Portal notice management. Keep this isolated from auth/bootstrap code.
+    let adminStudentPortalClassesLoaded = false;
+
+    function adminStudentPortalTarget(){
+      const value=document.getElementById('admin-student-portal-class')?.value||'ALL';
+      if(value==='ALL') return {class_name:null,section:null};
+      const parts=value.split('||');
+      return {class_name:parts[0]||null,section:parts[1]||null};
+    }
+
+    async function loadAdminStudentPortalClasses(){
+      const sel=document.getElementById('admin-student-portal-class');
+      if(!sel||!supabaseClient||currentAuthUser?.type!=='ADMIN') return;
+      try{
+        const {data,error}=await supabaseClient.from('student_roster')
+          .select('class_name,section').eq('school_code',APS_STUDENT_SCHOOL)
+          .eq('status','ACTIVE').order('class_name').order('section');
+        if(error) throw error;
+        const seen=new Set(), options=['<option value="ALL">All Classes</option>'];
+        (data||[]).forEach(row=>{
+          const cls=String(row.class_name||'').trim(), sec=String(row.section||'').trim();
+          if(!cls||!sec) return;
+          const key=cls+'||'+sec;
+          if(seen.has(key)) return;
+          seen.add(key);
+          options.push('<option value="'+studentEscape(key)+'">Class '+studentEscape(cls)+' - Section '+studentEscape(sec)+'</option>');
+        });
+        const current=sel.value||'ALL';
+        sel.innerHTML=options.join('');
+        sel.value=[...sel.options].some(o=>o.value===current)?current:'ALL';
+        adminStudentPortalClassesLoaded=true;
+      }catch(e){
+        console.warn('Student Portal class list unavailable:',e);
+        sel.innerHTML='<option value="ALL">All Classes</option>';
+      }
+    }
+
+    async function loadAdminStudentPortalNotices(){
+      const host=document.getElementById('admin-student-portal-notice-list');
+      const status=document.getElementById('admin-student-portal-notice-status');
+      if(!host||!supabaseClient||currentAuthUser?.type!=='ADMIN') return;
+      if(!adminStudentPortalClassesLoaded) await loadAdminStudentPortalClasses();
+      const target=adminStudentPortalTarget();
+      if(status) status.textContent='Loading…';
+      try{
+        let q=supabaseClient.from('student_notices')
+          .select('id,class_name,section,title,body,published_by,publish_at,active,created_at')
+          .eq('school_code',APS_STUDENT_SCHOOL).order('created_at',{ascending:false}).limit(100);
+        if(target.class_name===null) q=q.is('class_name',null).is('section',null);
+        else q=q.eq('class_name',target.class_name).eq('section',target.section);
+        const {data,error}=await q;
+        if(error) throw error;
+        if(status) status.textContent=(data||[]).length+' notice(s)';
+        host.innerHTML=(data||[]).length ? (data||[]).map(n=>{
+          const scope=n.class_name ? 'Class '+studentEscape(n.class_name)+' - Section '+studentEscape(n.section) : 'All Classes';
+          const date=n.publish_at||n.created_at;
+          return '<div class="border border-slate-200 rounded-xl p-3">'+
+            '<div class="flex items-start gap-2"><div class="flex-1 min-w-0">'+
+            '<div class="flex flex-wrap items-center gap-1.5"><span class="font-extrabold text-xs text-slate-900">'+studentEscape(n.title||'Untitled Notice')+'</span><span class="text-[9px] font-bold px-1.5 py-0.5 rounded-full bg-emerald-50 text-emerald-700">'+scope+'</span></div>'+
+            '<p class="text-[10px] text-slate-600 whitespace-pre-wrap mt-1">'+studentEscape(n.body||'')+'</p>'+
+            '<p class="text-[9px] text-slate-400 mt-2">'+studentEscape(n.published_by||'Admin')+' • '+studentEscape(date?new Date(date).toLocaleString('en-IN'):'')+'</p>'+
+            '</div><button type="button" onclick="deleteAdminStudentPortalNotice(\''+studentEscape(n.id)+'\')" class="shrink-0 text-rose-600 text-[10px] font-extrabold">Delete</button></div></div>';
+        }).join('') : '<div class="text-xs text-slate-400 border border-dashed border-slate-200 rounded-xl p-4 text-center">No notices for this target.</div>';
+      }catch(e){
+        if(status) status.textContent='Error';
+        host.innerHTML='<div class="text-xs text-rose-600 border border-rose-100 bg-rose-50 rounded-xl p-3">'+studentEscape(e.message||String(e))+'</div>';
+      }
+      try{if(window.lucide)lucide.createIcons();}catch(_){}
+    }
+
+    async function publishAdminStudentPortalNotice(){
+      if(currentAuthUser?.type!=='ADMIN'||!supabaseClient) return showToast('Administrator cloud session is required.','error');
+      const title=document.getElementById('admin-student-portal-notice-title')?.value.trim()||'';
+      const body=document.getElementById('admin-student-portal-notice-body')?.value.trim()||'';
+      if(!title||!body) return showToast('Enter both notice title and message.','error');
+      const target=adminStudentPortalTarget();
+      const btn=document.querySelector('#admin-tab-student-portal button[onclick="publishAdminStudentPortalNotice()"]');
+      if(btn) btn.disabled=true;
+      try{
+        const {error}=await supabaseClient.from('student_notices').insert({
+          school_code:APS_STUDENT_SCHOOL,class_name:target.class_name,section:target.section,
+          title,body,published_by:String(currentAuthUser.email||'ADMIN').trim().toLowerCase(),
+          publish_at:new Date().toISOString(),active:true
+        });
+        if(error) throw error;
+        document.getElementById('admin-student-portal-notice-title').value='';
+        document.getElementById('admin-student-portal-notice-body').value='';
+        showToast(target.class_name?'Notice published to '+target.class_name+' - '+target.section+'.':'Notice published to all classes.','success');
+        await loadAdminStudentPortalNotices();
+      }catch(e){
+        showToast('Notice publish failed: '+(e.message||e),'error');
+      }finally{
+        if(btn) btn.disabled=false;
+      }
+    }
+
+    async function deleteAdminStudentPortalNotice(id){
+      if(currentAuthUser?.type!=='ADMIN'||!supabaseClient||!id) return;
+      if(!confirm('Delete this student portal notice?')) return;
+      try{
+        const {error}=await supabaseClient.from('student_notices').delete().eq('id',id).eq('school_code',APS_STUDENT_SCHOOL);
+        if(error) throw error;
+        showToast('Notice deleted.','success');
+        await loadAdminStudentPortalNotices();
+      }catch(e){ showToast('Notice delete failed: '+(e.message||e),'error'); }
     }
 
     // App Initialization
