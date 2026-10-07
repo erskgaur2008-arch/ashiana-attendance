@@ -5935,132 +5935,7 @@ async function loadAdminStudents(){
           }catch(_){}
         }
       }
-      const printWin=window.open('','_blank','width=900,height=900');if(!printWin){showToast('Please allow pop-ups to print student ID cards.','error');return;}printWin.document.open();printWin.document.write('<html><head><title>Ashiana Student ID Cards</title><script src="./assets/vendor/qrcode.min.js"><\/script><style>@page{size:A4 portrait;margin:0}*{box-sizing:border-box}html,body{margin:0;padding:0;background:#fff}body{font-family:Arial,Helvetica,sans-serif}.student-id-print-page{width:210mm;height:297mm;padding:12mm 18mm;display:grid;grid-template-columns:repeat(3,54mm);grid-auto-rows:85.6mm;column-gap:6mm;row-gap:5mm;align-content:start;page-break-after:always;break-after:page}.student-id-print-page:last-child{page-break-after:auto;break-after:auto}.student-id-preview-card{width:54mm;height:85.6mm;overflow:hidden;display:flex;flex-direction:column;background:#fff;border:.3mm solid #9ca3af;border-radius:2mm;color:#111827}.student-id-preview-card .sid-top{height:19mm;flex:0 0 19mm;padding:1.2mm 3mm .8mm;color:#fff;background:linear-gradient(145deg,#063f32,#075b46 62%,#0a7655);text-align:center;overflow:hidden}.student-id-preview-card .sid-logo{width:7mm;height:7mm;object-fit:contain;background:#fff;border-radius:50%;padding:.3mm;display:block;margin:0 auto .35mm}.student-id-preview-card .sid-school{font-size:2.65mm;line-height:1.05;font-weight:900;white-space:nowrap}.student-id-preview-card .sid-sub{font-size:1.45mm;line-height:1.05;margin-top:.35mm;font-weight:800;white-space:nowrap}.student-id-preview-card .sid-line{height:.25mm;background:#ef3340;margin:.45mm 8mm 0}.student-id-preview-card .sid-photo-wrap{height:25mm;flex:0 0 25mm;width:20mm;margin:-.5mm auto 0;background:#fff;border:.55mm solid #fff;box-shadow:0 1mm 2.5mm rgba(0,0,0,.22);position:relative;z-index:2}.student-id-preview-card .sid-photo-wrap img,.student-id-preview-card .sid-photo-fallback{width:100%;height:100%;object-fit:cover;display:block;background:#e5e7eb}.student-id-preview-card .sid-photo-fallback{display:flex;align-items:center;justify-content:center;color:#08693a;font-size:6mm;font-weight:900}.student-id-preview-card .sid-name-band{height:8mm;min-height:8mm;flex:0 0 8mm;background:#064e3b;color:#fff;padding:1mm 2mm .7mm;text-align:center}.student-id-preview-card .sid-name{font-size:2.7mm;line-height:1.05;font-weight:900;text-transform:uppercase;white-space:nowrap;overflow:hidden;text-overflow:ellipsis}.student-id-preview-card .sid-class{font-size:1.9mm;line-height:1.05;margin-top:.45mm;font-weight:700;white-space:nowrap}.student-id-preview-card .sid-details{height:31mm;flex:0 0 31mm;padding:1.1mm 3mm .3mm;background:#fff}.student-id-preview-card{position:relative}.student-id-preview-card .sid-qr-wrap{position:absolute;left:50%;bottom:1.2mm;transform:translateX(-50%);width:11mm!important;height:11mm!important;display:flex;align-items:center;justify-content:center;z-index:5;background:#fff}.student-id-preview-card .sid-qr-wrap canvas,.student-id-preview-card .sid-qr-wrap img{width:10mm!important;height:10mm!important}.student-id-preview-card .sid-footer{display:none}.student-id-preview-card .sid-row{display:flex;align-items:flex-start;min-height:3.1mm;font-size:1.7mm;line-height:1.15}.student-id-preview-card .sid-row span{flex:0 0 15mm;color:#64748b;font-weight:700}.student-id-preview-card .sid-row b{flex:1;min-width:0;overflow:hidden;white-space:nowrap;text-overflow:ellipsis}.student-id-preview-card .sid-row.address-row{min-height:6mm}.student-id-preview-card .sid-row.address-row b{white-space:normal;display:-webkit-box;-webkit-line-clamp:2;-webkit-box-orient:vertical}.student-id-preview-card .sid-footer{flex:1 1 auto;text-align:center;font-size:1.25mm;line-height:1.2;color:#94a3b8;padding:.3mm 2mm 0}.student-id-preview-card img{display:block}.student-id-preview-card .sid-top{height:19mm;flex:0 0 19mm;padding:1.5mm 3mm 1mm;position:relative;overflow:hidden}.student-id-preview-card .sid-school-name{font-size:2.7mm;line-height:1.05;font-weight:900}.student-id-preview-card .sid-school-sub{font-size:1.65mm;line-height:1.05;margin-top:.4mm;font-weight:800}.student-id-preview-card .sid-school-phone{font-size:1.5mm;line-height:1.05;margin-top:.35mm;font-weight:700}.student-id-preview-card .sid-school-aff{font-size:1.25mm;line-height:1.05;margin-top:.3mm;font-weight:700}.student-id-preview-card .sid-title{font-size:1.5mm;font-weight:800;letter-spacing:.28mm}.student-id-preview-card .sid-photo-wrap{height:30mm;flex:0 0 30mm;width:24mm;margin:-1mm auto 0}.student-id-preview-card .sid-name-band{height:7mm;min-height:7mm;flex:0 0 7mm;padding:1mm 2mm .7mm}.student-id-preview-card .sid-name{font-size:2.8mm}.student-id-preview-card .sid-class{font-size:2mm;margin-top:.45mm}.student-id-preview-card .sid-details{height:21.5mm;flex:0 0 21.5mm;padding:1mm 3mm .3mm;position:relative}.student-id-preview-card .sid-info{padding-right:14mm}.student-id-preview-card .sid-row{min-height:2.75mm;font-size:1.65mm;line-height:1.12}.student-id-preview-card .sid-row span{flex:0 0 15mm}.student-id-preview-card .sid-qr-wrap{position:absolute;left:auto;right:2.5mm;bottom:1.2mm;transform:none;width:11mm!important;height:11mm!important}.student-id-preview-card .sid-qr-wrap canvas,.student-id-preview-card .sid-qr-wrap img{width:10mm!important;height:10mm!important}.student-id-preview-card .sid-footer{display:flex!important;align-items:flex-end;justify-content:center;flex:1 1 auto;min-height:0;text-align:center;font-size:1.25mm;line-height:1.25;color:#64748b;padding:.8mm 3mm 1.2mm;background:#fff;border-top:.2mm solid #e2e8f0;box-sizing:border-box}.student-id-preview-card .sid-school-name,.student-id-preview-card .sid-school-sub,.student-id-preview-card .sid-school-phone,.student-id-preview-card .sid-school-aff{white-space:nowrap}</style></head><body><div id="pages"></div><script>\n  // Register the PWA service worker only for the browser/PWA build.\n  // Capacitor Android uses its own bundled WebView cache and must not be\n  // intercepted by the web service worker.\n  if ("serviceWorker" in navigator && window.location.hostname !== "localhost") {\n    window.addEventListener("load", () => {\n      navigator.serviceWorker.register("./sw.js", { scope: "./" }).catch((error) => {\n        console.warn("Ashiana Attendance service worker registration failed:", error);\n      });\n    });\n  }\n<\/script>\n<div id="staff-admin-communication-modal" class="staff-comm-modal" role="dialog" aria-modal="true" aria-labelledby="staff-comm-title">
-  <div class="staff-comm-card">
-    <div class="staff-comm-head">
-      <div class="min-w-0"><div class="text-[9px] uppercase tracking-[.16em] text-emerald-200 font-bold">Internal School Communication</div><h2 id="staff-comm-title" class="text-base sm:text-lg font-extrabold mt-0.5">Staff ↔ Administration</h2></div>
-      <div class="flex items-center gap-2"><button id="staff-comm-new-btn" type="button" onclick="showStaffCommComposer()" class="px-3 py-2 rounded-xl bg-white/10 hover:bg-white/20 text-[10px] font-bold">+ New</button><button type="button" onclick="closeStaffAdminCommunication()" class="w-9 h-9 rounded-xl bg-white/10 hover:bg-white/20 flex items-center justify-center"><i data-lucide="x"></i></button></div>
-    </div>
-    <div class="staff-comm-body">
-      <div class="staff-comm-list"><div id="staff-comm-list" class="min-h-full"></div></div>
-      <div class="staff-comm-conversation">
-        <div id="staff-comm-thread-head" class="p-3 border-b bg-white hidden"></div>
-        <div id="staff-comm-messages" class="staff-comm-messages"><div class="staff-comm-empty"><div><div class="text-2xl mb-2">💬</div><div class="font-bold text-slate-700">Select a conversation</div><div class="text-[10px] mt-1">Messages between authorized staff and administration stay inside the school portal.</div></div></div></div>
-        <form id="staff-comm-reply-form" class="staff-comm-compose hidden" onsubmit="sendStaffCommReply(event)">
-          <div class="flex gap-2"><textarea id="staff-comm-reply" class="flex-1 border border-slate-200 rounded-xl p-2.5 text-xs outline-none focus:border-emerald-500" placeholder="Write a reply…"></textarea><button class="self-end px-4 py-2.5 rounded-xl bg-ashiana-green text-white text-xs font-bold">Send</button></div>
-        </form>
-        <form id="staff-comm-compose-form" class="staff-comm-compose hidden" onsubmit="submitStaffCommNew(event)">
-          <div class="grid grid-cols-1 sm:grid-cols-2 gap-2 mb-2">
-            <input id="staff-comm-subject" required maxlength="200" class="border border-slate-200 rounded-xl p-2.5 text-xs" placeholder="Subject">
-            <select id="staff-comm-recipient" class="border border-slate-200 rounded-xl p-2.5 text-xs"></select>
-            <select id="staff-comm-category" class="border border-slate-200 rounded-xl p-2.5 text-xs"><option value="GENERAL">General</option><option value="REQUEST">Request</option><option value="ISSUE">Issue</option><option value="SUGGESTION">Suggestion</option><option value="STUDENT_CONCERN">Student Concern</option><option value="ACADEMIC">Academic</option><option value="IT">IT / Technical</option><option value="INFRASTRUCTURE">Infrastructure</option><option value="URGENT">Urgent</option></select>
-            <select id="staff-comm-priority" class="border border-slate-200 rounded-xl p-2.5 text-xs"><option value="NORMAL">Normal Priority</option><option value="IMPORTANT">Important</option><option value="URGENT">Urgent</option></select>
-          </div>
-          <textarea id="staff-comm-body" required maxlength="5000" class="w-full border border-slate-200 rounded-xl p-2.5 text-xs" placeholder="Write your message…"></textarea>
-          <div class="flex justify-end gap-2 mt-2"><button type="button" onclick="hideStaffCommComposer()" class="px-3 py-2 rounded-xl bg-slate-100 text-slate-700 text-xs font-bold">Cancel</button><button class="px-4 py-2 rounded-xl bg-ashiana-green text-white text-xs font-bold">Send</button></div>
-        </form>
-      </div>
-    </div>
-  </div>
-</div>
-<script>
-(function(){
-  let staffCommThreads=[], staffCommCurrentThread=null, staffCommStaff=[];
-  const esc=v=>String(v??'').replace(/[&<>"']/g,c=>({'&':'&amp;','<':'&lt;','>':'&gt;','"':'&quot;',"'":'&#39;'}[c]));
-  function commRole(){return typeof getAccessRole==='function'?getAccessRole():((currentAuthUser?.type||'STAFF')==='ADMIN'?'ADMIN':'STAFF');}
-  function commEmail(){return String(currentAuthUser?.username||currentAuthUser?.staffRecord?.email||'').trim().toLowerCase();}
-  function commModal(){return document.getElementById('staff-admin-communication-modal');}
-  function commIsAdmin(){return String(currentAuthUser?.type||'').toUpperCase()==='ADMIN';}
-  window.openStaffAdminCommunication=async function(){
-    if(!currentAuthUser||!['ADMIN','TEACHER','STAFF'].includes(String(currentAuthUser.type||''))) return;
-    const m=commModal(); if(!m)return; m.classList.add('open');
-    document.getElementById('staff-comm-compose-form')?.classList.add('hidden');
-    document.getElementById('staff-comm-reply-form')?.classList.add('hidden');
-    await loadStaffComm();
-  };
-  window.closeStaffAdminCommunication=function(){
-    commModal()?.classList.remove('open'); staffCommCurrentThread=null;
-    if(window.__ashianaStaffCommChannel){try{supabaseClient.removeChannel(window.__ashianaStaffCommChannel);}catch(_){} window.__ashianaStaffCommChannel=null;}
-  };
-  async function loadStaffComm(){
-    if(!supabaseClient)return;
-    const list=document.getElementById('staff-comm-list'); if(list)list.innerHTML='<div class="p-5 text-xs text-slate-400">Loading…</div>';
-    const {data,error}=await supabaseClient.from('staff_communication_threads').select('id,subject,category,priority,status,audience,created_by_email,created_by_role,recipient_staff_id,created_at,last_message_at').order('last_message_at',{ascending:false});
-    if(error){if(list)list.innerHTML='<div class="p-5 text-xs text-rose-600">Unable to load communication: '+esc(error.message)+'</div>';return;}
-    staffCommThreads=data||[];
-    if(commIsAdmin()) await loadCommStaff();
-    renderCommThreads();
-    setupCommRealtime();
-  }
-  async function loadCommStaff(){
-    const {data,error}=await supabaseClient.from('staff').select('id,name,emp_id,role,department,email').eq('status','ACTIVE').order('name',{ascending:true});
-    if(!error)staffCommStaff=data||[];
-    const r=document.getElementById('staff-comm-recipient');
-    if(r&&commIsAdmin())r.innerHTML='<option value="ALL">All Active Staff — Announcement</option>'+staffCommStaff.map(x=>'<option value="'+esc(x.id)+'">'+esc(x.name||x.emp_id)+' • '+esc(x.role||'Staff')+'</option>').join('');
-  }
-  function renderCommThreads(){
-    const list=document.getElementById('staff-comm-list'); if(!list)return;
-    if(!staffCommThreads.length){list.innerHTML='<div class="staff-comm-empty min-h-[220px]"><div><div class="text-2xl mb-2">📭</div><div class="font-bold">No messages yet</div><div class="text-[10px] mt-1">Start a conversation with Administration.</div></div></div>';return;}
-    const email=commEmail();
-    list.innerHTML=staffCommThreads.map(t=>{
-      const unread=t.last_message_at && t.created_by_email?.toLowerCase()!==email;
-      const recipient=staffCommStaff.find(x=>x.id===t.recipient_staff_id);
-      const target= t.audience==='ALL_STAFF'?'All Staff':(recipient?.name||'Administration');
-      return '<button type="button" class="staff-comm-list-item '+(staffCommCurrentThread?.id===t.id?'active':'')+'" onclick="openStaffCommThread(\''+t.id+'\')"><div class="flex items-center justify-between gap-2"><span class="font-extrabold text-[11px] text-slate-800 truncate">'+esc(t.subject)+'</span>'+(unread?'<span class="staff-comm-pill bg-emerald-100 text-emerald-700">NEW</span>':'')+'</div><div class="text-[9px] text-slate-500 mt-1 truncate">'+esc(target)+' • '+esc(t.category)+'</div><div class="flex items-center gap-1 mt-1"><span class="staff-comm-pill '+(t.priority==='URGENT'?'bg-rose-100 text-rose-700':t.priority==='IMPORTANT'?'bg-amber-100 text-amber-700':'bg-slate-100 text-slate-600')+'">'+esc(t.priority)+'</span><span class="text-[9px] text-slate-400">'+new Date(t.last_message_at).toLocaleString('en-IN',{day:'numeric',month:'short',hour:'2-digit',minute:'2-digit'})+'</span></div></button>';
-    }).join('');
-  }
-  window.openStaffCommThread=async function(id){
-    const t=staffCommThreads.find(x=>x.id===id); if(!t)return; staffCommCurrentThread=t; renderCommThreads();
-    const head=document.getElementById('staff-comm-thread-head'), msgs=document.getElementById('staff-comm-messages'), reply=document.getElementById('staff-comm-reply-form');
-    head.classList.remove('hidden'); head.innerHTML='<div class="flex items-center justify-between gap-2"><div class="min-w-0"><div class="font-extrabold text-sm text-slate-800 truncate">'+esc(t.subject)+'</div><div class="text-[9px] text-slate-500 mt-0.5">'+esc(t.category)+' • '+esc(t.priority)+' • '+esc(t.status)+'</div></div>'+(commIsAdmin()?'<select onchange="updateStaffCommStatus(\''+t.id+'\',this.value)" class="border rounded-lg p-1.5 text-[10px]"><option '+(t.status==='OPEN'?'selected':'')+'>OPEN</option><option '+(t.status==='IN_PROGRESS'?'selected':'')+'>IN_PROGRESS</option><option '+(t.status==='RESOLVED'?'selected':'')+'>RESOLVED</option><option '+(t.status==='CLOSED'?'selected':'')+'>CLOSED</option></select>':'')+'</div>';
-    const {data,error}=await supabaseClient.from('staff_communication_messages').select('id,sender_email,sender_role,body,created_at').eq('thread_id',id).order('created_at',{ascending:true});
-    if(error){msgs.innerHTML='<div class="text-xs text-rose-600 p-4">'+esc(error.message)+'</div>';return;}
-    msgs.innerHTML=(data||[]).map(x=>'<div class="staff-comm-msg '+(x.sender_email.toLowerCase()===commEmail()?'mine':'theirs')+'"><div class="text-[9px] font-extrabold text-slate-500 mb-1">'+(x.sender_email.toLowerCase()===commEmail()?'You':esc(x.sender_role))+' • '+new Date(x.created_at).toLocaleString('en-IN',{day:'numeric',month:'short',hour:'2-digit',minute:'2-digit'})+'</div>'+esc(x.body)+'</div>').join('')||'<div class="staff-comm-empty"><div>No messages yet.</div></div>';
-    msgs.scrollTop=msgs.scrollHeight; reply.classList.remove('hidden');
-    await supabaseClient.from('staff_communication_reads').upsert({thread_id:id,reader_email:commEmail(),last_read_at:new Date().toISOString()},{onConflict:'thread_id,reader_email'});
-  };
-  window.showStaffCommComposer=async function(){
-    const form=document.getElementById('staff-comm-compose-form'); if(!form)return;
-    if(commIsAdmin())await loadCommStaff();
-    form.classList.remove('hidden'); document.getElementById('staff-comm-reply-form')?.classList.add('hidden');
-    document.getElementById('staff-comm-subject')?.focus();
-  };
-  window.hideStaffCommComposer=function(){document.getElementById('staff-comm-compose-form')?.classList.add('hidden');};
-  window.submitStaffCommNew=async function(e){
-    e.preventDefault(); if(!supabaseClient)return;
-    const subject=document.getElementById('staff-comm-subject').value.trim(), body=document.getElementById('staff-comm-body').value.trim();
-    if(!subject||!body)return;
-    const category=document.getElementById('staff-comm-category').value, priority=document.getElementById('staff-comm-priority').value;
-    const recipient=document.getElementById('staff-comm-recipient').value||'ALL';
-    const admin=commIsAdmin();
-    const payload={subject,category,priority,status:'OPEN',audience:admin&&recipient==='ALL'?'ALL_STAFF':'DIRECT',created_by_email:commEmail(),created_by_role:admin?'ADMIN':commRole(),recipient_staff_id:admin&&recipient!=='ALL'?recipient:null};
-    const {data:thread,error}=await supabaseClient.from('staff_communication_threads').insert(payload).select().single();
-    if(error){alert('Could not create message: '+error.message);return;}
-    const {error:msgError}=await supabaseClient.from('staff_communication_messages').insert({thread_id:thread.id,sender_email:commEmail(),sender_role:admin?'ADMIN':commRole(),body});
-    if(msgError){alert('Message could not be sent: '+msgError.message);return;}
-    e.target.reset(); document.getElementById('staff-comm-compose-form').classList.add('hidden');
-    await loadStaffComm(); await openStaffCommThread(thread.id);
-  };
-  window.sendStaffCommReply=async function(e){
-    e.preventDefault(); if(!staffCommCurrentThread)return;
-    const input=document.getElementById('staff-comm-reply'),body=input.value.trim(); if(!body)return;
-    const {error}=await supabaseClient.from('staff_communication_messages').insert({thread_id:staffCommCurrentThread.id,sender_email:commEmail(),sender_role:commIsAdmin()?'ADMIN':commRole(),body});
-    if(error){alert('Reply could not be sent: '+error.message);return;}
-    input.value=''; await loadStaffComm(); await openStaffCommThread(staffCommCurrentThread.id);
-  };
-  window.updateStaffCommStatus=async function(id,status){
-    if(!commIsAdmin())return;
-    const {error}=await supabaseClient.from('staff_communication_threads').update({status}).eq('id',id);
-    if(error)alert('Status update failed: '+error.message); else await loadStaffComm();
-  };
-  function setupCommRealtime(){
-    if(window.__ashianaStaffCommChannel||!supabaseClient)return;
-    window.__ashianaStaffCommChannel=supabaseClient.channel('staff-admin-communication').on('postgres_changes',{event:'*',schema:'public',table:'staff_communication_threads'},()=>loadStaffComm()).on('postgres_changes',{event:'INSERT',schema:'public',table:'staff_communication_messages'},()=>{if(commModal()?.classList.contains('open'))loadStaffComm();}).subscribe();
-  }
-  window.addEventListener('beforeunload',()=>{if(window.__ashianaStaffCommChannel&&supabaseClient){try{supabaseClient.removeChannel(window.__ashianaStaffCommChannel);}catch(_){} }});
-})();
-</script>
-</body></html>');printWin.document.close();const paths=students.filter(s=>s.photo_path&&!s.__printPhotoUrl).map(s=>s.photo_path);let photoMap={};if(paths.length){for(let i=0;i<paths.length;i+=500){const chunk=paths.slice(i,i+500),{data,error}=await supabaseClient.storage.from('student-photos').createSignedUrls(chunk,3600);if(!error)(data||[]).forEach(x=>{if(x.path&&x.signedUrl)photoMap[x.path]=x.signedUrl;});}}const pages=[];for(let i=0;i<students.length;i+=9)pages.push(students.slice(i,i+9));const pagesHtml=pages.map(group=>'<div class="student-id-print-page">'+group.map(s=>makeStudentIdCardHtml(s,s.__printPhotoUrl||photoMap[s.photo_path]||'')).join('')+'</div>').join('');printWin.document.getElementById('pages').innerHTML=pagesHtml;setTimeout(()=>{if(printWin.QRCode){printWin.document.querySelectorAll("[data-student-qr]").forEach((el,i)=>{const s=students[i];new printWin.QRCode(el,{text:"ASHIANA|STUDENT|"+String(s.enroll_no||"")+"|"+String(s.student_name||""),width:52,height:52,colorDark:"#064e3b",colorLight:"#ffffff",correctLevel:printWin.QRCode.CorrectLevel.M});});}},300);try{await supabaseClient.from('student_roster').update({id_card_generated_at:new Date().toISOString()}).in('id',students.map(s=>s.id)).eq('school_code',APS_STUDENT_SCHOOL);}catch(e){console.warn('Could not record ID card generation',e);}setTimeout(()=>{try{printWin.focus();printWin.print();}catch(e){}},1200);}
+      const printWin=window.open('','_blank','width=900,height=900');if(!printWin){showToast('Please allow pop-ups to print student ID cards.','error');return;}printWin.document.open();printWin.document.write('<html><head><title>Ashiana Student ID Cards</title><script src="./assets/vendor/qrcode.min.js"><\/script><style>@page{size:A4 portrait;margin:0}*{box-sizing:border-box}html,body{margin:0;padding:0;background:#fff}body{font-family:Arial,Helvetica,sans-serif}.student-id-print-page{width:210mm;height:297mm;padding:12mm 18mm;display:grid;grid-template-columns:repeat(3,54mm);grid-auto-rows:85.6mm;column-gap:6mm;row-gap:5mm;align-content:start;page-break-after:always;break-after:page}.student-id-print-page:last-child{page-break-after:auto;break-after:auto}.student-id-preview-card{width:54mm;height:85.6mm;overflow:hidden;display:flex;flex-direction:column;background:#fff;border:.3mm solid #9ca3af;border-radius:2mm;color:#111827}.student-id-preview-card .sid-top{height:19mm;flex:0 0 19mm;padding:1.2mm 3mm .8mm;color:#fff;background:linear-gradient(145deg,#063f32,#075b46 62%,#0a7655);text-align:center;overflow:hidden}.student-id-preview-card .sid-logo{width:7mm;height:7mm;object-fit:contain;background:#fff;border-radius:50%;padding:.3mm;display:block;margin:0 auto .35mm}.student-id-preview-card .sid-school{font-size:2.65mm;line-height:1.05;font-weight:900;white-space:nowrap}.student-id-preview-card .sid-sub{font-size:1.45mm;line-height:1.05;margin-top:.35mm;font-weight:800;white-space:nowrap}.student-id-preview-card .sid-line{height:.25mm;background:#ef3340;margin:.45mm 8mm 0}.student-id-preview-card .sid-photo-wrap{height:25mm;flex:0 0 25mm;width:20mm;margin:-.5mm auto 0;background:#fff;border:.55mm solid #fff;box-shadow:0 1mm 2.5mm rgba(0,0,0,.22);position:relative;z-index:2}.student-id-preview-card .sid-photo-wrap img,.student-id-preview-card .sid-photo-fallback{width:100%;height:100%;object-fit:cover;display:block;background:#e5e7eb}.student-id-preview-card .sid-photo-fallback{display:flex;align-items:center;justify-content:center;color:#08693a;font-size:6mm;font-weight:900}.student-id-preview-card .sid-name-band{height:8mm;min-height:8mm;flex:0 0 8mm;background:#064e3b;color:#fff;padding:1mm 2mm .7mm;text-align:center}.student-id-preview-card .sid-name{font-size:2.7mm;line-height:1.05;font-weight:900;text-transform:uppercase;white-space:nowrap;overflow:hidden;text-overflow:ellipsis}.student-id-preview-card .sid-class{font-size:1.9mm;line-height:1.05;margin-top:.45mm;font-weight:700;white-space:nowrap}.student-id-preview-card .sid-details{height:31mm;flex:0 0 31mm;padding:1.1mm 3mm .3mm;background:#fff}.student-id-preview-card{position:relative}.student-id-preview-card .sid-qr-wrap{position:absolute;left:50%;bottom:1.2mm;transform:translateX(-50%);width:11mm!important;height:11mm!important;display:flex;align-items:center;justify-content:center;z-index:5;background:#fff}.student-id-preview-card .sid-qr-wrap canvas,.student-id-preview-card .sid-qr-wrap img{width:10mm!important;height:10mm!important}.student-id-preview-card .sid-footer{display:none}.student-id-preview-card .sid-row{display:flex;align-items:flex-start;min-height:3.1mm;font-size:1.7mm;line-height:1.15}.student-id-preview-card .sid-row span{flex:0 0 15mm;color:#64748b;font-weight:700}.student-id-preview-card .sid-row b{flex:1;min-width:0;overflow:hidden;white-space:nowrap;text-overflow:ellipsis}.student-id-preview-card .sid-row.address-row{min-height:6mm}.student-id-preview-card .sid-row.address-row b{white-space:normal;display:-webkit-box;-webkit-line-clamp:2;-webkit-box-orient:vertical}.student-id-preview-card .sid-footer{flex:1 1 auto;text-align:center;font-size:1.25mm;line-height:1.2;color:#94a3b8;padding:.3mm 2mm 0}.student-id-preview-card img{display:block}.student-id-preview-card .sid-top{height:19mm;flex:0 0 19mm;padding:1.5mm 3mm 1mm;position:relative;overflow:hidden}.student-id-preview-card .sid-school-name{font-size:2.7mm;line-height:1.05;font-weight:900}.student-id-preview-card .sid-school-sub{font-size:1.65mm;line-height:1.05;margin-top:.4mm;font-weight:800}.student-id-preview-card .sid-school-phone{font-size:1.5mm;line-height:1.05;margin-top:.35mm;font-weight:700}.student-id-preview-card .sid-school-aff{font-size:1.25mm;line-height:1.05;margin-top:.3mm;font-weight:700}.student-id-preview-card .sid-title{font-size:1.5mm;font-weight:800;letter-spacing:.28mm}.student-id-preview-card .sid-photo-wrap{height:30mm;flex:0 0 30mm;width:24mm;margin:-1mm auto 0}.student-id-preview-card .sid-name-band{height:7mm;min-height:7mm;flex:0 0 7mm;padding:1mm 2mm .7mm}.student-id-preview-card .sid-name{font-size:2.8mm}.student-id-preview-card .sid-class{font-size:2mm;margin-top:.45mm}.student-id-preview-card .sid-details{height:21.5mm;flex:0 0 21.5mm;padding:1mm 3mm .3mm;position:relative}.student-id-preview-card .sid-info{padding-right:14mm}.student-id-preview-card .sid-row{min-height:2.75mm;font-size:1.65mm;line-height:1.12}.student-id-preview-card .sid-row span{flex:0 0 15mm}.student-id-preview-card .sid-qr-wrap{position:absolute;left:auto;right:2.5mm;bottom:1.2mm;transform:none;width:11mm!important;height:11mm!important}.student-id-preview-card .sid-qr-wrap canvas,.student-id-preview-card .sid-qr-wrap img{width:10mm!important;height:10mm!important}.student-id-preview-card .sid-footer{display:flex!important;align-items:flex-end;justify-content:center;flex:1 1 auto;min-height:0;text-align:center;font-size:1.25mm;line-height:1.25;color:#64748b;padding:.8mm 3mm 1.2mm;background:#fff;border-top:.2mm solid #e2e8f0;box-sizing:border-box}.student-id-preview-card .sid-school-name,.student-id-preview-card .sid-school-sub,.student-id-preview-card .sid-school-phone,.student-id-preview-card .sid-school-aff{white-space:nowrap}</style></head><body><div id="pages"></div><script>\n  // Register the PWA service worker only for the browser/PWA build.\n  // Capacitor Android uses its own bundled WebView cache and must not be\n  // intercepted by the web service worker.\n  if ("serviceWorker" in navigator && window.location.hostname !== "localhost") {\n    window.addEventListener("load", () => {\n      navigator.serviceWorker.register("./sw.js", { scope: "./" }).catch((error) => {\n        console.warn("Ashiana Attendance service worker registration failed:", error);\n      });\n    });\n  }\n<\/script>\n</body></html>');printWin.document.close();const paths=students.filter(s=>s.photo_path&&!s.__printPhotoUrl).map(s=>s.photo_path);let photoMap={};if(paths.length){for(let i=0;i<paths.length;i+=500){const chunk=paths.slice(i,i+500),{data,error}=await supabaseClient.storage.from('student-photos').createSignedUrls(chunk,3600);if(!error)(data||[]).forEach(x=>{if(x.path&&x.signedUrl)photoMap[x.path]=x.signedUrl;});}}const pages=[];for(let i=0;i<students.length;i+=9)pages.push(students.slice(i,i+9));const pagesHtml=pages.map(group=>'<div class="student-id-print-page">'+group.map(s=>makeStudentIdCardHtml(s,s.__printPhotoUrl||photoMap[s.photo_path]||'')).join('')+'</div>').join('');printWin.document.getElementById('pages').innerHTML=pagesHtml;setTimeout(()=>{if(printWin.QRCode){printWin.document.querySelectorAll("[data-student-qr]").forEach((el,i)=>{const s=students[i];new printWin.QRCode(el,{text:"ASHIANA|STUDENT|"+String(s.enroll_no||"")+"|"+String(s.student_name||""),width:52,height:52,colorDark:"#064e3b",colorLight:"#ffffff",correctLevel:printWin.QRCode.CorrectLevel.M});});}},300);try{await supabaseClient.from('student_roster').update({id_card_generated_at:new Date().toISOString()}).in('id',students.map(s=>s.id)).eq('school_code',APS_STUDENT_SCHOOL);}catch(e){console.warn('Could not record ID card generation',e);}setTimeout(()=>{try{printWin.focus();printWin.print();}catch(e){}},1200);}
     async function createSelectedStudentIdCards(){const ids=studentSelectedIds();if(!ids.length)return showToast('Select at least one student first.','error');const students=ids.map(id=>adminStudentRows.find(s=>s.id===id)).filter(Boolean);if(!students.length)return;await printStudentIdCards(students);}
     async function deleteStudentById(id){const s=adminStudentRows.find(x=>x.id===id);if(!s)return;if(!confirm('Delete this student? Their student attendance history will also be deleted.'))return;try{if(s.photo_path)await supabaseClient.storage.from('student-photos').remove([s.photo_path]);const {error}=await supabaseClient.from('student_roster').delete().eq('id',id).eq('school_code',APS_STUDENT_SCHOOL);if(error)throw error;showToast('Student deleted.','success');await loadAdminStudents();}catch(e){showToast('Delete failed: '+(e.message||e),'error');}}
     async function deleteSelectedStudents(){
@@ -10214,6 +10089,131 @@ function addMessage(text,type){
 
   refreshAiVisibility();
   setInterval(refreshAiVisibility,1200);
+})();
+</script>
+<div id="staff-admin-communication-modal" class="staff-comm-modal" role="dialog" aria-modal="true" aria-labelledby="staff-comm-title">
+  <div class="staff-comm-card">
+    <div class="staff-comm-head">
+      <div class="min-w-0"><div class="text-[9px] uppercase tracking-[.16em] text-emerald-200 font-bold">Internal School Communication</div><h2 id="staff-comm-title" class="text-base sm:text-lg font-extrabold mt-0.5">Staff ↔ Administration</h2></div>
+      <div class="flex items-center gap-2"><button id="staff-comm-new-btn" type="button" onclick="showStaffCommComposer()" class="px-3 py-2 rounded-xl bg-white/10 hover:bg-white/20 text-[10px] font-bold">+ New</button><button type="button" onclick="closeStaffAdminCommunication()" class="w-9 h-9 rounded-xl bg-white/10 hover:bg-white/20 flex items-center justify-center"><i data-lucide="x"></i></button></div>
+    </div>
+    <div class="staff-comm-body">
+      <div class="staff-comm-list"><div id="staff-comm-list" class="min-h-full"></div></div>
+      <div class="staff-comm-conversation">
+        <div id="staff-comm-thread-head" class="p-3 border-b bg-white hidden"></div>
+        <div id="staff-comm-messages" class="staff-comm-messages"><div class="staff-comm-empty"><div><div class="text-2xl mb-2">💬</div><div class="font-bold text-slate-700">Select a conversation</div><div class="text-[10px] mt-1">Messages between authorized staff and administration stay inside the school portal.</div></div></div></div>
+        <form id="staff-comm-reply-form" class="staff-comm-compose hidden" onsubmit="sendStaffCommReply(event)">
+          <div class="flex gap-2"><textarea id="staff-comm-reply" class="flex-1 border border-slate-200 rounded-xl p-2.5 text-xs outline-none focus:border-emerald-500" placeholder="Write a reply…"></textarea><button class="self-end px-4 py-2.5 rounded-xl bg-ashiana-green text-white text-xs font-bold">Send</button></div>
+        </form>
+        <form id="staff-comm-compose-form" class="staff-comm-compose hidden" onsubmit="submitStaffCommNew(event)">
+          <div class="grid grid-cols-1 sm:grid-cols-2 gap-2 mb-2">
+            <input id="staff-comm-subject" required maxlength="200" class="border border-slate-200 rounded-xl p-2.5 text-xs" placeholder="Subject">
+            <select id="staff-comm-recipient" class="border border-slate-200 rounded-xl p-2.5 text-xs"></select>
+            <select id="staff-comm-category" class="border border-slate-200 rounded-xl p-2.5 text-xs"><option value="GENERAL">General</option><option value="REQUEST">Request</option><option value="ISSUE">Issue</option><option value="SUGGESTION">Suggestion</option><option value="STUDENT_CONCERN">Student Concern</option><option value="ACADEMIC">Academic</option><option value="IT">IT / Technical</option><option value="INFRASTRUCTURE">Infrastructure</option><option value="URGENT">Urgent</option></select>
+            <select id="staff-comm-priority" class="border border-slate-200 rounded-xl p-2.5 text-xs"><option value="NORMAL">Normal Priority</option><option value="IMPORTANT">Important</option><option value="URGENT">Urgent</option></select>
+          </div>
+          <textarea id="staff-comm-body" required maxlength="5000" class="w-full border border-slate-200 rounded-xl p-2.5 text-xs" placeholder="Write your message…"></textarea>
+          <div class="flex justify-end gap-2 mt-2"><button type="button" onclick="hideStaffCommComposer()" class="px-3 py-2 rounded-xl bg-slate-100 text-slate-700 text-xs font-bold">Cancel</button><button class="px-4 py-2 rounded-xl bg-ashiana-green text-white text-xs font-bold">Send</button></div>
+        </form>
+      </div>
+    </div>
+  </div>
+</div>
+<script>
+(function(){
+  let staffCommThreads=[], staffCommCurrentThread=null, staffCommStaff=[];
+  const esc=v=>String(v??'').replace(/[&<>"']/g,c=>({'&':'&amp;','<':'&lt;','>':'&gt;','"':'&quot;',"'":'&#39;'}[c]));
+  function commRole(){return typeof getAccessRole==='function'?getAccessRole():((currentAuthUser?.type||'STAFF')==='ADMIN'?'ADMIN':'STAFF');}
+  function commEmail(){return String(currentAuthUser?.username||currentAuthUser?.staffRecord?.email||'').trim().toLowerCase();}
+  function commModal(){return document.getElementById('staff-admin-communication-modal');}
+  function commIsAdmin(){return String(currentAuthUser?.type||'').toUpperCase()==='ADMIN';}
+  window.openStaffAdminCommunication=async function(){
+    if(!currentAuthUser||!['ADMIN','TEACHER','STAFF'].includes(String(currentAuthUser.type||''))) return;
+    const m=commModal(); if(!m)return; m.classList.add('open');
+    document.getElementById('staff-comm-compose-form')?.classList.add('hidden');
+    document.getElementById('staff-comm-reply-form')?.classList.add('hidden');
+    await loadStaffComm();
+  };
+  window.closeStaffAdminCommunication=function(){
+    commModal()?.classList.remove('open'); staffCommCurrentThread=null;
+    if(window.__ashianaStaffCommChannel){try{supabaseClient.removeChannel(window.__ashianaStaffCommChannel);}catch(_){} window.__ashianaStaffCommChannel=null;}
+  };
+  async function loadStaffComm(){
+    if(!supabaseClient)return;
+    const list=document.getElementById('staff-comm-list'); if(list)list.innerHTML='<div class="p-5 text-xs text-slate-400">Loading…</div>';
+    const {data,error}=await supabaseClient.from('staff_communication_threads').select('id,subject,category,priority,status,audience,created_by_email,created_by_role,recipient_staff_id,created_at,last_message_at').order('last_message_at',{ascending:false});
+    if(error){if(list)list.innerHTML='<div class="p-5 text-xs text-rose-600">Unable to load communication: '+esc(error.message)+'</div>';return;}
+    staffCommThreads=data||[];
+    if(commIsAdmin()) await loadCommStaff();
+    renderCommThreads();
+    setupCommRealtime();
+  }
+  async function loadCommStaff(){
+    const {data,error}=await supabaseClient.from('staff').select('id,name,emp_id,role,department,email').eq('status','ACTIVE').order('name',{ascending:true});
+    if(!error)staffCommStaff=data||[];
+    const r=document.getElementById('staff-comm-recipient');
+    if(r&&commIsAdmin())r.innerHTML='<option value="ALL">All Active Staff — Announcement</option>'+staffCommStaff.map(x=>'<option value="'+esc(x.id)+'">'+esc(x.name||x.emp_id)+' • '+esc(x.role||'Staff')+'</option>').join('');
+  }
+  function renderCommThreads(){
+    const list=document.getElementById('staff-comm-list'); if(!list)return;
+    if(!staffCommThreads.length){list.innerHTML='<div class="staff-comm-empty min-h-[220px]"><div><div class="text-2xl mb-2">📭</div><div class="font-bold">No messages yet</div><div class="text-[10px] mt-1">Start a conversation with Administration.</div></div></div>';return;}
+    const email=commEmail();
+    list.innerHTML=staffCommThreads.map(t=>{
+      const unread=t.last_message_at && t.created_by_email?.toLowerCase()!==email;
+      const recipient=staffCommStaff.find(x=>x.id===t.recipient_staff_id);
+      const target= t.audience==='ALL_STAFF'?'All Staff':(recipient?.name||'Administration');
+      return '<button type="button" class="staff-comm-list-item '+(staffCommCurrentThread?.id===t.id?'active':'')+'" onclick="openStaffCommThread(\''+t.id+'\')"><div class="flex items-center justify-between gap-2"><span class="font-extrabold text-[11px] text-slate-800 truncate">'+esc(t.subject)+'</span>'+(unread?'<span class="staff-comm-pill bg-emerald-100 text-emerald-700">NEW</span>':'')+'</div><div class="text-[9px] text-slate-500 mt-1 truncate">'+esc(target)+' • '+esc(t.category)+'</div><div class="flex items-center gap-1 mt-1"><span class="staff-comm-pill '+(t.priority==='URGENT'?'bg-rose-100 text-rose-700':t.priority==='IMPORTANT'?'bg-amber-100 text-amber-700':'bg-slate-100 text-slate-600')+'">'+esc(t.priority)+'</span><span class="text-[9px] text-slate-400">'+new Date(t.last_message_at).toLocaleString('en-IN',{day:'numeric',month:'short',hour:'2-digit',minute:'2-digit'})+'</span></div></button>';
+    }).join('');
+  }
+  window.openStaffCommThread=async function(id){
+    const t=staffCommThreads.find(x=>x.id===id); if(!t)return; staffCommCurrentThread=t; renderCommThreads();
+    const head=document.getElementById('staff-comm-thread-head'), msgs=document.getElementById('staff-comm-messages'), reply=document.getElementById('staff-comm-reply-form');
+    head.classList.remove('hidden'); head.innerHTML='<div class="flex items-center justify-between gap-2"><div class="min-w-0"><div class="font-extrabold text-sm text-slate-800 truncate">'+esc(t.subject)+'</div><div class="text-[9px] text-slate-500 mt-0.5">'+esc(t.category)+' • '+esc(t.priority)+' • '+esc(t.status)+'</div></div>'+(commIsAdmin()?'<select onchange="updateStaffCommStatus(\''+t.id+'\',this.value)" class="border rounded-lg p-1.5 text-[10px]"><option '+(t.status==='OPEN'?'selected':'')+'>OPEN</option><option '+(t.status==='IN_PROGRESS'?'selected':'')+'>IN_PROGRESS</option><option '+(t.status==='RESOLVED'?'selected':'')+'>RESOLVED</option><option '+(t.status==='CLOSED'?'selected':'')+'>CLOSED</option></select>':'')+'</div>';
+    const {data,error}=await supabaseClient.from('staff_communication_messages').select('id,sender_email,sender_role,body,created_at').eq('thread_id',id).order('created_at',{ascending:true});
+    if(error){msgs.innerHTML='<div class="text-xs text-rose-600 p-4">'+esc(error.message)+'</div>';return;}
+    msgs.innerHTML=(data||[]).map(x=>'<div class="staff-comm-msg '+(x.sender_email.toLowerCase()===commEmail()?'mine':'theirs')+'"><div class="text-[9px] font-extrabold text-slate-500 mb-1">'+(x.sender_email.toLowerCase()===commEmail()?'You':esc(x.sender_role))+' • '+new Date(x.created_at).toLocaleString('en-IN',{day:'numeric',month:'short',hour:'2-digit',minute:'2-digit'})+'</div>'+esc(x.body)+'</div>').join('')||'<div class="staff-comm-empty"><div>No messages yet.</div></div>';
+    msgs.scrollTop=msgs.scrollHeight; reply.classList.remove('hidden');
+    await supabaseClient.from('staff_communication_reads').upsert({thread_id:id,reader_email:commEmail(),last_read_at:new Date().toISOString()},{onConflict:'thread_id,reader_email'});
+  };
+  window.showStaffCommComposer=async function(){
+    const form=document.getElementById('staff-comm-compose-form'); if(!form)return;
+    if(commIsAdmin())await loadCommStaff();
+    form.classList.remove('hidden'); document.getElementById('staff-comm-reply-form')?.classList.add('hidden');
+    document.getElementById('staff-comm-subject')?.focus();
+  };
+  window.hideStaffCommComposer=function(){document.getElementById('staff-comm-compose-form')?.classList.add('hidden');};
+  window.submitStaffCommNew=async function(e){
+    e.preventDefault(); if(!supabaseClient)return;
+    const subject=document.getElementById('staff-comm-subject').value.trim(), body=document.getElementById('staff-comm-body').value.trim();
+    if(!subject||!body)return;
+    const category=document.getElementById('staff-comm-category').value, priority=document.getElementById('staff-comm-priority').value;
+    const recipient=document.getElementById('staff-comm-recipient').value||'ALL';
+    const admin=commIsAdmin();
+    const payload={subject,category,priority,status:'OPEN',audience:admin&&recipient==='ALL'?'ALL_STAFF':'DIRECT',created_by_email:commEmail(),created_by_role:admin?'ADMIN':commRole(),recipient_staff_id:admin&&recipient!=='ALL'?recipient:null};
+    const {data:thread,error}=await supabaseClient.from('staff_communication_threads').insert(payload).select().single();
+    if(error){alert('Could not create message: '+error.message);return;}
+    const {error:msgError}=await supabaseClient.from('staff_communication_messages').insert({thread_id:thread.id,sender_email:commEmail(),sender_role:admin?'ADMIN':commRole(),body});
+    if(msgError){alert('Message could not be sent: '+msgError.message);return;}
+    e.target.reset(); document.getElementById('staff-comm-compose-form').classList.add('hidden');
+    await loadStaffComm(); await openStaffCommThread(thread.id);
+  };
+  window.sendStaffCommReply=async function(e){
+    e.preventDefault(); if(!staffCommCurrentThread)return;
+    const input=document.getElementById('staff-comm-reply'),body=input.value.trim(); if(!body)return;
+    const {error}=await supabaseClient.from('staff_communication_messages').insert({thread_id:staffCommCurrentThread.id,sender_email:commEmail(),sender_role:commIsAdmin()?'ADMIN':commRole(),body});
+    if(error){alert('Reply could not be sent: '+error.message);return;}
+    input.value=''; await loadStaffComm(); await openStaffCommThread(staffCommCurrentThread.id);
+  };
+  window.updateStaffCommStatus=async function(id,status){
+    if(!commIsAdmin())return;
+    const {error}=await supabaseClient.from('staff_communication_threads').update({status}).eq('id',id);
+    if(error)alert('Status update failed: '+error.message); else await loadStaffComm();
+  };
+  function setupCommRealtime(){
+    if(window.__ashianaStaffCommChannel||!supabaseClient)return;
+    window.__ashianaStaffCommChannel=supabaseClient.channel('staff-admin-communication').on('postgres_changes',{event:'*',schema:'public',table:'staff_communication_threads'},()=>loadStaffComm()).on('postgres_changes',{event:'INSERT',schema:'public',table:'staff_communication_messages'},()=>{if(commModal()?.classList.contains('open'))loadStaffComm();}).subscribe();
+  }
+  window.addEventListener('beforeunload',()=>{if(window.__ashianaStaffCommChannel&&supabaseClient){try{supabaseClient.removeChannel(window.__ashianaStaffCommChannel);}catch(_){} }});
 })();
 </script>
 </body>
