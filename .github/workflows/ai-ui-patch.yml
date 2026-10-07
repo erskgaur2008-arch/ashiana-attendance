@@ -1,15 +1,17 @@
 name: Apply AI UI patch
 
 on:
-  push:
+  pull_request:
     branches:
-      - fix/ai-mobile-chat-scroll
+      - main
+    types: [opened, synchronize]
 
 permissions:
   contents: write
 
 jobs:
   patch:
+    if: github.event.pull_request.head.ref == 'fix/ai-mobile-chat-scroll'
     runs-on: ubuntu-latest
     steps:
       - uses: actions/checkout@v4
@@ -20,70 +22,47 @@ jobs:
         shell: python
         run: |
           from pathlib import Path
-
           p = Path("index.html")
           s = p.read_text(encoding="utf-8")
 
           old_card = '''#ashiana-ai-card{width:min(94vw,620px);max-height:min(86dvh,760px);overflow:auto;background:#fff;border-radius:24px;box-shadow:0 24px 70px rgba(15,23,42,.25)}'''
           new_card = '''#ashiana-ai-card{width:min(94vw,620px);height:min(86dvh,760px);max-height:min(86dvh,760px);display:flex;flex-direction:column;overflow:hidden;background:#fff;border-radius:24px;box-shadow:0 24px 70px rgba(15,23,42,.25)}'''
-          if old_card not in s:
-              raise SystemExit("AI card CSS pattern not found")
-          s = s.replace(old_card, new_card, 1)
+          if old_card not in s: raise SystemExit("AI card CSS pattern not found")
+          s = s.replace(old_card,new_card,1)
 
           old_messages = '''#ashiana-ai-messages{max-height:54dvh;overflow-y:auto;padding:14px;scroll-behavior:smooth}'''
           new_messages = '''#ashiana-ai-messages{flex:1 1 auto;min-height:0;max-height:none;overflow-y:auto;overflow-x:hidden;padding:14px;scroll-behavior:smooth;-webkit-overflow-scrolling:touch}#ashiana-ai-form{flex:0 0 auto}#ashiana-ai-input{overflow-y:auto}'''
-          if old_messages not in s:
-              raise SystemExit("AI messages CSS pattern not found")
-          s = s.replace(old_messages, new_messages, 1)
+          if old_messages not in s: raise SystemExit("AI messages CSS pattern not found")
+          s = s.replace(old_messages,new_messages,1)
 
           old_mobile = '''@media(max-width:640px){#ashiana-ai-launcher{right:12px;bottom:12px}#ashiana-ai-modal{padding:8px;align-items:flex-end}#ashiana-ai-card{width:100%;max-height:92dvh;border-radius:20px}}'''
           new_mobile = '''@media(max-width:640px){#ashiana-ai-launcher{right:12px;bottom:12px}#ashiana-ai-modal{padding:8px;align-items:flex-end}#ashiana-ai-card{width:100%;height:min(92dvh,760px);max-height:92dvh;border-radius:20px}#ashiana-ai-messages{padding:12px;min-height:0}}'''
-          if old_mobile not in s:
-              raise SystemExit("AI mobile CSS pattern not found")
-          s = s.replace(old_mobile, new_mobile, 1)
+          if old_mobile not in s: raise SystemExit("AI mobile CSS pattern not found")
+          s = s.replace(old_mobile,new_mobile,1)
 
           old_scroll = '''messages.appendChild(el);messages.scrollTop=messages.scrollHeight;'''
           new_scroll = '''messages.appendChild(el);requestAnimationFrame(function(){messages.scrollTo({top:messages.scrollHeight,behavior:"smooth"});});'''
-          if old_scroll not in s:
-              raise SystemExit("AI message scroll pattern not found")
-          s = s.replace(old_scroll, new_scroll, 1)
+          if old_scroll not in s: raise SystemExit("AI message scroll pattern not found")
+          s = s.replace(old_scroll,new_scroll,1)
 
-          old_add = '''messages.appendChild(el);requestAnimationFrame(function(){messages.scrollTo({top:messages.scrollHeight,behavior:"smooth"});});'''
-          if old_add not in s:
-              raise SystemExit("AI addMessage pattern not found after scroll patch")
-
-          marker = '''function addMessage(role,text){'''
-          if marker not in s:
-              raise SystemExit("addMessage function marker not found")
-
-          # Add copy button for bot messages without changing user-message behavior.
-          # This exact insertion targets the existing bot rendering branch.
           old_bot = '''if(role==="bot"){el.innerHTML=renderAiMarkdown(text)}else{el.textContent=text}'''
           new_bot = '''if(role==="bot"){el.innerHTML=renderAiMarkdown(text);var copyBtn=document.createElement("button");copyBtn.type="button";copyBtn.className="ashiana-ai-copy-btn";copyBtn.textContent="📋 Copy";copyBtn.addEventListener("click",function(){copyAiResponse(text,copyBtn)});el.appendChild(copyBtn)}else{el.textContent=text}'''
-          if old_bot not in s:
-              raise SystemExit("AI bot message branch not found")
-          s = s.replace(old_bot, new_bot, 1)
+          if old_bot not in s: raise SystemExit("AI bot message branch not found")
+          s = s.replace(old_bot,new_bot,1)
 
-          # Add compact copy-button styling next to the existing AI message styles.
-          style_marker = '''#ashiana-ai-messages{'''
           copy_css = '''.ashiana-ai-copy-btn{display:inline-flex;align-items:center;gap:5px;margin-top:8px;padding:5px 9px;border:1px solid #dbe3ee;border-radius:8px;background:#fff;color:#475569;font-size:12px;font-weight:600;cursor:pointer}.ashiana-ai-copy-btn:active{transform:translateY(1px)}.ashiana-ai-copy-btn:hover{background:#f8fafc}.ashiana-ai-copy-btn.copied{color:#166534;border-color:#bbf7d0;background:#f0fdf4}'''
           if copy_css not in s:
-              pos = s.find(style_marker)
-              if pos == -1:
-                  raise SystemExit("AI message style marker not found")
-              s = s[:pos] + copy_css + s[pos:]
+              pos=s.find("#ashiana-ai-messages{")
+              if pos==-1: raise SystemExit("AI message style marker not found")
+              s=s[:pos]+copy_css+s[pos:]
 
-          # Copy plain text to the system clipboard. Clipboard API is preferred; use a
-          # temporary textarea fallback for Android/WebView environments where needed.
-          fn_marker = '''function addMessage(role,text){'''
           copy_fn = '''async function copyAiResponse(text,button){try{if(navigator.clipboard&&navigator.clipboard.writeText){await navigator.clipboard.writeText(text)}else{var ta=document.createElement("textarea");ta.value=text;ta.style.position="fixed";ta.style.opacity="0";document.body.appendChild(ta);ta.focus();ta.select();document.execCommand("copy");ta.remove()}button.textContent="✓ Copied";button.classList.add("copied");setTimeout(function(){button.textContent="📋 Copy";button.classList.remove("copied")},1600)}catch(error){button.textContent="Copy failed";setTimeout(function(){button.textContent="📋 Copy"},1600)}}\n'''
           if "async function copyAiResponse(text,button)" not in s:
-              pos = s.find(fn_marker)
-              if pos == -1:
-                  raise SystemExit("addMessage marker not found for copy helper")
-              s = s[:pos] + copy_fn + s[pos:]
+              pos=s.find("function addMessage(role,text){")
+              if pos==-1: raise SystemExit("addMessage marker not found")
+              s=s[:pos]+copy_fn+s[pos:]
 
-          p.write_text(s, encoding="utf-8")
+          p.write_text(s,encoding="utf-8")
       - name: Commit patched UI
         run: |
           git config user.name "github-actions[bot]"
