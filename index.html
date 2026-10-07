@@ -10232,7 +10232,20 @@ function addMessage(text,type){
   window.updateStaffCommStatus=async function(id,status){
     if(!commIsAdmin())return;
     const {error}=await supabaseClient.from('staff_communication_threads').update({status}).eq('id',id);
-    if(error)alert('Status update failed: '+error.message); else await loadStaffComm();
+    if(error){alert('Status update failed: '+error.message);return;}
+    const current=staffCommThreads.find(t=>t.id===id);
+    if(current) current.status=status;
+    if(staffCommCurrentThread?.id===id) staffCommCurrentThread.status=status;
+    const head=document.getElementById('staff-comm-thread-head');
+    if(head){
+      const select=head.querySelector('select[onchange*="updateStaffCommStatus"]');
+      if(select) select.value=status;
+      const meta=head.querySelector('[data-staff-comm-status]');
+      if(meta) meta.textContent=status;
+    }
+    renderCommThreads();
+    await loadStaffComm();
+    if(staffCommCurrentThread?.id===id) await openStaffCommThread(id);
   };
   function setupCommRealtime(){
     if(window.__ashianaStaffCommChannel||!supabaseClient)return;
