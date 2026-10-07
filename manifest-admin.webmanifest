@@ -1,0 +1,17 @@
+{
+  "name": "Ashiana Public School • Admin",
+  "short_name": "Ashiana Admin",
+  "id": "./?login=admin",
+  "start_url": "./?login=admin",
+  "scope": "./",
+  "display": "standalone",
+  "orientation": "portrait",
+  "background_color": "#064E3B",
+  "theme_color": "#064E3B",
+  "description": "Admin login for Ashiana Public School attendance and school management",
+  "categories": ["education", "productivity"],
+  "icons": [
+    {"src": "logo 2.png", "sizes": "192x192", "type": "image/png"},
+    {"src": "logo 2.png", "sizes": "512x512", "type": "image/png"}
+  ]
+}
