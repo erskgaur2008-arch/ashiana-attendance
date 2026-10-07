@@ -10208,17 +10208,15 @@ function addMessage(text,type){
     const normalizedRole=admin?'ADMIN':(commRole()==='TEACHER'?'TEACHER':'STAFF');
     const threadId=(typeof crypto!=='undefined'&&crypto.randomUUID)?crypto.randomUUID():generateUUID();
     const payload={id:threadId,subject,category,priority,status:'OPEN',audience:admin&&recipient==='ALL'?'ALL_STAFF':'DIRECT',created_by_email:verifiedEmail,created_by_role:normalizedRole,recipient_staff_id:admin&&recipient!=='ALL'?recipient:null};
-    const {error}=await supabaseClient.from('staff_communication_threads').insert(payload);
-    if(error){
-      if(String(error.message||'').toLowerCase().includes('row-level security')){
-        const refreshed=await supabaseClient.auth.refreshSession();
-        if(!refreshed.error&&refreshed.data?.session){
-          const retry=await supabaseClient.from('staff_communication_threads').insert(payload);
-          if(!retry.error){ await loadStaffComm(); await openStaffCommThread(threadId); e.target.reset(); document.getElementById('staff-comm-compose-form').classList.add('hidden'); return; }
-        }
+    let {error}=await supabaseClient.from('staff_communication_threads').insert(payload);
+    if(error && String(error.message||'').toLowerCase().includes('row-level security')){
+      const refreshed=await supabaseClient.auth.refreshSession();
+      if(!refreshed.error&&refreshed.data?.session){
+        const retry=await supabaseClient.from('staff_communication_threads').insert(payload);
+        error=retry.error;
       }
-      alert('Could not create message: '+error.message); return;
     }
+    if(error){alert('Could not create message: '+error.message);return;}
     const {error:msgError}=await supabaseClient.from('staff_communication_messages').insert({thread_id:threadId,sender_email:verifiedEmail,sender_role:normalizedRole,body});
     if(msgError){alert('Message could not be sent: '+msgError.message);return;}
     e.target.reset(); document.getElementById('staff-comm-compose-form').classList.add('hidden');
