@@ -1374,7 +1374,7 @@
       <button type="button" onclick="focusTeacherStudentsSection('portal')" class="teacher-student-quick-btn bg-blue-50 border-blue-100 text-blue-800">
         <i data-lucide="layout-dashboard"></i><span>Student Portal Management</span>
       </button>
-      <button type="button" onclick="focusTeacherStudentsSection('leave')" class="teacher-student-quick-btn bg-rose-50 border-rose-100 text-rose-800">
+      <button type="button" id="teacher-student-leave-quick-btn" onclick="focusTeacherStudentsSection('leave')" class="teacher-student-quick-btn bg-rose-50 border-rose-100 text-rose-800">
         <i data-lucide="file-check-2"></i><span>Student Leave Requests</span>
       </button>
       <button type="button" onclick="focusTeacherStudentsSection('data')" class="teacher-student-quick-btn bg-slate-50 border-slate-200 text-slate-800">
@@ -4040,7 +4040,7 @@ async function loadTeacherPortalManager(){
         }
       }
       renderTeacherPortalEditor();
-      await loadTeacherLeaveRequests();
+      if(teacherIsClassTeacher())await loadTeacherLeaveRequests();
     }
 async function loadTeacherPortalStudents(){renderTeacherPortalEditor();}
 function renderTeacherPortalEditor(){
@@ -4130,8 +4130,8 @@ async function loadTeacherPortalStudentsForReport(){const sel=document.getElemen
 async function saveTeacherTimetable(){const a=teacherPortalClass(),day=Number(document.getElementById('tp-day')?.value),period=Number(document.getElementById('tp-period')?.value),subject=document.getElementById('tp-subject')?.value.trim();if(!a||!day||!period||!subject)return showToast('Complete timetable details.','error');if(!teacherCanManageSubject(a,subject))return showToast('You can only manage timetable entries for your assigned subject.','error');const {error}=await supabaseClient.from('student_timetable').insert({school_code:APS_STUDENT_SCHOOL,class_name:a.class_name,section:a.section,day_of_week:day,period_no:period,start_time:document.getElementById('tp-start')?.value||null,end_time:document.getElementById('tp-end')?.value||null,subject_name:subject,teacher_name:document.getElementById('tp-teacher')?.value.trim()||null,room:document.getElementById('tp-room')?.value.trim()||null,created_by:teacherPortalEmail()});if(error)return showToast(error.message,'error');showToast('Timetable entry added.','success');}
 async function saveTeacherCalendar(){const date=document.getElementById('tp-date')?.value,title=document.getElementById('tp-title')?.value.trim(),body=document.getElementById('tp-body')?.value.trim(),a=teacherPortalClass();if(!date||!title)return showToast('Enter date and event title.','error');const {error}=await supabaseClient.from('student_calendar_events').insert({school_code:APS_STUDENT_SCHOOL,event_date:date,title,description:body||null,class_name:a?.class_name||null,section:a?.section||null,created_by:teacherPortalEmail()});if(error)return showToast(error.message,'error');showToast('Calendar event added.','success');}
 async function saveTeacherReportCard(){const a=teacherPortalClass(),sid=document.getElementById('tp-student')?.value,term=document.getElementById('tp-term')?.value.trim(),year=document.getElementById('tp-year')?.value.trim()||'2026-27';let subjects=[];try{subjects=JSON.parse(document.getElementById('tp-subjects')?.value||'[]');if(!Array.isArray(subjects))throw Error();}catch(e){return showToast('Subjects must be valid JSON array.','error');}if(!a||!sid||!term)return showToast('Select class, student and term.','error');const {error}=await supabaseClient.from('student_report_cards').upsert({school_code:APS_STUDENT_SCHOOL,student_id:sid,academic_year:year,term,subjects,overall_grade:document.getElementById('tp-grade')?.value.trim()||null,remarks:document.getElementById('tp-remarks')?.value.trim()||null,published:document.getElementById('tp-published')?.checked||false,published_by:teacherPortalEmail()},{onConflict:'school_code,student_id,academic_year,term'});if(error)return showToast(error.message,'error');showToast('Report card saved.','success');}
-async function loadTeacherLeaveRequests(){const host=document.getElementById('teacher-leave-requests');if(!host||!supabaseClient)return;const {data,error}=await supabaseClient.from('student_leave_requests').select('id,student_id,from_date,to_date,reason,status,remarks').eq('school_code',APS_STUDENT_SCHOOL).eq('teacher_email',teacherPortalEmail()).order('created_at',{ascending:false}).limit(50);if(error){host.textContent=error.message;return;}const ids=[...(new Set((data||[]).map(x=>x.student_id)))];let names={};if(ids.length){const q=await supabaseClient.from('student_roster').select('id,student_name,enroll_no').in('id',ids);(q.data||[]).forEach(s=>names[s.id]=s.student_name+' ('+s.enroll_no+')');}host.innerHTML=(data||[]).length?(data||[]).map(l=>'<div class="border rounded-xl p-2"><div class="font-bold">'+studentEscape(names[l.student_id]||'Student')+'</div><div>'+studentEscape(l.from_date)+' → '+studentEscape(l.to_date)+'</div><div class="text-slate-500">'+studentEscape(l.reason)+'</div><div class="flex gap-2 mt-2"><button onclick="updateStudentLeave(\''+l.id+'\',\'APPROVED\')" class="px-2 py-1 bg-emerald-100 text-emerald-800 rounded">Approve</button><button onclick="updateStudentLeave(\''+l.id+'\',\'REJECTED\')" class="px-2 py-1 bg-rose-100 text-rose-800 rounded">Reject</button><span class="ml-auto font-bold">'+studentEscape(l.status)+'</span></div></div>').join(''):'<div class="text-slate-400">No student leave requests.</div>';}
-async function updateStudentLeave(id,status){const {error}=await supabaseClient.from('student_leave_requests').update({status,updated_at:new Date().toISOString()}).eq('id',id).eq('teacher_email',teacherPortalEmail());if(error)return showToast(error.message,'error');showToast('Leave '+status.toLowerCase()+'.','success');loadTeacherLeaveRequests();}
+async function loadTeacherLeaveRequests(){const host=document.getElementById('teacher-leave-requests');if(!host||!supabaseClient)return;if(!teacherIsClassTeacher()){host.textContent='Leave management is available to Class Teachers only.';return;}const {data,error}=await supabaseClient.from('student_leave_requests').select('id,student_id,from_date,to_date,reason,status,remarks').eq('school_code',APS_STUDENT_SCHOOL).eq('teacher_email',teacherPortalEmail()).order('created_at',{ascending:false}).limit(50);if(error){host.textContent=error.message;return;}const ids=[...(new Set((data||[]).map(x=>x.student_id)))];let names={};if(ids.length){const q=await supabaseClient.from('student_roster').select('id,student_name,enroll_no').in('id',ids);(q.data||[]).forEach(s=>names[s.id]=s.student_name+' ('+s.enroll_no+')');}host.innerHTML=(data||[]).length?(data||[]).map(l=>'<div class="border rounded-xl p-2"><div class="font-bold">'+studentEscape(names[l.student_id]||'Student')+'</div><div>'+studentEscape(l.from_date)+' → '+studentEscape(l.to_date)+'</div><div class="text-slate-500">'+studentEscape(l.reason)+'</div><div class="flex gap-2 mt-2"><button onclick="updateStudentLeave(\''+l.id+'\',\'APPROVED\')" class="px-2 py-1 bg-emerald-100 text-emerald-800 rounded">Approve</button><button onclick="updateStudentLeave(\''+l.id+'\',\'REJECTED\')" class="px-2 py-1 bg-rose-100 text-rose-800 rounded">Reject</button><span class="ml-auto font-bold">'+studentEscape(l.status)+'</span></div></div>').join(''):'<div class="text-slate-400">No student leave requests.</div>';}
+async function updateStudentLeave(id,status){if(!teacherIsClassTeacher())return showToast('Student leave management is available to Class Teachers only.','error');const {error}=await supabaseClient.from('student_leave_requests').update({status,updated_at:new Date().toISOString()}).eq('id',id).eq('teacher_email',teacherPortalEmail());if(error)return showToast(error.message,'error');showToast('Leave '+status.toLowerCase()+'.','success');loadTeacherLeaveRequests();}
 async function handleStudentLogin(event){
       event.preventDefault();
       const admission=(document.getElementById("student-login-admission")?.value||"").trim().toUpperCase();
@@ -5269,6 +5269,12 @@ async function handleTeacherLogin(event) {
           String(a.section).localeCompare(String(b.section),undefined,{numeric:true})
         );
 
+        const leaveSection=document.getElementById('teacher-student-leave-section');
+        const leaveQuick=document.getElementById('teacher-student-leave-quick-btn');
+        const classTeacher=teacherStudentAssignments.some(a=>a.isClassTeacher);
+        if(leaveSection)leaveSection.classList.toggle('hidden',!classTeacher);
+        if(leaveQuick)leaveQuick.classList.toggle('hidden',!classTeacher);
+
         if(!teacherStudentAssignments.length){
           sel.innerHTML='<option value="">No assigned classes found</option>';
           if(host)host.textContent='No active student classes are assigned to your teacher account.';
@@ -5310,6 +5316,7 @@ async function handleTeacherLogin(event) {
       const id=map[section]||map.attendance;
       const target=document.getElementById(id);
       if(!target)return;
+      if(section==='leave'&&!teacherIsClassTeacher())return showToast('Student leave management is available to Class Teachers only.','error');
       if(section==='data'){
         const list=document.getElementById('teacher-student-data-list');
         if(list?.classList.contains('is-collapsed'))toggleTeacherStudentDataList();
