@@ -101,6 +101,9 @@
       #auth-gateway-view > div:first-child{padding-top:calc(24px + env(safe-area-inset-top));}
       #auth-gateway-view > div:last-child{flex:1;}
     }
+    /* Direct role-login links hide the selector only when a dedicated login URL is used. */
+    #auth-gateway-view.login-route-only #login-role-select-wrap{display:none!important;}
+    #auth-gateway-view.login-route-only .login-route-label{display:block;}
     /* Role selection uses the native dropdown above. */
     #auth-gateway-view #login-role-select{
       position:relative;
@@ -517,8 +520,8 @@
         <div class="w-16 h-0.5 bg-ashiana-red mx-auto my-1.5 rounded-full"></div>
         <p class="text-[11px] text-emerald-200">Sector 46-A, Chandigarh • Faculty Attendance</p>
         
-        <!-- Login Role Selector -->
-        <div class="mt-4 relative z-30">
+        <!-- Login Role Selector / Direct Login Links -->
+        <div id="login-role-select-wrap" class="mt-4 relative z-30">
           <label for="login-role-select" class="block text-[10px] font-bold text-emerald-100 mb-1.5 text-center">Login as</label>
           <select id="login-role-select" onchange="window.__ashianaSetLoginRole(this.value)"
             class="w-full h-11 px-3 rounded-xl bg-white text-emerald-950 border-2 border-emerald-300/70 font-bold text-sm shadow-sm focus:outline-none focus:ring-2 focus:ring-emerald-300 cursor-pointer">
@@ -527,6 +530,11 @@
             <option value="student">Student</option>
           </select>
           <p class="text-[10px] text-emerald-200 mt-1.5 text-center">Select your login role</p>
+          <div class="mt-3 grid grid-cols-3 gap-2">
+            <a href="?login=admin" class="rounded-lg border border-emerald-300/40 bg-white/10 hover:bg-white/20 px-2 py-2 text-[9px] font-extrabold text-white text-center transition">Admin Login</a>
+            <a href="?login=staff" class="rounded-lg border border-emerald-300/40 bg-white/10 hover:bg-white/20 px-2 py-2 text-[9px] font-extrabold text-white text-center transition">Staff Login</a>
+            <a href="?login=student" class="rounded-lg border border-emerald-300/40 bg-white/10 hover:bg-white/20 px-2 py-2 text-[9px] font-extrabold text-white text-center transition">Student Login</a>
+          </div>
         </div>
         </div>
       <div class="p-5 sm:p-6 space-y-4">
@@ -616,6 +624,49 @@
            a later JavaScript error cannot leave the selected role on the wrong form. -->
       <script>
       (function () {
+        // Direct-login routing:
+        // ?login=admin | ?login=staff | ?login=student
+        // No role selector is shown when one of these links is opened.
+        function getAshianaLoginRouteRole() {
+          try {
+            var params = new URLSearchParams(window.location.search || "");
+            var requested = String(params.get("login") || params.get("role") || "").trim().toLowerCase();
+            if (!requested && window.location.hash) {
+              requested = String(window.location.hash.replace(/^#/, "")).trim().toLowerCase();
+            }
+            if (requested === "staff" || requested === "teacher" || requested === "teacher-staff") return "teacher";
+            if (requested === "admin" || requested === "administrator") return "admin";
+            if (requested === "student") return "student";
+          } catch (_) {}
+          return "";
+        }
+
+        function applyAshianaLoginRoute() {
+          var routeRole = getAshianaLoginRouteRole();
+          var gateway = document.getElementById("auth-gateway-view");
+          var selectorWrap = document.getElementById("login-role-select-wrap");
+          if (!gateway) return routeRole;
+
+          if (routeRole) {
+            gateway.classList.add("login-route-only");
+            gateway.setAttribute("data-login-route", routeRole);
+            if (selectorWrap) selectorWrap.style.display = "none";
+            var title = gateway.querySelector("h2");
+            if (title) {
+              title.textContent = routeRole === "admin"
+                ? "ASHIANA PUBLIC SCHOOL • ADMIN LOGIN"
+                : routeRole === "student"
+                  ? "ASHIANA PUBLIC SCHOOL • STUDENT LOGIN"
+                  : "ASHIANA PUBLIC SCHOOL • STAFF LOGIN";
+            }
+          } else {
+            gateway.classList.remove("login-route-only");
+            gateway.removeAttribute("data-login-route");
+            if (selectorWrap) selectorWrap.style.display = "";
+          }
+          return routeRole;
+        }
+
         function applyAshianaLoginRole(role) {
           var selected = ["teacher", "admin", "student"].indexOf(String(role)) >= 0 ? String(role) : "teacher";
           var map = {
@@ -654,7 +705,14 @@
           return false;
         };
 
+        window.__ashianaGetLoginRouteRole = getAshianaLoginRouteRole;
+        window.__ashianaApplyLoginRoute = applyAshianaLoginRoute;
         window.__ashianaApplyLoginRole = applyAshianaLoginRole;
+
+        // Apply direct-link routing immediately. Existing users opening the
+        // normal URL still get the current role selector unchanged.
+        var ashianaDirectLoginRole = applyAshianaLoginRoute();
+        if (ashianaDirectLoginRole) applyAshianaLoginRole(ashianaDirectLoginRole);
         window.switchLoginTab = applyAshianaLoginRole;
 
         // HARDENED LOGIN BRIDGE:
