@@ -1758,19 +1758,40 @@
 <div id="admin-student-attendance-records-modal" class="hidden fixed inset-0 z-[170] bg-slate-950/70 backdrop-blur-sm p-2 sm:p-5 overflow-y-auto" onclick="closeAdminStudentAttendanceRecordsModal(event)">
   <div class="max-w-7xl mx-auto bg-white rounded-2xl shadow-2xl overflow-hidden" onclick="event.stopPropagation()">
     <div class="p-4 bg-emerald-950 text-white flex items-center justify-between">
-      <div><h3 class="font-black">Students Attendance</h3><p class="text-[10px] text-emerald-200">Attendance marked by teachers</p></div>
+      <div><h3 class="font-black">Students Attendance</h3><p class="text-[10px] text-emerald-200">Class-wise attendance summary</p></div>
       <button type="button" onclick="closeAdminStudentAttendanceRecordsModal()" class="w-9 h-9 rounded-xl bg-white/10 hover:bg-white/20">✕</button>
     </div>
     <div class="p-3 space-y-3">
       <div class="flex flex-wrap items-center gap-2">
         <label class="text-xs font-bold">Date</label>
         <input id="admin-student-att-date" type="date" class="p-2 border rounded-xl text-xs">
-        <input id="admin-student-att-class" placeholder="Class" class="p-2 border rounded-xl text-xs">
-        <input id="admin-student-att-section" placeholder="Section" class="p-2 border rounded-xl text-xs w-24">
+        <input id="admin-student-att-class" placeholder="Class (optional)" class="p-2 border rounded-xl text-xs">
+        <input id="admin-student-att-section" placeholder="Section (optional)" class="p-2 border rounded-xl text-xs w-28">
         <button type="button" onclick="loadAdminStudentAttendance()" class="px-3 py-2 bg-emerald-900 hover:bg-emerald-950 text-white rounded-xl text-xs font-bold">Load</button>
       </div>
       <p id="admin-student-att-status" class="text-xs mt-2"></p>
-      <div class="overflow-x-auto border border-slate-200 rounded-xl"><table class="w-full text-xs text-left bg-white"><thead class="bg-slate-100"><tr><th class="p-2">Enroll</th><th class="p-2">Student</th><th class="p-2">Class</th><th class="p-2">Section</th><th class="p-2">Attendance</th><th class="p-2">Marked By</th></tr></thead><tbody id="admin-student-att-tbody"></tbody></table></div>
+      <div class="overflow-x-auto border border-slate-300 rounded-xl">
+        <table class="w-full border-collapse text-[10px] sm:text-xs text-center">
+          <thead>
+            <tr>
+              <th rowspan="2" class="border border-slate-400 px-2 py-2 bg-[#0b4054] text-white">Sr No.</th>
+              <th rowspan="2" class="border border-slate-400 px-3 py-2 bg-[#0b4054] text-white">Class</th>
+              <th rowspan="2" class="border border-slate-400 px-2 py-2 bg-[#0b4054] text-white">Total Students</th>
+              <th rowspan="2" class="border border-slate-400 px-2 py-2 bg-[#0b4054] text-white">Presents</th>
+              <th colspan="2" class="border border-slate-400 px-2 py-2 bg-[#0b4054] text-white">On Leave</th>
+              <th colspan="2" class="border border-slate-400 px-2 py-2 bg-[#0b4054] text-white">Absents</th>
+            </tr>
+            <tr>
+              <th class="border border-slate-400 px-2 py-1 bg-[#0b4054] text-white">Total</th>
+              <th class="border border-slate-400 px-2 py-1 bg-[#0b4054] text-white">Roll No</th>
+              <th class="border border-slate-400 px-2 py-1 bg-[#0b4054] text-white">Total</th>
+              <th class="border border-slate-400 px-2 py-1 bg-[#0b4054] text-white">Roll No</th>
+            </tr>
+          </thead>
+          <tbody id="admin-student-att-tbody"></tbody>
+          <tfoot id="admin-student-att-tfoot"></tfoot>
+        </table>
+      </div>
     </div>
   </div>
 </div>
@@ -5842,19 +5863,54 @@ function toggleAdminStudentAttendancePanel(){
 async function loadAdminStudentAttendance(){
   const adminDate=document.getElementById('admin-student-att-date');
   if(adminDate&&!adminDate.value)adminDate.value=studentDateToday();
-  const tbody=document.getElementById('admin-student-att-tbody'),status=document.getElementById('admin-student-att-status');
+  const tbody=document.getElementById('admin-student-att-tbody'),tfoot=document.getElementById('admin-student-att-tfoot'),status=document.getElementById('admin-student-att-status');
   if(!tbody||currentAuthUser?.type!=='ADMIN'||!supabaseClient)return;
   const date=adminDate?.value||studentDateToday(),cls=document.getElementById('admin-student-att-class')?.value?.trim()||'',sec=document.getElementById('admin-student-att-section')?.value?.trim()||'';
-  tbody.innerHTML='';if(status)status.textContent='Loading attendance…';
+  tbody.innerHTML='';if(tfoot)tfoot.innerHTML='';if(status)status.textContent='Loading attendance summary…';
   try{
-    let q=supabaseClient.from('student_attendance').select('attendance_date,status,marked_by,marked_by_name,student:student_roster!inner(enroll_no,student_name,class_name,section,status)').eq('school_code',APS_STUDENT_SCHOOL).eq('attendance_date',date);
-    if(cls)q=q.eq('student.class_name',cls);if(sec)q=q.eq('student.section',sec);
-    const {data,error}=await q.order('updated_at',{ascending:true});if(error)throw error;
-    const rows=data||[];
-    tbody.innerHTML=rows.length?rows.map(r=>'<tr class="border-t"><td class="p-2 font-semibold">'+studentEscape(r.student?.enroll_no||'—')+'</td><td class="p-2">'+studentEscape(r.student?.student_name||'—')+'</td><td class="p-2">'+studentEscape(r.student?.class_name||'—')+'</td><td class="p-2">'+studentEscape(r.student?.section||'—')+'</td><td class="p-2 font-bold">'+studentEscape(r.status||'—')+'</td><td class="p-2 font-semibold text-emerald-800">'+studentEscape(r.marked_by_name||'—')+'</td></tr>').join(''):'<tr><td colspan="6" class="p-4 text-center text-slate-400">No attendance marked for this selection.</td></tr>';
-    if(status)status.textContent=rows.length+' attendance records found for '+date+'.';
-  }catch(e){if(status)status.textContent='Could not load attendance: '+(e.message||e);}
+    const [sr,ar]=await Promise.all([
+      supabaseClient.from('student_roster').select('id,enroll_no,roll_no,class_name,section,status').eq('school_code',APS_STUDENT_SCHOOL).eq('status','ACTIVE').order('class_name').order('section'),
+      supabaseClient.from('student_attendance').select('student_id,status').eq('school_code',APS_STUDENT_SCHOOL).eq('attendance_date',date)
+    ]);
+    if(sr.error)throw sr.error;if(ar.error)throw ar.error;
+    const attendance=new Map((ar.data||[]).map(x=>[String(x.student_id),String(x.status||'').trim().toUpperCase()]));
+    const groups=new Map();
+    (sr.data||[]).forEach(student=>{
+      const className=String(student.class_name||'').trim(),section=String(student.section||'').trim();
+      if(!className||!section)return;
+      if(cls&&className.toUpperCase()!==cls.toUpperCase())return;
+      if(sec&&section.toUpperCase()!==sec.toUpperCase())return;
+      const key=className+'||'+section;
+      if(!groups.has(key))groups.set(key,{className,section,total:0,present:0,leave:[],absent:[]});
+      const g=groups.get(key);g.total++;
+      const st=attendance.get(String(student.id))||'';
+      const roll=String(student.roll_no??student.enroll_no??'').trim();
+      if(['PRESENT','P'].includes(st))g.present++;
+      else if(['LEAVE','ON LEAVE','ON_LEAVE','HOLIDAY','LEAVE APPROVED','APPROVED LEAVE'].includes(st))g.leave.push(roll);
+      else if(['ABSENT','A'].includes(st))g.absent.push(roll);
+    });
+    const order=['PRE-NUR','PRE NUR','NURSERY','NUR','LKG','UKG','I','II','III','IV','V','VI','VII','VIII','IX','X','XI','XII'];
+    const rank=v=>{const x=String(v||'').toUpperCase().replace(/\s+/g,'-'),i=order.indexOf(x);return i<0?999:i;};
+    const rows=Array.from(groups.values()).sort((a,b)=>rank(a.className)-rank(b.className)||a.className.localeCompare(b.className,undefined,{numeric:true})||a.section.localeCompare(b.section,undefined,{numeric:true}));
+    let totalStudents=0,totalPresent=0,totalLeave=0,totalAbsent=0,serial=0;
+    tbody.innerHTML=rows.length?rows.map(g=>{
+      serial++;totalStudents+=g.total;totalPresent+=g.present;totalLeave+=g.leave.length;totalAbsent+=g.absent.length;
+      return '<tr class="border-t border-slate-300">'+
+        '<td class="p-2">'+serial+'</td>'+
+        '<td class="p-2 font-semibold">'+studentEscape(g.className+'-'+g.section)+'</td>'+
+        '<td class="p-2">'+g.total+'</td>'+
+        '<td class="p-2 font-bold text-emerald-800">'+g.present+'</td>'+
+        '<td class="p-2">'+g.leave.length+'</td>'+
+        '<td class="p-2 text-slate-600">'+studentEscape(g.leave.filter(Boolean).join(', ')||'')+'</td>'+
+        '<td class="p-2">'+g.absent.length+'</td>'+
+        '<td class="p-2 text-slate-600">'+studentEscape(g.absent.filter(Boolean).join(', ')||'')+'</td>'+
+      '</tr>';
+    }).join(''):'<tr><td colspan="8" class="p-5 text-center text-slate-400">No attendance data found for this selection.</td></tr>';
+    if(tfoot&&rows.length)tfoot.innerHTML='<tr class="font-extrabold bg-slate-100 border-t-2 border-slate-400"><td colspan="2" class="p-2 text-right">TOTAL</td><td class="p-2">'+totalStudents+'</td><td class="p-2 text-emerald-800">'+totalPresent+'</td><td class="p-2">'+totalLeave+'</td><td class="p-2">—</td><td class="p-2">'+totalAbsent+'</td><td class="p-2">—</td></tr>';
+    if(status)status.textContent=rows.length+' class-section attendance summaries found for '+date+'.';
+  }catch(e){if(status)status.textContent='Could not load attendance summary: '+(e.message||e);}
 }
+
 
     let parsedStudentBulkRows = [];
     function closeStudentBulkUploadModal(){document.getElementById('student-bulk-upload-modal')?.classList.add('hidden');const input=document.getElementById('student-bulk-file-input');if(input)input.value='';parsedStudentBulkRows=[];document.getElementById('student-bulk-preview')?.classList.add('hidden');const st=document.getElementById('student-bulk-status');if(st)st.textContent='';}
