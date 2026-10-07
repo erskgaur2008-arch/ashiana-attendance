@@ -9177,14 +9177,22 @@ window.addEventListener('load',async function(){
           .select('class_name,section').eq('school_code',APS_STUDENT_SCHOOL)
           .eq('status','ACTIVE').order('class_name').order('section');
         if(error) throw error;
-        const seen=new Set(), options=['<option value="ALL">All Classes</option>'];
+        const classOrder=['PRE NUR','NUR','LKG','UKG','I','II','III','IV','V','VI','VII','VIII','IX','X','XI','XII'];
+        const rank=cls=>{const i=classOrder.indexOf(cls.toUpperCase());return i===-1?999:i;};
+        const rows=[];
+        const seen=new Set();
         (data||[]).forEach(row=>{
           const cls=String(row.class_name||'').trim(), sec=String(row.section||'').trim();
           if(!cls||!sec) return;
           const key=cls+'||'+sec;
           if(seen.has(key)) return;
           seen.add(key);
-          options.push('<option value="'+studentEscape(key)+'">Class '+studentEscape(cls)+' - Section '+studentEscape(sec)+'</option>');
+          rows.push({cls,sec,key});
+        });
+        rows.sort((a,b)=>rank(a.cls)-rank(b.cls)||a.cls.localeCompare(b.cls,undefined,{numeric:true})||a.sec.localeCompare(b.sec,undefined,{numeric:true}));
+        const options=['<option value="ALL">All Classes</option>'];
+        rows.forEach(row=>{
+          options.push('<option value="'+studentEscape(row.key)+'">Class '+studentEscape(row.cls)+' - Section '+studentEscape(row.sec)+'</option>');
         });
         const current=adminStudentPortalSelectedValues();
         sel.innerHTML=options.join('');
