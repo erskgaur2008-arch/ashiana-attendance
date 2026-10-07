@@ -1385,10 +1385,10 @@
 
   <div id="teacher-student-attendance-section" class="bg-white rounded-2xl p-4 border border-slate-200 shadow-sm">
     <div class="flex items-center justify-between gap-2">
-      <div><h4 class="font-bold">Student Attendance</h4><p class="text-[10px] text-slate-500 mt-0.5">Scan student ID cards to mark attendance, or use the manual list.</p></div>
+      <div><h4 class="font-bold">Student Attendance</h4><p id="teacher-student-attendance-help" class="text-[10px] text-slate-500 mt-0.5">View attendance for your assigned class.</p></div>
       <div class="flex items-center gap-2">
         <span id="teacher-student-marked-badge" class="text-[9px] font-bold px-2 py-1 rounded-full bg-slate-100 text-slate-500">Not loaded</span>
-        <button type="button" onclick="openStudentQrAttendanceScanner()" class="p-2.5 bg-ashiana-green hover:bg-[#08693A] text-white rounded-xl shadow-sm flex items-center gap-1.5 text-[10px] font-bold" title="Scan Student QR">
+        <button type="button" id="teacher-student-qr-btn" onclick="openStudentQrAttendanceScanner()" class="p-2.5 bg-ashiana-green hover:bg-[#08693A] text-white rounded-xl shadow-sm flex items-center gap-1.5 text-[10px] font-bold" title="Scan Student QR">
           <i data-lucide="scan-line" class="w-4 h-4"></i><span>Scan QR</span>
         </button>
       </div>
@@ -1409,7 +1409,7 @@
     </div>
 
     <div class="grid grid-cols-2 gap-2 mt-3">
-      <button type="button" onclick="saveTeacherStudentAttendance()" class="p-3 bg-ashiana-green text-white rounded-xl font-bold text-xs flex items-center justify-center gap-2 shadow-sm">
+      <button type="button" id="teacher-student-save-btn" onclick="saveTeacherStudentAttendance()" class="p-3 bg-ashiana-green text-white rounded-xl font-bold text-xs flex items-center justify-center gap-2 shadow-sm">
         <i data-lucide="save" class="w-4 h-4"></i><span>Save Attendance</span>
       </button>
       <button type="button" onclick="viewTeacherStudentAttendance()" class="p-3 bg-blue-700 hover:bg-blue-800 text-white rounded-xl font-bold text-xs flex items-center justify-center gap-2 shadow-sm">
@@ -5269,9 +5269,15 @@ async function handleTeacherLogin(event) {
           String(a.section).localeCompare(String(b.section),undefined,{numeric:true})
         );
 
+        const classTeacher=teacherStudentAssignments.some(a=>a.isClassTeacher);
+        const attendanceQr=document.getElementById('teacher-student-qr-btn');
+        const attendanceSave=document.getElementById('teacher-student-save-btn');
+        const attendanceHelp=document.getElementById('teacher-student-attendance-help');
+        if(attendanceQr)attendanceQr.classList.toggle('hidden',!classTeacher);
+        if(attendanceSave)attendanceSave.classList.toggle('hidden',!classTeacher);
+        if(attendanceHelp)attendanceHelp.textContent=classTeacher?'Scan student ID cards or use the manual list to mark attendance.':'View attendance for your assigned class. Marking attendance is restricted to Class Teachers.';
         const leaveSection=document.getElementById('teacher-student-leave-section');
         const leaveQuick=document.getElementById('teacher-student-leave-quick-btn');
-        const classTeacher=teacherStudentAssignments.some(a=>a.isClassTeacher);
         if(leaveSection)leaveSection.classList.toggle('hidden',!classTeacher);
         if(leaveQuick)leaveQuick.classList.toggle('hidden',!classTeacher);
 
@@ -5391,6 +5397,7 @@ async function loadTeacherStudentAttendance(){
     }
     
 async function saveTeacherStudentAttendance(){
+      if(!teacherIsClassTeacher())return showToast('Only Class Teachers can mark student attendance.','error');
       if(!canAccessStudentAttendance()||!supabaseClient)return showToast('Student attendance is available to teaching staff only.','error');const date=document.getElementById('teacher-student-date')?.value;if(!date||!teacherStudentRows.length)return showToast('Select a class with students first.','error');
       try{const {data,error:authError}=await supabaseClient.auth.getUser();if(authError||!data?.user)throw Error('Session expired; sign in again.');
         const marks=Array.from(document.querySelectorAll('#teacher-student-list select[data-student-id]')).map(el=>({school_code:APS_STUDENT_SCHOOL,student_id:el.dataset.studentId,attendance_date:date,status:el.value,marked_by:data.user.id,marked_by_name:(currentAuthUser?.staffRecord?.name||currentAuthUser?.name||currentAuthUser?.email||'Teacher')}));
