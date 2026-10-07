@@ -48,7 +48,6 @@ create or replace function public.staff_communication_touch_thread() returns tri
 begin update public.staff_communication_threads set updated_at=now(), last_message_at=new.created_at where id=new.thread_id; return new; end
 $$;
 revoke all on function public.staff_communication_touch_thread() from public, anon, authenticated;
-grant execute on function public.staff_communication_touch_thread() to authenticated;
 drop trigger if exists trg_staff_communication_touch_thread on public.staff_communication_messages;
 create trigger trg_staff_communication_touch_thread after insert on public.staff_communication_messages for each row execute function public.staff_communication_touch_thread();
 
