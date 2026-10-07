@@ -4033,7 +4033,7 @@ async function loadTeacherPortalManager(){
       if(sel){
         if(teacherStudentAssignments.length){
           sel.innerHTML='<option value="">Select assigned class</option>'+
-            teacherStudentAssignments.map((a,i)=>'<option value="'+i+'">'+studentEscape(a.class_name)+' - '+studentEscape(a.section)+'</option>').join('');
+            teacherStudentAssignments.map((a,i)=>'<option value="'+i+'">'+studentEscape(a.class_name)+' - '+studentEscape(a.section)+(a.isClassTeacher?'':' • '+studentEscape((a.subjects||[]).join(', ')))+'</option>').join('');
           if(teacherStudentAssignments.length===1)sel.value='0';
         }else{
           sel.innerHTML='<option value="">No assigned classes found</option>';
@@ -4111,6 +4111,7 @@ async function saveTeacherNotice(){
 async function saveTeacherHomework(){
   const a=teacherPortalClass(),title=document.getElementById('tp-title')?.value.trim(),subject=document.getElementById('tp-subject')?.value.trim(),body=document.getElementById('tp-body')?.value.trim(),due=document.getElementById('tp-due')?.value||null,btn=document.getElementById('tp-publish-homework');
   if(!a||!title||!subject||!body)return showToast('Complete homework details.','error');
+  if(!teacherCanManageSubject(a,subject))return showToast('You can only publish homework for your assigned subject.','error');
   if(btn?.disabled)return;
   if(btn)btn.disabled=true;
   try{
@@ -4126,7 +4127,7 @@ async function saveTeacherHomework(){
   finally{if(btn)btn.disabled=false;}
 }
 async function loadTeacherPortalStudentsForReport(){const sel=document.getElementById('tp-student'),a=teacherPortalClass();if(!sel||!a)return;const {data,error}=await supabaseClient.from('student_roster').select('id,student_name,enroll_no').eq('school_code',APS_STUDENT_SCHOOL).eq('class_name',a.class_name).eq('section',a.section).eq('status','ACTIVE').order('roll_no').order('student_name');if(error){sel.innerHTML='<option>Unable to load students</option>';return;}sel.innerHTML='<option value="">Select student</option>'+(data||[]).map(s=>'<option value="'+s.id+'">'+studentEscape(s.student_name)+' ('+studentEscape(s.enroll_no)+')</option>').join('');}
-async function saveTeacherTimetable(){const a=teacherPortalClass(),day=Number(document.getElementById('tp-day')?.value),period=Number(document.getElementById('tp-period')?.value),subject=document.getElementById('tp-subject')?.value.trim();if(!a||!day||!period||!subject)return showToast('Complete timetable details.','error');const {error}=await supabaseClient.from('student_timetable').insert({school_code:APS_STUDENT_SCHOOL,class_name:a.class_name,section:a.section,day_of_week:day,period_no:period,start_time:document.getElementById('tp-start')?.value||null,end_time:document.getElementById('tp-end')?.value||null,subject_name:subject,teacher_name:document.getElementById('tp-teacher')?.value.trim()||null,room:document.getElementById('tp-room')?.value.trim()||null,created_by:teacherPortalEmail()});if(error)return showToast(error.message,'error');showToast('Timetable entry added.','success');}
+async function saveTeacherTimetable(){const a=teacherPortalClass(),day=Number(document.getElementById('tp-day')?.value),period=Number(document.getElementById('tp-period')?.value),subject=document.getElementById('tp-subject')?.value.trim();if(!a||!day||!period||!subject)return showToast('Complete timetable details.','error');if(!teacherCanManageSubject(a,subject))return showToast('You can only manage timetable entries for your assigned subject.','error');const {error}=await supabaseClient.from('student_timetable').insert({school_code:APS_STUDENT_SCHOOL,class_name:a.class_name,section:a.section,day_of_week:day,period_no:period,start_time:document.getElementById('tp-start')?.value||null,end_time:document.getElementById('tp-end')?.value||null,subject_name:subject,teacher_name:document.getElementById('tp-teacher')?.value.trim()||null,room:document.getElementById('tp-room')?.value.trim()||null,created_by:teacherPortalEmail()});if(error)return showToast(error.message,'error');showToast('Timetable entry added.','success');}
 async function saveTeacherCalendar(){const date=document.getElementById('tp-date')?.value,title=document.getElementById('tp-title')?.value.trim(),body=document.getElementById('tp-body')?.value.trim(),a=teacherPortalClass();if(!date||!title)return showToast('Enter date and event title.','error');const {error}=await supabaseClient.from('student_calendar_events').insert({school_code:APS_STUDENT_SCHOOL,event_date:date,title,description:body||null,class_name:a?.class_name||null,section:a?.section||null,created_by:teacherPortalEmail()});if(error)return showToast(error.message,'error');showToast('Calendar event added.','success');}
 async function saveTeacherReportCard(){const a=teacherPortalClass(),sid=document.getElementById('tp-student')?.value,term=document.getElementById('tp-term')?.value.trim(),year=document.getElementById('tp-year')?.value.trim()||'2026-27';let subjects=[];try{subjects=JSON.parse(document.getElementById('tp-subjects')?.value||'[]');if(!Array.isArray(subjects))throw Error();}catch(e){return showToast('Subjects must be valid JSON array.','error');}if(!a||!sid||!term)return showToast('Select class, student and term.','error');const {error}=await supabaseClient.from('student_report_cards').upsert({school_code:APS_STUDENT_SCHOOL,student_id:sid,academic_year:year,term,subjects,overall_grade:document.getElementById('tp-grade')?.value.trim()||null,remarks:document.getElementById('tp-remarks')?.value.trim()||null,published:document.getElementById('tp-published')?.checked||false,published_by:teacherPortalEmail()},{onConflict:'school_code,student_id,academic_year,term'});if(error)return showToast(error.message,'error');showToast('Report card saved.','success');}
 async function loadTeacherLeaveRequests(){const host=document.getElementById('teacher-leave-requests');if(!host||!supabaseClient)return;const {data,error}=await supabaseClient.from('student_leave_requests').select('id,student_id,from_date,to_date,reason,status,remarks').eq('school_code',APS_STUDENT_SCHOOL).eq('teacher_email',teacherPortalEmail()).order('created_at',{ascending:false}).limit(50);if(error){host.textContent=error.message;return;}const ids=[...(new Set((data||[]).map(x=>x.student_id)))];let names={};if(ids.length){const q=await supabaseClient.from('student_roster').select('id,student_name,enroll_no').in('id',ids);(q.data||[]).forEach(s=>names[s.id]=s.student_name+' ('+s.enroll_no+')');}host.innerHTML=(data||[]).length?(data||[]).map(l=>'<div class="border rounded-xl p-2"><div class="font-bold">'+studentEscape(names[l.student_id]||'Student')+'</div><div>'+studentEscape(l.from_date)+' → '+studentEscape(l.to_date)+'</div><div class="text-slate-500">'+studentEscape(l.reason)+'</div><div class="flex gap-2 mt-2"><button onclick="updateStudentLeave(\''+l.id+'\',\'APPROVED\')" class="px-2 py-1 bg-emerald-100 text-emerald-800 rounded">Approve</button><button onclick="updateStudentLeave(\''+l.id+'\',\'REJECTED\')" class="px-2 py-1 bg-rose-100 text-rose-800 rounded">Reject</button><span class="ml-auto font-bold">'+studentEscape(l.status)+'</span></div></div>').join(''):'<div class="text-slate-400">No student leave requests.</div>';}
@@ -5228,8 +5229,6 @@ async function handleTeacherLogin(event) {
       if(!sel||!supabaseClient||!canAccessStudentAttendance())return;
       sel.innerHTML='<option value="">Loading classes…</option>';
       try{
-        // Use the authenticated Supabase user as the source of truth for the
-        // RLS email match. The locally cached staff record can be stale.
         const {data:authData,error:authError}=await supabaseClient.auth.getUser();
         if(authError||!authData?.user)throw Error('Your cloud session has expired. Please sign in again.');
         const authEmail=String(authData.user.email||'').trim().toLowerCase();
@@ -5237,24 +5236,38 @@ async function handleTeacherLogin(event) {
         const emails=[...new Set([authEmail,staffEmail].filter(Boolean))];
         if(!emails.length)throw Error('Staff email is unavailable.');
 
-        const query=supabaseClient.from('student_class_assignments')
-          .select('class_name,section')
-          .eq('school_code',APS_STUDENT_SCHOOL)
-          .in('teacher_email',emails)
-          .eq('active',true)
-          .order('class_name')
-          .order('section');
-
-        const {data,error}=await Promise.race([
-          query,
-          new Promise((_,reject)=>setTimeout(()=>reject(Error('Class assignment request timed out. Please retry.')),12000))
+        const [classResult,subjectResult]=await Promise.all([
+          supabaseClient.from('student_class_assignments')
+            .select('class_name,section')
+            .eq('school_code',APS_STUDENT_SCHOOL).in('teacher_email',emails).eq('active',true)
+            .order('class_name').order('section'),
+          supabaseClient.from('student_subject_assignments')
+            .select('class_name,section,subject_name')
+            .eq('school_code',APS_STUDENT_SCHOOL).in('teacher_email',emails).eq('active',true)
+            .order('class_name').order('section').order('subject_name')
         ]);
-        if(error)throw error;
+        if(classResult.error)throw classResult.error;
+        if(subjectResult.error)throw subjectResult.error;
 
-        teacherStudentAssignments=(data||[]).map(a=>({
-          class_name:String(a.class_name||'').trim(),
-          section:String(a.section||'').trim()
-        })).filter(a=>a.class_name&&a.section);
+        const merged=new Map();
+        (classResult.data||[]).forEach(a=>{
+          const key=String(a.class_name||'').trim()+'|'+String(a.section||'').trim();
+          if(!key||key==='|')return;
+          merged.set(key,{class_name:String(a.class_name||'').trim(),section:String(a.section||'').trim(),isClassTeacher:true,subjects:[]});
+        });
+        (subjectResult.data||[]).forEach(a=>{
+          const cls=String(a.class_name||'').trim(),sec=String(a.section||'').trim(),sub=String(a.subject_name||'').trim();
+          const key=cls+'|'+sec;
+          if(!cls||!sec)return;
+          const row=merged.get(key)||{class_name:cls,section:sec,isClassTeacher:false,subjects:[]};
+          if(sub&&!row.subjects.some(x=>x.toLowerCase()===sub.toLowerCase()))row.subjects.push(sub);
+          merged.set(key,row);
+        });
+
+        teacherStudentAssignments=[...merged.values()].sort((a,b)=>
+          String(a.class_name).localeCompare(String(b.class_name),undefined,{numeric:true})||
+          String(a.section).localeCompare(String(b.section),undefined,{numeric:true})
+        );
 
         if(!teacherStudentAssignments.length){
           sel.innerHTML='<option value="">No assigned classes found</option>';
@@ -5263,17 +5276,29 @@ async function handleTeacherLogin(event) {
         }
 
         sel.innerHTML='<option value="">Select assigned class</option>'+
-          teacherStudentAssignments.map((a,i)=>'<option value="'+i+'">'+studentEscape(a.class_name)+' - '+studentEscape(a.section)+'</option>').join('');
+          teacherStudentAssignments.map((a,i)=>{
+            const subjectLabel=!a.isClassTeacher&&a.subjects.length?' • '+a.subjects.join(', '):'';
+            return '<option value="'+i+'">'+studentEscape(a.class_name)+' - '+studentEscape(a.section)+studentEscape(subjectLabel)+'</option>';
+          }).join('');
 
         if(teacherStudentAssignments.length===1){
           sel.value='0';
           await loadTeacherStudentAttendance();
         }
       }catch(e){
-        console.error('Teacher class assignment load failed:',e);
-        sel.innerHTML='<option value="">Unable to load classes</option>';
+        console.error('Teacher class/subject assignment load failed:',e);
+        sel.innerHTML='<option value="">Unable to load assignments</option>';
         if(host)host.textContent=e.message||'Could not load assigned classes.';
       }
+    }
+    function teacherCanManageSubject(assignment,subject){
+      if(!assignment)return false;
+      if(assignment.isClassTeacher)return true;
+      const wanted=String(subject||'').trim().toLowerCase();
+      return !!wanted && (assignment.subjects||[]).some(s=>String(s).trim().toLowerCase()===wanted);
+    }
+    function teacherIsClassTeacher(){
+      return teacherStudentAssignments.some(a=>a.isClassTeacher);
     }
     async function focusTeacherStudentsSection(section){
       const map={
