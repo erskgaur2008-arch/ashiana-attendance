@@ -1943,9 +1943,9 @@
                 <i data-lucide="panels-top-left" class="w-5 h-5 text-ashiana-green"></i>
                 <h3 class="text-base font-extrabold text-slate-900">Student Portal Management</h3>
               </div>
-              <p class="text-xs text-slate-500 mt-1">Publish notices directly to all students or one selected class/section.</p>
+              <p class="text-xs text-slate-500 mt-1">Manage content directly for students. Changes appear in the student portal without changing login or session code.</p>
             </div>
-            <span class="inline-flex items-center rounded-full bg-emerald-50 px-2.5 py-1 text-[10px] font-bold text-emerald-700 border border-emerald-200">Phase 2 • Notices</span>
+            <span class="inline-flex items-center rounded-full bg-emerald-50 px-2.5 py-1 text-[10px] font-bold text-emerald-700 border border-emerald-200">Phase 3 • Timetable</span>
           </div>
         </div>
 
@@ -1953,54 +1953,120 @@
           <div class="grid grid-cols-1 md:grid-cols-2 gap-3">
             <div>
               <label class="block text-[11px] font-bold text-slate-700 mb-1.5">Target Class / Section</label>
-              <select id="admin-student-portal-class" onchange="loadAdminStudentPortalNotices()" class="w-full text-xs p-2.5 bg-white border border-slate-200 rounded-xl text-slate-700">
+              <select id="admin-student-portal-class" onchange="loadAdminStudentPortalContent()" class="w-full text-xs p-2.5 bg-white border border-slate-200 rounded-xl text-slate-700">
                 <option value="ALL">All Classes</option>
               </select>
-              <p class="text-[10px] text-slate-400 mt-1.5">“All Classes” creates a school-wide notice visible in student portals.</p>
+              <p class="text-[10px] text-slate-400 mt-1.5">Notices can target all classes. Timetable entries require one specific class/section.</p>
             </div>
             <div>
               <label class="block text-[11px] font-bold text-slate-700 mb-1.5">Content Type</label>
-              <select id="admin-student-portal-type" disabled class="w-full text-xs p-2.5 bg-slate-50 border border-slate-200 rounded-xl text-slate-500">
-                <option>Notice</option><option>Timetable</option><option>Calendar</option><option>Report Card</option>
+              <select id="admin-student-portal-type" onchange="loadAdminStudentPortalContent()" class="w-full text-xs p-2.5 bg-white border border-slate-200 rounded-xl text-slate-700">
+                <option value="notice">Notice</option>
+                <option value="timetable">Timetable</option>
+                <option value="calendar" disabled>Calendar • Next Phase</option>
+                <option value="report" disabled>Report Card • Next Phase</option>
               </select>
-              <p class="text-[10px] text-slate-400 mt-1.5">Notice management is enabled in this phase. Other content types come in later phases.</p>
             </div>
           </div>
         </div>
 
-        <div class="bg-white rounded-2xl border border-slate-200 shadow-sm p-4 sm:p-5">
-          <div class="flex items-center justify-between gap-2">
-            <div>
-              <h4 class="text-sm font-extrabold text-slate-900">Publish Notice</h4>
-              <p class="text-[10px] text-slate-500 mt-0.5">The notice is stored in the existing student portal table and appears to the selected students.</p>
+        <div id="admin-student-portal-notice-section" class="space-y-4">
+          <div class="bg-white rounded-2xl border border-slate-200 shadow-sm p-4 sm:p-5">
+            <div class="flex items-center justify-between gap-2">
+              <div>
+                <h4 class="text-sm font-extrabold text-slate-900">Publish Notice</h4>
+                <p class="text-[10px] text-slate-500 mt-0.5">The notice is stored in the existing student portal table and appears to the selected students.</p>
+              </div>
+              <span id="admin-student-portal-notice-status" class="text-[10px] font-bold text-slate-400">Ready</span>
             </div>
-            <span id="admin-student-portal-notice-status" class="text-[10px] font-bold text-slate-400">Ready</span>
+            <div class="grid grid-cols-1 gap-3 mt-4">
+              <div>
+                <label class="block text-[11px] font-bold text-slate-700 mb-1.5">Notice Title</label>
+                <input id="admin-student-portal-notice-title" type="text" maxlength="180" class="w-full text-xs p-2.5 bg-white border border-slate-200 rounded-xl" placeholder="Enter notice title">
+              </div>
+              <div>
+                <label class="block text-[11px] font-bold text-slate-700 mb-1.5">Notice Message</label>
+                <textarea id="admin-student-portal-notice-body" rows="5" maxlength="5000" class="w-full text-xs p-2.5 bg-white border border-slate-200 rounded-xl resize-y" placeholder="Enter the notice message for students"></textarea>
+              </div>
+              <div class="flex flex-col sm:flex-row sm:items-center sm:justify-between gap-2">
+                <p class="text-[10px] text-slate-500">Published by the authenticated Admin account.</p>
+                <button type="button" onclick="publishAdminStudentPortalNotice()" class="inline-flex items-center justify-center gap-2 px-4 py-2.5 rounded-xl bg-ashiana-green text-white text-xs font-extrabold hover:bg-ashiana-green-dark">
+                  <i data-lucide="send" class="w-4 h-4"></i>Publish Notice
+                </button>
+              </div>
+            </div>
           </div>
-          <div class="grid grid-cols-1 gap-3 mt-4">
-            <div>
-              <label class="block text-[11px] font-bold text-slate-700 mb-1.5">Notice Title</label>
-              <input id="admin-student-portal-notice-title" type="text" maxlength="180" class="w-full text-xs p-2.5 bg-white border border-slate-200 rounded-xl" placeholder="Enter notice title">
+          <div class="bg-white rounded-2xl border border-slate-200 shadow-sm p-4 sm:p-5">
+            <div class="flex items-center justify-between gap-2">
+              <div><h4 class="text-sm font-extrabold text-slate-900">Published Notices</h4><p class="text-[10px] text-slate-500">Filtered by the selected target.</p></div>
+              <button type="button" onclick="loadAdminStudentPortalNotices()" class="text-[10px] font-extrabold text-emerald-700 hover:text-emerald-900">Refresh</button>
             </div>
-            <div>
-              <label class="block text-[11px] font-bold text-slate-700 mb-1.5">Notice Message</label>
-              <textarea id="admin-student-portal-notice-body" rows="5" maxlength="5000" class="w-full text-xs p-2.5 bg-white border border-slate-200 rounded-xl resize-y" placeholder="Enter the notice message for students"></textarea>
+            <div id="admin-student-portal-notice-list" class="mt-3 space-y-2">
+              <div class="text-xs text-slate-400">Open Student Portal Management to load notices.</div>
             </div>
-            <div class="flex flex-col sm:flex-row sm:items-center sm:justify-between gap-2">
-              <p class="text-[10px] text-slate-500">Published by the authenticated Admin account.</p>
-              <button type="button" onclick="publishAdminStudentPortalNotice()" class="inline-flex items-center justify-center gap-2 px-4 py-2.5 rounded-xl bg-ashiana-green text-white text-xs font-extrabold hover:bg-ashiana-green-dark">
-                <i data-lucide="send" class="w-4 h-4"></i>Publish Notice
+          </div>
+        </div>
+
+        <div id="admin-student-portal-timetable-section" class="hidden space-y-4">
+          <div class="bg-white rounded-2xl border border-slate-200 shadow-sm p-4 sm:p-5">
+            <div class="flex items-center justify-between gap-2">
+              <div>
+                <h4 class="text-sm font-extrabold text-slate-900">Manage Class Timetable</h4>
+                <p class="text-[10px] text-slate-500 mt-0.5">Add timetable periods for one class/section. Students see active entries immediately after their next portal refresh.</p>
+              </div>
+              <span id="admin-student-portal-timetable-status" class="text-[10px] font-bold text-slate-400">Ready</span>
+            </div>
+            <div class="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-4 gap-3 mt-4">
+              <div>
+                <label class="block text-[11px] font-bold text-slate-700 mb-1.5">Day</label>
+                <select id="admin-student-portal-timetable-day" class="w-full text-xs p-2.5 bg-white border border-slate-200 rounded-xl">
+                  <option value="1">Monday</option><option value="2">Tuesday</option><option value="3">Wednesday</option><option value="4">Thursday</option><option value="5">Friday</option><option value="6">Saturday</option><option value="7">Sunday</option>
+                </select>
+              </div>
+              <div>
+                <label class="block text-[11px] font-bold text-slate-700 mb-1.5">Period No.</label>
+                <input id="admin-student-portal-timetable-period" type="number" min="1" max="20" step="1" class="w-full text-xs p-2.5 bg-white border border-slate-200 rounded-xl" placeholder="1">
+              </div>
+              <div>
+                <label class="block text-[11px] font-bold text-slate-700 mb-1.5">Start Time</label>
+                <input id="admin-student-portal-timetable-start" type="time" class="w-full text-xs p-2.5 bg-white border border-slate-200 rounded-xl">
+              </div>
+              <div>
+                <label class="block text-[11px] font-bold text-slate-700 mb-1.5">End Time</label>
+                <input id="admin-student-portal-timetable-end" type="time" class="w-full text-xs p-2.5 bg-white border border-slate-200 rounded-xl">
+              </div>
+            </div>
+            <div class="grid grid-cols-1 sm:grid-cols-3 gap-3 mt-3">
+              <div>
+                <label class="block text-[11px] font-bold text-slate-700 mb-1.5">Subject</label>
+                <input id="admin-student-portal-timetable-subject" type="text" maxlength="120" class="w-full text-xs p-2.5 bg-white border border-slate-200 rounded-xl" placeholder="Mathematics">
+              </div>
+              <div>
+                <label class="block text-[11px] font-bold text-slate-700 mb-1.5">Teacher</label>
+                <select id="admin-student-portal-timetable-teacher" class="w-full text-xs p-2.5 bg-white border border-slate-200 rounded-xl">
+                  <option value="">Select teacher</option>
+                </select>
+              </div>
+              <div>
+                <label class="block text-[11px] font-bold text-slate-700 mb-1.5">Room</label>
+                <input id="admin-student-portal-timetable-room" type="text" maxlength="80" class="w-full text-xs p-2.5 bg-white border border-slate-200 rounded-xl" placeholder="Room 12">
+              </div>
+            </div>
+            <div class="flex flex-col sm:flex-row sm:items-center sm:justify-between gap-2 mt-4">
+              <p class="text-[10px] text-slate-500">Admin-only management. Existing timetable rows are never overwritten automatically.</p>
+              <button type="button" onclick="publishAdminStudentPortalTimetable()" class="inline-flex items-center justify-center gap-2 px-4 py-2.5 rounded-xl bg-ashiana-green text-white text-xs font-extrabold hover:bg-ashiana-green-dark">
+                <i data-lucide="calendar-plus" class="w-4 h-4"></i>Add Timetable Entry
               </button>
             </div>
           </div>
-        </div>
-
-        <div class="bg-white rounded-2xl border border-slate-200 shadow-sm p-4 sm:p-5">
-          <div class="flex items-center justify-between gap-2">
-            <div><h4 class="text-sm font-extrabold text-slate-900">Published Notices</h4><p class="text-[10px] text-slate-500">Filtered by the selected target.</p></div>
-            <button type="button" onclick="loadAdminStudentPortalNotices()" class="text-[10px] font-extrabold text-emerald-700 hover:text-emerald-900">Refresh</button>
-          </div>
-          <div id="admin-student-portal-notice-list" class="mt-3 space-y-2">
-            <div class="text-xs text-slate-400">Open Student Portal Management to load notices.</div>
+          <div class="bg-white rounded-2xl border border-slate-200 shadow-sm p-4 sm:p-5">
+            <div class="flex items-center justify-between gap-2">
+              <div><h4 class="text-sm font-extrabold text-slate-900">Published Timetable</h4><p class="text-[10px] text-slate-500">Only active entries for the selected class/section are shown.</p></div>
+              <button type="button" onclick="loadAdminStudentPortalTimetable()" class="text-[10px] font-extrabold text-emerald-700 hover:text-emerald-900">Refresh</button>
+            </div>
+            <div id="admin-student-portal-timetable-list" class="mt-3 space-y-2">
+              <div class="text-xs text-slate-400">Select a class/section to load timetable entries.</div>
+            </div>
           </div>
         </div>
       </div>
@@ -9226,6 +9292,134 @@ window.addEventListener('load',async function(){
         showToast('Notice deleted.','success');
         await loadAdminStudentPortalNotices();
       }catch(e){ showToast('Notice delete failed: '+(e.message||e),'error'); }
+    }
+
+    // Phase 3: Admin Student Portal timetable management. Kept isolated from auth/bootstrap/session code.
+    let adminStudentPortalTeachersLoaded = false;
+
+    function adminStudentPortalContentType(){
+      return document.getElementById('admin-student-portal-type')?.value || 'notice';
+    }
+
+    async function loadAdminStudentPortalContent(){
+      if(currentAuthUser?.type!=='ADMIN') return;
+      const type=adminStudentPortalContentType();
+      const noticeSection=document.getElementById('admin-student-portal-notice-section');
+      const timetableSection=document.getElementById('admin-student-portal-timetable-section');
+      if(noticeSection) noticeSection.classList.toggle('hidden',type!=='notice');
+      if(timetableSection) timetableSection.classList.toggle('hidden',type!=='timetable');
+      if(type==='notice'){
+        await loadAdminStudentPortalNotices();
+      }else if(type==='timetable'){
+        await loadAdminStudentPortalTeachers();
+        await loadAdminStudentPortalTimetable();
+      }
+    }
+
+    async function loadAdminStudentPortalTeachers(){
+      const sel=document.getElementById('admin-student-portal-timetable-teacher');
+      if(!sel||!supabaseClient||currentAuthUser?.type!=='ADMIN') return;
+      if(adminStudentPortalTeachersLoaded && sel.options.length>1) return;
+      try{
+        const {data,error}=await supabaseClient.from('staff').select('name,email,status').eq('status','ACTIVE').order('name');
+        if(error) throw error;
+        const options=['<option value="">Select teacher</option>'];
+        (data||[]).forEach(t=>{
+          const name=String(t.name||'').trim(), email=String(t.email||'').trim().toLowerCase();
+          if(!name) return;
+          options.push('<option value="'+studentEscape(name)+'">'+studentEscape(name)+(email?' • '+studentEscape(email):'')+'</option>');
+        });
+        sel.innerHTML=options.join('');
+        adminStudentPortalTeachersLoaded=true;
+      }catch(e){
+        console.warn('Student Portal teacher list unavailable:',e);
+        sel.innerHTML='<option value="">Teacher list unavailable</option>';
+      }
+    }
+
+    async function loadAdminStudentPortalTimetable(){
+      const host=document.getElementById('admin-student-portal-timetable-list');
+      const status=document.getElementById('admin-student-portal-timetable-status');
+      if(!host||!supabaseClient||currentAuthUser?.type!=='ADMIN') return;
+      const target=adminStudentPortalTarget();
+      if(!target.class_name||!target.section){
+        host.innerHTML='<div class="text-xs text-amber-700 bg-amber-50 border border-amber-100 rounded-xl p-3">Select one class/section before managing timetable.</div>';
+        if(status) status.textContent='Select class';
+        return;
+      }
+      if(status) status.textContent='Loading…';
+      try{
+        const {data,error}=await supabaseClient.from('student_timetable')
+          .select('id,class_name,section,day_of_week,period_no,start_time,end_time,subject_name,teacher_name,room,active,created_at')
+          .eq('school_code',APS_STUDENT_SCHOOL).eq('class_name',target.class_name).eq('section',target.section)
+          .eq('active',true).order('day_of_week').order('period_no');
+        if(error) throw error;
+        if(status) status.textContent=(data||[]).length+' active entr'+((data||[]).length===1?'y':'ies');
+        const days={1:'Monday',2:'Tuesday',3:'Wednesday',4:'Thursday',5:'Friday',6:'Saturday',7:'Sunday'};
+        host.innerHTML=(data||[]).length?(data||[]).map(x=>{
+          const time=[x.start_time,x.end_time].filter(Boolean).join(' – ');
+          return '<div class="border border-slate-200 rounded-xl p-3 flex items-start gap-3">'+
+            '<div class="w-20 shrink-0"><div class="text-[10px] font-extrabold text-violet-700">'+studentEscape(days[x.day_of_week]||'Day '+x.day_of_week)+'</div><div class="text-[10px] text-slate-500">Period '+studentEscape(x.period_no)+'</div></div>'+
+            '<div class="min-w-0 flex-1"><div class="text-xs font-extrabold text-slate-900">'+studentEscape(x.subject_name)+'</div>'+
+            '<div class="text-[10px] text-slate-600 mt-1">'+studentEscape(x.teacher_name||'Teacher not set')+(x.room?' • '+studentEscape(x.room):'')+(time?' • '+studentEscape(time):'')+'</div></div>'+
+            '<button type="button" onclick="deleteAdminStudentPortalTimetable(\''+studentEscape(x.id)+'\')" class="shrink-0 text-[10px] font-extrabold text-rose-600">Delete</button></div>';
+        }).join(''):'<div class="text-xs text-slate-400 border border-dashed border-slate-200 rounded-xl p-4 text-center">No timetable entries for this class.</div>';
+      }catch(e){
+        if(status) status.textContent='Error';
+        host.innerHTML='<div class="text-xs text-rose-600 border border-rose-100 bg-rose-50 rounded-xl p-3">'+studentEscape(e.message||String(e))+'</div>';
+      }
+      try{if(window.lucide)lucide.createIcons();}catch(_){}
+    }
+
+    async function publishAdminStudentPortalTimetable(){
+      if(currentAuthUser?.type!=='ADMIN'||!supabaseClient) return showToast('Administrator cloud session is required.','error');
+      const target=adminStudentPortalTarget();
+      if(!target.class_name||!target.section) return showToast('Select one class/section for a timetable entry.','error');
+      const day=Number(document.getElementById('admin-student-portal-timetable-day')?.value||0);
+      const period=Number(document.getElementById('admin-student-portal-timetable-period')?.value||0);
+      const start=document.getElementById('admin-student-portal-timetable-start')?.value||null;
+      const end=document.getElementById('admin-student-portal-timetable-end')?.value||null;
+      const subject=document.getElementById('admin-student-portal-timetable-subject')?.value.trim()||'';
+      const teacher=document.getElementById('admin-student-portal-timetable-teacher')?.value||null;
+      const room=document.getElementById('admin-student-portal-timetable-room')?.value.trim()||null;
+      if(!day||day<1||day>7||!period||period<1||period>20||!subject) return showToast('Complete day, period and subject.','error');
+      if(start&&end&&start>=end) return showToast('End time must be after start time.','error');
+      const btn=document.querySelector('#admin-student-portal-timetable-section button[onclick="publishAdminStudentPortalTimetable()"]');
+      if(btn)btn.disabled=true;
+      try{
+        const {data:existing,error:existingError}=await supabaseClient.from('student_timetable').select('id')
+          .eq('school_code',APS_STUDENT_SCHOOL).eq('class_name',target.class_name).eq('section',target.section)
+          .eq('day_of_week',day).eq('period_no',period).eq('active',true).limit(1);
+        if(existingError)throw existingError;
+        if((existing||[]).length) return showToast('That period already has an active timetable entry for this class. Delete the old entry first.','error');
+        const {error}=await supabaseClient.from('student_timetable').insert({
+          school_code:APS_STUDENT_SCHOOL,class_name:target.class_name,section:target.section,
+          day_of_week:day,period_no:period,start_time:start,end_time:end,subject_name:subject,
+          teacher_name:teacher,room:room,active:true,created_by:String(currentAuthUser.email||'ADMIN').trim().toLowerCase()
+        });
+        if(error)throw error;
+        document.getElementById('admin-student-portal-timetable-period').value='';
+        document.getElementById('admin-student-portal-timetable-start').value='';
+        document.getElementById('admin-student-portal-timetable-end').value='';
+        document.getElementById('admin-student-portal-timetable-subject').value='';
+        document.getElementById('admin-student-portal-timetable-teacher').value='';
+        document.getElementById('admin-student-portal-timetable-room').value='';
+        showToast('Timetable entry published to Class '+target.class_name+' - Section '+target.section+'.','success');
+        await loadAdminStudentPortalTimetable();
+      }catch(e){
+        showToast('Timetable publish failed: '+(e.message||e),'error');
+      }finally{if(btn)btn.disabled=false;}
+    }
+
+    async function deleteAdminStudentPortalTimetable(id){
+      if(currentAuthUser?.type!=='ADMIN'||!supabaseClient||!id)return;
+      if(!confirm('Delete this timetable entry?'))return;
+      try{
+        const {error}=await supabaseClient.from('student_timetable').delete().eq('id',id).eq('school_code',APS_STUDENT_SCHOOL);
+        if(error)throw error;
+        showToast('Timetable entry deleted.','success');
+        await loadAdminStudentPortalTimetable();
+      }catch(e){showToast('Timetable delete failed: '+(e.message||e),'error');}
     }
 
     // App Initialization
