@@ -3,8 +3,8 @@ import { createSupabaseContext } from "npm:@supabase/server@1";
 const PRIMARY_MODEL = "gemini-3.8-flash";
 const FALLBACK_MODEL = "gemini-3.7-flash";
 const MAX_INPUT_CHARS = 4000;
-const MAX_OUTPUT_TOKENS = 1200;
-const GEMINI_TIMEOUT_MS = 15000;
+const MAX_OUTPUT_TOKENS = 800;
+const GEMINI_TIMEOUT_MS = 12000;
 
 const corsHeaders = {
   "Access-Control-Allow-Origin": "*",
@@ -15,6 +15,10 @@ const corsHeaders = {
 
 function json(body: unknown, status = 200) {
   return new Response(JSON.stringify(body), { status, headers: corsHeaders });
+}
+
+function wait(ms: number) {
+  return new Promise((resolve) => setTimeout(resolve, ms));
 }
 
 async function requestGemini(
@@ -100,15 +104,19 @@ Deno.serve(async (req: Request) => {
     let result = await requestGemini(PRIMARY_MODEL, apiKey, prompt);
 
     if (result.timedOut || result.response?.status === 503) {
-      console.error(
-        `Gemini ${PRIMARY_MODEL} ${result.timedOut ? "timed out" : "returned 503"}; trying ${FALLBACK_MODEL}`,
-      );
-      result = await requestGemini(FALLBACK_MODEL, apiKey, prompt);
+      console.error(`Gemini ${PRIMARY_MODEL} unavailable; retrying once before fallback`);
+      await wait(1000);
+      result = await requestGemini(PRIMARY_MODEL, apiKey, prompt);
+    }
+
+    if (result.timedOut || result.response?.status === 503) {
       selectedModel = FALLBACK_MODEL;
+      console.error(`Gemini ${PRIMARY_MODEL} still unavailable; trying ${FALLBACK_MODEL}`);
+      await wait(1000);
+      result = await requestGemini(FALLBACK_MODEL, apiKey, prompt);
     }
 
     if (result.timedOut) {
-      console.error(`Gemini ${selectedModel} timed out after ${GEMINI_TIMEOUT_MS}ms`);
       return json(
         { error: "AI_TIMEOUT", message: "The AI service took too long to respond. Please try again." },
         504,
