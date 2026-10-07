@@ -1503,7 +1503,7 @@
       </div>
 
       <div class="admin-quick-actions">
-        <button type="button" onclick="window.switchAdminTab('students')"><i data-lucide="graduation-cap"></i><span>Students</span></button>
+        <button type="button" onclick="window.switchAdminTab('students')"><i data-lucide="graduation-cap"></i><span>Students</span></button><button type="button" onclick="window.switchAdminTab('student-portal')" title="Manage Student Portal content"><i data-lucide="layout-dashboard"></i><span>Student Portal</span></button>
         <button type="button" onclick="openAdminStudentAttendanceReport()" title="Students Attendance Report"><i data-lucide="clipboard-list"></i><span>Attendance Report</span></button>
         <button type="button" onclick="window.switchAdminTab('live')"><i data-lucide="radio"></i><span>Live Attendance</span></button>
         <button type="button" onclick="window.switchAdminTab('qr')"><i data-lucide="qr-code"></i><span>Daily QR</span></button>
@@ -1825,6 +1825,34 @@
       </div>
 
       </div> <!-- Close TAB 3: STUDENT MANAGEMENT -->
+
+      <!-- TAB 4: STUDENT PORTAL MANAGEMENT -->
+      <div id="admin-tab-student-portal" class="hidden space-y-3">
+        <div class="bg-white rounded-2xl border border-slate-200 shadow-sm p-4">
+          <div class="flex flex-col lg:flex-row lg:items-center lg:justify-between gap-3">
+            <div>
+              <h3 class="font-bold">Student Portal Management</h3>
+              <p class="text-[10px] text-slate-500 mt-0.5">Admin can publish portal content directly to students by one class or all active classes.</p>
+            </div>
+            <span class="px-2.5 py-1 rounded-full bg-emerald-50 text-emerald-700 text-[9px] font-bold border border-emerald-100">Admin Access</span>
+          </div>
+
+          <div class="grid grid-cols-1 sm:grid-cols-2 gap-2 mt-4">
+            <select id="admin-portal-class" onchange="loadAdminPortalStudents()" class="p-2.5 border rounded-xl text-xs">
+              <option value="__ALL__">All Classes</option>
+            </select>
+            <select id="admin-portal-type" onchange="renderAdminPortalEditor()" class="p-2.5 border rounded-xl text-xs">
+              <option value="notice">Notice</option>
+              <option value="timetable">Timetable</option>
+              <option value="calendar">Calendar</option>
+              <option value="report">Report Card</option>
+            </select>
+          </div>
+          <p id="admin-portal-scope-help" class="mt-2 text-[10px] text-slate-500">All Classes: the same notice will be published to every active class/section.</p>
+          <div id="admin-portal-editor" class="mt-3"></div>
+          <div id="admin-portal-existing" class="mt-4"></div>
+        </div>
+      </div>
 
       <!-- TAB 4: MANUAL CORRECTIONS -->
       <div id="admin-tab-corrections" class="hidden space-y-3">
@@ -7140,8 +7168,145 @@ window.addEventListener('load',async function(){
       if (el) el.textContent = new Date().toLocaleDateString("en-IN", { weekday: "long", day: "numeric", month: "short", year: "numeric" });
     }
 
+    let adminPortalClasses = [];
+    let adminPortalStudents = [];
+
+    async function loadAdminPortalClasses(){
+      const sel=document.getElementById('admin-portal-class');
+      if(!sel||!supabaseClient)return;
+      try{
+        const {data,error}=await supabaseClient.from('student_roster')
+          .select('class_name,section')
+          .eq('school_code',APS_STUDENT_SCHOOL)
+          .eq('status','ACTIVE')
+          .order('class_name').order('section');
+        if(error)throw error;
+        const seen=new Set();
+        adminPortalClasses=(data||[]).filter(x=>{const k=(x.class_name||'')+'|'+(x.section||'');if(!x.class_name||!x.section||seen.has(k))return false;seen.add(k);return true;});
+        sel.innerHTML='<option value="__ALL__">All Classes</option>'+adminPortalClasses.map(a=>'<option value="'+studentEscape(a.class_name)+'|'+studentEscape(a.section)+'">'+studentEscape(a.class_name)+' - '+studentEscape(a.section)+'</option>').join('');
+        await loadAdminPortalStudents();
+      }catch(e){sel.innerHTML='<option value="__ALL__">All Classes</option>';showToast('Could not load classes: '+(e.message||e),'error');}
+    }
+
+    function getAdminPortalScope(){
+      const v=document.getElementById('admin-portal-class')?.value||'__ALL__';
+      if(v==='__ALL__')return null;
+      const [class_name,section]=v.split('|');
+      return {class_name,section};
+    }
+
+    async function loadAdminPortalStudents(){
+      const sel=document.getElementById('admin-portal-student');
+      if(!sel||!supabaseClient)return;
+      try{
+        const scope=getAdminPortalScope();
+        let q=supabaseClient.from('student_roster').select('id,student_name,enroll_no,class_name,section').eq('school_code',APS_STUDENT_SCHOOL).eq('status','ACTIVE').order('class_name').order('section').order('roll_no').order('student_name');
+        if(scope)q=q.eq('class_name',scope.class_name).eq('section',scope.section);
+        const {data,error}=await q;
+        if(error)throw error;
+        adminPortalStudents=data||[];
+        sel.innerHTML='<option value="">Select student</option>'+adminPortalStudents.map(s=>'<option value="'+s.id+'">'+studentEscape(s.student_name)+' ('+studentEscape(s.enroll_no)+') · '+studentEscape(s.class_name)+'-'+studentEscape(s.section)+'</option>').join('');
+      }catch(e){if(sel)sel.innerHTML='<option value="">Unable to load students</option>';showToast('Could not load students: '+(e.message||e),'error');}
+    }
+
+    function renderAdminPortalEditor(){
+      const type=document.getElementById('admin-portal-type')?.value||'notice';
+      const host=document.getElementById('admin-portal-editor');
+      const help=document.getElementById('admin-portal-scope-help');
+      if(!host)return;
+      const scope=getAdminPortalScope();
+      if(help)help.textContent=type==='report'
+        ? (scope?'Select a student from the selected class to manage the report card.':'Select All Classes to manage students across the whole school; report cards remain student-specific.')
+        : (scope?('Content will be published only to '+scope.class_name+' - '+scope.section+'.'):'All Classes: the same content will be published to every active class/section.');
+      if(type==='notice'){
+        host.innerHTML='<div class="space-y-2"><input id="admin-portal-notice-title" placeholder="Notice title" class="w-full p-2.5 border rounded-xl text-xs"><textarea id="admin-portal-notice-body" rows="4" placeholder="Notice message" class="w-full p-2.5 border rounded-xl text-xs"></textarea><button type="button" onclick="saveAdminPortalNotice()" class="w-full py-2.5 bg-ashiana-green text-white rounded-xl text-xs font-bold">Publish Notice</button></div>';
+      }else if(type==='timetable'){
+        host.innerHTML='<div class="grid grid-cols-2 sm:grid-cols-4 gap-2"><select id="admin-portal-day" class="p-2 border rounded-xl text-xs"><option value="1">Monday</option><option value="2">Tuesday</option><option value="3">Wednesday</option><option value="4">Thursday</option><option value="5">Friday</option><option value="6">Saturday</option><option value="7">Sunday</option></select><input id="admin-portal-period" type="number" min="1" max="12" placeholder="Period No." class="p-2 border rounded-xl text-xs"><input id="admin-portal-start" type="time" class="p-2 border rounded-xl text-xs"><input id="admin-portal-end" type="time" class="p-2 border rounded-xl text-xs"></div><div class="grid grid-cols-1 sm:grid-cols-3 gap-2 mt-2"><input id="admin-portal-subject" placeholder="Subject" class="p-2 border rounded-xl text-xs"><input id="admin-portal-teacher" placeholder="Teacher Name" class="p-2 border rounded-xl text-xs"><input id="admin-portal-room" placeholder="Room" class="p-2 border rounded-xl text-xs"></div><button type="button" onclick="saveAdminPortalTimetable()" class="w-full mt-2 py-2.5 bg-violet-700 text-white rounded-xl text-xs font-bold">Add Timetable Entry</button>';
+      }else if(type==='calendar'){
+        host.innerHTML='<div class="space-y-2"><input id="admin-portal-date" type="date" class="w-full p-2.5 border rounded-xl text-xs"><input id="admin-portal-calendar-title" placeholder="Event / Holiday title" class="w-full p-2.5 border rounded-xl text-xs"><textarea id="admin-portal-calendar-body" rows="3" placeholder="Description" class="w-full p-2.5 border rounded-xl text-xs"></textarea><button type="button" onclick="saveAdminPortalCalendar()" class="w-full py-2.5 bg-orange-600 text-white rounded-xl text-xs font-bold">Add Calendar Event</button></div>';
+      }else{
+        host.innerHTML='<div class="space-y-2"><select id="admin-portal-student" onchange="loadAdminPortalReportCard()" class="w-full p-2.5 border rounded-xl text-xs"><option value="">Loading students…</option></select><input id="admin-portal-term" placeholder="Term (e.g. Term 1)" class="w-full p-2.5 border rounded-xl text-xs"><input id="admin-portal-year" value="2026-27" placeholder="Academic Year" class="w-full p-2.5 border rounded-xl text-xs"><textarea id="admin-portal-subjects" rows="5" placeholder='Subjects JSON: [{"subject":"English","marks":85,"grade":"A1"}]' class="w-full p-2.5 border rounded-xl text-[10px] font-mono"></textarea><input id="admin-portal-grade" placeholder="Overall Grade" class="w-full p-2.5 border rounded-xl text-xs"><textarea id="admin-portal-remarks" rows="2" placeholder="Remarks" class="w-full p-2.5 border rounded-xl text-xs"></textarea><label class="text-xs flex items-center gap-2"><input id="admin-portal-published" type="checkbox" checked> Publish to student</label><button type="button" onclick="saveAdminPortalReportCard()" class="w-full py-2.5 bg-cyan-700 text-white rounded-xl text-xs font-bold">Save Report Card</button></div>';
+        loadAdminPortalStudents();
+      }
+      loadAdminPortalContent();
+    }
+
+    async function saveAdminPortalNotice(){
+      const title=document.getElementById('admin-portal-notice-title')?.value.trim(),body=document.getElementById('admin-portal-notice-body')?.value.trim();
+      if(!title||!body)return showToast('Enter notice title and message.','error');
+      const scope=getAdminPortalScope();
+      const targets=scope?[scope]:adminPortalClasses;
+      if(!targets.length)return showToast('No active classes found.','error');
+      const rows=targets.map(a=>({school_code:APS_STUDENT_SCHOOL,class_name:a.class_name,section:a.section,title,body,published_by:currentAuthUser?.email||'admin',active:true}));
+      const {error}=await supabaseClient.from('student_notices').insert(rows);
+      if(error)return showToast(error.message,'error');
+      showToast('Notice published to '+targets.length+' class'+(targets.length===1?'':'es')+'.','success');loadAdminPortalContent();
+    }
+
+    async function saveAdminPortalTimetable(){
+      const day=Number(document.getElementById('admin-portal-day')?.value),period=Number(document.getElementById('admin-portal-period')?.value),subject=document.getElementById('admin-portal-subject')?.value.trim();
+      if(!day||!period||!subject)return showToast('Complete timetable details.','error');
+      const scope=getAdminPortalScope(),targets=scope?[scope]:adminPortalClasses;
+      if(!targets.length)return showToast('No active classes found.','error');
+      const rowBase={school_code:APS_STUDENT_SCHOOL,day_of_week:day,period_no:period,start_time:document.getElementById('admin-portal-start')?.value||null,end_time:document.getElementById('admin-portal-end')?.value||null,subject_name:subject,teacher_name:document.getElementById('admin-portal-teacher')?.value.trim()||null,room:document.getElementById('admin-portal-room')?.value.trim()||null,active:true,created_by:currentAuthUser?.email||'admin'};
+      const {error}=await supabaseClient.from('student_timetable').insert(targets.map(a=>({...rowBase,class_name:a.class_name,section:a.section})));
+      if(error)return showToast(error.message,'error');
+      showToast('Timetable entry added to '+targets.length+' class'+(targets.length===1?'':'es')+'.','success');loadAdminPortalContent();
+    }
+
+    async function saveAdminPortalCalendar(){
+      const date=document.getElementById('admin-portal-date')?.value,title=document.getElementById('admin-portal-calendar-title')?.value.trim(),body=document.getElementById('admin-portal-calendar-body')?.value.trim();
+      if(!date||!title)return showToast('Enter date and event title.','error');
+      const scope=getAdminPortalScope(),targets=scope?[scope]:adminPortalClasses;
+      if(!targets.length)return showToast('No active classes found.','error');
+      const rows=targets.map(a=>({school_code:APS_STUDENT_SCHOOL,event_date:date,title,description:body||null,class_name:a.class_name,section:a.section,created_by:currentAuthUser?.email||'admin',active:true}));
+      const {error}=await supabaseClient.from('student_calendar_events').insert(rows);
+      if(error)return showToast(error.message,'error');
+      showToast('Calendar event added to '+targets.length+' class'+(targets.length===1?'':'es')+'.','success');loadAdminPortalContent();
+    }
+
+    async function saveAdminPortalReportCard(){
+      const sid=document.getElementById('admin-portal-student')?.value,term=document.getElementById('admin-portal-term')?.value.trim(),year=document.getElementById('admin-portal-year')?.value.trim()||'2026-27';
+      if(!sid||!term)return showToast('Select student and enter term.','error');
+      let subjects=[];try{subjects=JSON.parse(document.getElementById('admin-portal-subjects')?.value||'[]');if(!Array.isArray(subjects))throw Error();}catch(e){return showToast('Subjects must be a valid JSON array.','error');}
+      const {error}=await supabaseClient.from('student_report_cards').upsert({school_code:APS_STUDENT_SCHOOL,student_id:sid,academic_year:year,term,subjects,overall_grade:document.getElementById('admin-portal-grade')?.value.trim()||null,remarks:document.getElementById('admin-portal-remarks')?.value.trim()||null,published:document.getElementById('admin-portal-published')?.checked||false,published_by:currentAuthUser?.email||'admin'},{onConflict:'school_code,student_id,academic_year,term'});
+      if(error)return showToast(error.message,'error');
+      showToast('Report card saved and reflected in Student Portal.','success');loadAdminPortalContent();
+    }
+
+    async function loadAdminPortalReportCard(){
+      const sid=document.getElementById('admin-portal-student')?.value;if(!sid||!supabaseClient)return;
+      const {data}=await supabaseClient.from('student_report_cards').select('academic_year,term,subjects,overall_grade,remarks,published').eq('school_code',APS_STUDENT_SCHOOL).eq('student_id',sid).order('academic_year',{ascending:false}).order('created_at',{ascending:false}).limit(1).maybeSingle();
+      if(!data)return;
+      const set=(id,v)=>{const el=document.getElementById(id);if(el)el.value=v??'';};
+      set('admin-portal-term',data.term);set('admin-portal-year',data.academic_year);set('admin-portal-subjects',JSON.stringify(data.subjects||[],null,2));set('admin-portal-grade',data.overall_grade);set('admin-portal-remarks',data.remarks);const pub=document.getElementById('admin-portal-published');if(pub)pub.checked=!!data.published;
+    }
+
+    async function loadAdminPortalContent(){
+      const host=document.getElementById('admin-portal-existing'),type=document.getElementById('admin-portal-type')?.value||'notice';
+      if(!host||!supabaseClient)return;
+      const scope=getAdminPortalScope();
+      if(type==='report'){host.innerHTML='<div class="p-3 rounded-xl bg-slate-50 border text-xs text-slate-500">Select a student above to edit their report card.</div>';return;}
+      const table=type==='notice'?'student_notices':type==='timetable'?'student_timetable':'student_calendar_events';
+      let q=supabaseClient.from(table).select('*').eq('school_code',APS_STUDENT_SCHOOL).eq('active',true).order('created_at',{ascending:false}).limit(30);
+      if(scope)q=q.eq('class_name',scope.class_name).eq('section',scope.section);
+      const {data,error}=await q;
+      if(error){host.innerHTML='<div class="p-3 rounded-xl bg-rose-50 border border-rose-200 text-xs text-rose-700">'+studentEscape(error.message)+'</div>';return;}
+      const rows=data||[];
+      host.innerHTML='<div class="flex items-center justify-between mb-2"><h4 class="text-xs font-extrabold text-slate-700">Existing '+(type==='notice'?'Notices':type==='timetable'?'Timetable Entries':'Calendar Events')+'</h4><span class="text-[10px] text-slate-400">'+rows.length+' item'+(rows.length===1?'':'s')+'</span></div>'+(rows.length?rows.map(x=>'<div class="p-3 mb-2 rounded-xl border bg-white"><div class="font-bold text-xs">'+studentEscape(x.title||x.subject_name||'Timetable Entry')+'</div><div class="text-[10px] text-slate-500 mt-1">'+studentEscape(type==='notice'?x.body:(type==='calendar'?(x.event_date+' · '+(x.description||'')):('Class '+x.class_name+'-'+x.section+' · Period '+x.period_no+' · '+x.subject_name))+'</div><button type="button" onclick="deleteAdminPortalContent(\''+x.id+'\',\''+type+'\')" class="mt-2 px-2.5 py-1 rounded-lg bg-rose-50 text-rose-700 text-[10px] font-bold">Delete</button></div>').join(''):'<div class="p-4 text-xs text-slate-400 text-center border rounded-xl">No active content for this selection.</div>');
+    }
+
+    async function deleteAdminPortalContent(id,type){
+      if(!id)return;
+      if(!confirm('Delete this student portal item?'))return;
+      const table=type==='notice'?'student_notices':type==='timetable'?'student_timetable':'student_calendar_events';
+      const {error}=await supabaseClient.from(table).update({active:false}).eq('id',id);
+      if(error)return showToast(error.message,'error');
+      showToast('Portal item removed.','success');loadAdminPortalContent();
+    }
+
     function switchAdminTab(tab) {
-      const allowedTabs = ['live', 'qr', 'directory', 'corrections', 'leave', 'audit', 'reports', 'students'];
+      const allowedTabs = ['live', 'qr', 'directory', 'corrections', 'leave', 'audit', 'reports', 'students', 'student-portal'];
       if (!allowedTabs.includes(tab)) return;
 
       // Force the panel visibility with both the utility class and inline display.
@@ -7176,6 +7341,11 @@ window.addEventListener('load',async function(){
         if (tab === 'students' && currentAuthUser?.type === 'ADMIN') {
           populateStudentTeacherOptions();
           loadAdminStudents();
+        }
+        if (tab === 'student-portal' && currentAuthUser?.type === 'ADMIN') {
+          loadAdminPortalClasses();
+          renderAdminPortalEditor();
+          loadAdminPortalContent();
         }
 
         if (tab === 'directory' && currentAuthUser?.type === 'ADMIN') {
