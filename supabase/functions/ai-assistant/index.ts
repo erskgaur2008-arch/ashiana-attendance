@@ -81,11 +81,13 @@ async function requestWithRetry(
   prompt: string,
   useThinking = true,
 ) {
-  for (let attempt = 0; attempt <= MAX_RETRY_ATTEMPTS; attempt += 1) {
-    const result = await requestGemini(model, apiKey, prompt, useThinking);
+  let lastResult: { response?: Response; timedOut?: boolean } = {};
 
-    if (!result.timedOut && !isTransientStatus(result.response?.status)) {
-      return result;
+  for (let attempt = 0; attempt <= MAX_RETRY_ATTEMPTS; attempt += 1) {
+    lastResult = await requestGemini(model, apiKey, prompt, useThinking);
+
+    if (!lastResult.timedOut && !isTransientStatus(lastResult.response?.status)) {
+      return lastResult;
     }
 
     if (attempt < MAX_RETRY_ATTEMPTS) {
@@ -94,9 +96,7 @@ async function requestWithRetry(
     }
   }
 
-  return {
-    ...(await requestGemini(model, apiKey, prompt, useThinking)),
-  };
+  return lastResult;
 }
 
 Deno.serve(async (req: Request) => {
