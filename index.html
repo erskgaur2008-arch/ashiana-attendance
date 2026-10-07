@@ -5729,10 +5729,11 @@ async function assignClassTeacher(){const cls=document.getElementById('assign-cl
           ...(s.data||[]).map(x=>({...x,type:'Subject Teacher',label:x.subject_name}))
         ].filter(x=>(!cls||x.class_name===cls)&&(!sec||x.section===sec));
 
+        // One collapsible group per CLASS. Sections are shown only after the class is expanded.
         const groups=new Map();
         all.forEach(x=>{
-          const key=String(x.class_name)+'-'+String(x.section);
-          if(!groups.has(key))groups.set(key,{key,cls:x.class_name,sec:x.section,items:[]});
+          const key=String(x.class_name||'');
+          if(!groups.has(key))groups.set(key,{key,cls:x.class_name,items:[]});
           groups.get(key).items.push(x);
         });
 
@@ -5745,9 +5746,13 @@ async function assignClassTeacher(){const cls=document.getElementById('assign-cl
           const safeKey=studentEscape(g.key).replace(/[^a-zA-Z0-9_-]/g,'_');
           const classTeacherCount=g.items.filter(x=>x.type==='Class Teacher').length;
           const subjectTeacherCount=g.items.filter(x=>x.type==='Subject Teacher').length;
+          const sections=[...new Set(g.items.map(x=>String(x.section||'')))].filter(Boolean);
           const countLabel=g.items.length+' assignment'+(g.items.length===1?'':'s');
+          const sectionLabel=sections.length+' section'+(sections.length===1?'':'s');
+
           const details=g.items.map(x=>
             '<div class="flex items-center gap-3 px-3 py-2.5 bg-white border-t border-slate-100">'+
+              '<div class="w-16 shrink-0 text-[10px] font-extrabold text-slate-700">Section '+studentEscape(x.section)+'</div>'+
               '<div class="flex-1 min-w-0">'+
                 '<p class="text-[11px] font-bold text-slate-800">'+studentEscape(x.type)+(x.label?' <span class="font-medium text-slate-500">• '+studentEscape(x.label)+'</span>':'')+'</p>'+
                 '<p class="text-[10px] text-slate-500 truncate">'+studentEscape(x.teacher_email)+'</p>'+
@@ -5755,11 +5760,12 @@ async function assignClassTeacher(){const cls=document.getElementById('assign-cl
               '<button type="button" onclick="deleteAssignment(\''+studentEscape(x.id)+'\',\''+studentEscape(x.type)+'\')" class="shrink-0 text-rose-600 text-[10px] font-bold hover:underline">Delete</button>'+
             '</div>'
           ).join('');
+
           return '<div class="border border-slate-200 rounded-xl overflow-hidden bg-white">'+
             '<button type="button" onclick="toggleAdminAssignmentGroup(\''+safeKey+'\')" class="w-full flex items-center gap-3 p-3 text-left hover:bg-slate-50">'+
-              '<div class="w-8 h-8 rounded-lg bg-emerald-50 text-emerald-800 flex items-center justify-center font-black text-xs">'+studentEscape(g.cls)+'</div>'+
-              '<div class="flex-1 min-w-0"><p class="text-xs font-extrabold text-slate-900">Class '+studentEscape(g.cls)+' - Section '+studentEscape(g.sec)+'</p>'+
-              '<p class="text-[10px] text-slate-500">'+countLabel+' • '+classTeacherCount+' Class Teacher • '+subjectTeacherCount+' Subject Teacher</p></div>'+
+              '<div class="w-9 h-9 rounded-lg bg-emerald-50 text-emerald-800 flex items-center justify-center font-black text-xs">Class</div>'+
+              '<div class="flex-1 min-w-0"><p class="text-xs font-extrabold text-slate-900">Class '+studentEscape(g.cls)+'</p>'+
+              '<p class="text-[10px] text-slate-500">'+sectionLabel+' • '+countLabel+' • '+classTeacherCount+' Class Teacher • '+subjectTeacherCount+' Subject Teacher</p></div>'+
               '<i id="admin-assignment-icon-'+safeKey+'" data-lucide="chevron-down" class="w-4 h-4 text-slate-500 shrink-0"></i>'+
             '</button>'+
             '<div id="admin-assignment-group-'+safeKey+'" class="hidden">'+details+'</div>'+
