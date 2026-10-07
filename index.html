@@ -1947,8 +1947,8 @@
         <div class="bg-white rounded-2xl border border-slate-200 shadow-sm p-4 sm:p-5">
           <div class="grid grid-cols-1 md:grid-cols-2 gap-3">
             <div><label class="block text-[11px] font-bold text-slate-700 mb-1.5">Target Class / Section</label>
-              <select id="admin-student-portal-class" onchange="loadAdminStudentPortalContent()" class="w-full text-xs p-2.5 bg-white border border-slate-200 rounded-xl"><option value="ALL">All Classes</option></select>
-              <p class="text-[10px] text-slate-400 mt-1.5">All Classes applies to school-wide notices/calendar events. Timetable and report cards use a specific class/student.</p>
+              <select id="admin-student-portal-class" multiple size="6" onchange="normalizeAdminStudentPortalClassSelection(this); loadAdminStudentPortalContent()" class="w-full text-xs p-2.5 bg-white border border-slate-200 rounded-xl min-h-[150px]"><option value="ALL">All Classes</option></select>
+              <p class="text-[10px] text-slate-400 mt-1.5">Hold <strong>Ctrl</strong> and click to select multiple classes/sections. Select <strong>All Classes</strong> by itself for a school-wide target. Timetable and report cards require one class/section.</p>
             </div>
             <div><label class="block text-[11px] font-bold text-slate-700 mb-1.5">Content Type</label>
               <select id="admin-student-portal-type" onchange="loadAdminStudentPortalContent()" class="w-full text-xs p-2.5 bg-white border border-slate-200 rounded-xl">
@@ -9132,11 +9132,41 @@ window.addEventListener('load',async function(){
     // Phase 2: Admin Student Portal notice management. Keep this isolated from auth/bootstrap code.
     let adminStudentPortalClassesLoaded = false;
 
+    function adminStudentPortalSelectedValues(){
+      const sel=document.getElementById('admin-student-portal-class');
+      if(!sel) return ['ALL'];
+      const values=Array.from(sel.selectedOptions||[]).map(o=>o.value).filter(Boolean);
+      return values.length?values:['ALL'];
+    }
+
+    function normalizeAdminStudentPortalClassSelection(sel){
+      if(!sel) return;
+      const values=Array.from(sel.selectedOptions||[]).map(o=>o.value);
+      const all=sel.querySelector('option[value="ALL"]');
+      if(!all) return;
+      if(values.includes('ALL') && values.length>1){
+        all.selected=false;
+      }else if(!values.length){
+        all.selected=true;
+      }
+    }
+
+    function adminStudentPortalTargets(){
+      const values=adminStudentPortalSelectedValues();
+      if(values.includes('ALL')) return [{class_name:null,section:null}];
+      return values.map(value=>{
+        const parts=String(value).split('||');
+        return {class_name:parts[0]||null,section:parts[1]||null};
+      }).filter(x=>x.class_name&&x.section);
+    }
+
     function adminStudentPortalTarget(){
-      const value=document.getElementById('admin-student-portal-class')?.value||'ALL';
-      if(value==='ALL') return {class_name:null,section:null};
-      const parts=value.split('||');
-      return {class_name:parts[0]||null,section:parts[1]||null};
+      return adminStudentPortalTargets()[0]||{class_name:null,section:null};
+    }
+
+    function adminStudentPortalRequiresSingleTarget(){
+      const targets=adminStudentPortalTargets();
+      return targets.length===1 && !!targets[0].class_name && !!targets[0].section;
     }
 
     async function loadAdminStudentPortalClasses(){
@@ -9156,9 +9186,12 @@ window.addEventListener('load',async function(){
           seen.add(key);
           options.push('<option value="'+studentEscape(key)+'">Class '+studentEscape(cls)+' - Section '+studentEscape(sec)+'</option>');
         });
-        const current=sel.value||'ALL';
+        const current=adminStudentPortalSelectedValues();
         sel.innerHTML=options.join('');
-        sel.value=[...sel.options].some(o=>o.value===current)?current:'ALL';
+        const restored=current.filter(v=>[...sel.options].some(o=>o.value===v));
+        const values=restored.length?restored:['ALL'];
+        [...sel.options].forEach(o=>{o.selected=values.includes(o.value);});
+        normalizeAdminStudentPortalClassSelection(sel);
         adminStudentPortalClassesLoaded=true;
       }catch(e){
         console.warn('Student Portal class list unavailable:',e);
@@ -9171,14 +9204,14 @@ window.addEventListener('load',async function(){
       const status=document.getElementById('admin-student-portal-notice-status');
       if(!host||!supabaseClient||currentAuthUser?.type!=='ADMIN') return;
       if(!adminStudentPortalClassesLoaded) await loadAdminStudentPortalClasses();
-      const target=adminStudentPortalTarget();
+      const targets=adminStudentPortalTargets();
       if(status) status.textContent='Loading…';
       try{
         let q=supabaseClient.from('student_notices')
           .select('id,class_name,section,title,body,published_by,publish_at,active,created_at')
           .eq('school_code',APS_STUDENT_SCHOOL).order('created_at',{ascending:false}).limit(100);
-        if(target.class_name===null) q=q.is('class_name',null).is('section',null);
-        else q=q.eq('class_name',target.class_name).eq('section',target.section);
+        if(targets.length===1 && targets[0].class_name===null) q=q.is('class_name',null).is('section',null);
+        else q=q.or(targets.map(t=>'and(class_name.eq.'+t.class_name+',section.eq.'+t.section+')').join(','));
         const {data,error}=await q;
         if(error) throw error;
         if(status) status.textContent=(data||[]).length+' notice(s)';
@@ -9191,12 +9224,13 @@ window.addEventListener('load',async function(){
             '<p class="text-[10px] text-slate-600 whitespace-pre-wrap mt-1">'+studentEscape(n.body||'')+'</p>'+
             '<p class="text-[9px] text-slate-400 mt-2">'+studentEscape(n.published_by||'Admin')+' • '+studentEscape(date?new Date(date).toLocaleString('en-IN'):'')+'</p>'+
             '</div><button type="button" onclick="deleteAdminStudentPortalNotice(\''+studentEscape(n.id)+'\')" class="shrink-0 text-rose-600 text-[10px] font-extrabold">Delete</button></div></div>';
-        }).join('') : '<div class="text-xs text-slate-400 border border-dashed border-slate-200 rounded-xl p-4 text-center">No notices for this target.</div>';
+        }).join('') : '<div class="text-xs text-slate-400 p-4 text-center">No notices for this target.</div>';
+        if(window.lucide) lucide.createIcons();
+        if(status && targets.length>1) status.textContent=(data||[]).length+' notice(s) across '+targets.length+' classes';
       }catch(e){
-        if(status) status.textContent='Error';
-        host.innerHTML='<div class="text-xs text-rose-600 border border-rose-100 bg-rose-50 rounded-xl p-3">'+studentEscape(e.message||String(e))+'</div>';
+        if(status) status.textContent='Load failed';
+        host.innerHTML='<div class="text-xs text-rose-600 p-3">'+studentEscape(e.message||e)+'</div>';
       }
-      try{if(window.lucide)lucide.createIcons();}catch(_){}
     }
 
     async function publishAdminStudentPortalNotice(){
@@ -9204,19 +9238,21 @@ window.addEventListener('load',async function(){
       const title=document.getElementById('admin-student-portal-notice-title')?.value.trim()||'';
       const body=document.getElementById('admin-student-portal-notice-body')?.value.trim()||'';
       if(!title||!body) return showToast('Enter both notice title and message.','error');
-      const target=adminStudentPortalTarget();
+      const targets=adminStudentPortalTargets();
       const btn=document.querySelector('#admin-tab-student-portal button[onclick="publishAdminStudentPortalNotice()"]');
       if(btn) btn.disabled=true;
       try{
-        const {error}=await supabaseClient.from('student_notices').insert({
+        const payloads=targets.map(target=>({
           school_code:APS_STUDENT_SCHOOL,class_name:target.class_name,section:target.section,
           title,body,published_by:String(currentAuthUser.email||'ADMIN').trim().toLowerCase(),
           publish_at:new Date().toISOString(),active:true
-        });
+        }));
+        const {error}=await supabaseClient.from('student_notices').insert(payloads);
         if(error) throw error;
         document.getElementById('admin-student-portal-notice-title').value='';
         document.getElementById('admin-student-portal-notice-body').value='';
-        showToast(target.class_name?'Notice published to '+target.class_name+' - '+target.section+'.':'Notice published to all classes.','success');
+        const targetLabel=targets.length===1 && targets[0].class_name===null ? 'all classes' : targets.map(t=>'Class '+t.class_name+' - Section '+t.section).join(', ');
+        showToast('Notice published to '+targetLabel+'.','success');
         await loadAdminStudentPortalNotices();
       }catch(e){
         showToast('Notice publish failed: '+(e.message||e),'error');
@@ -9276,7 +9312,7 @@ window.addEventListener('load',async function(){
       const status=document.getElementById('admin-student-portal-timetable-status');
       if(!host||!supabaseClient||currentAuthUser?.type!=='ADMIN') return;
       const target=adminStudentPortalTarget();
-      if(!target.class_name||!target.section){
+      if(!adminStudentPortalRequiresSingleTarget()){
         host.innerHTML='<div class="text-xs text-amber-700 bg-amber-50 border border-amber-100 rounded-xl p-3">Select one class/section before managing timetable.</div>';
         if(status) status.textContent='Select class';
         return;
@@ -9308,7 +9344,7 @@ window.addEventListener('load',async function(){
     async function publishAdminStudentPortalTimetable(){
       if(currentAuthUser?.type!=='ADMIN'||!supabaseClient) return showToast('Administrator cloud session is required.','error');
       const target=adminStudentPortalTarget();
-      if(!target.class_name||!target.section) return showToast('Select one class/section for a timetable entry.','error');
+      if(!adminStudentPortalRequiresSingleTarget()) return showToast('Select exactly one class/section for a timetable entry.','error');
       const day=Number(document.getElementById('admin-student-portal-timetable-day')?.value||0);
       const period=Number(document.getElementById('admin-student-portal-timetable-period')?.value||0);
       const start=document.getElementById('admin-student-portal-timetable-start')?.value||null;
@@ -9359,17 +9395,28 @@ window.addEventListener('load',async function(){
     async function loadAdminStudentPortalCalendar(){
       const host=document.getElementById('admin-student-portal-calendar-list'),status=document.getElementById('admin-student-portal-calendar-status');
       if(!host||!supabaseClient||currentAuthUser?.type!=='ADMIN')return;
-      const target=adminStudentPortalTarget();let q=supabaseClient.from('student_calendar_events').select('id,event_date,title,description,class_name,section,active,created_at').eq('school_code',APS_STUDENT_SCHOOL).eq('active',true).order('event_date',{ascending:false}).limit(100);
-      if(target.class_name===null)q=q.is('class_name',null).is('section',null);else q=q.eq('class_name',target.class_name).eq('section',target.section);
-      const {data,error}=await q;if(error){host.innerHTML='<div class="text-xs text-rose-600">'+studentEscape(error.message)+'</div>';return;}
+      const targets=adminStudentPortalTargets();
+      let q=supabaseClient.from('student_calendar_events').select('id,event_date,title,description,class_name,section,active,created_at').eq('school_code',APS_STUDENT_SCHOOL).eq('active',true).order('event_date',{ascending:false}).limit(100);
+      if(targets.length===1 && targets[0].class_name===null) q=q.is('class_name',null).is('section',null);
+      else q=q.or(targets.map(t=>'and(class_name.eq.'+t.class_name+',section.eq.'+t.section+')').join(','));
+      const {data,error}=await q;
+      if(error){host.innerHTML='<div class="text-xs text-rose-600">'+studentEscape(error.message)+'</div>';return;}
       if(status)status.textContent=(data||[]).length+' event(s)';
       host.innerHTML=(data||[]).map(x=>'<div class="border rounded-xl p-3 flex justify-between gap-2"><div><b class="text-xs">'+studentEscape(x.event_date)+' • '+studentEscape(x.title)+'</b><p class="text-[10px] text-slate-600 mt-1">'+studentEscape(x.description||'')+'</p></div><button type="button" onclick="deleteAdminStudentPortalCalendar(\''+studentEscape(x.id)+'\')" class="text-[10px] font-extrabold text-rose-600">Delete</button></div>').join('')||'<div class="text-xs text-slate-400 p-4 text-center">No events for this target.</div>';
     }
     async function publishAdminStudentPortalCalendar(){
       if(currentAuthUser?.type!=='ADMIN'||!supabaseClient)return showToast('Administrator cloud session is required.','error');
-      const date=document.getElementById('admin-student-portal-calendar-date')?.value,title=document.getElementById('admin-student-portal-calendar-title')?.value.trim(),body=document.getElementById('admin-student-portal-calendar-body')?.value.trim()||null,target=adminStudentPortalTarget();
+      const date=document.getElementById('admin-student-portal-calendar-date')?.value,title=document.getElementById('admin-student-portal-calendar-title')?.value.trim(),body=document.getElementById('admin-student-portal-calendar-body')?.value.trim()||null,targets=adminStudentPortalTargets();
       if(!date||!title)return showToast('Enter event date and title.','error');
-      try{const {error}=await supabaseClient.from('student_calendar_events').insert({school_code:APS_STUDENT_SCHOOL,event_date:date,title,description:body,class_name:target.class_name,section:target.section,created_by:String(currentAuthUser.email||'ADMIN').trim().toLowerCase(),active:true});if(error)throw error;document.getElementById('admin-student-portal-calendar-title').value='';document.getElementById('admin-student-portal-calendar-body').value='';showToast('Calendar event published.','success');await loadAdminStudentPortalCalendar();}catch(e){showToast('Calendar publish failed: '+(e.message||e),'error');}
+      try{
+        const payloads=targets.map(target=>({school_code:APS_STUDENT_SCHOOL,event_date:date,title,description:body,class_name:target.class_name,section:target.section,created_by:String(currentAuthUser.email||'ADMIN').trim().toLowerCase(),active:true}));
+        const {error}=await supabaseClient.from('student_calendar_events').insert(payloads);
+        if(error)throw error;
+        document.getElementById('admin-student-portal-calendar-title').value='';
+        document.getElementById('admin-student-portal-calendar-body').value='';
+        showToast('Calendar event published to '+(targets.length===1&&targets[0].class_name===null?'all classes':targets.map(t=>'Class '+t.class_name+' - Section '+t.section).join(', '))+'.','success');
+        await loadAdminStudentPortalCalendar();
+      }catch(e){showToast('Calendar publish failed: '+(e.message||e),'error');}
     }
     async function deleteAdminStudentPortalCalendar(id){
       if(currentAuthUser?.type!=='ADMIN'||!supabaseClient||!id)return;if(!confirm('Delete this calendar event?'))return;
@@ -9377,14 +9424,14 @@ window.addEventListener('load',async function(){
     }
     async function loadAdminStudentPortalReportStudents(){
       const sel=document.getElementById('admin-student-portal-report-student');if(!sel||!supabaseClient||currentAuthUser?.type!=='ADMIN')return;
-      const target=adminStudentPortalTarget();if(!target.class_name||!target.section){sel.innerHTML='<option value="">Select a specific class first</option>';return;}
+      const target=adminStudentPortalTarget();if(!adminStudentPortalRequiresSingleTarget()){sel.innerHTML='<option value="">Select exactly one class/section first</option>';return;}
       const {data,error}=await supabaseClient.from('student_roster').select('id,student_name,enroll_no').eq('school_code',APS_STUDENT_SCHOOL).eq('status','ACTIVE').eq('class_name',target.class_name).eq('section',target.section).order('roll_no').order('student_name');
       if(error){sel.innerHTML='<option value="">Unable to load students</option>';return;}
       sel.innerHTML='<option value="">Select student</option>'+(data||[]).map(x=>'<option value="'+studentEscape(x.id)+'">'+studentEscape(x.student_name)+' ('+studentEscape(x.enroll_no)+')</option>').join('');
     }
     async function loadAdminStudentPortalReports(){
       const host=document.getElementById('admin-student-portal-report-list'),status=document.getElementById('admin-student-portal-report-status');if(!host||!supabaseClient||currentAuthUser?.type!=='ADMIN')return;
-      const target=adminStudentPortalTarget();if(!target.class_name||!target.section){host.innerHTML='<div class="text-xs text-amber-700 bg-amber-50 rounded-xl p-3">Select a class/section to view report cards.</div>';return;}
+      const target=adminStudentPortalTarget();if(!adminStudentPortalRequiresSingleTarget()){host.innerHTML='<div class="text-xs text-amber-700 bg-amber-50 rounded-xl p-3">Select exactly one class/section to view report cards.</div>';return;}
       const {data:students}=await supabaseClient.from('student_roster').select('id,student_name,enroll_no').eq('school_code',APS_STUDENT_SCHOOL).eq('status','ACTIVE').eq('class_name',target.class_name).eq('section',target.section);
       const ids=(students||[]).map(x=>x.id);if(!ids.length){host.innerHTML='<div class="text-xs text-slate-400 p-4 text-center">No active students.</div>';return;}
       const {data,error}=await supabaseClient.from('student_report_cards').select('id,student_id,academic_year,term,overall_grade,remarks,published,updated_at').eq('school_code',APS_STUDENT_SCHOOL).in('student_id',ids).order('updated_at',{ascending:false});
@@ -9397,6 +9444,7 @@ window.addEventListener('load',async function(){
       const studentId=document.getElementById('admin-student-portal-report-student')?.value,year=document.getElementById('admin-student-portal-report-year')?.value.trim(),term=document.getElementById('admin-student-portal-report-term')?.value.trim(),grade=document.getElementById('admin-student-portal-report-grade')?.value.trim()||null,remarks=document.getElementById('admin-student-portal-report-remarks')?.value.trim()||null;
       if(!studentId||!year||!term)return showToast('Select student and complete academic year and term.','error');
       let subjects=[];try{subjects=JSON.parse(document.getElementById('admin-student-portal-report-subjects')?.value||'[]');if(!Array.isArray(subjects))throw Error();}catch(e){return showToast('Subjects must be a valid JSON array.','error');}
+      if(!adminStudentPortalRequiresSingleTarget())return showToast('Select exactly one class/section before saving a report card.','error');
       const target=adminStudentPortalTarget();try{const {error}=await supabaseClient.from('student_report_cards').upsert({school_code:APS_STUDENT_SCHOOL,student_id:studentId,academic_year:year,term,subjects,overall_grade:grade,remarks,published:!!document.getElementById('admin-student-portal-report-published')?.checked,published_by:String(currentAuthUser.email||'ADMIN').trim().toLowerCase()},{onConflict:'school_code,student_id,academic_year,term'});if(error)throw error;showToast('Report card saved and reflected in Student Portal.','success');await loadAdminStudentPortalReports();}catch(e){showToast('Report card save failed: '+(e.message||e),'error');}
     }
     async function deleteAdminStudentPortalReport(id){
