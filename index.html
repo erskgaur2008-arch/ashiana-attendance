@@ -486,6 +486,33 @@
 .staff-comm-empty{height:100%;display:flex;align-items:center;justify-content:center;text-align:center;color:#64748b;padding:30px}
 @media(max-width:700px){.staff-comm-card{height:94dvh;border-radius:20px}.staff-comm-body{grid-template-columns:1fr;position:relative}.staff-comm-list{height:100%;max-height:none;border-right:0;border-bottom:0;overflow-y:auto}.staff-comm-conversation{min-height:0;height:100%;display:flex}.staff-comm-msg{max-width:90%}.staff-comm-card.thread-open .staff-comm-list{display:none}.staff-comm-card.thread-open .staff-comm-conversation{display:flex}.staff-comm-mobile-back{display:inline-flex!important}.staff-comm-card:not(.thread-open) .staff-comm-mobile-back{display:none!important}}
 </style>
+<style id="staff-comm-whatsapp-ui">
+.staff-comm-modal{background:rgba(0,0,0,.55)!important;backdrop-filter:blur(6px)!important;padding:0!important}
+.staff-comm-card{width:min(1100px,96vw)!important;height:min(92dvh,820px)!important;border-radius:20px!important;overflow:hidden!important}
+.staff-comm-head{background:linear-gradient(135deg,#075e54,#128c7e)!important;padding:14px 16px!important}
+.staff-comm-body{grid-template-columns:340px minmax(0,1fr)!important}
+.staff-comm-list{background:#fff!important;border-right:1px solid #d9dee1!important}
+.staff-comm-list-item{padding:13px 14px!important;border-bottom:1px solid #edf0f1!important}
+.staff-comm-list-item:hover,.staff-comm-list-item.active{background:#f0fdf4!important}
+.staff-comm-list-item.active{box-shadow:inset 3px 0 #128c7e!important}
+.staff-comm-conversation{background:#efeae2!important}
+.staff-comm-messages{background:#efeae2!important;background-image:radial-gradient(rgba(0,0,0,.045) 1px,transparent 1px)!important;background-size:18px 18px!important;padding:18px 16px!important}
+.staff-comm-msg{max-width:min(78%,520px)!important;border-radius:8px!important;box-shadow:0 1px 1px rgba(0,0,0,.12)!important;padding:8px 10px!important}
+.staff-comm-msg.mine{background:#d9fdd3!important;border-bottom-right-radius:2px!important}
+.staff-comm-msg.theirs{background:#fff!important;border:0!important;border-bottom-left-radius:2px!important}
+.staff-comm-compose{background:#f0f2f5!important;border-top:1px solid #d9dee1!important;padding:8px 10px!important}
+.staff-comm-compose textarea{min-height:44px!important;border-radius:20px!important;padding:11px 14px!important;resize:none!important}
+.staff-comm-mobile-back{border-radius:50%!important}
+@media(max-width:700px){
+.staff-comm-card{width:100%!important;height:100dvh!important;max-height:100dvh!important;border-radius:0!important}
+.staff-comm-body{grid-template-columns:1fr!important}
+.staff-comm-card.thread-open .staff-comm-list{display:none!important}
+.staff-comm-card.thread-open .staff-comm-conversation{display:flex!important}
+.staff-comm-messages{padding:12px 9px!important}
+.staff-comm-msg{max-width:88%!important}
+.staff-comm-head{padding-top:calc(10px + env(safe-area-inset-top))!important}
+}
+</style>
 </head>
 <body class="bg-slate-100 text-slate-800 antialiased min-h-screen min-h-screen-safe flex flex-col selection:bg-emerald-600 selection:text-white">
 
