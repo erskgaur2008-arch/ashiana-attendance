@@ -1,0 +1,17 @@
+{
+  "name": "Ashiana Public School • Staff",
+  "short_name": "Ashiana Staff",
+  "id": "./?login=staff",
+  "start_url": "./?login=staff",
+  "scope": "./",
+  "display": "standalone",
+  "orientation": "portrait",
+  "background_color": "#064E3B",
+  "theme_color": "#064E3B",
+  "description": "Staff attendance and school portal for Ashiana Public School",
+  "categories": ["education", "productivity"],
+  "icons": [
+    {"src": "logo 2.png", "sizes": "192x192", "type": "image/png"},
+    {"src": "logo 2.png", "sizes": "512x512", "type": "image/png"}
+  ]
+}
