@@ -10169,11 +10169,12 @@ function addMessage(text,type){
     const t=staffCommThreads.find(x=>x.id===id); if(!t)return; staffCommCurrentThread=t; renderCommThreads();
     const head=document.getElementById('staff-comm-thread-head'), msgs=document.getElementById('staff-comm-messages'), reply=document.getElementById('staff-comm-reply-form');
     head.classList.remove('hidden'); head.innerHTML='<div class="flex items-center justify-between gap-2"><div class="min-w-0"><div class="font-extrabold text-sm text-slate-800 truncate">'+esc(t.subject)+'</div><div class="text-[9px] text-slate-500 mt-0.5">'+esc(t.category)+' • '+esc(t.priority)+' • '+esc(t.status)+'</div></div>'+(commIsAdmin()?'<select onchange="updateStaffCommStatus(\''+t.id+'\',this.value)" class="border rounded-lg p-1.5 text-[10px]"><option '+(t.status==='OPEN'?'selected':'')+'>OPEN</option><option '+(t.status==='IN_PROGRESS'?'selected':'')+'>IN_PROGRESS</option><option '+(t.status==='RESOLVED'?'selected':'')+'>RESOLVED</option><option '+(t.status==='CLOSED'?'selected':'')+'>CLOSED</option></select>':'')+'</div>';
-    const {data,error}=await supabaseClient.from('staff_communication_messages').select('id,sender_email,sender_role,body,created_at').eq('thread_id',id).order('created_at',{ascending:true});
+    const verifiedEmail=await ensureStaffCommAuth();
+    const {data,error}=await supabaseClient.from('staff_communication_messages').select('id,sender_email,sender_name,sender_role,body,created_at').eq('thread_id',id).order('created_at',{ascending:true});
     if(error){msgs.innerHTML='<div class="text-xs text-rose-600 p-4">'+esc(error.message)+'</div>';return;}
-    msgs.innerHTML=(data||[]).map(x=>'<div class="staff-comm-msg '+(x.sender_email.toLowerCase()===commEmail()?'mine':'theirs')+'"><div class="text-[9px] font-extrabold text-slate-500 mb-1">'+(x.sender_email.toLowerCase()===commEmail()?'You':esc(x.sender_role))+' • '+new Date(x.created_at).toLocaleString('en-IN',{day:'numeric',month:'short',hour:'2-digit',minute:'2-digit'})+'</div>'+esc(x.body)+'</div>').join('')||'<div class="staff-comm-empty"><div>No messages yet.</div></div>';
+    msgs.innerHTML=(data||[]).map(x=>'<div class="staff-comm-msg '+(x.sender_email.toLowerCase()===verifiedEmail?'mine':'theirs')+'"><div class="text-[9px] font-extrabold text-slate-500 mb-1">'+(esc(x.sender_name||((x.sender_email.toLowerCase()===verifiedEmail)?'You':x.sender_role)))+' • '+new Date(x.created_at).toLocaleString('en-IN',{day:'numeric',month:'short',hour:'2-digit',minute:'2-digit'})+'</div>'+esc(x.body)+'</div>').join('')||'<div class="staff-comm-empty"><div>No messages yet.</div></div>';
     msgs.scrollTop=msgs.scrollHeight; reply.classList.remove('hidden');
-    await supabaseClient.from('staff_communication_reads').upsert({thread_id:id,reader_email:commEmail(),last_read_at:new Date().toISOString()},{onConflict:'thread_id,reader_email'});
+    await supabaseClient.from('staff_communication_reads').upsert({thread_id:id,reader_email:verifiedEmail,last_read_at:new Date().toISOString()},{onConflict:'thread_id,reader_email'});
   };
   window.showStaffCommComposer=async function(){
     const form=document.getElementById('staff-comm-compose-form'); if(!form)return;
@@ -10225,7 +10226,10 @@ function addMessage(text,type){
   window.sendStaffCommReply=async function(e){
     e.preventDefault(); if(!staffCommCurrentThread)return;
     const input=document.getElementById('staff-comm-reply'),body=input.value.trim(); if(!body)return;
-    const {error}=await supabaseClient.from('staff_communication_messages').insert({thread_id:staffCommCurrentThread.id,sender_email:commEmail(),sender_role:commIsAdmin()?'ADMIN':commRole(),body});
+    let verifiedEmail='';
+    try{verifiedEmail=await ensureStaffCommAuth();}catch(err){alert(err?.message||'Your login session could not be verified. Please sign in again.');return;}
+    const normalizedRole=commIsAdmin()?'ADMIN':(commRole()==='TEACHER'?'TEACHER':'STAFF');
+    const {error}=await supabaseClient.from('staff_communication_messages').insert({thread_id:staffCommCurrentThread.id,sender_email:verifiedEmail,sender_role:normalizedRole,body});
     if(error){alert('Reply could not be sent: '+error.message);return;}
     input.value=''; await loadStaffComm(); await openStaffCommThread(staffCommCurrentThread.id);
   };
