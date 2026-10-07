@@ -1,10 +1,9 @@
-const CACHE_NAME = "ashiana-attendance-v39";
+const CACHE_NAME = "ashiana-attendance-v38";
 const APP_SHELL = [
   "./",
   "./index.html",
   "./manifest.webmanifest",
-  "./logo 2.png",
-  "./assets/admin-student-portal.js"
+  "./logo 2.png"
 ];
 
 self.addEventListener("install", (event) => {
