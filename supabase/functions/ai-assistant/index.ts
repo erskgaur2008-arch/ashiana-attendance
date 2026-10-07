@@ -94,7 +94,9 @@ async function requestWithRetry(
     }
   }
 
-  return requestGemini(model, apiKey, prompt, useThinking);
+  return {
+    ...(await requestGemini(model, apiKey, prompt, useThinking)),
+  };
 }
 
 Deno.serve(async (req: Request) => {
