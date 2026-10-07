@@ -5811,7 +5811,7 @@ async function loadAdminStudentAttendanceReport(){
   const date=document.getElementById("admin-student-report-date")?.value||studentDateToday(),status=document.getElementById("admin-student-report-status"),tbody=document.getElementById("admin-student-report-tbody"),tfoot=document.getElementById("admin-student-report-tfoot");
   if(!tbody)return;status.textContent="Loading attendance report…";tbody.innerHTML="";tfoot.innerHTML="";
   try{
-    const [sr,ar]=await Promise.all([supabaseClient.from("student_roster").select("id,class_name,gender,category,status").eq("school_code",APS_STUDENT_SCHOOL).eq("status","ACTIVE").order("class_name"),supabaseClient.from("student_attendance").select("student_id,status").eq("school_code",APS_STUDENT_SCHOOL).eq("attendance_date",date)]);
+    const [sr,ar]=await Promise.all([supabaseClient.from("student_roster").select("id,class_name,gender,category,status").eq("school_code",APS_STUDENT_SCHOOL).eq("status","ACTIVE").order("class_name").range(0,4999),supabaseClient.from("student_attendance").select("student_id,status").eq("school_code",APS_STUDENT_SCHOOL).eq("attendance_date",date)]);
     if(sr.error)throw sr.error;if(ar.error)throw ar.error;
     const map=new Map((ar.data||[]).map(x=>[x.student_id,String(x.status||"").toUpperCase()])),groups=new Map(),keys=["M","F","TG","G","SC","ST","OBC"];
     (sr.data||[]).forEach(s=>{
@@ -5869,7 +5869,7 @@ async function loadAdminStudentAttendance(){
   tbody.innerHTML='';if(tfoot)tfoot.innerHTML='';if(status)status.textContent='Loading attendance summary…';
   try{
     const [sr,ar]=await Promise.all([
-      supabaseClient.from('student_roster').select('id,enroll_no,roll_no,class_name,section,status').eq('school_code',APS_STUDENT_SCHOOL).eq('status','ACTIVE').order('class_name').order('section'),
+      supabaseClient.from('student_roster').select('id,enroll_no,roll_no,class_name,section,status').eq('school_code',APS_STUDENT_SCHOOL).eq('status','ACTIVE').order('class_name').order('section').range(0,4999),
       supabaseClient.from('student_attendance').select('student_id,status').eq('school_code',APS_STUDENT_SCHOOL).eq('attendance_date',date)
     ]);
     if(sr.error)throw sr.error;if(ar.error)throw ar.error;
