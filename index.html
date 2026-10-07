@@ -1380,7 +1380,7 @@
       <button type="button" id="teacher-student-leave-quick-btn" onclick="focusTeacherStudentsSection('leave')" class="teacher-student-quick-btn bg-rose-50 border-rose-100 text-rose-800">
         <i data-lucide="file-check-2"></i><span>Student Leave Requests</span>
       </button>
-      <button type="button" onclick="focusTeacherStudentsSection('data')" class="teacher-student-quick-btn bg-slate-50 border-slate-200 text-slate-800">
+      <button type="button" onclick="openTeacherStudentDataManager()" class="teacher-student-quick-btn bg-slate-50 border-slate-200 text-slate-800">
         <i data-lucide="list-collapse"></i><span>Student Data</span>
       </button>
     </div>
@@ -1443,6 +1443,82 @@
       </button>
     </div>
     <div id="teacher-leave-requests" class="mt-3 space-y-2 text-xs">Loading…</div>
+  </div>
+
+  <div id="teacher-student-data-modal" class="hidden fixed inset-0 z-[118] bg-slate-950/80 backdrop-blur-sm p-3 items-center justify-center" onclick="closeTeacherStudentDataManager(event)">
+    <div class="bg-white w-full max-w-5xl max-h-[92vh] rounded-3xl shadow-2xl overflow-hidden flex flex-col" onclick="event.stopPropagation()">
+      <div class="bg-gradient-to-r from-emerald-950 to-[#064E3B] p-4 text-white flex items-center justify-between border-b-2 border-ashiana-red">
+        <div>
+          <h3 class="text-sm font-bold">Class Teacher — Student Data</h3>
+          <p id="teacher-student-data-subtitle" class="text-[10px] text-emerald-200">View and manage students in your assigned class.</p>
+        </div>
+        <button type="button" onclick="closeTeacherStudentDataManager()" class="w-8 h-8 rounded-full bg-white/10 flex items-center justify-center" aria-label="Close">
+          <i data-lucide="x" class="w-4 h-4"></i>
+        </button>
+      </div>
+      <div class="p-4 overflow-y-auto space-y-3">
+        <div class="grid grid-cols-1 sm:grid-cols-2 gap-2">
+          <select id="teacher-data-class-select" onchange="loadTeacherManagedStudents()" class="w-full p-2.5 border rounded-xl text-sm">
+            <option value="">Select your class</option>
+          </select>
+          <div id="teacher-data-count" class="p-2.5 rounded-xl bg-slate-50 border text-xs font-bold text-slate-600 flex items-center">0 students</div>
+        </div>
+        <div id="teacher-managed-students" class="space-y-2">
+          <p class="text-xs text-slate-400 text-center py-8">Select your assigned class.</p>
+        </div>
+      </div>
+    </div>
+  </div>
+
+  <div id="teacher-student-edit-modal" class="hidden fixed inset-0 z-[120] bg-slate-950/80 backdrop-blur-sm p-3 items-center justify-center" onclick="closeTeacherStudentEdit(event)">
+    <div class="bg-white w-full max-w-xl max-h-[92vh] rounded-3xl shadow-2xl overflow-hidden flex flex-col" onclick="event.stopPropagation()">
+      <div class="bg-emerald-950 p-4 text-white flex items-center justify-between border-b-2 border-ashiana-red">
+        <div>
+          <h3 class="text-sm font-bold">Edit Student Information</h3>
+          <p id="teacher-student-edit-subtitle" class="text-[10px] text-emerald-200">Class Teacher only</p>
+        </div>
+        <button type="button" onclick="closeTeacherStudentEdit()" class="w-8 h-8 rounded-full bg-white/10 flex items-center justify-center" aria-label="Close">
+          <i data-lucide="x" class="w-4 h-4"></i>
+        </button>
+      </div>
+      <form id="teacher-student-edit-form" class="p-4 overflow-y-auto space-y-3" onsubmit="saveTeacherManagedStudent(event)">
+        <input type="hidden" id="teacher-edit-student-id">
+        <div>
+          <label class="text-[10px] font-bold text-slate-600">Name</label>
+          <input id="teacher-edit-student-name" required class="w-full p-2.5 border rounded-xl text-sm">
+        </div>
+        <div class="grid grid-cols-1 sm:grid-cols-2 gap-2">
+          <div>
+            <label class="text-[10px] font-bold text-slate-600">Father Name</label>
+            <input id="teacher-edit-father-name" class="w-full p-2.5 border rounded-xl text-sm">
+          </div>
+          <div>
+            <label class="text-[10px] font-bold text-slate-600">Mother Name</label>
+            <input id="teacher-edit-mother-name" class="w-full p-2.5 border rounded-xl text-sm">
+          </div>
+        </div>
+        <div class="grid grid-cols-1 sm:grid-cols-2 gap-2">
+          <div>
+            <label class="text-[10px] font-bold text-slate-600">DOB</label>
+            <input id="teacher-edit-dob" type="date" class="w-full p-2.5 border rounded-xl text-sm">
+          </div>
+          <div>
+            <label class="text-[10px] font-bold text-slate-600">Phone Number</label>
+            <input id="teacher-edit-phone" type="tel" class="w-full p-2.5 border rounded-xl text-sm">
+          </div>
+        </div>
+        <div>
+          <label class="text-[10px] font-bold text-slate-600">Address</label>
+          <textarea id="teacher-edit-address" rows="3" class="w-full p-2.5 border rounded-xl text-sm resize-y"></textarea>
+        </div>
+        <div class="grid grid-cols-2 gap-2 pt-2">
+          <button type="button" onclick="closeTeacherStudentEdit()" class="p-3 rounded-xl bg-slate-100 text-slate-700 font-bold text-xs">Cancel</button>
+          <button type="submit" id="teacher-edit-save-btn" class="p-3 rounded-xl bg-ashiana-green text-white font-bold text-xs flex items-center justify-center gap-2">
+            <i data-lucide="save" class="w-4 h-4"></i><span>Save Changes</span>
+          </button>
+        </div>
+      </form>
+    </div>
   </div>
 
   <div id="student-qr-attendance-modal" class="hidden fixed inset-0 z-[116] bg-slate-950/80 backdrop-blur-sm p-3 items-center justify-center" onclick="closeStudentQrAttendanceScanner(event)">
@@ -4114,6 +4190,135 @@
           if (window.lucide) lucide.createIcons();
         }
       }
+    }
+
+    let teacherManagedStudentRows=[];
+    let teacherManagedClassAssignments=[];
+
+    async function openTeacherStudentDataManager(){
+      if(!supabaseClient||!canAccessStudentAttendance())return showToast('Student Data is available to teaching staff only.','error');
+      const modal=document.getElementById('teacher-student-data-modal');
+      const sel=document.getElementById('teacher-data-class-select');
+      if(!modal||!sel)return;
+      await loadTeacherStudentAssignments();
+      teacherManagedClassAssignments=(teacherStudentAssignments||[]).filter(a=>a.isClassTeacher);
+      if(!teacherManagedClassAssignments.length){
+        return showToast('Student Data management is available to Class Teachers only.','error');
+      }
+      sel.innerHTML='<option value="">Select your class</option>'+
+        teacherManagedClassAssignments.map((a,i)=>'<option value="'+i+'">'+studentEscape(a.class_name)+' - '+studentEscape(a.section)+'</option>').join('');
+      if(teacherManagedClassAssignments.length===1)sel.value='0';
+      modal.classList.remove('hidden');modal.classList.add('flex');
+      if(teacherManagedClassAssignments.length===1)await loadTeacherManagedStudents();
+      if(window.lucide)lucide.createIcons();
+    }
+
+    function closeTeacherStudentDataManager(event){
+      if(event&&event.target!==event.currentTarget)return;
+      const modal=document.getElementById('teacher-student-data-modal');
+      if(modal){modal.classList.add('hidden');modal.classList.remove('flex');}
+    }
+
+    async function loadTeacherManagedStudents(){
+      const sel=document.getElementById('teacher-data-class-select');
+      const host=document.getElementById('teacher-managed-students');
+      const count=document.getElementById('teacher-data-count');
+      const assignment=teacherManagedClassAssignments[Number(sel?.value)];
+      if(!host||!count)return;
+      if(!assignment){host.innerHTML='<p class="text-xs text-slate-400 text-center py-8">Select your assigned class.</p>';count.textContent='0 students';return;}
+      host.innerHTML='<p class="text-xs text-slate-400 text-center py-8">Loading students…</p>';
+      try{
+        const {data,error}=await supabaseClient.from('student_roster')
+          .select('id,enroll_no,student_name,class_name,section,roll_no,gender,category,status,dob,father_name,mother_name,phone_number,address')
+          .eq('school_code',APS_STUDENT_SCHOOL)
+          .eq('class_name',assignment.class_name)
+          .eq('section',assignment.section)
+          .eq('status','ACTIVE')
+          .order('roll_no').order('student_name');
+        if(error)throw error;
+        teacherManagedStudentRows=data||[];
+        count.textContent=teacherManagedStudentRows.length+' student'+(teacherManagedStudentRows.length===1?'':'s');
+        host.innerHTML=teacherManagedStudentRows.length?teacherManagedStudentRows.map(s=>{
+          const detail=[s.father_name,s.mother_name,s.dob,s.phone_number].filter(Boolean).join(' • ');
+          return '<div class="border rounded-2xl p-3 bg-slate-50/70 flex flex-col sm:flex-row sm:items-center gap-3">'+
+            '<div class="flex-1 min-w-0"><div class="font-bold text-sm text-slate-800 truncate">'+studentEscape(s.student_name)+'</div>'+
+            '<div class="text-[10px] text-slate-500 mt-0.5">Roll '+studentEscape(s.roll_no||'—')+' • '+studentEscape(s.enroll_no||'—')+(detail?' • '+studentEscape(detail):'')+'</div>'+
+            '<div class="text-[10px] text-slate-500 truncate mt-0.5">'+studentEscape(s.address||'Address not set')+'</div></div>'+
+            '<div class="flex gap-2 sm:flex-shrink-0">'+
+            '<button type="button" onclick="openTeacherStudentEdit(\''+s.id+'\')" class="px-3 py-2 rounded-xl bg-blue-50 border border-blue-200 text-blue-700 text-[10px] font-bold flex items-center gap-1.5"><i data-lucide="pencil" class="w-3.5 h-3.5"></i>Edit</button>'+
+            '<button type="button" onclick="deleteTeacherManagedStudent(\''+s.id+'\')" class="px-3 py-2 rounded-xl bg-rose-50 border border-rose-200 text-rose-700 text-[10px] font-bold flex items-center gap-1.5"><i data-lucide="trash-2" class="w-3.5 h-3.5"></i>Delete</button>'+
+            '</div></div>';
+        }).join(''):'<p class="text-xs text-slate-400 text-center py-8">No active students in this class.</p>';
+        if(window.lucide)lucide.createIcons();
+      }catch(e){
+        teacherManagedStudentRows=[];
+        count.textContent='0 students';
+        host.innerHTML='<p class="text-xs text-rose-600 text-center py-8">Could not load students: '+studentEscape(e.message||e)+'</p>';
+      }
+    }
+
+    function openTeacherStudentEdit(studentId){
+      const s=teacherManagedStudentRows.find(x=>String(x.id)===String(studentId));
+      if(!s)return;
+      document.getElementById('teacher-edit-student-id').value=s.id;
+      document.getElementById('teacher-edit-student-name').value=s.student_name||'';
+      document.getElementById('teacher-edit-father-name').value=s.father_name||'';
+      document.getElementById('teacher-edit-mother-name').value=s.mother_name||'';
+      document.getElementById('teacher-edit-dob').value=s.dob||'';
+      document.getElementById('teacher-edit-phone').value=s.phone_number||'';
+      document.getElementById('teacher-edit-address').value=s.address||'';
+      const sub=document.getElementById('teacher-student-edit-subtitle');
+      if(sub)sub.textContent=(s.student_name||'Student')+' • Class '+(s.class_name||'')+' - '+(s.section||'');
+      const modal=document.getElementById('teacher-student-edit-modal');
+      if(modal){modal.classList.remove('hidden');modal.classList.add('flex');}
+      if(window.lucide)lucide.createIcons();
+    }
+
+    function closeTeacherStudentEdit(event){
+      if(event&&event.target!==event.currentTarget)return;
+      const modal=document.getElementById('teacher-student-edit-modal');
+      if(modal){modal.classList.add('hidden');modal.classList.remove('flex');}
+    }
+
+    async function saveTeacherManagedStudent(event){
+      event?.preventDefault();
+      const id=document.getElementById('teacher-edit-student-id')?.value;
+      const btn=document.getElementById('teacher-edit-save-btn');
+      if(!id)return;
+      if(!teacherManagedClassAssignments.length)return showToast('Class Teacher access is required.','error');
+      const payload={
+        p_student_id:id,
+        p_student_name:document.getElementById('teacher-edit-student-name')?.value||'',
+        p_father_name:document.getElementById('teacher-edit-father-name')?.value||'',
+        p_mother_name:document.getElementById('teacher-edit-mother-name')?.value||'',
+        p_dob:document.getElementById('teacher-edit-dob')?.value||null,
+        p_phone_number:document.getElementById('teacher-edit-phone')?.value||'',
+        p_address:document.getElementById('teacher-edit-address')?.value||''
+      };
+      if(btn){btn.disabled=true;btn.dataset.original=btn.innerHTML;btn.innerHTML='Saving…';}
+      try{
+        const {data,error}=await supabaseClient.rpc('teacher_update_student_profile',payload);
+        if(error)throw error;
+        if(!data?.success)throw Error(data?.message||'Update was not authorized.');
+        closeTeacherStudentEdit();
+        showToast('Student information updated successfully.','success');
+        await loadTeacherManagedStudents();
+      }catch(e){showToast('Update failed: '+(e.message||e),'error');}
+      finally{if(btn){btn.disabled=false;btn.innerHTML=btn.dataset.original||'Save Changes';if(window.lucide)lucide.createIcons();}}
+    }
+
+    async function deleteTeacherManagedStudent(studentId){
+      const s=teacherManagedStudentRows.find(x=>String(x.id)===String(studentId));
+      if(!s)return;
+      const confirmed=window.confirm('Delete '+(s.student_name||'this student')+' permanently? This deletes the complete student record and may also delete related records linked by cascade. This action cannot be undone.');
+      if(!confirmed)return;
+      try{
+        const {data,error}=await supabaseClient.rpc('teacher_delete_student',{p_student_id:studentId});
+        if(error)throw error;
+        if(!data?.success)throw Error(data?.message||'Delete was not authorized.');
+        showToast('Student record deleted successfully.','success');
+        await loadTeacherManagedStudents();
+      }catch(e){showToast('Delete failed: '+(e.message||e),'error');}
     }
 
     function teacherPortalEmail(){return String(currentAuthUser?.staffRecord?.email||'').trim().toLowerCase();}
