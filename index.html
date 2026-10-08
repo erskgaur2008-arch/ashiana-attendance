@@ -10233,7 +10233,7 @@ function addMessage(text,type){
     if(['ADMIN','TEACHER','STAFF'].includes(String(currentAuthUser?.type||'').toUpperCase()))await loadCommStaff();
     const hidden=document.getElementById('staff-comm-recipient');
     const label=document.getElementById('staff-comm-recipient-label');
-    if(hidden)hidden.value='';
+    if(hidden)hidden.value=commIsAdmin()?'ALL':'';
     if(label)label.textContent=commIsAdmin()?'All Active Staff — Announcement':'Select staff member(s)';
     form.classList.remove('hidden'); document.getElementById('staff-comm-reply-form')?.classList.add('hidden');
     document.getElementById('staff-comm-subject')?.focus();
