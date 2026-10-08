@@ -10211,16 +10211,19 @@ function addMessage(text,type){
     const {data,error}=await supabaseClient.from('staff_communication_threads').select('id,subject,category,priority,status,audience,created_by_email,created_by_role,recipient_staff_id,created_at,last_message_at').order('last_message_at',{ascending:false});
     if(error){if(list)list.innerHTML='<div class="p-5 text-xs text-rose-600">Unable to load communication: '+esc(error.message)+'</div>';return;}
     staffCommThreads=data||[];
-    if(commIsAdmin()) await loadCommStaff();
+    if(['ADMIN','TEACHER','STAFF'].includes(String(currentAuthUser?.type||'').toUpperCase())) await loadCommStaff();
     renderCommThreads();
     setupCommRealtime();
   }
   async function loadCommStaff(){
-    const {data,error}=await supabaseClient.from('staff').select('id,name,emp_id,role,department,email').eq('status','ACTIVE').order('name',{ascending:true});
-    if(!error)staffCommStaff=data||[];
+    const {data,error}=await supabaseClient.rpc('staff_communication_directory');
+    if(!error)staffCommStaff=(data||[]).map(x=>({...x,email:''}));
     const r=document.getElementById('staff-comm-recipient-panel');
-    if(r&&commIsAdmin()){
-      r.innerHTML='<label class="staff-comm-recipient-row font-extrabold"><input type="checkbox" data-recipient-mode="all" onchange="setStaffCommAllRecipients(this.checked)"> <span>All Active Staff — Announcement</span></label>'+staffCommStaff.map(x=>'<label class="staff-comm-recipient-row"><input type="checkbox" data-recipient-id="'+esc(x.id)+'" onchange="updateStaffCommRecipientSelection()"> <span class="min-w-0"><span class="font-bold">'+esc(x.name||x.emp_id)+'</span><span class="block text-[9px] text-slate-500">'+esc(x.role||'Staff')+(x.department?' • '+esc(x.department):'')+'</span></span></label>').join('');
+    if(r&&['ADMIN','TEACHER','STAFF'].includes(String(currentAuthUser?.type||'').toUpperCase())){
+      const admin=commIsAdmin();
+      const me=commEmail();
+      const rows=admin ? staffCommStaff : staffCommStaff.filter(x=>String(x.email||'').trim().toLowerCase()!==me);
+      r.innerHTML=(admin?'<label class="staff-comm-recipient-row font-extrabold"><input type="checkbox" data-recipient-mode="all" onchange="setStaffCommAllRecipients(this.checked)"> <span>All Active Staff — Announcement</span></label>':'')+rows.map(x=>'<label class="staff-comm-recipient-row"><input type="checkbox" data-recipient-id="'+esc(x.id)+'" onchange="updateStaffCommRecipientSelection()"> <span class="min-w-0"><span class="font-bold">'+esc(x.name||x.emp_id)+'</span><span class="block text-[9px] text-slate-500">'+esc(x.role||'Staff')+(x.department?' • '+esc(x.department):'')+'</span></span></label>').join('');
       updateStaffCommRecipientSelection();
     }
   }
@@ -10314,15 +10317,16 @@ function addMessage(text,type){
     const recipientValue=document.getElementById('staff-comm-recipient').value||'';
     const selectedRecipients=recipientValue==='ALL'?'ALL':recipientValue.split(',').map(x=>x.trim()).filter(Boolean);
     const admin=commIsAdmin();
-    if(admin && selectedRecipients!=='ALL' && !selectedRecipients.length){alert('Please select at least one staff member.');return;}
+    const canSelectRecipients=['ADMIN','TEACHER','STAFF'].includes(String(currentAuthUser?.type||'').toUpperCase());
+    if(canSelectRecipients && selectedRecipients!=='ALL' && !selectedRecipients.length){alert('Please select at least one staff member.');return;}
     let verifiedEmail='';
     try{ verifiedEmail=await ensureStaffCommAuth(); }
     catch(err){ alert(err?.message||'Your login session could not be verified. Please sign in again.'); return; }
     const normalizedRole=admin?'ADMIN':(commRole()==='TEACHER'?'TEACHER':'STAFF');
     const threadId=(typeof crypto!=='undefined'&&crypto.randomUUID)?crypto.randomUUID():generateUUID();
     const isAllStaff=admin&&selectedRecipients==='ALL';
-    const selectedIds=admin&&selectedRecipients!=='ALL'?selectedRecipients:[];
-    const payload={id:threadId,subject,category,priority,status:'OPEN',audience:isAllStaff?'ALL_STAFF':'DIRECT',created_by_email:verifiedEmail,created_by_role:normalizedRole,recipient_staff_id:admin&&selectedIds.length===1?selectedIds[0]:null};
+    const selectedIds=canSelectRecipients&&selectedRecipients!=='ALL'?selectedRecipients:[];
+    const payload={id:threadId,subject,category,priority,status:'OPEN',audience:isAllStaff?'ALL_STAFF':'DIRECT',created_by_email:verifiedEmail,created_by_role:normalizedRole,recipient_staff_id:selectedIds.length===1?selectedIds[0]:null};
     let {error}=await supabaseClient.from('staff_communication_threads').insert(payload);
     if(error && String(error.message||'').toLowerCase().includes('row-level security')){
       const refreshed=await supabaseClient.auth.refreshSession();
@@ -10332,7 +10336,7 @@ function addMessage(text,type){
       }
     }
     if(error){alert('Could not create message: '+error.message);return;}
-    if(admin && selectedIds.length>1){
+    if(selectedIds.length>1){
       const {error:recipientError}=await supabaseClient.from('staff_communication_recipients').insert(selectedIds.map(staff_id=>({thread_id:threadId,staff_id})));
       if(recipientError){await supabaseClient.from('staff_communication_threads').delete().eq('id',threadId);alert('Could not save selected staff: '+recipientError.message);return;}
     }
