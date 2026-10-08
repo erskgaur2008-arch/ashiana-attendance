@@ -2114,6 +2114,17 @@
         </div>
       </div>
 
+      <div class="grid grid-cols-1 lg:grid-cols-2 gap-3">
+        <div class="bg-white border border-slate-200 rounded-2xl p-3 shadow-sm">
+          <div class="mb-2"><h4 class="text-sm font-black text-slate-800">Weekday Attendance Pattern</h4><p class="text-[10px] text-slate-500">Identify days with stronger absence or attendance patterns</p></div>
+          <div class="overflow-x-auto"><table class="w-full text-[10px] sm:text-xs"><thead class="bg-slate-50"><tr><th class="p-2 text-left">Day</th><th class="p-2">Marked</th><th class="p-2">Present</th><th class="p-2">Absent</th><th class="p-2">Leave</th><th class="p-2">%</th></tr></thead><tbody id="admin-analytics-weekday-tbody"></tbody></table></div>
+        </div>
+        <div class="bg-white border border-slate-200 rounded-2xl p-3 shadow-sm">
+          <div class="mb-2"><h4 class="text-sm font-black text-slate-800">Consecutive Absence Risk</h4><p class="text-[10px] text-slate-500">Students with 2 or more consecutive absent records</p></div>
+          <div class="overflow-x-auto max-h-80"><table class="w-full text-[10px] sm:text-xs"><thead class="bg-slate-50 sticky top-0"><tr><th class="p-2 text-left">Student</th><th class="p-2">Class</th><th class="p-2">Streak</th><th class="p-2">From</th><th class="p-2">To</th><th class="p-2">%</th></tr></thead><tbody id="admin-analytics-streak-tbody"></tbody></table></div>
+        </div>
+      </div>
+
       <div class="bg-amber-50 border border-amber-200 rounded-2xl p-3">
         <div class="flex items-center justify-between gap-2 mb-2"><div><h4 class="text-sm font-black text-amber-900">Low Attendance Students</h4><p id="admin-analytics-low-help" class="text-[10px] text-amber-700">Students below the selected threshold</p></div><span class="px-2 py-1 rounded-full bg-white text-amber-800 text-[9px] font-black border border-amber-200">Action List</span></div>
         <div class="overflow-x-auto"><table class="w-full text-[10px] sm:text-xs"><thead class="bg-white/70"><tr><th class="p-2 text-left">Student</th><th class="p-2">Admission</th><th class="p-2">Class</th><th class="p-2">Marked</th><th class="p-2">Present</th><th class="p-2">Absent</th><th class="p-2">Leave</th><th class="p-2">%</th></tr></thead><tbody id="admin-analytics-low-tbody"></tbody></table></div>
@@ -6344,7 +6355,11 @@ async function loadAdminAttendanceAnalytics(){
   const kpis=document.getElementById('admin-analytics-kpis');
   const classBody=document.getElementById('admin-analytics-class-tbody');
   const dailyBody=document.getElementById('admin-analytics-daily-tbody');
-  const lowBody=document.getElementById('admin-analytics-low-tbody');\n  const studentBody=document.getElementById('admin-analytics-student-tbody');\n  const chronicBody=document.getElementById('admin-analytics-chronic-tbody');
+  const lowBody=document.getElementById('admin-analytics-low-tbody');
+  const studentBody=document.getElementById('admin-analytics-student-tbody');
+  const chronicBody=document.getElementById('admin-analytics-chronic-tbody');
+  const weekdayBody=document.getElementById('admin-analytics-weekday-tbody');
+  const streakBody=document.getElementById('admin-analytics-streak-tbody');
   if(!status||currentAuthUser?.type!=='ADMIN'||!supabaseClient)return;
   const from=document.getElementById('admin-analytics-from')?.value||studentDateToday();
   const to=document.getElementById('admin-analytics-to')?.value||studentDateToday();
@@ -6352,7 +6367,7 @@ async function loadAdminAttendanceAnalytics(){
   const sec=document.getElementById('admin-analytics-section')?.value?.trim()||null;
   const threshold=Math.max(0,Math.min(100,Number(document.getElementById('admin-analytics-threshold')?.value||75)));
   status.textContent='Generating analytics…';
-  if(kpis)kpis.innerHTML='';if(classBody)classBody.innerHTML='';if(dailyBody)dailyBody.innerHTML='';if(lowBody)lowBody.innerHTML='';if(studentBody)studentBody.innerHTML='';if(chronicBody)chronicBody.innerHTML='';
+  if(kpis)kpis.innerHTML='';if(classBody)classBody.innerHTML='';if(dailyBody)dailyBody.innerHTML='';if(lowBody)lowBody.innerHTML='';if(studentBody)studentBody.innerHTML='';if(chronicBody)chronicBody.innerHTML='';if(weekdayBody)weekdayBody.innerHTML='';if(streakBody)streakBody.innerHTML='';
   try{
     const {data,error}=await supabaseClient.rpc('admin_student_attendance_analytics',{
       p_school_code:APS_STUDENT_SCHOOL,p_from_date:from,p_to_date:to,p_class_name:cls,p_section:sec,p_low_attendance_threshold:threshold
@@ -6379,6 +6394,14 @@ async function loadAdminAttendanceAnalytics(){
     const students=window.adminAttendanceAnalyticsStudents, chronic=v2?.chronic_absence||[];
     if(studentBody)studentBody.innerHTML=students.length?students.map(r=>'<tr class="border-t border-slate-100"><td class="p-2 text-left font-bold">'+studentEscape(String(r.student_name||'—'))+'</td><td class="p-2">'+studentEscape(String(r.enroll_no||'—'))+'</td><td class="p-2">'+studentEscape(String(r.class_name||'—')+' - '+String(r.section||'—'))+'</td><td class="p-2">'+Number(r.marked||0)+'</td><td class="p-2 text-emerald-700">'+Number(r.present||0)+'</td><td class="p-2">'+Number(r.absent||0)+'</td><td class="p-2">'+Number(r.leave||0)+'</td><td class="p-2 font-black '+(Number(r.attendance_pct||0)<threshold?'text-rose-700':'text-emerald-700')+'">'+adminAnalyticsPct(r.attendance_pct)+'</td></tr>').join(''):'<tr><td colspan="8" class="p-5 text-center text-slate-400">No student attendance records found.</td></tr>';
     if(chronicBody)chronicBody.innerHTML=chronic.length?chronic.map(r=>'<tr class="border-t border-slate-100"><td class="p-2 text-left font-bold">'+studentEscape(String(r.student_name||'—'))+'</td><td class="p-2">'+studentEscape(String(r.class_name||'—')+' - '+String(r.section||'—'))+'</td><td class="p-2 font-black text-rose-700">'+Number(r.absent||r.absent_days||0)+'</td><td class="p-2">'+Number(r.marked||0)+'</td><td class="p-2 font-black">'+adminAnalyticsPct(r.attendance_pct)+'</td></tr>').join(''):'<tr><td colspan="5" class="p-5 text-center text-emerald-700 font-semibold">No chronic-absence students found.</td></tr>';
+
+    const {data:v3,error:v3Error}=await supabaseClient.rpc('admin_student_attendance_analytics_v3',{
+      p_school_code:APS_STUDENT_SCHOOL,p_from_date:from,p_to_date:to,p_class_name:cls,p_section:sec
+    });
+    if(v3Error)throw v3Error;
+    const weekday=v3?.weekday_rows||[], streaks=v3?.absence_streaks||[];
+    if(weekdayBody)weekdayBody.innerHTML=weekday.length?weekday.map(r=>'<tr class="border-t border-slate-100"><td class="p-2 text-left font-bold">'+studentEscape(String(r.weekday_name||'—'))+'</td><td class="p-2">'+Number(r.marked||0)+'</td><td class="p-2 text-emerald-700">'+Number(r.present||0)+'</td><td class="p-2 text-rose-700">'+Number(r.absent||0)+'</td><td class="p-2">'+Number(r.leave||0)+'</td><td class="p-2 font-black">'+adminAnalyticsPct(r.attendance_pct)+'</td></tr>').join(''):'<tr><td colspan="6" class="p-5 text-center text-slate-400">No weekday data found.</td></tr>';
+    if(streakBody)streakBody.innerHTML=streaks.length?streaks.map(r=>'<tr class="border-t border-slate-100"><td class="p-2 text-left font-bold">'+studentEscape(String(r.student_name||'—'))+'</td><td class="p-2">'+studentEscape(String(r.class_name||'—')+' - '+String(r.section||'—'))+'</td><td class="p-2 font-black text-rose-700">'+Number(r.max_absent_streak||0)+'</td><td class="p-2">'+studentEscape(String(r.streak_start||'—'))+'</td><td class="p-2">'+studentEscape(String(r.streak_end||'—'))+'</td><td class="p-2 font-black">'+adminAnalyticsPct(r.attendance_pct)+'</td></tr>').join(''):'<tr><td colspan="6" class="p-5 text-center text-emerald-700 font-semibold">No consecutive absence streaks found.</td></tr>';
 
     status.textContent='Analytics generated for '+from+' to '+to+(cls?' • Class '+cls:'')+(sec?' • Section '+sec:'')+'.';
   }catch(e){
