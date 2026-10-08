@@ -11,39 +11,46 @@ as $$
   select jsonb_build_object(
     'notices',
     coalesce((
-      select jsonb_agg(
-        jsonb_build_object(
-          'title', n.title,
-          'body', left(regexp_replace(coalesce(n.body,''), '[[:space:]]+', ' ', 'g'), 220),
-          'publish_at', n.publish_at
-        )
+      select jsonb_agg(x.item order by x.publish_at desc)
+      from (
+        select
+          n.publish_at,
+          jsonb_build_object(
+            'title', n.title,
+            'body', left(regexp_replace(coalesce(n.body,''), '[[:space:]]+', ' ', 'g'), 220),
+            'publish_at', n.publish_at
+          ) as item
+        from public.student_notices n
+        where n.school_code = coalesce(nullif(trim(p_school_code), ''), 'ashiana')
+          and n.active
+          and n.publish_at <= now()
+          and n.class_name is null
+          and n.section is null
         order by n.publish_at desc
-      )
-      from public.student_notices n
-      where n.school_code = coalesce(nullif(trim(p_school_code), ''), 'ashiana')
-        and n.active
-        and n.publish_at <= now()
-        and n.class_name is null
-        and n.section is null
-      limit 3
+        limit 3
+      ) x
     ), '[]'::jsonb),
     'events',
     coalesce((
-      select jsonb_agg(
-        jsonb_build_object(
-          'event_date', c.event_date,
-          'title', c.title,
-          'description', left(regexp_replace(coalesce(c.description,''), '[[:space:]]+', ' ', 'g'), 180)
-        )
+      select jsonb_agg(x.item order by x.event_date asc, x.created_at desc)
+      from (
+        select
+          c.event_date,
+          c.created_at,
+          jsonb_build_object(
+            'event_date', c.event_date,
+            'title', c.title,
+            'description', left(regexp_replace(coalesce(c.description,''), '[[:space:]]+', ' ', 'g'), 180)
+          ) as item
+        from public.student_calendar_events c
+        where c.school_code = coalesce(nullif(trim(p_school_code), ''), 'ashiana')
+          and c.active
+          and c.event_date >= current_date
+          and c.class_name is null
+          and c.section is null
         order by c.event_date asc, c.created_at desc
-      )
-      from public.student_calendar_events c
-      where c.school_code = coalesce(nullif(trim(p_school_code), ''), 'ashiana')
-        and c.active
-        and c.event_date >= current_date
-        and c.class_name is null
-        and c.section is null
-      limit 3
+        limit 3
+      ) x
     ), '[]'::jsonb)
   );
 $$;
