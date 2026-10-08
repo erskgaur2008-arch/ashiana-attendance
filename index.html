@@ -1664,6 +1664,10 @@
           <label class="text-[10px] font-bold text-slate-600">Name</label>
           <input id="teacher-edit-student-name" required class="w-full p-2.5 border rounded-xl text-sm">
         </div>
+        <div>
+          <label class="text-[10px] font-bold text-slate-600">Roll Number</label>
+          <input id="teacher-edit-roll-no" inputmode="numeric" autocomplete="off" class="w-full p-2.5 border rounded-xl text-sm" placeholder="Enter roll number">
+        </div>
         <div class="grid grid-cols-1 sm:grid-cols-2 gap-2">
           <div>
             <label class="text-[10px] font-bold text-slate-600">Father Name</label>
@@ -4451,6 +4455,7 @@
       if(!s)return;
       document.getElementById('teacher-edit-student-id').value=s.id;
       document.getElementById('teacher-edit-student-name').value=s.student_name||'';
+      document.getElementById('teacher-edit-roll-no').value=s.roll_no==null?'':String(s.roll_no);
       document.getElementById('teacher-edit-father-name').value=s.father_name||'';
       document.getElementById('teacher-edit-mother-name').value=s.mother_name||'';
       document.getElementById('teacher-edit-dob').value=s.dob||'';
@@ -4480,6 +4485,7 @@
       const payload={
         p_student_id:id,
         p_student_name:document.getElementById('teacher-edit-student-name')?.value||'',
+        p_roll_no:document.getElementById('teacher-edit-roll-no')?.value||'',
         p_father_name:document.getElementById('teacher-edit-father-name')?.value||'',
         p_mother_name:document.getElementById('teacher-edit-mother-name')?.value||'',
         p_dob:document.getElementById('teacher-edit-dob')?.value||null,
