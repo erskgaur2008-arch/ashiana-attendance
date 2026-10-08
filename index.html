@@ -6157,7 +6157,7 @@ async function assignClassTeacher(){const cls=document.getElementById('assign-cl
       }catch(e){host.textContent='Assignments unavailable: '+(e.message||e);}
     }
     async function deleteAssignment(id,type){if(!confirm('Delete this assignment?'))return;const table=type==='Class Teacher'?'student_class_assignments':'student_subject_assignments';try{const {error}=await supabaseClient.from(table).delete().eq('id',id).eq('school_code',APS_STUDENT_SCHOOL);if(error)throw error;showToast('Assignment deleted.','success');await loadAdminAssignments();}catch(e){showToast('Delete failed: '+(e.message||e),'error');}}
-    async function openAdminStudentAttendanceReport(){
+    async async function openAdminStudentAttendanceReport(){
   const m=document.getElementById("admin-student-attendance-report-modal"),d=document.getElementById("admin-student-report-date");
   if(d&&!d.value)d.value=studentDateToday();
   m?.classList.remove("hidden");document.body.classList.add("overflow-hidden");await loadAdminStudentAttendanceReport();
