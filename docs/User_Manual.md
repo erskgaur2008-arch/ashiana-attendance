@@ -219,3 +219,13 @@ Administrators can open **Analytics 2.0** from the Admin dashboard. The Phase 1 
 - Daily attendance trend table.
 - Low-attendance student action list (up to 100 students).
 - Read-only analytics; existing attendance marking and permissions are not changed.
+
+
+### J. Advanced Attendance Analytics 2.0 — Phase 2
+Phase 2 adds student-level intervention tools:
+- Student attendance ranking, lowest attendance first.
+- Student-level Present / Absent / Leave totals and attendance percentage.
+- Chronic absence list for students with 3 or more absent records.
+- CSV export of the student attendance analytics list.
+- Class and section filters from Phase 1 continue to apply.
+- All analytics remain read-only and admin-only.
