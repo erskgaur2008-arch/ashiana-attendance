@@ -207,3 +207,15 @@ The audit/cloud area provides audit records and synchronisation controls. **Forc
 For login, account, class assignment, staff PIN, expired ID card, leave approval, report or data issues, contact the school's authorised administrator/system operator.
 
 When reporting a problem, provide the user role, approximate time, screen/function name and exact error message. **Never send passwords or PINs.**
+
+
+### I. Advanced Attendance Analytics 2.0 — Phase 1
+Administrators can open **Analytics 2.0** from the Admin dashboard. The Phase 1 analytics screen provides:
+- Custom from/to date range with quick 7/30/90-day ranges.
+- Optional class and section filters.
+- Configurable low-attendance threshold (default 75%).
+- KPI summary for active students, students with attendance, marked records, Present, Absent, and attendance percentage.
+- Class/section performance summary.
+- Daily attendance trend table.
+- Low-attendance student action list (up to 100 students).
+- Read-only analytics; existing attendance marking and permissions are not changed.
