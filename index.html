@@ -10435,31 +10435,77 @@ window.addEventListener('load',async function(){
       const host=document.getElementById('admin-student-portal-calendar-list'),status=document.getElementById('admin-student-portal-calendar-status');
       if(!host||!supabaseClient||currentAuthUser?.type!=='ADMIN')return;
       const targets=adminStudentPortalTargets();
-      let q=supabaseClient.from('student_calendar_events').select('id,event_date,title,description,class_name,section,active,created_at').eq('school_code',APS_STUDENT_SCHOOL).eq('active',true).order('event_date',{ascending:false}).limit(100);
+      let q=supabaseClient.from('student_calendar_events').select('id,event_date,title,description,class_name,section,active,created_at').eq('school_code',APS_STUDENT_SCHOOL).eq('active',true).order('event_date',{ascending:false}).order('created_at',{ascending:false}).limit(500);
       if(targets.length===1 && targets[0].class_name===null) q=q.is('class_name',null).is('section',null);
       else q=q.or(targets.map(t=>'and(class_name.eq.'+t.class_name+',section.eq.'+t.section+')').join(','));
       const {data,error}=await q;
       if(error){host.innerHTML='<div class="text-xs text-rose-600">'+studentEscape(error.message)+'</div>';return;}
-      if(status)status.textContent=(data||[]).length+' event(s)';
-      host.innerHTML=(data||[]).map(x=>'<div class="border rounded-xl p-3 flex justify-between gap-2"><div><b class="text-xs">'+studentEscape(x.event_date)+' • '+studentEscape(x.title)+'</b><p class="text-[10px] text-slate-600 mt-1">'+studentEscape(x.description||'')+'</p></div><button type="button" onclick="deleteAdminStudentPortalCalendar(\''+studentEscape(x.id)+'\')" class="text-[10px] font-extrabold text-rose-600">Delete</button></div>').join('')||'<div class="text-xs text-slate-400 p-4 text-center">No events for this target.</div>';
+
+      // Topic-wise log: one card per date + title + description, even when the
+      // same topic was published to multiple class/section targets.
+      const groups=new Map();
+      (data||[]).forEach(x=>{
+        const key=[x.event_date||'',String(x.title||'').trim().toLowerCase(),String(x.description||'').trim()].join('||');
+        if(!groups.has(key)) groups.set(key,{...x,ids:[],scopes:[]});
+        const g=groups.get(key);
+        g.ids.push(x.id);
+        const scope=x.class_name
+          ? 'Class '+String(x.class_name).trim()+' - Section '+String(x.section||'').trim()
+          : 'All Classes';
+        if(!g.scopes.includes(scope)) g.scopes.push(scope);
+      });
+      const grouped=[...groups.values()].sort((a,b)=>String(b.event_date||'').localeCompare(String(a.event_date||''))||String(b.created_at||'').localeCompare(String(a.created_at||'')));
+      if(status)status.textContent=grouped.length+' topic(s)';
+      host.innerHTML=grouped.map(x=>{
+        const scopeText=x.scopes.length===1?x.scopes[0]:x.scopes.length+' class/section targets';
+        const scopeDetail=x.scopes.length>1?x.scopes.join(' • '):scopeText;
+        return '<div class="border rounded-xl p-3 flex justify-between gap-3">'+
+          '<div class="min-w-0"><div class="flex flex-wrap items-center gap-1.5">'+
+          '<b class="text-xs">'+studentEscape(x.event_date)+' • '+studentEscape(x.title)+'</b>'+
+          '<span class="text-[9px] font-bold px-1.5 py-0.5 rounded-full bg-emerald-50 text-emerald-700">'+studentEscape(scopeText)+'</span>'+
+          '</div><p class="text-[10px] text-slate-600 mt-1">'+studentEscape(x.description||'')+'</p>'+
+          (x.scopes.length>1?'<p class="text-[9px] text-slate-400 mt-1">'+studentEscape(scopeDetail)+'</p>':'')+
+          '</div><button type="button" onclick="deleteAdminStudentPortalCalendarTopic('+JSON.stringify(x.ids)+')" class="shrink-0 text-[10px] font-extrabold text-rose-600">Delete</button></div>';
+      }).join('')||'<div class="text-xs text-slate-400 p-4 text-center">No calendar topics for this target.</div>';
     }
+
     async function publishAdminStudentPortalCalendar(){
       if(currentAuthUser?.type!=='ADMIN'||!supabaseClient)return showToast('Administrator cloud session is required.','error');
       const date=document.getElementById('admin-student-portal-calendar-date')?.value,title=document.getElementById('admin-student-portal-calendar-title')?.value.trim(),body=document.getElementById('admin-student-portal-calendar-body')?.value.trim()||null,targets=adminStudentPortalTargets();
       if(!date||!title)return showToast('Enter event date and title.','error');
       try{
-        const payloads=targets.map(target=>({school_code:APS_STUDENT_SCHOOL,event_date:date,title,description:body,class_name:target.class_name,section:target.section,created_by:String(currentAuthUser.email||'ADMIN').trim().toLowerCase(),active:true}));
+        // Prevent accidental duplicate publication to the same class/section.
+        let existingQuery=supabaseClient.from('student_calendar_events').select('class_name,section').eq('school_code',APS_STUDENT_SCHOOL).eq('event_date',date).eq('title',title);
+        existingQuery=body===null?existingQuery.is('description',null):existingQuery.eq('description',body);
+        const {data:existing,error:existingError}=await existingQuery;
+        if(existingError)throw existingError;
+        const existingKeys=new Set((existing||[]).map(x=>String(x.class_name||'')+'||'+String(x.section||'')));
+        const payloads=targets
+          .filter(target=>!existingKeys.has(String(target.class_name||'')+'||'+String(target.section||'')))
+          .map(target=>({school_code:APS_STUDENT_SCHOOL,event_date:date,title,description:body,class_name:target.class_name,section:target.section,created_by:String(currentAuthUser.email||'ADMIN').trim().toLowerCase(),active:true}));
+        if(!payloads.length)return showToast('This calendar topic is already published for the selected target(s).','info');
         const {error}=await supabaseClient.from('student_calendar_events').insert(payloads);
         if(error)throw error;
         document.getElementById('admin-student-portal-calendar-title').value='';
         document.getElementById('admin-student-portal-calendar-body').value='';
-        showToast('Calendar event published to '+(targets.length===1&&targets[0].class_name===null?'all classes':targets.map(t=>'Class '+t.class_name+' - Section '+t.section).join(', '))+'.','success');
+        showToast('Calendar topic published to '+(payloads.length===1&&payloads[0].class_name===null?'all classes':payloads.map(t=>'Class '+t.class_name+' - Section '+t.section).join(', '))+'.','success');
         await loadAdminStudentPortalCalendar();
       }catch(e){showToast('Calendar publish failed: '+(e.message||e),'error');}
     }
+
+    async function deleteAdminStudentPortalCalendarTopic(ids){
+      if(currentAuthUser?.type!=='ADMIN'||!supabaseClient||!Array.isArray(ids)||!ids.length)return;
+      if(!confirm('Delete this calendar topic from all listed class/section targets?'))return;
+      try{
+        const {error}=await supabaseClient.from('student_calendar_events').delete().eq('school_code',APS_STUDENT_SCHOOL).in('id',ids);
+        if(error)throw error;
+        showToast('Calendar topic deleted.','success');
+        await loadAdminStudentPortalCalendar();
+      }catch(e){showToast('Calendar delete failed: '+(e.message||e),'error');}
+    }
+
     async function deleteAdminStudentPortalCalendar(id){
-      if(currentAuthUser?.type!=='ADMIN'||!supabaseClient||!id)return;if(!confirm('Delete this calendar event?'))return;
-      try{const {error}=await supabaseClient.from('student_calendar_events').delete().eq('id',id).eq('school_code',APS_STUDENT_SCHOOL);if(error)throw error;showToast('Calendar event deleted.','success');await loadAdminStudentPortalCalendar();}catch(e){showToast('Calendar delete failed: '+(e.message||e),'error');}
+      return deleteAdminStudentPortalCalendarTopic([id]);
     }
     async function loadAdminStudentPortalReportStudents(){
       const sel=document.getElementById('admin-student-portal-report-student');if(!sel||!supabaseClient||currentAuthUser?.type!=='ADMIN')return;
