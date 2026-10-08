@@ -120,6 +120,177 @@
       #auth-gateway-view > div:first-child{padding-top:calc(24px + env(safe-area-inset-top));}
       #auth-gateway-view > div:last-child{flex:1;}
     }
+    /* Common role-login homepage — reference design */
+    #auth-main{
+      background:#eef1f6;
+      max-width:none!important;
+      padding:0!important;
+      align-items:center!important;
+      justify-content:flex-start!important;
+      overflow-x:hidden;
+    }
+    #auth-gateway-view{
+      width:100%!important;
+      max-width:760px!important;
+      margin:0 auto!important;
+      background:#fff!important;
+      border:0!important;
+      border-radius:0!important;
+      box-shadow:none!important;
+      overflow:visible!important;
+    }
+    #login-hero{
+      position:relative;
+      overflow:hidden;
+      padding:34px 20px 68px!important;
+      text-align:center;
+      background:linear-gradient(180deg,#063f31 0%,#064e3b 58%,#07563f 100%)!important;
+      border-radius:0 0 50% 50% / 0 0 12% 12%;
+      box-shadow:0 8px 20px rgba(2,44,34,.16);
+    }
+    #login-hero:after{
+      content:"";
+      position:absolute;
+      left:-4%;
+      right:-4%;
+      bottom:-15px;
+      height:26px;
+      background:#fff;
+      border-top:4px solid #e2e8f0;
+      border-radius:50% 50% 0 0 / 100% 100% 0 0;
+      pointer-events:none;
+    }
+    #login-hero > *{position:relative;z-index:1}
+    #login-hero .login-school-logo{
+      width:108px;height:108px;margin:0 auto 13px;
+      border-radius:50%;background:#fff;padding:6px;
+      border:3px solid rgba(239,226,164,.72);
+      box-shadow:0 0 0 4px rgba(239,226,164,.16),0 8px 24px rgba(0,0,0,.22);
+      display:flex;align-items:center;justify-content:center;overflow:hidden;
+    }
+    #login-hero .login-school-logo img{width:100%;height:100%;object-fit:cover;border-radius:50%}
+    #login-hero h2{
+      margin:0!important;
+      color:#f2df9b!important;
+      font-family:'Cinzel',Georgia,serif!important;
+      font-size:clamp(22px,4.8vw,36px)!important;
+      font-weight:800!important;
+      letter-spacing:.025em!important;
+      line-height:1.08!important;
+      text-shadow:0 2px 6px rgba(0,0,0,.2);
+    }
+    #login-hero .login-school-subtitle{
+      margin-top:8px!important;
+      color:#f3e7b6!important;
+      font-family:'Cinzel',Georgia,serif!important;
+      font-size:clamp(14px,3vw,22px)!important;
+      font-weight:600!important;
+      letter-spacing:.04em;
+    }
+    #login-role-title{
+      margin-top:24px;
+      color:#fff;
+      font-family:'Cinzel',Georgia,serif;
+      font-size:clamp(22px,4.2vw,31px);
+      font-weight:800;
+      letter-spacing:.03em;
+      line-height:1.1;
+      text-shadow:0 2px 5px rgba(0,0,0,.18);
+    }
+    #login-role-select-wrap{
+      max-width:360px;
+      margin:20px auto 0;
+      padding:10px 12px;
+      border-radius:16px;
+      background:rgba(255,255,255,.09);
+      border:1px solid rgba(167,243,208,.28);
+    }
+    #login-role-select-wrap label{color:#d1fae5!important}
+    #login-role-select-wrap p{color:#a7f3d0!important}
+    #auth-gateway-view > div:nth-child(2){
+      padding:28px 22px 20px!important;
+      background:#fff!important;
+    }
+    #auth-gateway-view form{max-width:680px;margin:0 auto}
+    #auth-gateway-view form label{
+      font-size:16px!important;
+      color:#0f172a!important;
+      font-weight:700!important;
+      margin-bottom:7px!important;
+    }
+    #auth-gateway-view form input{
+      min-height:52px;
+      border:1px solid #b8c4d1!important;
+      background:#edf4fb!important;
+      border-radius:17px!important;
+      font-size:15px!important;
+      color:#0f172a!important;
+      box-shadow:inset 0 1px 2px rgba(15,23,42,.03);
+    }
+    #auth-gateway-view form input:focus{
+      background:#fff!important;
+      border-color:#0a7e46!important;
+      box-shadow:0 0 0 3px rgba(10,126,70,.12)!important;
+    }
+    #auth-gateway-view form button[type="submit"]{
+      min-height:54px;
+      border-radius:28px!important;
+      font-size:15px!important;
+      letter-spacing:.01em;
+    }
+    #auth-gateway-view form button[type="button"]{
+      border-radius:28px!important;
+      min-height:48px;
+    }
+    #auth-gateway-view form > div:first-child{
+      border-radius:17px!important;
+    }
+    #auth-gateway-view > div:last-child{
+      background:#f8fafc!important;
+      border-top:1px solid #e2e8f0!important;
+      padding:18px!important;
+      color:#64748b!important;
+      font-size:12px!important;
+    }
+    #login-home-footer{
+      width:100%;
+      max-width:760px;
+      margin:0 auto;
+      padding:0 14px 26px;
+      background:#eef1f6;
+    }
+    body:has(#auth-gateway-view.hidden) #login-home-footer{display:none!important}
+    .login-home-section-title{
+      font-size:21px;font-weight:800;color:#0f172a;margin:16px 8px 12px;
+    }
+    .login-home-cards{
+      display:grid;grid-template-columns:repeat(2,minmax(0,1fr));gap:12px;
+    }
+    .login-home-card{
+      background:#fff;border:1px solid #e2e8f0;border-radius:17px;padding:15px;
+      box-shadow:0 6px 16px rgba(15,23,42,.07);
+      min-height:126px;
+    }
+    .login-home-card-head{display:flex;align-items:center;gap:9px;font-size:14px;font-weight:800;color:#1e293b;padding-bottom:9px;border-bottom:1px solid #e2e8f0}
+    .login-home-card-head i{width:24px;height:24px;padding:4px;border-radius:8px;background:#ecfdf5;color:#047857;flex:0 0 24px}
+    .login-home-card p{margin-top:11px;font-size:12px;line-height:1.55;color:#334155}
+    .login-home-credit{text-align:center;color:#334155;font-size:12px;line-height:1.7;padding:18px 8px 4px}
+    .login-home-links{color:#64748b}
+    @media(max-width:640px){
+      #login-hero{padding:28px 14px 64px!important}
+      #login-hero .login-school-logo{width:94px;height:94px}
+      #auth-gateway-view > div:nth-child(2){padding:24px 18px 18px!important}
+      #login-role-select-wrap{margin-top:16px}
+      #login-home-footer{padding-left:10px;padding-right:10px}
+      .login-home-cards{gap:10px}
+      .login-home-card{padding:13px;min-height:120px}
+      .login-home-card-head{font-size:13px}
+      .login-home-card p{font-size:11px}
+    }
+    @media(min-width:641px){
+      #auth-gateway-view.login-route-only #login-role-select-wrap{display:none!important}
+    }
+
     /* Direct role-login links hide the selector only when a dedicated login URL is used. */
     #auth-gateway-view.login-route-only #login-role-select-wrap{display:none!important;}
     #auth-gateway-view.login-route-only .login-route-label{display:block;}
@@ -611,8 +782,8 @@
 
     <!-- 1. AUTHENTICATION GATEWAY (LOGIN) -->
     <div id="auth-gateway-view" class="w-full max-w-md bg-white rounded-3xl shadow-xl border border-slate-200 overflow-hidden my-auto">
-      <div class="bg-gradient-to-br from-emerald-950 via-[#064E3B] to-emerald-900 p-6 text-white text-center relative overflow-hidden">
-        <div class="w-16 h-16 sm:w-20 sm:h-20 mx-auto mb-3 rounded-full bg-white p-1 shadow-lg border-2 border-emerald-400/50 flex items-center justify-center overflow-hidden">
+      <div id="login-hero" class="bg-gradient-to-br from-emerald-950 via-[#064E3B] to-emerald-900 p-6 text-white text-center relative overflow-hidden">
+        <div class="login-school-logo w-16 h-16 sm:w-20 sm:h-20 mx-auto mb-3 rounded-full bg-white p-1 shadow-lg border-2 border-emerald-400/50 flex items-center justify-center overflow-hidden">
           <img src="logo 2.png" alt="Ashiana Public School" 
                onerror="this.style.display='none'; this.nextElementSibling.classList.remove('hidden');" 
                class="w-full h-full object-cover rounded-full">
@@ -628,8 +799,10 @@
           </svg>
         </div>
         <h2 class="text-lg sm:text-xl font-extrabold tracking-tight font-serif">ASHIANA PUBLIC SCHOOL</h2>
+        <p class="login-school-subtitle">SECTOR 46-A, CHANDIGARH</p>
+        <div id="login-role-title" aria-live="polite">TEACHER LOGIN</div>
         <div class="w-16 h-0.5 bg-ashiana-red mx-auto my-1.5 rounded-full"></div>
-        <p class="text-[11px] text-emerald-200">Sector 46-A, Chandigarh • Faculty Attendance</p>
+        <p class="text-[11px] text-emerald-200 hidden">Sector 46-A, Chandigarh • Faculty Attendance</p>
         
         <!-- Login Role Selector / Direct Login Links -->
         <div id="login-role-select-wrap" class="mt-4 relative z-30">
@@ -762,13 +935,13 @@
             gateway.classList.add("login-route-only");
             gateway.setAttribute("data-login-route", routeRole);
             if (selectorWrap) selectorWrap.style.display = "none";
-            var title = gateway.querySelector("h2");
-            if (title) {
-              title.textContent = routeRole === "admin"
-                ? "ASHIANA PUBLIC SCHOOL • ADMIN LOGIN"
+            var roleTitle = document.getElementById("login-role-title");
+            if (roleTitle) {
+              roleTitle.textContent = routeRole === "admin"
+                ? "ADMIN LOGIN"
                 : routeRole === "student"
-                  ? "ASHIANA PUBLIC SCHOOL • STUDENT LOGIN"
-                  : "ASHIANA PUBLIC SCHOOL • STAFF LOGIN";
+                  ? "STUDENT LOGIN"
+                  : "TEACHER LOGIN";
             }
           } else {
             gateway.classList.remove("login-route-only");
@@ -802,6 +975,8 @@
 
           var selector = document.getElementById("login-role-select");
           if (selector) selector.value = selected;
+          var roleTitle = document.getElementById("login-role-title");
+          if (roleTitle) roleTitle.textContent = selected === "admin" ? "ADMIN LOGIN" : selected === "student" ? "STUDENT LOGIN" : "TEACHER LOGIN";
           var nativeRole = document.getElementById("login-role-" + selected);
           if (nativeRole) nativeRole.checked = true;
 
@@ -1224,6 +1399,26 @@
         Ashiana Public School • Sector 46-A, Chandigarh
       </div>
     </div>
+
+    <!-- Common public login homepage content -->
+    <section id="login-home-footer" aria-label="Notice Board and Quick Links">
+      <h3 class="login-home-section-title">Notice Board &amp; Quick Links</h3>
+      <div class="login-home-cards">
+        <div class="login-home-card">
+          <div class="login-home-card-head"><i data-lucide="megaphone"></i><span>Latest Announcements</span></div>
+          <p>Next Staff Meeting: <b>Oct 12th</b><br>Academic Calendar 2026-27 update</p>
+        </div>
+        <div class="login-home-card">
+          <div class="login-home-card-head"><i data-lucide="headphones"></i><span>Help &amp; Support</span></div>
+          <p>Contact IT Helpdesk<br>Frequently Asked Questions</p>
+        </div>
+      </div>
+      <div class="login-home-credit">
+        Developed by <b>ER. SK GAUR</b><br>
+        © 2026 Ashiana Public School. All rights reserved.<br>
+        <span class="login-home-links">Privacy Policy&nbsp; • &nbsp;Terms of Service</span>
+      </div>
+    </section>
 
     <!-- STUDENT PORTAL -->
     <div id="student-portal-view" class="hidden flex-col w-full max-w-2xl space-y-4 student-dashboard-shell">
