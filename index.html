@@ -6018,10 +6018,29 @@ async function loadAdminStudents(){
 
     let currentStudentIdCardId=null;
     async function createStudentIdCardById(id){
-      const s=adminStudentRows.find(x=>x.id===id);if(!s)return showToast('Student record not found.','error');
+      let s=adminStudentRows.find(x=>x.id===id);
+      if(!s)return showToast('Student record not found.','error');
       currentStudentIdCardId=id;
       const modal=document.getElementById('student-id-card-preview-modal'),preview=document.getElementById('student-id-card-preview');if(!modal||!preview)return;
       if(modal.parentElement!==document.body)document.body.appendChild(modal);
+      // Always fetch the latest roster row before rendering the ID card so teacher edits
+      // (including Roll No. and Mode of Transport) are reflected immediately.
+      try{
+        const {data:fresh,error:freshError}=await supabaseClient
+          .from('student_roster')
+          .select('id,enroll_no,student_name,class_name,section,roll_no,gender,category,status,dob,mother_name,father_name,address,phone_number,mode_of_transport,photo_path,id_card_generated_at')
+          .eq('school_code',APS_STUDENT_SCHOOL)
+          .eq('id',id)
+          .maybeSingle();
+        if(freshError)throw freshError;
+        if(!fresh)return showToast('Student record not found.','error');
+        s=fresh;
+        const idx=adminStudentRows.findIndex(x=>x.id===id);
+        if(idx>=0)adminStudentRows[idx]=fresh;
+      }catch(err){
+        console.error('Fresh student ID-card data load failed:',err);
+        return showToast('Could not load the latest student information.','error');
+      }
       modal.classList.remove('hidden');modal.classList.add('flex');document.body.classList.add('overflow-hidden');
       preview.innerHTML='<div class="w-[54mm] h-[85.6mm] flex items-center justify-center bg-white text-slate-500 text-xs">Preparing ID card…</div>';
       try{await ensureQRCodeLibrary();}catch(_){}
