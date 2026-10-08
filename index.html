@@ -503,6 +503,22 @@
 .staff-comm-compose{background:#f0f2f5!important;border-top:1px solid #d9dee1!important;padding:8px 10px!important}
 .staff-comm-compose textarea{min-height:44px!important;border-radius:20px!important;padding:11px 14px!important;resize:none!important}
 .staff-comm-mobile-back{border-radius:50%!important}
+.staff-comm-card.composer-open .staff-comm-list,
+.staff-comm-card.composer-open .staff-comm-conversation > #staff-comm-thread-head,
+.staff-comm-card.composer-open .staff-comm-conversation > #staff-comm-messages,
+.staff-comm-card.composer-open .staff-comm-conversation > #staff-comm-reply-form{display:none!important}
+.staff-comm-card.composer-open .staff-comm-body{grid-template-columns:1fr!important}
+.staff-comm-card.composer-open .staff-comm-conversation{display:flex!important;min-height:0!important;height:100%!important;background:#f8fafc!important}
+.staff-comm-card.composer-open #staff-comm-compose-form{display:flex!important;flex-direction:column!important;flex:1!important;min-height:0!important;padding:18px!important;background:#f8fafc!important;border:0!important;overflow-y:auto!important}
+.staff-comm-new-page-head{display:flex;align-items:center;justify-content:space-between;gap:12px;padding:2px 0 14px;border-bottom:1px solid #e2e8f0;margin-bottom:14px}
+.staff-comm-new-page-title{font-size:16px;font-weight:800;color:#0f172a}
+.staff-comm-new-page-subtitle{font-size:10px;color:#64748b;margin-top:3px}
+.staff-comm-new-page-back{width:36px;height:36px;border-radius:12px;border:1px solid #e2e8f0;background:#fff;color:#334155;display:inline-flex;align-items:center;justify-content:center;font-weight:800}
+.staff-comm-card.composer-open #staff-comm-compose-form .staff-comm-new-message-fields{max-width:760px;width:100%;margin:0 auto}
+@media(max-width:700px){
+.staff-comm-card.composer-open #staff-comm-compose-form{padding:14px 12px!important}
+.staff-comm-card.composer-open #staff-comm-compose-form .staff-comm-new-message-fields{max-width:none}
+}
 @media(max-width:700px){
 .staff-comm-card{width:100%!important;height:100dvh!important;max-height:100dvh!important;border-radius:0!important}
 .staff-comm-body{grid-template-columns:1fr!important}
@@ -10139,6 +10155,16 @@ function addMessage(text,type){
           <div class="flex gap-2"><textarea id="staff-comm-reply" class="flex-1 border border-slate-200 rounded-xl p-2.5 text-xs outline-none focus:border-emerald-500" placeholder="Write a reply…"></textarea><button class="self-end px-4 py-2.5 rounded-xl bg-ashiana-green text-white text-xs font-bold">Send</button></div>
         </form>
         <form id="staff-comm-compose-form" class="staff-comm-compose hidden" onsubmit="submitStaffCommNew(event)">
+          <div class="staff-comm-new-message-fields">
+          <div class="staff-comm-new-page-head">
+            <div class="flex items-center gap-3 min-w-0">
+              <button type="button" class="staff-comm-new-page-back" onclick="hideStaffCommComposer()" aria-label="Back to conversations">←</button>
+              <div class="min-w-0">
+                <div class="staff-comm-new-page-title">New Conversation</div>
+                <div class="staff-comm-new-page-subtitle">Create a secure internal message for the selected staff member(s).</div>
+              </div>
+            </div>
+          </div>
           <div class="grid grid-cols-1 sm:grid-cols-2 gap-2 mb-2">
             <input id="staff-comm-subject" required maxlength="200" class="border border-slate-200 rounded-xl p-2.5 text-xs" placeholder="Subject">
             <div id="staff-comm-recipient-picker" class="staff-comm-recipient-picker">
@@ -10151,6 +10177,7 @@ function addMessage(text,type){
           </div>
           <textarea id="staff-comm-body" required maxlength="5000" class="w-full border border-slate-200 rounded-xl p-2.5 text-xs" placeholder="Write your message…"></textarea>
           <div class="flex justify-end gap-2 mt-2"><button type="button" onclick="hideStaffCommComposer()" class="px-3 py-2 rounded-xl bg-slate-100 text-slate-700 text-xs font-bold">Cancel</button><button class="px-4 py-2 rounded-xl bg-ashiana-green text-white text-xs font-bold">Send</button></div>
+          </div>
         </form>
       </div>
     </div>
@@ -10167,8 +10194,11 @@ function addMessage(text,type){
   window.openStaffAdminCommunication=async function(){
     if(!currentAuthUser||!['ADMIN','TEACHER','STAFF'].includes(String(currentAuthUser.type||''))) return;
     const m=commModal(); if(!m)return; m.classList.add('open');
+    const card=m.querySelector('.staff-comm-card');
+    card?.classList.remove('composer-open','thread-open');
     document.getElementById('staff-comm-compose-form')?.classList.add('hidden');
     document.getElementById('staff-comm-reply-form')?.classList.add('hidden');
+    document.getElementById('staff-comm-messages')?.classList.remove('hidden');
     await loadStaffComm();
   };
   window.closeStaffAdminCommunication=function(){
@@ -10186,13 +10216,13 @@ function addMessage(text,type){
     setupCommRealtime();
   }
   async function loadCommStaff(){
-    const {data,error}=await supabaseClient.from('staff').select('id,name,emp_id,role,department,email').eq('status','ACTIVE').order('name',{ascending:true});
-    if(!error)staffCommStaff=data||[];
+    const {data,error}=await supabaseClient.rpc('staff_communication_directory');
+    if(!error)staffCommStaff=(data||[]).map(x=>({...x,email:''}));
     const r=document.getElementById('staff-comm-recipient-panel');
     if(r&&['ADMIN','TEACHER','STAFF'].includes(String(currentAuthUser?.type||'').toUpperCase())){
       const admin=commIsAdmin();
       const me=commEmail();
-      const rows=staffCommStaff.filter(x=>admin || String(x.email||'').trim().toLowerCase()!==me);
+      const rows=admin ? staffCommStaff : staffCommStaff.filter(x=>String(x.email||'').trim().toLowerCase()!==me);
       r.innerHTML=(admin?'<label class="staff-comm-recipient-row font-extrabold"><input type="checkbox" data-recipient-mode="all" onchange="setStaffCommAllRecipients(this.checked)"> <span>All Active Staff — Announcement</span></label>':'')+rows.map(x=>'<label class="staff-comm-recipient-row"><input type="checkbox" data-recipient-id="'+esc(x.id)+'" onchange="updateStaffCommRecipientSelection()"> <span class="min-w-0"><span class="font-bold">'+esc(x.name||x.emp_id)+'</span><span class="block text-[9px] text-slate-500">'+esc(x.role||'Staff')+(x.department?' • '+esc(x.department):'')+'</span></span></label>').join('');
       updateStaffCommRecipientSelection();
     }
@@ -10230,15 +10260,22 @@ function addMessage(text,type){
   };
   window.showStaffCommComposer=async function(){
     const form=document.getElementById('staff-comm-compose-form'); if(!form)return;
-    if(['ADMIN','TEACHER','STAFF'].includes(String(currentAuthUser?.type||'').toUpperCase()))await loadCommStaff();
-    const hidden=document.getElementById('staff-comm-recipient');
-    const label=document.getElementById('staff-comm-recipient-label');
-    if(hidden)hidden.value=commIsAdmin()?'ALL':'';
-    if(label)label.textContent=commIsAdmin()?'All Active Staff — Announcement':'Select staff member(s)';
-    form.classList.remove('hidden'); document.getElementById('staff-comm-reply-form')?.classList.add('hidden');
+    if(commIsAdmin())await loadCommStaff();
+    const card=commModal()?.querySelector('.staff-comm-card');
+    card?.classList.add('composer-open');
+    form.classList.remove('hidden');
+    document.getElementById('staff-comm-thread-head')?.classList.add('hidden');
+    document.getElementById('staff-comm-messages')?.classList.add('hidden');
+    document.getElementById('staff-comm-reply-form')?.classList.add('hidden');
     document.getElementById('staff-comm-subject')?.focus();
   };
-  window.hideStaffCommComposer=function(){document.getElementById('staff-comm-compose-form')?.classList.add('hidden');};
+  window.hideStaffCommComposer=function(){
+    const card=commModal()?.querySelector('.staff-comm-card');
+    card?.classList.remove('composer-open');
+    document.getElementById('staff-comm-compose-form')?.classList.add('hidden');
+    document.getElementById('staff-comm-messages')?.classList.remove('hidden');
+    document.getElementById('staff-comm-thread-head')?.classList.add('hidden');
+  };
   window.toggleStaffCommRecipientPicker=function(){document.getElementById('staff-comm-recipient-panel')?.classList.toggle('hidden');};
   window.setStaffCommAllRecipients=function(checked){
     const panel=document.getElementById('staff-comm-recipient-panel'); if(!panel)return;
@@ -10305,7 +10342,10 @@ function addMessage(text,type){
     }
     const {error:msgError}=await supabaseClient.from('staff_communication_messages').insert({thread_id:threadId,sender_email:verifiedEmail,sender_role:normalizedRole,body});
     if(msgError){alert('Message could not be sent: '+msgError.message);return;}
-    e.target.reset(); document.getElementById('staff-comm-compose-form').classList.add('hidden');
+    e.target.reset();
+    commModal()?.querySelector('.staff-comm-card')?.classList.remove('composer-open');
+    document.getElementById('staff-comm-compose-form').classList.add('hidden');
+    document.getElementById('staff-comm-messages')?.classList.remove('hidden');
     await loadStaffComm(); await openStaffCommThread(threadId);
   };
   window.sendStaffCommReply=async function(e){
