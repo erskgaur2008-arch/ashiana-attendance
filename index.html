@@ -1778,7 +1778,7 @@
         <button type="button" onclick="window.switchAdminTab('students')"><i data-lucide="graduation-cap"></i><span>Students</span></button>
         <button type="button" onclick="window.switchAdminTab('student-portal')" title="Student Portal Management"><i data-lucide="panels-top-left"></i><span>Student Portal</span></button>
         <button type="button" id="admin-nav-student-attendance" onclick="openAdminStudentAttendanceRecordsModal()" title="View Students Attendance"><i data-lucide="clipboard-check"></i><span>View Students Attendance</span></button>
-        <button type="button" onclick="openAdminStudentAttendanceReport()" title="Students Attendance Report"><i data-lucide="clipboard-list"></i><span>Attendance Report</span></button>
+        <button type="button" onclick="openAdminStudentAttendanceReport()" title="Students Attendance Report"><i data-lucide="clipboard-list"></i><span>Attendance Report</span></button><button type="button" onclick="openAdminAttendanceAnalytics()" title="Advanced Attendance Analytics"><i data-lucide="chart-no-axes-combined"></i><span>Analytics 2.0</span></button>
         <button type="button" onclick="window.switchAdminTab('directory')"><i data-lucide="users"></i><span>Faculty</span></button>
         <button type="button" onclick="openStaffAdminCommunication()" title="Staff ↔ Administration Communication"><i data-lucide="messages-square"></i><span>Communication</span></button>
         <button type="button" onclick="window.switchAdminTab('live')"><i data-lucide="radio"></i><span>Live Attendance</span></button>
@@ -2068,7 +2068,49 @@
     </div>
   </div>
 </div>
-<div id="admin-student-attendance-report-modal" class="hidden fixed inset-0 z-[160] bg-slate-950/70 backdrop-blur-sm p-2 sm:p-5 overflow-y-auto"><div class="max-w-7xl mx-auto bg-white rounded-2xl shadow-2xl overflow-hidden"><div class="p-4 bg-emerald-950 text-white flex items-center justify-between"><div><h3 class="font-black">Students Attendance Report</h3><p class="text-[10px] text-emerald-200">Class-wise attendance summary</p></div><button type="button" onclick="closeAdminStudentAttendanceReport()" class="w-9 h-9 rounded-xl bg-white/10">✕</button></div><div class="p-3 space-y-3"><div class="flex flex-wrap items-center gap-2"><label class="text-xs font-bold">Attendance Date</label><input id="admin-student-report-date" type="date" class="p-2 border rounded-xl text-xs"><button type="button" onclick="loadAdminStudentAttendanceReport()" class="px-4 py-2 bg-emerald-800 text-white rounded-xl text-xs font-bold">Generate</button><button type="button" onclick="printAdminStudentAttendanceReport()" class="px-4 py-2 bg-slate-800 text-white rounded-xl text-xs font-bold">Print</button></div><p id="admin-student-report-status" class="text-xs text-slate-500"></p><div class="overflow-x-auto border border-slate-300"><table id="admin-student-attendance-report-table" class="w-full border-collapse text-[10px] sm:text-xs"><thead class="text-center font-bold"><tr><th rowspan="2" class="border border-slate-500 px-2 py-2 bg-[#0b4054] text-white">Sr</th><th rowspan="2" class="border border-slate-500 px-3 py-2 bg-[#0b4054] text-white">Class</th><th colspan="7" class="border border-slate-500 px-2 py-2 bg-emerald-700 text-white">Present</th><th colspan="7" class="border border-slate-500 px-2 py-2 bg-rose-600 text-white">Absent</th><th colspan="2" class="border border-slate-500 px-2 py-2 bg-[#0b4054] text-white">Total</th></tr><tr><th class="border border-slate-500">M</th><th class="border border-slate-500">F</th><th class="border border-slate-500">TG</th><th class="border border-slate-500">G</th><th class="border border-slate-500">SC</th><th class="border border-slate-500">ST</th><th class="border border-slate-500">OBC</th><th class="border border-slate-500">M</th><th class="border border-slate-500">F</th><th class="border border-slate-500">TG</th><th class="border border-slate-500">G</th><th class="border border-slate-500">SC</th><th class="border border-slate-500">ST</th><th class="border border-slate-500">OBC</th><th class="border border-slate-500">M</th><th class="border border-slate-500">F</th></tr></thead><tbody id="admin-student-report-tbody"></tbody><tfoot id="admin-student-report-tfoot"></tfoot></table></div></div></div></div><div id="student-edit-modal" class="hidden fixed inset-0 z-[85] bg-slate-950/60 backdrop-blur-sm p-4 overflow-y-auto">
+<div id="admin-student-attendance-report-modal" class="hidden fixed inset-0 z-[160] bg-slate-950/70 backdrop-blur-sm p-2 sm:p-5 overflow-y-auto"><div class="max-w-7xl mx-auto bg-white rounded-2xl shadow-2xl overflow-hidden"><div class="p-4 bg-emerald-950 text-white flex items-center justify-between"><div><h3 class="font-black">Students Attendance Report</h3><p class="text-[10px] text-emerald-200">Class-wise attendance summary</p></div><button type="button" onclick="closeAdminStudentAttendanceReport()" class="w-9 h-9 rounded-xl bg-white/10">✕</button></div><div class="p-3 space-y-3"><div class="flex flex-wrap items-center gap-2"><label class="text-xs font-bold">Attendance Date</label><input id="admin-student-report-date" type="date" class="p-2 border rounded-xl text-xs"><button type="button" onclick="loadAdminStudentAttendanceReport()" class="px-4 py-2 bg-emerald-800 text-white rounded-xl text-xs font-bold">Generate</button><button type="button" onclick="printAdminStudentAttendanceReport()" class="px-4 py-2 bg-slate-800 text-white rounded-xl text-xs font-bold">Print</button></div><p id="admin-student-report-status" class="text-xs text-slate-500"></p><div class="overflow-x-auto border border-slate-300"><table id="admin-student-attendance-report-table" class="w-full border-collapse text-[10px] sm:text-xs"><thead class="text-center font-bold"><tr><th rowspan="2" class="border border-slate-500 px-2 py-2 bg-[#0b4054] text-white">Sr</th><th rowspan="2" class="border border-slate-500 px-3 py-2 bg-[#0b4054] text-white">Class</th><th colspan="7" class="border border-slate-500 px-2 py-2 bg-emerald-700 text-white">Present</th><th colspan="7" class="border border-slate-500 px-2 py-2 bg-rose-600 text-white">Absent</th><th colspan="2" class="border border-slate-500 px-2 py-2 bg-[#0b4054] text-white">Total</th></tr><tr><th class="border border-slate-500">M</th><th class="border border-slate-500">F</th><th class="border border-slate-500">TG</th><th class="border border-slate-500">G</th><th class="border border-slate-500">SC</th><th class="border border-slate-500">ST</th><th class="border border-slate-500">OBC</th><th class="border border-slate-500">M</th><th class="border border-slate-500">F</th><th class="border border-slate-500">TG</th><th class="border border-slate-500">G</th><th class="border border-slate-500">SC</th><th class="border border-slate-500">ST</th><th class="border border-slate-500">OBC</th><th class="border border-slate-500">M</th><th class="border border-slate-500">F</th></tr></thead><tbody id="admin-student-report-tbody"></tbody><tfoot id="admin-student-report-tfoot"></tfoot></table></div></div></div></div><div id="admin-attendance-analytics-modal" class="hidden fixed inset-0 z-[180] bg-slate-950/70 backdrop-blur-sm p-2 sm:p-5 overflow-y-auto" onclick="closeAdminAttendanceAnalytics(event)">
+  <div class="max-w-7xl mx-auto bg-white rounded-2xl shadow-2xl overflow-hidden" onclick="event.stopPropagation()">
+    <div class="p-4 bg-emerald-950 text-white flex items-center justify-between">
+      <div><h3 class="font-black">Attendance Analytics 2.0</h3><p class="text-[10px] text-emerald-200">Phase 1 • Range-based student attendance intelligence</p></div>
+      <button type="button" onclick="closeAdminAttendanceAnalytics()" class="w-9 h-9 rounded-xl bg-white/10 hover:bg-white/20">✕</button>
+    </div>
+    <div class="p-3 sm:p-4 space-y-4">
+      <div class="grid grid-cols-2 sm:grid-cols-5 gap-2">
+        <div><label class="block text-[10px] font-bold text-slate-600 mb-1">From Date</label><input id="admin-analytics-from" type="date" class="w-full p-2 border rounded-xl text-xs"></div>
+        <div><label class="block text-[10px] font-bold text-slate-600 mb-1">To Date</label><input id="admin-analytics-to" type="date" class="w-full p-2 border rounded-xl text-xs"></div>
+        <div><label class="block text-[10px] font-bold text-slate-600 mb-1">Class</label><input id="admin-analytics-class" placeholder="All classes" class="w-full p-2 border rounded-xl text-xs"></div>
+        <div><label class="block text-[10px] font-bold text-slate-600 mb-1">Section</label><input id="admin-analytics-section" placeholder="All sections" class="w-full p-2 border rounded-xl text-xs"></div>
+        <div><label class="block text-[10px] font-bold text-slate-600 mb-1">Low Attendance %</label><input id="admin-analytics-threshold" type="number" min="0" max="100" step="1" value="75" class="w-full p-2 border rounded-xl text-xs"></div>
+      </div>
+      <div class="flex flex-wrap gap-2">
+        <button type="button" onclick="loadAdminAttendanceAnalytics()" class="px-4 py-2 bg-emerald-800 hover:bg-emerald-900 text-white rounded-xl text-xs font-bold">Generate Analytics</button>
+        <button type="button" onclick="setAdminAnalyticsRange(7)" class="px-3 py-2 bg-slate-100 hover:bg-slate-200 text-slate-700 rounded-xl text-xs font-bold">7 Days</button>
+        <button type="button" onclick="setAdminAnalyticsRange(30)" class="px-3 py-2 bg-slate-100 hover:bg-slate-200 text-slate-700 rounded-xl text-xs font-bold">30 Days</button>
+        <button type="button" onclick="setAdminAnalyticsRange(90)" class="px-3 py-2 bg-slate-100 hover:bg-slate-200 text-slate-700 rounded-xl text-xs font-bold">90 Days</button>
+      </div>
+      <p id="admin-analytics-status" class="text-xs text-slate-500"></p>
+
+      <div id="admin-analytics-kpis" class="grid grid-cols-2 sm:grid-cols-3 lg:grid-cols-6 gap-2"></div>
+
+      <div class="grid grid-cols-1 lg:grid-cols-2 gap-3">
+        <div class="bg-white border border-slate-200 rounded-2xl p-3 shadow-sm">
+          <div class="flex items-center justify-between mb-2"><div><h4 class="text-sm font-black text-slate-800">Class / Section Performance</h4><p class="text-[10px] text-slate-500">Attendance percentage for the selected period</p></div></div>
+          <div class="overflow-x-auto"><table class="w-full text-[10px] sm:text-xs"><thead class="bg-slate-50"><tr><th class="p-2 text-left">Class</th><th class="p-2">Students</th><th class="p-2">Marked</th><th class="p-2">Present</th><th class="p-2">Absent</th><th class="p-2">Leave</th><th class="p-2">%</th></tr></thead><tbody id="admin-analytics-class-tbody"></tbody></table></div>
+        </div>
+        <div class="bg-white border border-slate-200 rounded-2xl p-3 shadow-sm">
+          <div class="flex items-center justify-between mb-2"><div><h4 class="text-sm font-black text-slate-800">Daily Attendance Trend</h4><p class="text-[10px] text-slate-500">Marked records by day</p></div></div>
+          <div class="overflow-x-auto max-h-80"><table class="w-full text-[10px] sm:text-xs"><thead class="bg-slate-50 sticky top-0"><tr><th class="p-2 text-left">Date</th><th class="p-2">Marked</th><th class="p-2">Present</th><th class="p-2">Absent</th><th class="p-2">Leave</th><th class="p-2">%</th></tr></thead><tbody id="admin-analytics-daily-tbody"></tbody></table></div>
+        </div>
+      </div>
+
+      <div class="bg-amber-50 border border-amber-200 rounded-2xl p-3">
+        <div class="flex items-center justify-between gap-2 mb-2"><div><h4 class="text-sm font-black text-amber-900">Low Attendance Students</h4><p id="admin-analytics-low-help" class="text-[10px] text-amber-700">Students below the selected threshold</p></div><span class="px-2 py-1 rounded-full bg-white text-amber-800 text-[9px] font-black border border-amber-200">Action List</span></div>
+        <div class="overflow-x-auto"><table class="w-full text-[10px] sm:text-xs"><thead class="bg-white/70"><tr><th class="p-2 text-left">Student</th><th class="p-2">Admission</th><th class="p-2">Class</th><th class="p-2">Marked</th><th class="p-2">Present</th><th class="p-2">Absent</th><th class="p-2">Leave</th><th class="p-2">%</th></tr></thead><tbody id="admin-analytics-low-tbody"></tbody></table></div>
+      </div>
+    </div>
+  </div>
+</div>
+<div id="student-edit-modal" class="hidden fixed inset-0 z-[85] bg-slate-950/60 backdrop-blur-sm p-4 overflow-y-auto">
   <div class="max-w-2xl mx-auto bg-white rounded-2xl shadow-2xl mt-6">
     <div class="p-4 border-b flex items-center justify-between"><div><h3 class="font-bold">Edit Student Details</h3><p class="text-[10px] text-slate-500">Update student profile, parent/contact details and photo.</p></div><button type="button" onclick="closeStudentEditModal()" class="p-2 rounded-lg hover:bg-slate-100">✕</button></div>
     <form onsubmit="saveEditedStudent(event)" class="p-4 grid grid-cols-1 sm:grid-cols-2 gap-3">
@@ -6256,6 +6298,65 @@ async function loadAdminStudentAttendanceReport(){
     tfoot.innerHTML='<tr class="font-black bg-slate-100"><td colspan="2" class="border border-slate-500 text-center py-2">Total</td>'+vals(total.p).map(v=>'<td class="border border-slate-500 text-center">'+v+'</td>').join("")+vals(total.a).map(v=>'<td class="border border-slate-500 text-center">'+v+'</td>').join("")+'<td class="border border-slate-500 text-center">'+total.tm+'</td><td class="border border-slate-500 text-center">'+total.tf+'</td></tr>';
     status.textContent="Attendance report for "+date+" • "+rows.length+" classes • "+(ar.data||[]).length+" marked records";
   }catch(e){status.textContent="Unable to load report: "+(e?.message||e);showToast("Unable to load students attendance report: "+(e?.message||e),"error");}
+}
+function setAdminAnalyticsRange(days){
+  const to=studentDateToday(), d=new Date(to+'T00:00:00'); d.setDate(d.getDate()-(Math.max(1,Number(days)||30)-1));
+  const iso=x=>x.toISOString().slice(0,10);
+  const f=document.getElementById('admin-analytics-from'),t=document.getElementById('admin-analytics-to');
+  if(f)f.value=iso(d);if(t)t.value=to;
+}
+function openAdminAttendanceAnalytics(){
+  if(currentAuthUser?.type!=='ADMIN')return;
+  const m=document.getElementById('admin-attendance-analytics-modal'); if(!m)return;
+  if(!document.getElementById('admin-analytics-from')?.value)setAdminAnalyticsRange(30);
+  m.classList.remove('hidden');document.body.classList.add('overflow-hidden');
+  if(window.lucide)lucide.createIcons();
+  loadAdminAttendanceAnalytics();
+}
+function closeAdminAttendanceAnalytics(event){
+  if(event&&event.target!==event.currentTarget)return;
+  document.getElementById('admin-attendance-analytics-modal')?.classList.add('hidden');
+  document.body.classList.remove('overflow-hidden');
+}
+function adminAnalyticsPct(v){const n=Number(v);return Number.isFinite(n)?n.toFixed(1)+'%':'0.0%';}
+async function loadAdminAttendanceAnalytics(){
+  const status=document.getElementById('admin-analytics-status');
+  const kpis=document.getElementById('admin-analytics-kpis');
+  const classBody=document.getElementById('admin-analytics-class-tbody');
+  const dailyBody=document.getElementById('admin-analytics-daily-tbody');
+  const lowBody=document.getElementById('admin-analytics-low-tbody');
+  if(!status||currentAuthUser?.type!=='ADMIN'||!supabaseClient)return;
+  const from=document.getElementById('admin-analytics-from')?.value||studentDateToday();
+  const to=document.getElementById('admin-analytics-to')?.value||studentDateToday();
+  const cls=document.getElementById('admin-analytics-class')?.value?.trim()||null;
+  const sec=document.getElementById('admin-analytics-section')?.value?.trim()||null;
+  const threshold=Math.max(0,Math.min(100,Number(document.getElementById('admin-analytics-threshold')?.value||75)));
+  status.textContent='Generating analytics…';
+  if(kpis)kpis.innerHTML='';if(classBody)classBody.innerHTML='';if(dailyBody)dailyBody.innerHTML='';if(lowBody)lowBody.innerHTML='';
+  try{
+    const {data,error}=await supabaseClient.rpc('admin_student_attendance_analytics',{
+      p_school_code:APS_STUDENT_SCHOOL,p_from_date:from,p_to_date:to,p_class_name:cls,p_section:sec,p_low_attendance_threshold:threshold
+    });
+    if(error)throw error;
+    const s=data?.summary||{}, active=Number(s.active_students||0), markedStudents=Number(s.marked_students||0), marked=Number(s.marked_records||0);
+    const cards=[
+      ['Active Students',active,'emerald'],['Students Marked',markedStudents,'blue'],['Marked Records',marked,'slate'],
+      ['Present',Number(s.present||0),'emerald'],['Absent',Number(s.absent||0),'rose'],['Attendance %',adminAnalyticsPct(s.attendance_pct),'purple']
+    ];
+    if(kpis)kpis.innerHTML=cards.map(x=>'<div class="bg-white p-3 rounded-2xl border border-slate-200 shadow-sm"><span class="text-[9px] font-bold uppercase tracking-wider text-slate-400 block">'+x[0]+'</span><span class="text-xl font-black text-'+x[2]+'-700">'+studentEscape(String(x[1]))+'</span></div>').join('');
+    const classes=data?.class_rows||[];
+    if(classBody)classBody.innerHTML=classes.length?classes.map(r=>'<tr class="border-t border-slate-100"><td class="p-2 text-left font-bold">'+studentEscape(String(r.class_name||'—')+' - '+String(r.section||'—'))+'</td><td class="p-2 text-center">'+Number(r.total_students||0)+'</td><td class="p-2 text-center">'+Number(r.marked_students||0)+'</td><td class="p-2 text-center font-bold text-emerald-700">'+Number(r.present||0)+'</td><td class="p-2 text-center">'+Number(r.absent||0)+'</td><td class="p-2 text-center">'+Number(r.leave||0)+'</td><td class="p-2 text-center font-black">'+adminAnalyticsPct(r.attendance_pct)+'</td></tr>').join(''):'<tr><td colspan="7" class="p-5 text-center text-slate-400">No class data found.</td></tr>';
+    const daily=data?.daily_rows||[];
+    if(dailyBody)dailyBody.innerHTML=daily.length?daily.map(r=>'<tr class="border-t border-slate-100"><td class="p-2 text-left">'+studentEscape(String(r.attendance_date||''))+'</td><td class="p-2">'+Number(r.marked||0)+'</td><td class="p-2 font-bold text-emerald-700">'+Number(r.present||0)+'</td><td class="p-2">'+Number(r.absent||0)+'</td><td class="p-2">'+Number(r.leave||0)+'</td><td class="p-2 font-bold">'+adminAnalyticsPct(r.attendance_pct)+'</td></tr>').join(''):'<tr><td colspan="6" class="p-5 text-center text-slate-400">No attendance records in this period.</td></tr>';
+    const low=data?.low_attendance||[];
+    const lowHelp=document.getElementById('admin-analytics-low-help');if(lowHelp)lowHelp.textContent='Students below '+threshold+'% with attendance records in the selected period (maximum 100 shown).';
+    if(lowBody)lowBody.innerHTML=low.length?low.map(r=>'<tr class="border-t border-amber-100"><td class="p-2 text-left font-bold">'+studentEscape(String(r.student_name||'—'))+'</td><td class="p-2">'+studentEscape(String(r.enroll_no||'—'))+'</td><td class="p-2">'+studentEscape(String(r.class_name||'—')+' - '+String(r.section||'—'))+'</td><td class="p-2">'+Number(r.marked||0)+'</td><td class="p-2 font-bold text-emerald-700">'+Number(r.present||0)+'</td><td class="p-2">'+Number(r.absent||0)+'</td><td class="p-2">'+Number(r.leave||0)+'</td><td class="p-2 font-black text-rose-700">'+adminAnalyticsPct(r.attendance_pct)+'</td></tr>').join(''):'<tr><td colspan="8" class="p-5 text-center text-emerald-700 font-semibold">No students below the selected threshold.</td></tr>';
+    status.textContent='Analytics generated for '+from+' to '+to+(cls?' • Class '+cls:'')+(sec?' • Section '+sec:'')+'.';
+  }catch(e){
+    status.textContent='Unable to generate analytics: '+(e?.message||e);
+    if(kpis)kpis.innerHTML='<div class="col-span-full p-4 rounded-xl bg-rose-50 border border-rose-200 text-rose-700 text-xs font-semibold">'+studentEscape(e?.message||String(e))+'</div>';
+    showToast('Attendance analytics failed: '+(e?.message||e),'error');
+  }
 }
 function printAdminStudentAttendanceReport(){const t=document.getElementById("admin-student-attendance-report-table"),d=document.getElementById("admin-student-report-date")?.value||"",w=window.open("","_blank");if(!t||!w)return;w.document.write('<html><head><title>Students Attendance Report</title><style>body{font-family:Arial;padding:10px}h2,p{text-align:center}table{width:100%;border-collapse:collapse;font-size:10px}th,td{border:1px solid #555;padding:4px;text-align:center}</style></head><body><h2>ASHIANA PUBLIC SCHOOL</h2><p>Students Attendance Report • '+d+'</p>'+t.outerHTML+'</body></html>');w.document.close();w.focus();setTimeout(()=>w.print(),300);}
 function openAdminStudentAttendanceRecordsModal(){
