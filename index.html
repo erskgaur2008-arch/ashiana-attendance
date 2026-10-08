@@ -6157,11 +6157,23 @@ async function assignClassTeacher(){const cls=document.getElementById('assign-cl
       }catch(e){host.textContent='Assignments unavailable: '+(e.message||e);}
     }
     async function deleteAssignment(id,type){if(!confirm('Delete this assignment?'))return;const table=type==='Class Teacher'?'student_class_assignments':'student_subject_assignments';try{const {error}=await supabaseClient.from(table).delete().eq('id',id).eq('school_code',APS_STUDENT_SCHOOL);if(error)throw error;showToast('Assignment deleted.','success');await loadAdminAssignments();}catch(e){showToast('Delete failed: '+(e.message||e),'error');}}
-    async function openAdminStudentAttendanceReport(){
-  const m=document.getElementById("admin-student-attendance-report-modal"),d=document.getElementById("admin-student-report-date");
+    async async function openAdminStudentAttendanceReport(){
+  if(currentAuthUser?.type!=='ADMIN'){
+    showToast('Administrator session required.','error');
+    return;
+  }
+  const m=document.getElementById("admin-student-attendance-report-modal"),d=document.getElementById("admin-student-report-date"),status=document.getElementById("admin-student-report-status");
+  if(!m){
+    showToast('Attendance Report window is unavailable.','error');
+    return;
+  }
   if(d&&!d.value)d.value=studentDateToday();
-  m?.classList.remove("hidden");document.body.classList.add("overflow-hidden");
-  loadAdminStudentAttendanceReport();
+  m.classList.remove("hidden");
+  document.body.classList.add("overflow-hidden");
+  if(window.lucide)lucide.createIcons();
+  if(status)status.textContent="Loading attendance report…";
+  await new Promise(resolve=>requestAnimationFrame(resolve));
+  await loadAdminStudentAttendanceReport();
 }
 function closeAdminStudentAttendanceReport(){document.getElementById("admin-student-attendance-report-modal")?.classList.add("hidden");document.body.classList.remove("overflow-hidden");}
 function adminAttendanceBucket(v,type){
@@ -6194,15 +6206,25 @@ async function loadAdminStudentAttendanceReport(){
   }catch(e){status.textContent="Unable to load report: "+(e?.message||e);showToast("Unable to load students attendance report: "+(e?.message||e),"error");}
 }
 function printAdminStudentAttendanceReport(){const t=document.getElementById("admin-student-attendance-report-table"),d=document.getElementById("admin-student-report-date")?.value||"",w=window.open("","_blank");if(!t||!w)return;w.document.write('<html><head><title>Students Attendance Report</title><style>body{font-family:Arial;padding:10px}h2,p{text-align:center}table{width:100%;border-collapse:collapse;font-size:10px}th,td{border:1px solid #555;padding:4px;text-align:center}</style></head><body><h2>ASHIANA PUBLIC SCHOOL</h2><p>Students Attendance Report • '+d+'</p>'+t.outerHTML+'</body></html>');w.document.close();w.focus();setTimeout(()=>w.print(),300);}
-function openAdminStudentAttendanceRecordsModal(){
-  if(currentAuthUser?.type!=='ADMIN')return;
+async function openAdminStudentAttendanceRecordsModal(){
+  if(currentAuthUser?.type!=='ADMIN'){
+    showToast('Administrator session required.','error');
+    return;
+  }
   const m=document.getElementById('admin-student-attendance-records-modal');
   const d=document.getElementById('admin-student-att-date');
+  const status=document.getElementById('admin-student-att-status');
+  if(!m){
+    showToast('Students Attendance window is unavailable.','error');
+    return;
+  }
   if(d&&!d.value)d.value=studentDateToday();
-  m?.classList.remove('hidden');
+  m.classList.remove('hidden');
   document.body.classList.add('overflow-hidden');
-  loadAdminStudentAttendance();
   if(window.lucide)lucide.createIcons();
+  if(status)status.textContent='Loading attendance summary…';
+  await new Promise(resolve=>requestAnimationFrame(resolve));
+  await loadAdminStudentAttendance();
 }
 function closeAdminStudentAttendanceRecordsModal(event){
   if(event && event.target!==event.currentTarget)return;
