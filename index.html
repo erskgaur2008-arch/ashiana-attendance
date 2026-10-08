@@ -2028,46 +2028,6 @@
       </div>
     </div>
   </div>
-<div id="admin-student-attendance-records-modal" class="hidden fixed inset-0 z-[170] bg-slate-950/70 backdrop-blur-sm p-2 sm:p-5 overflow-y-auto" onclick="closeAdminStudentAttendanceRecordsModal(event)">
-  <div class="max-w-7xl mx-auto bg-white rounded-2xl shadow-2xl overflow-hidden" onclick="event.stopPropagation()">
-    <div class="p-4 bg-emerald-950 text-white flex items-center justify-between">
-      <div><h3 class="font-black">Students Attendance</h3><p class="text-[10px] text-emerald-200">Class-wise attendance summary</p></div>
-      <button type="button" onclick="closeAdminStudentAttendanceRecordsModal()" class="w-9 h-9 rounded-xl bg-white/10 hover:bg-white/20">✕</button>
-    </div>
-    <div class="p-3 space-y-3">
-      <div class="flex flex-wrap items-center gap-2">
-        <label class="text-xs font-bold">Date</label>
-        <input id="admin-student-att-date" type="date" class="p-2 border rounded-xl text-xs">
-        <input id="admin-student-att-class" placeholder="Class (optional)" class="p-2 border rounded-xl text-xs">
-        <input id="admin-student-att-section" placeholder="Section (optional)" class="p-2 border rounded-xl text-xs w-28">
-        <button type="button" onclick="loadAdminStudentAttendance()" class="px-3 py-2 bg-emerald-900 hover:bg-emerald-950 text-white rounded-xl text-xs font-bold">Load</button>
-      </div>
-      <p id="admin-student-att-status" class="text-xs mt-2"></p>
-      <div class="overflow-x-auto border border-slate-300 rounded-xl">
-        <table class="w-full border-collapse text-[10px] sm:text-xs text-center">
-          <thead>
-            <tr>
-              <th rowspan="2" class="border border-slate-400 px-2 py-2 bg-[#0b4054] text-white">Sr No.</th>
-              <th rowspan="2" class="border border-slate-400 px-3 py-2 bg-[#0b4054] text-white">Class</th>
-              <th rowspan="2" class="border border-slate-400 px-2 py-2 bg-[#0b4054] text-white">Total Students</th>
-              <th rowspan="2" class="border border-slate-400 px-2 py-2 bg-[#0b4054] text-white">Presents</th>
-              <th colspan="2" class="border border-slate-400 px-2 py-2 bg-[#0b4054] text-white">On Leave</th>
-              <th colspan="2" class="border border-slate-400 px-2 py-2 bg-[#0b4054] text-white">Absents</th>
-            </tr>
-            <tr>
-              <th class="border border-slate-400 px-2 py-1 bg-[#0b4054] text-white">Total</th>
-              <th class="border border-slate-400 px-2 py-1 bg-[#0b4054] text-white">Roll No</th>
-              <th class="border border-slate-400 px-2 py-1 bg-[#0b4054] text-white">Total</th>
-              <th class="border border-slate-400 px-2 py-1 bg-[#0b4054] text-white">Roll No</th>
-            </tr>
-          </thead>
-          <tbody id="admin-student-att-tbody"></tbody>
-          <tfoot id="admin-student-att-tfoot"></tfoot>
-        </table>
-      </div>
-    </div>
-  </div>
-</div>
 <div id="admin-student-attendance-report-modal" class="hidden fixed inset-0 z-[160] bg-slate-950/70 backdrop-blur-sm p-2 sm:p-5 overflow-y-auto"><div class="max-w-7xl mx-auto bg-white rounded-2xl shadow-2xl overflow-hidden"><div class="p-4 bg-emerald-950 text-white flex items-center justify-between"><div><h3 class="font-black">Students Attendance Report</h3><p class="text-[10px] text-emerald-200">Class-wise attendance summary</p></div><button type="button" onclick="closeAdminStudentAttendanceReport()" class="w-9 h-9 rounded-xl bg-white/10">✕</button></div><div class="p-3 space-y-3"><div class="flex flex-wrap items-center gap-2"><label class="text-xs font-bold">Attendance Date</label><input id="admin-student-report-date" type="date" class="p-2 border rounded-xl text-xs"><button type="button" onclick="loadAdminStudentAttendanceReport()" class="px-4 py-2 bg-emerald-800 text-white rounded-xl text-xs font-bold">Generate</button><button type="button" onclick="printAdminStudentAttendanceReport()" class="px-4 py-2 bg-slate-800 text-white rounded-xl text-xs font-bold">Print</button></div><p id="admin-student-report-status" class="text-xs text-slate-500"></p><div class="overflow-x-auto border border-slate-300"><table id="admin-student-attendance-report-table" class="w-full border-collapse text-[10px] sm:text-xs"><thead class="text-center font-bold"><tr><th rowspan="2" class="border border-slate-500 px-2 py-2 bg-[#0b4054] text-white">Sr</th><th rowspan="2" class="border border-slate-500 px-3 py-2 bg-[#0b4054] text-white">Class</th><th colspan="7" class="border border-slate-500 px-2 py-2 bg-emerald-700 text-white">Present</th><th colspan="7" class="border border-slate-500 px-2 py-2 bg-rose-600 text-white">Absent</th><th colspan="2" class="border border-slate-500 px-2 py-2 bg-[#0b4054] text-white">Total</th></tr><tr><th class="border border-slate-500">M</th><th class="border border-slate-500">F</th><th class="border border-slate-500">TG</th><th class="border border-slate-500">G</th><th class="border border-slate-500">SC</th><th class="border border-slate-500">ST</th><th class="border border-slate-500">OBC</th><th class="border border-slate-500">M</th><th class="border border-slate-500">F</th><th class="border border-slate-500">TG</th><th class="border border-slate-500">G</th><th class="border border-slate-500">SC</th><th class="border border-slate-500">ST</th><th class="border border-slate-500">OBC</th><th class="border border-slate-500">M</th><th class="border border-slate-500">F</th></tr></thead><tbody id="admin-student-report-tbody"></tbody><tfoot id="admin-student-report-tfoot"></tfoot></table></div></div></div></div><div id="student-edit-modal" class="hidden fixed inset-0 z-[85] bg-slate-950/60 backdrop-blur-sm p-4 overflow-y-auto">
   <div class="max-w-2xl mx-auto bg-white rounded-2xl shadow-2xl mt-6">
     <div class="p-4 border-b flex items-center justify-between"><div><h3 class="font-bold">Edit Student Details</h3><p class="text-[10px] text-slate-500">Update student profile, parent/contact details and photo.</p></div><button type="button" onclick="closeStudentEditModal()" class="p-2 rounded-lg hover:bg-slate-100">✕</button></div>
@@ -2122,7 +2082,47 @@
       </div> <!-- Close TAB 3: STUDENT MANAGEMENT -->
 
       <!-- TAB 4: MANUAL CORRECTIONS -->
-      <div id="admin-attendance-analytics-modal" class="hidden fixed inset-0 z-[180] bg-slate-950/70 backdrop-blur-sm p-2 sm:p-5 overflow-y-auto" onclick="closeAdminAttendanceAnalytics(event)">
+      <div id="admin-student-attendance-records-modal" class="hidden fixed inset-0 z-[170] bg-slate-950/70 backdrop-blur-sm p-2 sm:p-5 overflow-y-auto" onclick="closeAdminStudentAttendanceRecordsModal(event)">
+  <div class="max-w-7xl mx-auto bg-white rounded-2xl shadow-2xl overflow-hidden" onclick="event.stopPropagation()">
+    <div class="p-4 bg-emerald-950 text-white flex items-center justify-between">
+      <div><h3 class="font-black">Students Attendance</h3><p class="text-[10px] text-emerald-200">Class-wise attendance summary</p></div>
+      <button type="button" onclick="closeAdminStudentAttendanceRecordsModal()" class="w-9 h-9 rounded-xl bg-white/10 hover:bg-white/20">✕</button>
+    </div>
+    <div class="p-3 space-y-3">
+      <div class="flex flex-wrap items-center gap-2">
+        <label class="text-xs font-bold">Date</label>
+        <input id="admin-student-att-date" type="date" class="p-2 border rounded-xl text-xs">
+        <input id="admin-student-att-class" placeholder="Class (optional)" class="p-2 border rounded-xl text-xs">
+        <input id="admin-student-att-section" placeholder="Section (optional)" class="p-2 border rounded-xl text-xs w-28">
+        <button type="button" onclick="loadAdminStudentAttendance()" class="px-3 py-2 bg-emerald-900 hover:bg-emerald-950 text-white rounded-xl text-xs font-bold">Load</button>
+      </div>
+      <p id="admin-student-att-status" class="text-xs mt-2"></p>
+      <div class="overflow-x-auto border border-slate-300 rounded-xl">
+        <table class="w-full border-collapse text-[10px] sm:text-xs text-center">
+          <thead>
+            <tr>
+              <th rowspan="2" class="border border-slate-400 px-2 py-2 bg-[#0b4054] text-white">Sr No.</th>
+              <th rowspan="2" class="border border-slate-400 px-3 py-2 bg-[#0b4054] text-white">Class</th>
+              <th rowspan="2" class="border border-slate-400 px-2 py-2 bg-[#0b4054] text-white">Total Students</th>
+              <th rowspan="2" class="border border-slate-400 px-2 py-2 bg-[#0b4054] text-white">Presents</th>
+              <th colspan="2" class="border border-slate-400 px-2 py-2 bg-[#0b4054] text-white">On Leave</th>
+              <th colspan="2" class="border border-slate-400 px-2 py-2 bg-[#0b4054] text-white">Absents</th>
+            </tr>
+            <tr>
+              <th class="border border-slate-400 px-2 py-1 bg-[#0b4054] text-white">Total</th>
+              <th class="border border-slate-400 px-2 py-1 bg-[#0b4054] text-white">Roll No</th>
+              <th class="border border-slate-400 px-2 py-1 bg-[#0b4054] text-white">Total</th>
+              <th class="border border-slate-400 px-2 py-1 bg-[#0b4054] text-white">Roll No</th>
+            </tr>
+          </thead>
+          <tbody id="admin-student-att-tbody"></tbody>
+          <tfoot id="admin-student-att-tfoot"></tfoot>
+        </table>
+      </div>
+    </div>
+  </div>
+</div>
+<div id="admin-attendance-analytics-modal" class="hidden fixed inset-0 z-[180] bg-slate-950/70 backdrop-blur-sm p-2 sm:p-5 overflow-y-auto" onclick="closeAdminAttendanceAnalytics(event)">
   <div class="max-w-7xl mx-auto bg-white rounded-2xl shadow-2xl overflow-hidden" onclick="event.stopPropagation()">
     <div class="p-4 bg-emerald-950 text-white flex items-center justify-between">
       <div><h3 class="font-black">Attendance Analytics 2.0</h3><p class="text-[10px] text-emerald-200">Phase 1 • Range-based student attendance intelligence</p></div>
