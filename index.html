@@ -4525,15 +4525,16 @@ function renderTeacherPortalEditor(){
   if(!host)return;
   const type=document.getElementById('teacher-portal-type')?.value||'notice';
   if(type==='notice'){
-    host.innerHTML='<input id="tp-title" placeholder="Notice title" class="w-full p-2.5 border rounded-xl text-sm"><textarea id="tp-body" rows="5" placeholder="Notice details — paragraphs and line breaks are preserved for students." class="w-full p-2.5 border rounded-xl text-sm leading-6 resize-y"></textarea><button type="button" id="tp-publish-notice" onclick="saveTeacherNotice()" class="w-full p-2.5 bg-emerald-800 text-white rounded-xl font-bold">Publish Notice</button><div id="tp-existing-content" class="mt-4"></div>';
+    host.innerHTML='<input id="tp-title" placeholder="Notice title" class="w-full p-2.5 border rounded-xl text-sm"><textarea id="tp-body" rows="5" placeholder="Notice details — paragraphs and line breaks are preserved for students." class="w-full p-2.5 border rounded-xl text-sm leading-6 resize-y"></textarea><label class="flex items-center gap-2 p-2.5 rounded-xl border border-dashed border-emerald-200 bg-emerald-50/50 text-xs text-slate-700 cursor-pointer"><i data-lucide="paperclip" class="w-4 h-4 text-emerald-700"></i><span class="font-bold">Attach PDF</span><input id="tp-attachment" type="file" accept="application/pdf,.pdf" class="hidden" onchange="showTeacherPortalPdfSelection(this)"><span id="tp-attachment-name" class="ml-auto text-[10px] text-slate-400 truncate">Optional • PDF up to 10 MB</span></label><button type="button" id="tp-publish-notice" onclick="saveTeacherNotice()" class="w-full p-2.5 bg-emerald-800 text-white rounded-xl font-bold">Publish Notice</button><div id="tp-existing-content" class="mt-4"></div>';
     loadTeacherPortalContentItems('notice');
   }else if(type==='homework'){
-    host.innerHTML='<input id="tp-title" placeholder="Homework title" class="w-full p-2.5 border rounded-xl text-sm"><input id="tp-subject" placeholder="Subject" class="w-full p-2.5 border rounded-xl text-sm"><textarea id="tp-body" rows="5" placeholder="Homework details — paragraphs and line breaks are preserved for students." class="w-full p-2.5 border rounded-xl text-sm leading-6 resize-y"></textarea><input id="tp-due" type="date" class="w-full p-2.5 border rounded-xl text-sm"><button type="button" id="tp-publish-homework" onclick="saveTeacherHomework()" class="w-full p-2.5 bg-blue-700 text-white rounded-xl font-bold">Publish Homework</button><div id="tp-existing-content" class="mt-4"></div>';
+    host.innerHTML='<input id="tp-title" placeholder="Homework title" class="w-full p-2.5 border rounded-xl text-sm"><input id="tp-subject" placeholder="Subject" class="w-full p-2.5 border rounded-xl text-sm"><textarea id="tp-body" rows="5" placeholder="Homework details — paragraphs and line breaks are preserved for students." class="w-full p-2.5 border rounded-xl text-sm leading-6 resize-y"></textarea><label class="flex items-center gap-2 p-2.5 rounded-xl border border-dashed border-blue-200 bg-blue-50/50 text-xs text-slate-700 cursor-pointer"><i data-lucide="paperclip" class="w-4 h-4 text-blue-700"></i><span class="font-bold">Attach PDF</span><input id="tp-attachment" type="file" accept="application/pdf,.pdf" class="hidden" onchange="showTeacherPortalPdfSelection(this)"><span id="tp-attachment-name" class="ml-auto text-[10px] text-slate-400 truncate">Optional • PDF up to 10 MB</span></label><input id="tp-due" type="date" class="w-full p-2.5 border rounded-xl text-sm"><button type="button" id="tp-publish-homework" onclick="saveTeacherHomework()" class="w-full p-2.5 bg-blue-700 text-white rounded-xl font-bold">Publish Homework</button><div id="tp-existing-content" class="mt-4"></div>';
     loadTeacherPortalContentItems('homework');
   }else if(type==='timetable')host.innerHTML='<div class="grid grid-cols-2 gap-2"><select id="tp-day" class="p-2 border rounded"><option value="1">Monday</option><option value="2">Tuesday</option><option value="3">Wednesday</option><option value="4">Thursday</option><option value="5">Friday</option><option value="6">Saturday</option></select><input id="tp-period" type="number" min="1" max="12" placeholder="Period No." class="p-2 border rounded"><input id="tp-start" type="time" class="p-2 border rounded"><input id="tp-end" type="time" class="p-2 border rounded"></div><input id="tp-subject" placeholder="Subject" class="w-full p-2 border rounded"><input id="tp-teacher" placeholder="Teacher Name" class="w-full p-2 border rounded"><input id="tp-room" placeholder="Room" class="w-full p-2 border rounded"><button type="button" onclick="saveTeacherTimetable()" class="w-full p-2.5 bg-violet-700 text-white rounded-xl font-bold">Add Timetable Entry</button>';
   else if(type==='calendar')host.innerHTML='<input id="tp-date" type="date" class="w-full p-2 border rounded"><input id="tp-title" placeholder="Event / Holiday title" class="w-full p-2 border rounded"><textarea id="tp-body" rows="2" placeholder="Description" class="w-full p-2 border rounded"></textarea><button type="button" onclick="saveTeacherCalendar()" class="w-full p-2.5 bg-orange-700 text-white rounded-xl font-bold">Add Calendar Event</button>';
   else host.innerHTML='<select id="tp-student" class="w-full p-2 border rounded"><option>Loading students…</option></select><input id="tp-term" placeholder="Term (e.g. Term 1)" class="w-full p-2 border rounded"><input id="tp-year" value="2026-27" placeholder="Academic Year" class="w-full p-2 border rounded"><textarea id="tp-subjects" rows="4" placeholder="Subjects JSON, e.g. [{"subject":"English","marks":85,"grade":"A1"}]" class="w-full p-2 border rounded font-mono text-[10px]"></textarea><input id="tp-grade" placeholder="Overall Grade" class="w-full p-2 border rounded"><textarea id="tp-remarks" rows="2" placeholder="Remarks" class="w-full p-2 border rounded"></textarea><label class="text-xs flex items-center gap-2"><input id="tp-published" type="checkbox" checked> Publish to student</label><button type="button" onclick="saveTeacherReportCard()" class="w-full p-2.5 bg-cyan-700 text-white rounded-xl font-bold">Save Report Card</button>';
   if(type==='report')loadTeacherPortalStudentsForReport();
+  if(window.lucide)lucide.createIcons();
 }
 async function loadTeacherPortalContentItems(type){
   const host=document.getElementById('tp-existing-content');
@@ -4541,7 +4542,7 @@ async function loadTeacherPortalContentItems(type){
   if(!host||!a||!supabaseClient)return;
   host.innerHTML='<div class="p-3 rounded-xl bg-slate-50 border text-xs text-slate-500">Loading published '+(type==='notice'?'notices':'homework')+'…</div>';
   const table=type==='notice'?'student_notices':'student_homework';
-  const fields=type==='notice'?'id,title,body,published_by,publish_at,created_at':'id,title,description,subject_name,due_date,published_by,created_at';
+  const fields=type==='notice'?'id,title,body,published_by,publish_at,created_at,attachment_path,attachment_name':'id,title,description,subject_name,due_date,published_by,created_at,attachment_path,attachment_name';
   const {data,error}=await supabaseClient.from(table).select(fields).eq('school_code',APS_STUDENT_SCHOOL).eq('class_name',a.class_name).eq('section',a.section).eq('active',true).order('created_at',{ascending:false}).limit(50);
   if(error){host.innerHTML='<div class="p-3 rounded-xl bg-rose-50 border border-rose-200 text-xs text-rose-700">'+studentEscape(error.message)+'</div>';return;}
   const rows=data||[];
@@ -4551,7 +4552,8 @@ async function loadTeacherPortalContentItems(type){
       const title=studentEscape(x.title||'Untitled');
       const body=studentEscape(type==='notice'?x.body:(x.description||''));
       const meta=type==='notice'?(x.publish_at||x.created_at||''):(('Subject: '+(x.subject_name||'—'))+' • Due: '+(x.due_date||'—'));
-       return '<div class="p-3 mb-2 rounded-2xl border bg-white shadow-sm"><div class="flex items-start justify-between gap-3"><div class="min-w-0 flex-1"><div class="font-bold text-sm text-slate-900 break-words">'+title+'</div><div class="mt-1 text-xs text-slate-600 whitespace-pre-wrap break-words leading-6">'+body+'</div><div class="mt-2 text-[10px] text-slate-400">'+studentEscape(meta)+'</div></div><button type="button" onclick="deleteTeacherPortalContent(\''+studentEscape(x.id)+'\',\''+type+'\')" class="shrink-0 px-2.5 py-1.5 rounded-lg bg-rose-50 text-rose-700 border border-rose-200 text-[10px] font-bold hover:bg-rose-100">Delete</button></div></div>';
+       const attachment=x.attachment_path?'<a href="'+studentEscape(teacherPortalPdfUrl(x.attachment_path))+'" target="_blank" rel="noopener" class="mt-2 inline-flex items-center gap-1.5 px-2.5 py-1.5 rounded-lg bg-rose-50 text-rose-700 border border-rose-200 text-[10px] font-bold"><i data-lucide="file-text" class="w-3.5 h-3.5"></i><span>'+studentEscape(x.attachment_name||'View PDF')+'</span></a>':'';
+       return '<div class="p-3 mb-2 rounded-2xl border bg-white shadow-sm"><div class="flex items-start justify-between gap-3"><div class="min-w-0 flex-1"><div class="font-bold text-sm text-slate-900 break-words">'+title+'</div><div class="mt-1 text-xs text-slate-600 whitespace-pre-wrap break-words leading-6">'+body+'</div>'+attachment+'<div class="mt-2 text-[10px] text-slate-400">'+studentEscape(meta)+'</div></div><button type="button" onclick="deleteTeacherPortalContent(\''+studentEscape(x.id)+'\',\''+type+'\')" class="shrink-0 px-2.5 py-1.5 rounded-lg bg-rose-50 text-rose-700 border border-rose-200 text-[10px] font-bold hover:bg-rose-100">Delete</button></div></div>';
     }).join('');
 }
 async function deleteTeacherPortalContent(id,type){
@@ -4561,43 +4563,78 @@ async function deleteTeacherPortalContent(id,type){
   const table=type==='notice'?'student_notices':'student_homework';
   const a=teacherPortalClass();
   if(!a)return showToast('Select an assigned class first.','error');
+  const {data:existing}=await supabaseClient.from(table).select('attachment_path').eq('id',id).eq('school_code',APS_STUDENT_SCHOOL).eq('class_name',a.class_name).eq('section',a.section).maybeSingle();
   const {error}=await supabaseClient.from(table).delete().eq('id',id).eq('school_code',APS_STUDENT_SCHOOL).eq('class_name',a.class_name).eq('section',a.section);
   if(error)return showToast('Unable to delete '+label+': '+error.message,'error');
+  if(existing?.attachment_path){try{await supabaseClient.storage.from('student-portal-documents').remove([existing.attachment_path]);}catch(_){}}
   showToast((label.charAt(0).toUpperCase()+label.slice(1))+' deleted.','success');
   await loadTeacherPortalContentItems(type);
   if(currentAuthUser?.type==='STUDENT')await refreshStudentPortalData();
 }
+async function uploadTeacherPortalPdf(file,a,type){
+  if(!file)return null;
+  if(file.type!=='application/pdf'&&!/\\.pdf$/i.test(file.name))throw new Error('Only PDF files are allowed.');
+  if(file.size>10*1024*1024)throw new Error('PDF must be 10 MB or smaller.');
+  const teacherEmail=teacherPortalEmail();
+  if(!teacherEmail)throw new Error('Teacher session could not be verified.');
+  const safeEmail=teacherEmail.toLowerCase().replace(/[^a-z0-9@._-]/g,'_');
+  const safePart=v=>String(v||'').trim().replace(/[^a-z0-9_-]/gi,'_').slice(0,80)||'unknown';
+  const path='ashiana/'+safeEmail+'/'+safePart(a.class_name)+'_'+safePart(a.section)+'/'+crypto.randomUUID()+'.pdf';
+  const {error}=await supabaseClient.storage.from('student-portal-documents').upload(path,file,{contentType:'application/pdf',upsert:false});
+  if(error)throw error;
+  return path;
+}
+window.showTeacherPortalPdfSelection=function(input){
+  const file=input?.files?.[0],label=document.getElementById('tp-attachment-name');
+  if(!file){if(label)label.textContent='Optional • PDF up to 10 MB';return;}
+  if(file.type!=='application/pdf'&&!/\\.pdf$/i.test(file.name)){input.value='';if(label)label.textContent='Optional • PDF up to 10 MB';showToast('Only PDF files are allowed.','error');return;}
+  if(file.size>10*1024*1024){input.value='';if(label)label.textContent='Optional • PDF up to 10 MB';showToast('PDF must be 10 MB or smaller.','error');return;}
+  if(label)label.textContent=file.name;
+}
+function teacherPortalPdfUrl(path){
+  return path?DEFAULT_SUPABASE_URL+'/storage/v1/object/public/student-portal-documents/'+path.split('/').map(encodeURIComponent).join('/'):'';
+}
 async function saveTeacherNotice(){
-  const a=teacherPortalClass(),title=document.getElementById('tp-title')?.value.trim(),body=document.getElementById('tp-body')?.value.trim(),btn=document.getElementById('tp-publish-notice');
+  const a=teacherPortalClass(),title=document.getElementById('tp-title')?.value.trim(),body=document.getElementById('tp-body')?.value.trim(),file=document.getElementById('tp-attachment')?.files?.[0],btn=document.getElementById('tp-publish-notice');
   if(!a||!title||!body)return showToast('Select class and complete notice.','error');
   if(btn?.disabled)return;
   if(btn)btn.disabled=true;
+  let attachmentPath=null;
   try{
-    const {error}=await supabaseClient.from('student_notices').insert({school_code:APS_STUDENT_SCHOOL,class_name:a.class_name,section:a.section,title,body,published_by:teacherPortalEmail()});
+    if(file)attachmentPath=await uploadTeacherPortalPdf(file,a,'notice');
+    const {error}=await supabaseClient.from('student_notices').insert({school_code:APS_STUDENT_SCHOOL,class_name:a.class_name,section:a.section,title,body,published_by:teacherPortalEmail(),attachment_path:attachmentPath,attachment_name:file?.name||null});
     if(error){
+      if(attachmentPath)await supabaseClient.storage.from('student-portal-documents').remove([attachmentPath]);
       if(String(error.code)==='23505')return showToast('This notice already exists for the selected class.','error');
       throw error;
     }
     if(document.getElementById('tp-title'))document.getElementById('tp-title').value='';
     if(document.getElementById('tp-body'))document.getElementById('tp-body').value='';
+    if(document.getElementById('tp-attachment'))document.getElementById('tp-attachment').value='';
+    if(document.getElementById('tp-attachment-name'))document.getElementById('tp-attachment-name').textContent='Optional • PDF up to 10 MB';
     showToast('Notice published.','success');
     await loadTeacherPortalContentItems('notice');
   }catch(e){showToast(e.message||'Unable to publish notice.','error');}
   finally{if(btn)btn.disabled=false;}
 }
 async function saveTeacherHomework(){
-  const a=teacherPortalClass(),title=document.getElementById('tp-title')?.value.trim(),subject=document.getElementById('tp-subject')?.value.trim(),body=document.getElementById('tp-body')?.value.trim(),due=document.getElementById('tp-due')?.value||null,btn=document.getElementById('tp-publish-homework');
+  const a=teacherPortalClass(),title=document.getElementById('tp-title')?.value.trim(),subject=document.getElementById('tp-subject')?.value.trim(),body=document.getElementById('tp-body')?.value.trim(),due=document.getElementById('tp-due')?.value||null,file=document.getElementById('tp-attachment')?.files?.[0],btn=document.getElementById('tp-publish-homework');
   if(!a||!title||!subject||!body)return showToast('Complete homework details.','error');
   if(!teacherCanManageSubject(a,subject))return showToast('You can only publish homework for your assigned subject.','error');
   if(btn?.disabled)return;
   if(btn)btn.disabled=true;
+  let attachmentPath=null;
   try{
-    const {error}=await supabaseClient.from('student_homework').insert({school_code:APS_STUDENT_SCHOOL,class_name:a.class_name,section:a.section,title,description:body,subject_name:subject,due_date:due,published_by:teacherPortalEmail()});
+    if(file)attachmentPath=await uploadTeacherPortalPdf(file,a,'homework');
+    const {error}=await supabaseClient.from('student_homework').insert({school_code:APS_STUDENT_SCHOOL,class_name:a.class_name,section:a.section,title,description:body,subject_name:subject,due_date:due,published_by:teacherPortalEmail(),attachment_path:attachmentPath,attachment_name:file?.name||null});
     if(error){
+      if(attachmentPath)await supabaseClient.storage.from('student-portal-documents').remove([attachmentPath]);
       if(String(error.code)==='23505')return showToast('This homework already exists for the selected class.','error');
       throw error;
     }
     ['tp-title','tp-subject','tp-body','tp-due'].forEach(id=>{const e=document.getElementById(id);if(e)e.value='';});
+    if(document.getElementById('tp-attachment'))document.getElementById('tp-attachment').value='';
+    if(document.getElementById('tp-attachment-name'))document.getElementById('tp-attachment-name').textContent='Optional • PDF up to 10 MB';
     showToast('Homework published.','success');
     await loadTeacherPortalContentItems('homework');
   }catch(e){showToast(e.message||'Unable to publish homework.','error');}
@@ -4677,13 +4714,13 @@ async function studentDashboardSection(type){
       '<div class="sm:col-span-2 p-3 rounded-xl bg-slate-50 border"><span class="text-[10px] text-slate-500">Address</span><p class="font-semibold mt-1">'+studentEscape(sValue("address"))+'</p></div></div></div>';
   }else if(type==="notice"){
     const notices=fresh.notices||[];
-    host.innerHTML=notices.map(x=>'<article class="p-4 sm:p-5 bg-white border border-slate-200 rounded-2xl shadow-sm"><div class="flex items-start gap-3"><span class="mt-1 w-2 h-2 rounded-full bg-emerald-600 flex-shrink-0"></span><div class="min-w-0 flex-1"><h4 class="text-base sm:text-lg font-extrabold text-slate-900 break-words leading-snug">'+studentEscape(x.title)+'</h4><div class="mt-3 text-[13px] sm:text-sm text-slate-700 whitespace-pre-wrap break-words leading-7">'+studentEscape(x.body||"")+'</div><div class="mt-3 pt-2 border-t border-slate-100 text-[10px] text-slate-400">'+studentEscape(formatStudentPortalDate(x.publish_at||x.created_at||""))+'</div></div></div></article>').join("")||'<div class="p-6 bg-white border rounded-2xl text-center text-slate-400">No notices published.</div>';
+    host.innerHTML=notices.map(x=>'<article class="p-4 sm:p-5 bg-white border border-slate-200 rounded-2xl shadow-sm"><div class="flex items-start gap-3"><span class="mt-1 w-2 h-2 rounded-full bg-emerald-600 flex-shrink-0"></span><div class="min-w-0 flex-1"><h4 class="text-base sm:text-lg font-extrabold text-slate-900 break-words leading-snug">'+studentEscape(x.title)+'</h4><div class="mt-3 text-[13px] sm:text-sm text-slate-700 whitespace-pre-wrap break-words leading-7">'+studentEscape(x.body||"")+'</div>'+(x.attachment_path?'<a href="'+studentEscape(teacherPortalPdfUrl(x.attachment_path))+'" target="_blank" rel="noopener" class="mt-3 inline-flex items-center gap-2 px-3 py-2 rounded-xl bg-rose-50 text-rose-700 border border-rose-200 text-xs font-bold"><i data-lucide="file-text" class="w-4 h-4"></i><span>View PDF'+(x.attachment_name?' • '+studentEscape(x.attachment_name):'')+'</span></a>':'')+'<div class="mt-3 pt-2 border-t border-slate-100 text-[10px] text-slate-400">'+studentEscape(formatStudentPortalDate(x.publish_at||x.created_at||""))+'</div></div></div></article>').join("")||'<div class="p-6 bg-white border rounded-2xl text-center text-slate-400">No notices published.</div>';
   }else if(type==="attendance"){
     const a=fresh.attendance||[],present=a.filter(x=>x.status==="PRESENT").length,abs=a.filter(x=>x.status==="ABSENT").length,leave=a.filter(x=>x.status==="LEAVE").length;
     host.innerHTML='<div class="grid grid-cols-3 gap-2"><div class="p-4 bg-emerald-50 rounded-2xl border"><b class="text-lg">'+present+'</b><span class="block text-[10px]">Present</span></div><div class="p-4 bg-rose-50 rounded-2xl border"><b class="text-lg">'+abs+'</b><span class="block text-[10px]">Absent</span></div><div class="p-4 bg-amber-50 rounded-2xl border"><b class="text-lg">'+leave+'</b><span class="block text-[10px]">Leave</span></div></div>'+(a.map(x=>'<div class="flex justify-between bg-white border rounded-xl px-4 py-3"><span>'+studentEscape(x.attendance_date)+'</span><b>'+studentEscape(x.status)+'</b></div>').join("")||'<div class="p-6 bg-white border rounded-2xl text-center text-slate-400">No attendance records.</div>');
   }else if(type==="homework"){
     const homework=fresh.homework||[];
-    host.innerHTML=homework.map(x=>'<article class="p-4 sm:p-5 bg-white border border-slate-200 rounded-2xl shadow-sm"><div class="flex items-start justify-between gap-3"><div class="min-w-0 flex-1"><div class="flex flex-wrap items-center gap-2"><span class="px-2 py-1 rounded-lg bg-blue-50 text-blue-700 text-[10px] font-extrabold">'+studentEscape(x.subject_name||"Subject")+'</span><span class="text-[10px] text-slate-400">Due: '+studentEscape(formatStudentHomeworkDueDate(x.due_date||""))+'</span></div><h4 class="mt-2 text-base sm:text-lg font-extrabold text-slate-900 break-words leading-snug">'+studentEscape(x.title)+'</h4><div class="mt-3 text-[13px] sm:text-sm text-slate-700 whitespace-pre-wrap break-words leading-7">'+studentEscape(x.description||"")+'</div></div></div></article>').join("")||'<div class="p-6 bg-white border rounded-2xl text-center text-slate-400">No homework.</div>';
+    host.innerHTML=homework.map(x=>'<article class="p-4 sm:p-5 bg-white border border-slate-200 rounded-2xl shadow-sm"><div class="flex items-start justify-between gap-3"><div class="min-w-0 flex-1"><div class="flex flex-wrap items-center gap-2"><span class="px-2 py-1 rounded-lg bg-blue-50 text-blue-700 text-[10px] font-extrabold">'+studentEscape(x.subject_name||"Subject")+'</span><span class="text-[10px] text-slate-400">Due: '+studentEscape(formatStudentHomeworkDueDate(x.due_date||""))+'</span></div><h4 class="mt-2 text-base sm:text-lg font-extrabold text-slate-900 break-words leading-snug">'+studentEscape(x.title)+'</h4><div class="mt-3 text-[13px] sm:text-sm text-slate-700 whitespace-pre-wrap break-words leading-7">'+studentEscape(x.description||"")+'</div>'+(x.attachment_path?'<a href="'+studentEscape(teacherPortalPdfUrl(x.attachment_path))+'" target="_blank" rel="noopener" class="mt-3 inline-flex items-center gap-2 px-3 py-2 rounded-xl bg-rose-50 text-rose-700 border border-rose-200 text-xs font-bold"><i data-lucide="file-text" class="w-4 h-4"></i><span>View PDF'+(x.attachment_name?' • '+studentEscape(x.attachment_name):'')+'</span></a>':'')+'</div></div></article>').join("")||'<div class="p-6 bg-white border rounded-2xl text-center text-slate-400">No homework.</div>';
   }else if(type==="timetable"){
     const days=["","Monday","Tuesday","Wednesday","Thursday","Friday","Saturday","Sunday"];
     host.innerHTML=(fresh.timetable||[]).map(x=>'<div class="flex gap-3 bg-white border rounded-xl px-4 py-3"><b class="w-20">'+days[x.day_of_week]+'</b><span>Period '+x.period_no+' · '+studentEscape(x.subject_name)+' · '+studentEscape(x.teacher_name||"")+' '+studentEscape(x.room||"")+'</span></div>').join("")||'<div class="p-6 bg-white border rounded-2xl text-center text-slate-400">No timetable published.</div>';
