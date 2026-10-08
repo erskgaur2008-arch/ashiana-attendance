@@ -261,8 +261,10 @@
     }
     body:has(#auth-gateway-view.hidden) #login-home-footer{display:none!important}
     .login-home-section-title{
+      display:flex;align-items:center;gap:8px;
       font-size:21px;font-weight:800;color:#0f172a;margin:16px 8px 12px;
     }
+    .login-home-live-dot{width:9px;height:9px;border-radius:999px;background:#10b981;box-shadow:0 0 0 4px rgba(16,185,129,.12);animation:pulse 1.8s infinite;flex:0 0 9px}
     .login-home-cards{
       display:grid;grid-template-columns:repeat(2,minmax(0,1fr));gap:12px;
     }
@@ -274,6 +276,11 @@
     .login-home-card-head{display:flex;align-items:center;gap:9px;font-size:14px;font-weight:800;color:#1e293b;padding-bottom:9px;border-bottom:1px solid #e2e8f0}
     .login-home-card-head i{width:24px;height:24px;padding:4px;border-radius:8px;background:#ecfdf5;color:#047857;flex:0 0 24px}
     .login-home-card p{margin-top:11px;font-size:12px;line-height:1.55;color:#334155}
+    .login-home-meta{display:block;margin-top:7px;font-size:10px;color:#64748b}
+    .login-home-empty{color:#64748b!important}
+    .login-home-quick{display:flex;flex-wrap:wrap;gap:8px;margin:12px 2px 0}
+    .login-home-quick a{display:inline-flex;align-items:center;gap:6px;padding:8px 10px;border:1px solid #dbe3ec;background:#fff;border-radius:11px;color:#334155;font-size:10px;font-weight:800;box-shadow:0 3px 9px rgba(15,23,42,.04)}
+    .login-home-quick i{width:14px;height:14px;color:#047857}
     .login-home-credit{text-align:center;color:#334155;font-size:12px;line-height:1.7;padding:18px 8px 4px}
     .login-home-links{color:#64748b}
     @media(max-width:640px){
@@ -286,6 +293,8 @@
       .login-home-card{padding:13px;min-height:120px}
       .login-home-card-head{font-size:13px}
       .login-home-card p{font-size:11px}
+      .login-home-quick{gap:6px}
+      .login-home-quick a{flex:1 1 calc(50% - 6px);justify-content:center}
     }
     @media(min-width:641px){
       #auth-gateway-view.login-route-only #login-role-select-wrap{display:none!important}
@@ -1395,23 +1404,120 @@
       })();
       </script>
 
+      <script>
+      (function(){
+        const SUPABASE_URL = "https://oalfzgluqroqbbrulhpr.supabase.co";
+        const SUPABASE_KEY = "sb_publishable_PND9f9FKbNrxlEakSgLKYA_5EsqLHkg";
+        let publicClient = null;
+
+        function getPublicClient(){
+          if(publicClient) return publicClient;
+          if(!window.supabase?.createClient) return null;
+          publicClient = window.supabase.createClient(SUPABASE_URL, SUPABASE_KEY, {
+            auth:{persistSession:false,autoRefreshToken:false,detectSessionInUrl:false}
+          });
+          return publicClient;
+        }
+
+        function formatPublicDate(value){
+          if(!value) return "";
+          try{
+            return new Intl.DateTimeFormat("en-IN",{day:"numeric",month:"short",year:"numeric"}).format(new Date(value + (String(value).length===10 ? "T00:00:00" : "")));
+          }catch(_){ return String(value); }
+        }
+
+        function setText(id,text){
+          const el=document.getElementById(id);
+          if(el) el.textContent=text;
+        }
+
+        window.__ashianaLoadLoginHomeContent = async function(){
+          const noticeEl=document.getElementById("login-home-notice-content");
+          const eventEl=document.getElementById("login-home-event-content");
+          if(!noticeEl || !eventEl) return;
+          try{
+            const client=getPublicClient();
+            if(!client) throw new Error("Supabase client unavailable");
+            const {data,error}=await client.rpc("public_login_home_content",{p_school_code:"ashiana"});
+            if(error) throw error;
+            const notices=Array.isArray(data?.notices)?data.notices:[];
+            const events=Array.isArray(data?.events)?data.events:[];
+            if(notices.length){
+              const n=notices[0];
+              noticeEl.classList.remove("login-home-empty");
+              noticeEl.innerHTML="";
+              const title=document.createElement("b");
+              title.textContent=n.title||"School Announcement";
+              const body=document.createElement("span");
+              body.className="login-home-meta";
+              body.textContent=(n.body||"").trim() || "New school announcement";
+              noticeEl.append(title,body);
+            }else{
+              noticeEl.textContent="No new school-wide announcements at this time.";
+            }
+            if(events.length){
+              const e=events[0];
+              eventEl.classList.remove("login-home-empty");
+              eventEl.innerHTML="";
+              const title=document.createElement("b");
+              title.textContent=e.title||"School Event";
+              const meta=document.createElement("span");
+              meta.className="login-home-meta";
+              meta.textContent=formatPublicDate(e.event_date)+(e.description ? " • "+e.description : "");
+              eventEl.append(title,meta);
+            }else{
+              eventEl.textContent="No upcoming school-wide events.";
+            }
+            if(window.lucide) window.lucide.createIcons();
+          }catch(err){
+            console.warn("Public login homepage content unavailable:",err);
+            setText("login-home-notice-content","School announcements will appear here.");
+            setText("login-home-event-content","Upcoming school events will appear here.");
+          }
+        };
+
+        window.__ashianaOpenPublicCalendar=function(event){
+          if(event) event.preventDefault();
+          const first=document.querySelector('[onclick*="student-calendar"]');
+          if(first && typeof first.click==="function"){ first.click(); return; }
+          const banner=document.getElementById("banner-status-text");
+          if(banner) banner.textContent="School Calendar is available after signing in.";
+        };
+        window.__ashianaOpenPublicHelp=function(event){
+          if(event) event.preventDefault();
+          const banner=document.getElementById("banner-status-text");
+          if(banner) banner.innerHTML="<strong>Help &amp; Support:</strong> Please contact the school IT Helpdesk or administrator for assistance.";
+        };
+
+        function init(){
+          window.__ashianaLoadLoginHomeContent();
+        }
+        if(document.readyState==="loading") document.addEventListener("DOMContentLoaded",init,{once:true});
+        else init();
+      })();
+      </script>
+
       <div class="bg-slate-50 p-3 text-center border-t border-slate-100 text-[10px] text-slate-500">
         Ashiana Public School • Sector 46-A, Chandigarh
       </div>
     </div>
 
     <!-- Common public login homepage content -->
-    <section id="login-home-footer" aria-label="Notice Board and Quick Links">
-      <h3 class="login-home-section-title">Notice Board &amp; Quick Links</h3>
+    <section id="login-home-footer" aria-label="Live School Updates and Quick Links">
+      <h3 class="login-home-section-title"><span class="login-home-live-dot" aria-hidden="true"></span>Live School Updates</h3>
       <div class="login-home-cards">
-        <div class="login-home-card">
-          <div class="login-home-card-head"><i data-lucide="megaphone"></i><span>Latest Announcements</span></div>
-          <p>Next Staff Meeting: <b>Oct 12th</b><br>Academic Calendar 2026-27 update</p>
+        <div class="login-home-card" id="login-home-notice-card">
+          <div class="login-home-card-head"><i data-lucide="megaphone"></i><span>Latest Announcement</span></div>
+          <p id="login-home-notice-content" class="login-home-empty">Loading latest announcement…</p>
         </div>
-        <div class="login-home-card">
-          <div class="login-home-card-head"><i data-lucide="headphones"></i><span>Help &amp; Support</span></div>
-          <p>Contact IT Helpdesk<br>Frequently Asked Questions</p>
+        <div class="login-home-card" id="login-home-event-card">
+          <div class="login-home-card-head"><i data-lucide="calendar-days"></i><span>Next School Event</span></div>
+          <p id="login-home-event-content" class="login-home-empty">Loading upcoming event…</p>
         </div>
+      </div>
+      <div class="login-home-quick" aria-label="Quick Links">
+        <a href="#" onclick="window.__ashianaOpenPublicCalendar(event)"><i data-lucide="calendar"></i><span>School Calendar</span></a>
+        <a href="#" onclick="window.__ashianaOpenPublicHelp(event)"><i data-lucide="headphones"></i><span>Help &amp; Support</span></a>
       </div>
       <div class="login-home-credit">
         Developed by <b>ER. SK GAUR</b><br>
