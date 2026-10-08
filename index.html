@@ -10304,12 +10304,16 @@ function addMessage(text,type){
   window.openStaffCommThread=async function(id){
     const t=staffCommThreads.find(x=>x.id===id); if(!t)return; staffCommCurrentThread=t; renderCommThreads();
     const head=document.getElementById('staff-comm-thread-head'), msgs=document.getElementById('staff-comm-messages'), reply=document.getElementById('staff-comm-reply-form');
-    head.classList.remove('hidden'); commModal()?.querySelector('.staff-comm-card')?.classList.add('thread-open'); head.innerHTML='<div class="flex items-center justify-between gap-2"><div class="flex items-center gap-2 min-w-0"><button type="button" class="staff-comm-mobile-back hidden items-center justify-center w-8 h-8 rounded-lg bg-slate-100 text-slate-700" onclick="backToStaffCommList()" aria-label="Back to conversations"><i data-lucide="arrow-left" class="w-4 h-4"></i></button><div class="min-w-0"><div class="font-extrabold text-sm text-slate-800 truncate">'+esc(t.subject)+'</div><div class="text-[9px] text-slate-500 mt-0.5">'+esc(t.category)+' • '+esc(t.priority)+' • '+esc(t.status)+'</div></div>'+(commIsAdmin()?'<select onchange="updateStaffCommStatus(\''+t.id+'\',this.value)" class="border rounded-lg p-1.5 text-[10px]"><option '+(t.status==='OPEN'?'selected':'')+'>OPEN</option><option '+(t.status==='IN_PROGRESS'?'selected':'')+'>IN_PROGRESS</option><option '+(t.status==='RESOLVED'?'selected':'')+'>RESOLVED</option><option '+(t.status==='CLOSED'?'selected':'')+'>CLOSED</option></select>':'')+'</div>';
+    const canClose=commIsAdmin()||String(t.created_by_email||'').trim().toLowerCase()===String(commEmail()||'').trim().toLowerCase();
+    head.classList.remove('hidden'); commModal()?.querySelector('.staff-comm-card')?.classList.add('thread-open'); head.innerHTML='<div class="flex items-center justify-between gap-2"><div class="flex items-center gap-2 min-w-0"><button type="button" class="staff-comm-mobile-back hidden items-center justify-center w-8 h-8 rounded-lg bg-slate-100 text-slate-700" onclick="backToStaffCommList()" aria-label="Back to conversations"><i data-lucide="arrow-left" class="w-4 h-4"></i></button><div class="min-w-0"><div class="font-extrabold text-sm text-slate-800 truncate">'+esc(t.subject)+'</div><div class="text-[9px] text-slate-500 mt-0.5">'+esc(t.category)+' • '+esc(t.priority)+' • '+esc(t.status)+'</div></div>'+(commIsAdmin()?'<select onchange="updateStaffCommStatus(\\''+t.id+'\\',this.value)" class="border rounded-lg p-1.5 text-[10px]"><option '+(t.status==='OPEN'?'selected':'')+'>OPEN</option><option '+(t.status==='IN_PROGRESS'?'selected':'')+'>IN_PROGRESS</option><option '+(t.status==='RESOLVED'?'selected':'')+'>RESOLVED</option><option '+(t.status==='CLOSED'?'selected':'')+'>CLOSED</option></select>':(canClose&&t.status!=='CLOSED'?'<button type="button" onclick="closeStaffCommThread(\\''+t.id+'\\')" class="px-3 py-1.5 rounded-lg bg-rose-600 text-white text-[10px] font-bold">Close</button>':''))+'</div>';
     const verifiedEmail=await ensureStaffCommAuth();
     const {data,error}=await supabaseClient.from('staff_communication_messages').select('id,sender_email,sender_name,sender_role,body,created_at').eq('thread_id',id).order('created_at',{ascending:true});
     if(error){msgs.innerHTML='<div class="text-xs text-rose-600 p-4">'+esc(error.message)+'</div>';return;}
     msgs.innerHTML=(data||[]).map(x=>'<div class="staff-comm-msg '+(x.sender_email.toLowerCase()===verifiedEmail?'mine':'theirs')+'"><div class="text-[9px] font-extrabold text-slate-500 mb-1">'+(esc(x.sender_name||((x.sender_email.toLowerCase()===verifiedEmail)?'You':x.sender_role)))+' • '+new Date(x.created_at).toLocaleString('en-IN',{day:'numeric',month:'short',hour:'2-digit',minute:'2-digit'})+'</div>'+esc(x.body)+'</div>').join('')||'<div class="staff-comm-empty"><div>No messages yet.</div></div>';
-    msgs.scrollTop=msgs.scrollHeight; reply.classList.remove('hidden');
+    msgs.scrollTop=msgs.scrollHeight;
+    const isClosed=t.status==='CLOSED';
+    reply.classList.toggle('hidden',isClosed);
+    if(isClosed) msgs.innerHTML += '<div class="mt-3 p-3 rounded-xl bg-slate-100 border border-slate-200 text-[10px] font-bold text-slate-600 text-center">This conversation is closed. Nobody can send new messages.</div>';
     await supabaseClient.from('staff_communication_reads').upsert({thread_id:id,reader_email:verifiedEmail,last_read_at:new Date().toISOString()},{onConflict:'thread_id,reader_email'});
   };
   window.showStaffCommComposer=async function(){
@@ -10412,11 +10416,19 @@ function addMessage(text,type){
     if(error){alert('Reply could not be sent: '+error.message);return;}
     input.value=''; await loadStaffComm(); await openStaffCommThread(staffCommCurrentThread.id);
   };
+  window.closeStaffCommThread=async function(id){
+    const thread=staffCommThreads.find(t=>t.id===id);
+    if(!thread)return;
+    const creator=String(thread.created_by_email||'').trim().toLowerCase()===String(commEmail()||'').trim().toLowerCase();
+    if(!commIsAdmin()&&!creator)return;
+    await window.updateStaffCommStatus(id,'CLOSED');
+  };
   window.updateStaffCommStatus=async function(id,status){
-    if(!commIsAdmin())return;
+    const current=staffCommThreads.find(t=>t.id===id);
+    const creator=current&&String(current.created_by_email||'').trim().toLowerCase()===String(commEmail()||'').trim().toLowerCase();
+    if(!commIsAdmin()&&!(creator&&status==='CLOSED'))return;
     const {error}=await supabaseClient.from('staff_communication_threads').update({status}).eq('id',id);
     if(error){alert('Status update failed: '+error.message);return;}
-    const current=staffCommThreads.find(t=>t.id===id);
     if(current) current.status=status;
     if(staffCommCurrentThread?.id===id) staffCommCurrentThread.status=status;
     const head=document.getElementById('staff-comm-thread-head');
