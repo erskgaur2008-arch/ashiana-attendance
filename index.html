@@ -756,91 +756,6 @@
 @media(prefers-reduced-motion:reduce){
  #staff-portal-view *,#admin-portal-view *{scroll-behavior:auto!important;transition:none!important;animation:none!important}
 }
-
-/* ashiana-admin-mobile-readability-v2 */
-/* Narrow-screen refinements: presentation only; preserve dashboard actions and data. */
-@media(max-width:480px){
-  #admin-portal-view .admin-quick-actions button{
-    font-size:clamp(11px,2.9vw,13px)!important;
-    line-height:1.3;
-    min-width:0;
-    overflow-wrap:anywhere;
-  }
-  #admin-portal-view>.grid.grid-cols-2>div{
-    min-width:0;
-    overflow-wrap:anywhere;
-  }
-  #admin-portal-view>.grid.grid-cols-2>div span{
-    overflow-wrap:anywhere;
-  }
-  #ashiana-ai-launcher{
-    bottom:max(18px,calc(env(safe-area-inset-bottom) + 14px));
-  }
-}
-@media(max-width:360px){
-  #admin-portal-view .admin-quick-actions button{font-size:11px!important}
-}
-</style>
-
-<style id="ashiana-dashboard-refresh-v2">
-/* Approved dashboard design refinement: CSS-only; preserve existing actions, IDs, data, and permissions. */
-#staff-portal-view,
-#admin-portal-view{color:#172b24}
-#staff-portal-view .staff-dashboard-card{border:1px solid #d7e7df;background:#fff;box-shadow:0 18px 46px rgba(6,78,59,.10)}
-#staff-portal-view .staff-dashboard-header{background-image:linear-gradient(115deg,#022c22 0%,#064e3b 58%,#0a7e46 100%);border-bottom-color:#d92d31}
-#staff-portal-view .staff-dashboard-content{background:#f5f8f6}
-#staff-tab-punch .staff-action-card{border:1px solid #c4ead4;background:linear-gradient(135deg,#ecfdf5 0%,#fff 78%);border-radius:18px}
-#staff-tab-punch #btn-mark-attendance{border-radius:15px;min-height:58px;font-weight:800;box-shadow:0 7px 18px rgba(6,126,70,.20)}
-#staff-portal-view .staff-drawer-item{min-height:46px;border-radius:12px}
-#staff-portal-view button,#admin-portal-view button{touch-action:manipulation}
-#admin-portal-view .admin-dashboard-header{border:1px solid rgba(167,243,208,.2);box-shadow:0 12px 30px rgba(2,44,34,.13)}
-#admin-portal-view .admin-quick-actions{display:grid;grid-template-columns:repeat(5,minmax(0,1fr));gap:10px}
-#admin-portal-view .admin-quick-actions button{min-width:0;min-height:76px;display:flex;align-items:center;gap:10px;border:1px solid #dce9e2;border-radius:15px;background:#fff;color:#173b2d;font-size:12px;font-weight:750;box-shadow:0 3px 10px rgba(15,23,42,.035);transition:transform .16s ease,border-color .16s ease,box-shadow .16s ease}
-#admin-portal-view .admin-quick-actions button svg{color:#087443;flex-shrink:0}
-#admin-portal-view .admin-quick-actions button:hover{transform:translateY(-1px);border-color:#8bd5ac;box-shadow:0 8px 18px rgba(6,78,59,.09);background:#fbfefc}
-#admin-portal-view>.grid.grid-cols-2>div{border-radius:17px;border-color:#e0e9e4;background:linear-gradient(180deg,#fff 0%,#fbfdfb 100%);transition:transform .16s ease,box-shadow .16s ease}
-#admin-portal-view>.grid.grid-cols-2>div:hover{box-shadow:0 8px 20px rgba(6,78,59,.08)}
-#admin-portal-view .admin-header-action{min-height:42px;border-radius:12px}
-#staff-portal-view button:focus-visible,#admin-portal-view button:focus-visible{outline:3px solid #34d399;outline-offset:3px}
-@media(max-width:900px){
- #admin-portal-view .admin-quick-actions{grid-template-columns:repeat(3,minmax(0,1fr))}
-}
-@media(max-width:640px){
- #staff-portal-view .staff-dashboard-card{border-radius:0;min-height:100dvh}
- #staff-portal-view .staff-dashboard-header{padding-top:calc(12px + env(safe-area-inset-top))}
- #staff-portal-view .staff-dashboard-content{padding:12px!important}
- #admin-portal-view .admin-quick-actions{grid-template-columns:repeat(2,minmax(0,1fr));gap:8px}
- #admin-portal-view .admin-quick-actions button{min-height:62px;padding:11px;border-radius:13px;font-size:12px;gap:8px}
- #admin-portal-view>.grid.grid-cols-2>div{min-width:0;padding:12px!important}
-}
-@media(max-width:360px){
- #admin-portal-view .admin-quick-actions button{font-size:11px;padding:9px;gap:7px}
-}
-@media(prefers-reduced-motion:reduce){
- #staff-portal-view *,#admin-portal-view *{transition:none!important;transform:none!important}
-}
-</style>
-
-<style id="ashiana-ai-launcher-clearance-v1">
-/* Keep floating AI controls reachable without covering the final dashboard content. */
-@media(max-width:700px){
-  #staff-portal-view .staff-dashboard-content,
-  #admin-portal-view{
-    padding-bottom:calc(104px + env(safe-area-inset-bottom))!important;
-    scroll-padding-bottom:calc(104px + env(safe-area-inset-bottom));
-  }
-  #ashiana-ai-launcher{
-    right:12px;
-    bottom:calc(12px + env(safe-area-inset-bottom));
-    max-width:calc(100vw - 24px);
-    min-height:44px;
-    padding:10px 14px;
-    font-size:12px;
-  }
-}
-@media(max-width:360px){
-  #ashiana-ai-launcher{padding:9px 12px;font-size:11px}
-}
 </style>
 
 </head>
@@ -6583,34 +6498,7 @@ async function loadAdminStudents(){
           }catch(_){}
         }
       }
-      const printWin=window.open('','_blank','width=900,height=900');if(!printWin){showToast('Please allow pop-ups to print student ID cards.','error');return;}printWin.document.open();printWin.document.write('<html><head><title>Ashiana Student ID Cards</title><script src="./assets/vendor/qrcode.min.js"><\/script><style>@page{size:A4 portrait;margin:0}*{box-sizing:border-box}html,body{margin:0;padding:0;background:#fff}body{font-family:Arial,Helvetica,sans-serif}.student-id-print-page{width:210mm;height:297mm;padding:12mm 18mm;display:grid;grid-template-columns:repeat(3,54mm);grid-auto-rows:85.6mm;column-gap:6mm;row-gap:5mm;align-content:start;page-break-after:always;break-after:page}.student-id-print-page:last-child{page-break-after:auto;break-after:auto}.student-id-preview-card{width:54mm;height:85.6mm;overflow:hidden;display:flex;flex-direction:column;background:#fff;border:.3mm solid #9ca3af;border-radius:2mm;color:#111827}.student-id-preview-card .sid-top{height:19mm;flex:0 0 19mm;padding:1.2mm 3mm .8mm;color:#fff;background:linear-gradient(145deg,#063f32,#075b46 62%,#0a7655);text-align:center;overflow:hidden}.student-id-preview-card .sid-logo{width:7mm;height:7mm;object-fit:contain;background:#fff;border-radius:50%;padding:.3mm;display:block;margin:0 auto .35mm}.student-id-preview-card .sid-school{font-size:2.65mm;line-height:1.05;font-weight:900;white-space:nowrap}.student-id-preview-card .sid-sub{font-size:1.45mm;line-height:1.05;margin-top:.35mm;font-weight:800;white-space:nowrap}.student-id-preview-card .sid-line{height:.25mm;background:#ef3340;margin:.45mm 8mm 0}.student-id-preview-card .sid-photo-wrap{height:25mm;flex:0 0 25mm;width:20mm;margin:-.5mm auto 0;background:#fff;border:.55mm solid #fff;box-shadow:0 1mm 2.5mm rgba(0,0,0,.22);position:relative;z-index:2}.student-id-preview-card .sid-photo-wrap img,.student-id-preview-card .sid-photo-fallback{width:100%;height:100%;object-fit:cover;display:block;background:#e5e7eb}.student-id-preview-card .sid-photo-fallback{display:flex;align-items:center;justify-content:center;color:#08693a;font-size:6mm;font-weight:900}.student-id-preview-card .sid-name-band{height:8mm;min-height:8mm;flex:0 0 8mm;background:#064e3b;color:#fff;padding:1mm 2mm .7mm;text-align:center}.student-id-preview-card .sid-name{font-size:2.7mm;line-height:1.05;font-weight:900;text-transform:uppercase;white-space:nowrap;overflow:hidden;text-overflow:ellipsis}.student-id-preview-card .sid-class{font-size:1.9mm;line-height:1.05;margin-top:.45mm;font-weight:700;white-space:nowrap}.student-id-preview-card .sid-details{height:31mm;flex:0 0 31mm;padding:1.1mm 3mm .3mm;background:#fff}.student-id-preview-card{position:relative}.student-id-preview-card .sid-qr-wrap{position:absolute;left:50%;bottom:4.5mm;transform:translateX(-50%);width:17mm!important;height:17mm!important;display:flex;align-items:center;justify-content:center;z-index:5;background:#fff}.student-id-preview-card .sid-qr-wrap canvas,.student-id-preview-card .sid-qr-wrap img{width:16mm!important;height:16mm!important}.student-id-back-card{width:54mm;height:85.6mm;display:flex;align-items:center;justify-content:center;background:#fff;border:.3mm solid #9ca3af;border-radius:2mm}.student-id-back-card .sid-back-qr{width:46mm;height:46mm;display:flex;align-items:center;justify-content:center;background:#fff}.student-id-back-card .sid-back-qr canvas,.student-id-back-card .sid-back-qr img{width:44mm!important;height:44mm!important;display:block}.student-id-back-print-page{page-break-after:always;break-after:page}.student-id-back-print-page:last-child{page-break-after:auto;break-after:auto}.student-id-preview-card .sid-footer{display:flex!important}.student-id-preview-card .sid-row{display:flex;align-items:center;min-height:2.8mm;font-size:1.7mm;line-height:1.05}.student-id-preview-card .sid-row span{flex:0 0 15mm;color:#64748b;font-weight:700}.student-id-preview-card .sid-row b{flex:1;min-width:0;overflow:hidden;white-space:nowrap;text-overflow:ellipsis}.student-id-preview-card .sid-row.transport-row b{color:#111827;font-weight:900}.student-id-preview-card .sid-row.address-row{min-height:4mm;align-items:flex-start;margin-top:0;padding-right:0}.student-id-preview-card .sid-row.address-row b{white-space:normal;display:block;overflow:hidden;line-height:1.05;overflow-wrap:anywhere;padding-right:0}.student-id-preview-card .sid-footer{flex:1 1 auto;text-align:center;font-size:.82mm;line-height:1;white-space:nowrap;color:#94a3b8;padding:.25mm 1mm 0}.student-id-preview-card img{display:block}.student-id-preview-card .sid-top{height:19mm;flex:0 0 19mm;padding:1mm 3mm .5mm;position:relative;overflow:hidden}.student-id-preview-card .sid-school-name{font-size:2.7mm;line-height:1.05;font-weight:900}.student-id-preview-card .sid-school-sub{font-size:1.65mm;line-height:1.05;margin-top:.4mm;font-weight:800}.student-id-preview-card .sid-school-phone{font-size:1.5mm;line-height:1.05;margin-top:.35mm;font-weight:700}.student-id-preview-card .sid-school-aff{font-size:1.25mm;line-height:1.05;margin-top:.3mm;font-weight:700}.student-id-preview-card .sid-title{font-size:1.7mm;line-height:1;font-weight:800;letter-spacing:.15mm;white-space:nowrap;}.student-id-preview-card .sid-photo-wrap{height:30mm;flex:0 0 30mm;width:24mm;margin:0 auto}.student-id-preview-card .sid-name-band{height:7mm;min-height:7mm;flex:0 0 7mm;padding:1mm 2mm .7mm}.student-id-preview-card .sid-name{font-size:2.8mm}.student-id-preview-card .sid-class{font-size:2mm;margin-top:.45mm}.student-id-preview-card .sid-details{height:25.5mm;flex:0 0 25.5mm;padding:1mm 3mm .3mm;position:relative}.student-id-preview-card .sid-info{padding-right:0;height:100%;display:flex;flex-direction:column;justify-content:space-between;box-sizing:border-box}.student-id-preview-card .sid-row{min-height:2.8mm;font-size:1.55mm;line-height:1.05}.student-id-preview-card .sid-row span{flex:0 0 17mm}.student-id-preview-card .sid-qr-wrap{position:absolute;left:auto;right:2.5mm;bottom:8.2mm;transform:none;width:10mm!important;height:10mm!important}.student-id-preview-card .sid-qr-wrap canvas,.student-id-preview-card .sid-qr-wrap img{width:8mm!important;height:8mm!important}.student-id-preview-card .sid-footer{display:flex!important;align-items:center;justify-content:center;flex:1 1 auto;min-height:0;text-align:center;font-size:.82mm;line-height:1;white-space:nowrap;color:#64748b;padding:.45mm 1mm .45mm;background:#fff;border-top:.2mm solid #e2e8f0;box-sizing:border-box}.student-id-preview-card .sid-school-name,.student-id-preview-card .sid-school-sub,.student-id-preview-card .sid-school-phone,.student-id-preview-card .sid-school-aff{white-space:nowrap}</style></head><body><div id="pages"></div><script>\n  // Register the PWA service worker only for the browser/PWA build.\n  // Capacitor Android uses its own bundled WebView cache and must not be\n  // intercepted by the web service worker.\n  if ("serviceWorker" in navigator && window.location.hostname !== "localhost") {\n    window.addEventListener("load", () => {\n      navigator.serviceWorker.register("./sw.js", { scope: "./" }).catch((error) => {\n        console.warn("Ashiana Attendance service worker registration failed:", error);\n      });\n    });\n  }\n<\/script>\n<script id="ashiana-ai-scroll-clearance-script">
-(function(){
-  const launcher=document.getElementById('ashiana-ai-launcher');
-  if(!launcher||launcher.dataset.scrollClearanceReady==='1')return;
-  launcher.dataset.scrollClearanceReady='1';
-  let settleTimer=0;
-  function hideDuringScroll(){
-    if(window.matchMedia('(min-width: 701px)').matches)return;
-    launcher.classList.add('ai-hidden-while-scrolling');
-    window.clearTimeout(settleTimer);
-    settleTimer=window.setTimeout(function(){
-      if(!document.getElementById('ashiana-ai-modal')?.classList.contains('open')){
-        launcher.classList.remove('ai-hidden-while-scrolling');
-      }
-    },850);
-  }
-  window.addEventListener('scroll',hideDuringScroll,{passive:true});
-  window.addEventListener('touchmove',hideDuringScroll,{passive:true});
-  window.addEventListener('resize',function(){
-    if(window.matchMedia('(min-width: 701px)').matches){
-      window.clearTimeout(settleTimer);
-      launcher.classList.remove('ai-hidden-while-scrolling');
-    }
-  },{passive:true});
-})();
-<\/script>
-
-</body></html>');printWin.document.close();const paths=students.filter(s=>s.photo_path&&!s.__printPhotoUrl).map(s=>s.photo_path);let photoMap={};if(paths.length){for(let i=0;i<paths.length;i+=500){const chunk=paths.slice(i,i+500),{data,error}=await supabaseClient.storage.from('student-photos').createSignedUrls(chunk,3600);if(!error)(data||[]).forEach(x=>{if(x.path&&x.signedUrl)photoMap[x.path]=x.signedUrl;});}}const pages=[];for(let i=0;i<students.length;i+=9)pages.push(students.slice(i,i+9));
+      const printWin=window.open('','_blank','width=900,height=900');if(!printWin){showToast('Please allow pop-ups to print student ID cards.','error');return;}printWin.document.open();printWin.document.write('<html><head><title>Ashiana Student ID Cards</title><script src="./assets/vendor/qrcode.min.js"><\/script><style>@page{size:A4 portrait;margin:0}*{box-sizing:border-box}html,body{margin:0;padding:0;background:#fff}body{font-family:Arial,Helvetica,sans-serif}.student-id-print-page{width:210mm;height:297mm;padding:12mm 18mm;display:grid;grid-template-columns:repeat(3,54mm);grid-auto-rows:85.6mm;column-gap:6mm;row-gap:5mm;align-content:start;page-break-after:always;break-after:page}.student-id-print-page:last-child{page-break-after:auto;break-after:auto}.student-id-preview-card{width:54mm;height:85.6mm;overflow:hidden;display:flex;flex-direction:column;background:#fff;border:.3mm solid #9ca3af;border-radius:2mm;color:#111827}.student-id-preview-card .sid-top{height:19mm;flex:0 0 19mm;padding:1.2mm 3mm .8mm;color:#fff;background:linear-gradient(145deg,#063f32,#075b46 62%,#0a7655);text-align:center;overflow:hidden}.student-id-preview-card .sid-logo{width:7mm;height:7mm;object-fit:contain;background:#fff;border-radius:50%;padding:.3mm;display:block;margin:0 auto .35mm}.student-id-preview-card .sid-school{font-size:2.65mm;line-height:1.05;font-weight:900;white-space:nowrap}.student-id-preview-card .sid-sub{font-size:1.45mm;line-height:1.05;margin-top:.35mm;font-weight:800;white-space:nowrap}.student-id-preview-card .sid-line{height:.25mm;background:#ef3340;margin:.45mm 8mm 0}.student-id-preview-card .sid-photo-wrap{height:25mm;flex:0 0 25mm;width:20mm;margin:-.5mm auto 0;background:#fff;border:.55mm solid #fff;box-shadow:0 1mm 2.5mm rgba(0,0,0,.22);position:relative;z-index:2}.student-id-preview-card .sid-photo-wrap img,.student-id-preview-card .sid-photo-fallback{width:100%;height:100%;object-fit:cover;display:block;background:#e5e7eb}.student-id-preview-card .sid-photo-fallback{display:flex;align-items:center;justify-content:center;color:#08693a;font-size:6mm;font-weight:900}.student-id-preview-card .sid-name-band{height:8mm;min-height:8mm;flex:0 0 8mm;background:#064e3b;color:#fff;padding:1mm 2mm .7mm;text-align:center}.student-id-preview-card .sid-name{font-size:2.7mm;line-height:1.05;font-weight:900;text-transform:uppercase;white-space:nowrap;overflow:hidden;text-overflow:ellipsis}.student-id-preview-card .sid-class{font-size:1.9mm;line-height:1.05;margin-top:.45mm;font-weight:700;white-space:nowrap}.student-id-preview-card .sid-details{height:31mm;flex:0 0 31mm;padding:1.1mm 3mm .3mm;background:#fff}.student-id-preview-card{position:relative}.student-id-preview-card .sid-qr-wrap{position:absolute;left:50%;bottom:4.5mm;transform:translateX(-50%);width:17mm!important;height:17mm!important;display:flex;align-items:center;justify-content:center;z-index:5;background:#fff}.student-id-preview-card .sid-qr-wrap canvas,.student-id-preview-card .sid-qr-wrap img{width:16mm!important;height:16mm!important}.student-id-back-card{width:54mm;height:85.6mm;display:flex;align-items:center;justify-content:center;background:#fff;border:.3mm solid #9ca3af;border-radius:2mm}.student-id-back-card .sid-back-qr{width:46mm;height:46mm;display:flex;align-items:center;justify-content:center;background:#fff}.student-id-back-card .sid-back-qr canvas,.student-id-back-card .sid-back-qr img{width:44mm!important;height:44mm!important;display:block}.student-id-back-print-page{page-break-after:always;break-after:page}.student-id-back-print-page:last-child{page-break-after:auto;break-after:auto}.student-id-preview-card .sid-footer{display:flex!important}.student-id-preview-card .sid-row{display:flex;align-items:center;min-height:2.8mm;font-size:1.7mm;line-height:1.05}.student-id-preview-card .sid-row span{flex:0 0 15mm;color:#64748b;font-weight:700}.student-id-preview-card .sid-row b{flex:1;min-width:0;overflow:hidden;white-space:nowrap;text-overflow:ellipsis}.student-id-preview-card .sid-row.transport-row b{color:#111827;font-weight:900}.student-id-preview-card .sid-row.address-row{min-height:4mm;align-items:flex-start;margin-top:0;padding-right:0}.student-id-preview-card .sid-row.address-row b{white-space:normal;display:block;overflow:hidden;line-height:1.05;overflow-wrap:anywhere;padding-right:0}.student-id-preview-card .sid-footer{flex:1 1 auto;text-align:center;font-size:.82mm;line-height:1;white-space:nowrap;color:#94a3b8;padding:.25mm 1mm 0}.student-id-preview-card img{display:block}.student-id-preview-card .sid-top{height:19mm;flex:0 0 19mm;padding:1mm 3mm .5mm;position:relative;overflow:hidden}.student-id-preview-card .sid-school-name{font-size:2.7mm;line-height:1.05;font-weight:900}.student-id-preview-card .sid-school-sub{font-size:1.65mm;line-height:1.05;margin-top:.4mm;font-weight:800}.student-id-preview-card .sid-school-phone{font-size:1.5mm;line-height:1.05;margin-top:.35mm;font-weight:700}.student-id-preview-card .sid-school-aff{font-size:1.25mm;line-height:1.05;margin-top:.3mm;font-weight:700}.student-id-preview-card .sid-title{font-size:1.7mm;line-height:1;font-weight:800;letter-spacing:.15mm;white-space:nowrap;}.student-id-preview-card .sid-photo-wrap{height:30mm;flex:0 0 30mm;width:24mm;margin:0 auto}.student-id-preview-card .sid-name-band{height:7mm;min-height:7mm;flex:0 0 7mm;padding:1mm 2mm .7mm}.student-id-preview-card .sid-name{font-size:2.8mm}.student-id-preview-card .sid-class{font-size:2mm;margin-top:.45mm}.student-id-preview-card .sid-details{height:25.5mm;flex:0 0 25.5mm;padding:1mm 3mm .3mm;position:relative}.student-id-preview-card .sid-info{padding-right:0;height:100%;display:flex;flex-direction:column;justify-content:space-between;box-sizing:border-box}.student-id-preview-card .sid-row{min-height:2.8mm;font-size:1.55mm;line-height:1.05}.student-id-preview-card .sid-row span{flex:0 0 17mm}.student-id-preview-card .sid-qr-wrap{position:absolute;left:auto;right:2.5mm;bottom:8.2mm;transform:none;width:10mm!important;height:10mm!important}.student-id-preview-card .sid-qr-wrap canvas,.student-id-preview-card .sid-qr-wrap img{width:8mm!important;height:8mm!important}.student-id-preview-card .sid-footer{display:flex!important;align-items:center;justify-content:center;flex:1 1 auto;min-height:0;text-align:center;font-size:.82mm;line-height:1;white-space:nowrap;color:#64748b;padding:.45mm 1mm .45mm;background:#fff;border-top:.2mm solid #e2e8f0;box-sizing:border-box}.student-id-preview-card .sid-school-name,.student-id-preview-card .sid-school-sub,.student-id-preview-card .sid-school-phone,.student-id-preview-card .sid-school-aff{white-space:nowrap}</style></head><body><div id="pages"></div><script>\n  // Register the PWA service worker only for the browser/PWA build.\n  // Capacitor Android uses its own bundled WebView cache and must not be\n  // intercepted by the web service worker.\n  if ("serviceWorker" in navigator && window.location.hostname !== "localhost") {\n    window.addEventListener("load", () => {\n      navigator.serviceWorker.register("./sw.js", { scope: "./" }).catch((error) => {\n        console.warn("Ashiana Attendance service worker registration failed:", error);\n      });\n    });\n  }\n<\/script>\n</body></html>');printWin.document.close();const paths=students.filter(s=>s.photo_path&&!s.__printPhotoUrl).map(s=>s.photo_path);let photoMap={};if(paths.length){for(let i=0;i<paths.length;i+=500){const chunk=paths.slice(i,i+500),{data,error}=await supabaseClient.storage.from('student-photos').createSignedUrls(chunk,3600);if(!error)(data||[]).forEach(x=>{if(x.path&&x.signedUrl)photoMap[x.path]=x.signedUrl;});}}const pages=[];for(let i=0;i<students.length;i+=9)pages.push(students.slice(i,i+9));
       const frontPagesHtml=pages.map((group,pageIdx)=>'<div class="student-id-print-page">'+group.map((s,idx)=>makeStudentIdCardHtml(s,s.__printPhotoUrl||photoMap[s.photo_path]||'',pageIdx*9+idx)).join('')+'</div>').join('');
       const backPagesHtml=pages.map((group,pageIdx)=>{
         const backItems=group.map((s,idx)=>({s,idx:pageIdx*9+idx}));
@@ -10784,22 +10672,6 @@ window.addEventListener('load',async function(){
   .ashiana-ai-msg.bot{margin-right:auto;background:#f1f5f9;color:#0f172a;border-bottom-left-radius:5px}\n  .ashiana-ai-msg.bot h3{margin:0 0 7px;font-weight:800;font-size:16px;line-height:1.3}.ashiana-ai-msg.bot p{margin:0 0 8px}.ashiana-ai-msg.bot p:last-child{margin-bottom:0}.ashiana-ai-msg.bot ul,.ashiana-ai-msg.bot ol{margin:5px 0 9px;padding-left:22px}.ashiana-ai-msg.bot li{margin:3px 0}.ashiana-ai-msg.bot hr{border:0;border-top:1px solid #cbd5e1;margin:9px 0}.ashiana-ai-msg.bot code{background:#e2e8f0;border-radius:4px;padding:1px 4px;font-size:.92em}.ashiana-ai-msg.bot pre{white-space:pre-wrap;background:#e2e8f0;padding:8px;border-radius:8px;overflow:auto}
   #ashiana-ai-input{min-height:44px;max-height:120px;resize:vertical}
   @media(max-width:640px){#ashiana-ai-launcher{right:12px;bottom:12px}#ashiana-ai-modal{padding:8px;align-items:flex-end}#ashiana-ai-card{width:100%;height:min(92dvh,760px);max-height:92dvh;border-radius:20px}#ashiana-ai-messages{padding:12px;min-height:0}}
-</style>
-<style id="ashiana-ai-scroll-clearance-v1">
-@media(max-width:700px){
-  #ashiana-ai-launcher.ai-hidden-while-scrolling{
-    opacity:0!important;
-    visibility:hidden!important;
-    pointer-events:none!important;
-    transform:translateY(8px);
-  }
-  #ashiana-ai-launcher{
-    transition:opacity .16s ease,transform .16s ease,visibility .16s ease;
-  }
-}
-@media(prefers-reduced-motion:reduce){
-  #ashiana-ai-launcher{transition:none!important}
-}
 </style>
 <button id="ashiana-ai-launcher" type="button" aria-label="Open AI Assistant">
   <span>✦</span><span>AI Assistant</span>
