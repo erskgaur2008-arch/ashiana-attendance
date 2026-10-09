@@ -27,7 +27,7 @@ $function$;
 
 drop trigger if exists sync_approved_student_leave_attendance on public.student_leave_requests;
 create trigger sync_approved_student_leave_attendance
-after insert or update of status, from_date, to_date
+after insert or update
 on public.student_leave_requests
 for each row
 when (new.status = 'APPROVED')
