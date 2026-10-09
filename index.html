@@ -782,6 +782,45 @@
 }
 </style>
 
+<style id="ashiana-dashboard-refresh-v2">
+/* Approved dashboard design refinement: CSS-only; preserve existing actions, IDs, data, and permissions. */
+#staff-portal-view,
+#admin-portal-view{color:#172b24}
+#staff-portal-view .staff-dashboard-card{border:1px solid #d7e7df;background:#fff;box-shadow:0 18px 46px rgba(6,78,59,.10)}
+#staff-portal-view .staff-dashboard-header{background-image:linear-gradient(115deg,#022c22 0%,#064e3b 58%,#0a7e46 100%);border-bottom-color:#d92d31}
+#staff-portal-view .staff-dashboard-content{background:#f5f8f6}
+#staff-tab-punch .staff-action-card{border:1px solid #c4ead4;background:linear-gradient(135deg,#ecfdf5 0%,#fff 78%);border-radius:18px}
+#staff-tab-punch #btn-mark-attendance{border-radius:15px;min-height:58px;font-weight:800;box-shadow:0 7px 18px rgba(6,126,70,.20)}
+#staff-portal-view .staff-drawer-item{min-height:46px;border-radius:12px}
+#staff-portal-view button,#admin-portal-view button{touch-action:manipulation}
+#admin-portal-view .admin-dashboard-header{border:1px solid rgba(167,243,208,.2);box-shadow:0 12px 30px rgba(2,44,34,.13)}
+#admin-portal-view .admin-quick-actions{display:grid;grid-template-columns:repeat(5,minmax(0,1fr));gap:10px}
+#admin-portal-view .admin-quick-actions button{min-width:0;min-height:76px;display:flex;align-items:center;gap:10px;border:1px solid #dce9e2;border-radius:15px;background:#fff;color:#173b2d;font-size:12px;font-weight:750;box-shadow:0 3px 10px rgba(15,23,42,.035);transition:transform .16s ease,border-color .16s ease,box-shadow .16s ease}
+#admin-portal-view .admin-quick-actions button svg{color:#087443;flex-shrink:0}
+#admin-portal-view .admin-quick-actions button:hover{transform:translateY(-1px);border-color:#8bd5ac;box-shadow:0 8px 18px rgba(6,78,59,.09);background:#fbfefc}
+#admin-portal-view>.grid.grid-cols-2>div{border-radius:17px;border-color:#e0e9e4;background:linear-gradient(180deg,#fff 0%,#fbfdfb 100%);transition:transform .16s ease,box-shadow .16s ease}
+#admin-portal-view>.grid.grid-cols-2>div:hover{box-shadow:0 8px 20px rgba(6,78,59,.08)}
+#admin-portal-view .admin-header-action{min-height:42px;border-radius:12px}
+#staff-portal-view button:focus-visible,#admin-portal-view button:focus-visible{outline:3px solid #34d399;outline-offset:3px}
+@media(max-width:900px){
+ #admin-portal-view .admin-quick-actions{grid-template-columns:repeat(3,minmax(0,1fr))}
+}
+@media(max-width:640px){
+ #staff-portal-view .staff-dashboard-card{border-radius:0;min-height:100dvh}
+ #staff-portal-view .staff-dashboard-header{padding-top:calc(12px + env(safe-area-inset-top))}
+ #staff-portal-view .staff-dashboard-content{padding:12px!important}
+ #admin-portal-view .admin-quick-actions{grid-template-columns:repeat(2,minmax(0,1fr));gap:8px}
+ #admin-portal-view .admin-quick-actions button{min-height:62px;padding:11px;border-radius:13px;font-size:12px;gap:8px}
+ #admin-portal-view>.grid.grid-cols-2>div{min-width:0;padding:12px!important}
+}
+@media(max-width:360px){
+ #admin-portal-view .admin-quick-actions button{font-size:11px;padding:9px;gap:7px}
+}
+@media(prefers-reduced-motion:reduce){
+ #staff-portal-view *,#admin-portal-view *{transition:none!important;transform:none!important}
+}
+</style>
+
 <style id="ashiana-ai-launcher-clearance-v1">
 /* Keep floating AI controls reachable without covering the final dashboard content. */
 @media(max-width:700px){
