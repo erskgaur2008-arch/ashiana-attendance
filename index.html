@@ -1886,6 +1886,29 @@
         <!-- TAB 1: TODAY'S PUNCH DASHBOARD BODY -->
         <div id="staff-tab-punch" class="staff-dashboard-scroll staff-dashboard-content flex-1 overflow-y-auto hide-scrollbar space-y-3">
           
+          <!-- PRIMARY ACTION BUTTON: MARK ATTENDANCE -->
+          <div class="staff-action-card bg-gradient-to-br from-emerald-50 to-green-50/80 rounded-2xl p-4 border border-emerald-200 shadow-sm text-center">
+            <div class="mb-2.5">
+              <span class="text-[10px] font-bold text-ashiana-green uppercase tracking-wider block">Instant QR Attendance</span>
+              <p class="text-[11px] text-slate-500 mt-0.5">Scan the school QR, then enter your 4-digit PIN.</p>
+            </div>
+
+            <button id="btn-mark-attendance" onclick="openPunchModal()" class="w-full py-3.5 bg-gradient-to-r from-ashiana-green via-[#08693A] to-emerald-900 hover:from-[#08693A] hover:to-[#054625] text-white rounded-2xl font-extrabold text-sm sm:text-base tracking-wide flex items-center justify-center space-x-2 shadow-lg shadow-emerald-700/30 active:scale-[0.98] transition-all border-b-2 border-ashiana-red">
+              <i data-lucide="camera" class="w-5 h-5 animate-pulse"></i>
+              <span>MARK ATTENDANCE</span>
+            </button>
+
+            <div class="flex items-center justify-between text-[10px] text-slate-500 mt-2.5 px-1 font-medium">
+              <span class="flex items-center space-x-1">
+                <span class="w-2 h-2 rounded-full bg-emerald-500 animate-pulse"></span>
+                <span>Next: <strong id="lbl-next-punch" class="text-ashiana-green uppercase font-bold">PUNCH IN</strong></span>
+              </span>
+              <span id="lbl-punches-today">Punches: 0</span>
+            </div>
+          </div>
+
+
+          
           <!-- STUDENTS SECTION: TEACHER HOME ACCESS -->
           <div id="teacher-home-students-section" class="hidden bg-gradient-to-br from-emerald-50 via-white to-green-50 rounded-2xl p-4 border border-emerald-200 shadow-sm">
             <div class="flex items-center gap-3">
@@ -1994,27 +2017,6 @@
             </div>
             <p class="staff-status-note"><i data-lucide="info"></i> Your status updates from today's attendance records.</p>
           </section>
-
-          <!-- PRIMARY ACTION BUTTON: MARK ATTENDANCE -->
-          <div class="staff-action-card bg-gradient-to-br from-emerald-50 to-green-50/80 rounded-2xl p-4 border border-emerald-200 shadow-sm text-center">
-            <div class="mb-2.5">
-              <span class="text-[10px] font-bold text-ashiana-green uppercase tracking-wider block">Instant QR Attendance</span>
-              <p class="text-[11px] text-slate-500 mt-0.5">Scan the school QR, then enter your 4-digit PIN.</p>
-            </div>
-
-            <button id="btn-mark-attendance" onclick="openPunchModal()" class="w-full py-3.5 bg-gradient-to-r from-ashiana-green via-[#08693A] to-emerald-900 hover:from-[#08693A] hover:to-[#054625] text-white rounded-2xl font-extrabold text-sm sm:text-base tracking-wide flex items-center justify-center space-x-2 shadow-lg shadow-emerald-700/30 active:scale-[0.98] transition-all border-b-2 border-ashiana-red">
-              <i data-lucide="camera" class="w-5 h-5 animate-pulse"></i>
-              <span>MARK ATTENDANCE</span>
-            </button>
-
-            <div class="flex items-center justify-between text-[10px] text-slate-500 mt-2.5 px-1 font-medium">
-              <span class="flex items-center space-x-1">
-                <span class="w-2 h-2 rounded-full bg-emerald-500 animate-pulse"></span>
-                <span>Next: <strong id="lbl-next-punch" class="text-ashiana-green uppercase font-bold">PUNCH IN</strong></span>
-              </span>
-              <span id="lbl-punches-today">Punches: 0</span>
-            </div>
-          </div>
 
           <!-- Today's Punch Timeline -->
           <div class="bg-white rounded-2xl p-3.5 shadow-sm border border-slate-200/80">
