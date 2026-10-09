@@ -794,6 +794,20 @@
 }
 </style>
 
+<style id="ashiana-staff-mobile-scroll-fix">
+/* Fix mobile staff portal scrolling without changing authentication or app data. */
+#staff-portal-view{min-height:100dvh;max-height:none!important;height:auto!important;overflow:visible!important;align-items:stretch!important}
+#staff-portal-view .staff-dashboard-card{height:auto!important;min-height:calc(100dvh - 24px)!important;max-height:none!important;overflow:visible!important}
+#staff-portal-view .staff-dashboard-content{height:auto!important;min-height:0!important;max-height:none!important;flex:initial!important;overflow:visible!important;overflow-y:visible!important;overscroll-behavior:auto!important;touch-action:pan-y!important;-webkit-overflow-scrolling:touch}
+#staff-portal-view .staff-dashboard-header{position:sticky;top:0;z-index:30}
+@media(max-width:640px){
+ body:has(#staff-portal-view:not(.hidden)){overflow-x:hidden;overflow-y:auto!important}
+ body:has(#staff-portal-view:not(.hidden)) #auth-main{height:auto!important;min-height:100dvh;overflow:visible!important;justify-content:flex-start!important}
+ #staff-portal-view{padding-bottom:24px}
+ #staff-portal-view .staff-dashboard-content{padding-bottom:calc(18px + env(safe-area-inset-bottom))!important}
+}
+</style>
+
 </head>
 <body class="bg-slate-100 text-slate-800 antialiased min-h-screen min-h-screen-safe flex flex-col selection:bg-emerald-600 selection:text-white">
 
