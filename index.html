@@ -3150,8 +3150,8 @@
         <div class="flex items-center space-x-2">
           <i data-lucide="camera" class="w-4 h-4 text-emerald-300"></i>
           <div>
-            <h3 class="text-xs font-bold uppercase tracking-wider font-serif">Scan School QR Code</h3>
-            <p class="text-[10px] text-emerald-200">Point phone camera at the station QR</p>
+            <h3 class="text-xs font-bold uppercase tracking-wider font-serif">Smart Attendance QR Scanner</h3>
+            <p class="text-[10px] text-emerald-200">Scan the school QR or a student ID card QR</p>
           </div>
         </div>
         <button onclick="closePunchModal()" class="w-7 h-7 rounded-full bg-white/10 hover:bg-white/20 flex items-center justify-center text-white">
@@ -3168,8 +3168,9 @@
         </div>
 
         <div id="scanner-status-text" class="text-center text-xs text-slate-600 font-medium">
-          Scan the Daily QR Station code, then enter your 4-digit attendance PIN.
+          Scan the school QR for staff attendance (PIN required), or a student ID QR to mark student attendance.
         </div>
+        <div id="scanner-smart-result" class="hidden rounded-2xl border p-3 text-left" aria-live="polite"></div>
 
         <div id="scanner-pin-panel" class="hidden space-y-2 p-3 bg-emerald-50 border border-emerald-200 rounded-2xl">
           <label class="block text-[11px] font-bold text-emerald-950 text-center">Confirm your 4-Digit Attendance PIN</label>
@@ -6037,6 +6038,7 @@ async function handleTeacherLogin(event) {
     // CAMERA + QR TOKEN + 4-DIGIT PIN ATTENDANCE
     // =========================================================================
     let pendingScannedQR = null;
+    let smartQrScanLocked = false;
 
     async function startCameraScanner() {
       try {
@@ -6122,21 +6124,114 @@ async function handleTeacherLogin(event) {
     }
 
     async function onQRCodeDetected(decodedText) {
+      if (smartQrScanLocked) return;
+      smartQrScanLocked = true;
       await stopCameraScanner();
+
+      const smartResult = document.getElementById('scanner-smart-result');
+      const status = document.getElementById('scanner-status-text');
+      const pinPanel = document.getElementById('scanner-pin-panel');
       const parsed = parseAttendanceQR(decodedText);
-      if (!parsed) {
-        showToast("Invalid or expired Daily QR. Scan today's Ashiana school QR.", "error");
-        setTimeout(startCameraScanner, 500);
+
+      // School QR: preserve the existing secure server-side PIN verification flow.
+      if (parsed) {
+        if (smartResult) { smartResult.className = 'hidden rounded-2xl border p-3 text-left'; smartResult.innerHTML = ''; }
+        pendingScannedQR = parsed;
+        if (pinPanel) pinPanel.classList.remove('hidden');
+        const pinInput = document.getElementById('scanner-attendance-pin');
+        if (pinInput) { pinInput.value = ''; pinInput.focus(); }
+        if (status) status.innerHTML = '<span class="text-ashiana-green font-bold">School QR verified.</span><br>Enter your personal 4-digit PIN to mark staff attendance.';
+        if (window.lucide) lucide.createIcons();
         return;
       }
-      pendingScannedQR = parsed;
-      const pinPanel = document.getElementById('scanner-pin-panel');
-      const pinInput = document.getElementById('scanner-attendance-pin');
-      if (pinPanel) pinPanel.classList.remove('hidden');
-      if (pinInput) { pinInput.value = ''; pinInput.focus(); }
+
+      // Student ID QR: mark present automatically through the existing protected RPC.
+      if (parseStudentAttendanceQr(decodedText)) {
+        await handleSmartStudentAttendanceQr(decodedText);
+        return;
+      }
+
+      if (status) status.innerHTML = '<span class="text-rose-600 font-bold">QR not recognised.</span><br>Scan today’s Ashiana school QR or an Ashiana student ID card.';
+      if (smartResult) { smartResult.className = 'hidden rounded-2xl border p-3 text-left'; smartResult.innerHTML = ''; }
+      setTimeout(async () => {
+        const modal = document.getElementById('modal-punch');
+        if (modal && !modal.classList.contains('hidden')) {
+          smartQrScanLocked = false;
+          try { await startCameraScanner(); } catch (_) {}
+        }
+      }, 700);
+    }
+
+    async function handleSmartStudentAttendanceQr(decodedText) {
       const status = document.getElementById('scanner-status-text');
-      if (status) status.innerHTML = `<span class="text-ashiana-green font-bold">QR verified.</span><br>Enter your 4-digit PIN to continue.`;
-      if (window.lucide) lucide.createIcons();
+      const result = document.getElementById('scanner-smart-result');
+      const parsed = parseStudentAttendanceQr(decodedText);
+      const modal = document.getElementById('modal-punch');
+
+      if (!canAccessStudentAttendance() || !supabaseClient) {
+        if (status) status.innerHTML = '<span class="text-rose-600 font-bold">Student attendance is not permitted for this account.</span><br>Sign in with an authorised teacher account.';
+        if (result) { result.className = 'rounded-2xl border border-rose-200 bg-rose-50 p-3 text-left'; result.innerHTML = '<div class="font-bold text-rose-800">Attendance not marked</div><div class="text-xs text-rose-700 mt-1">Only authorised teaching staff can mark student attendance.</div>'; }
+        setTimeout(async () => {
+          if (modal && !modal.classList.contains('hidden')) { smartQrScanLocked = false; try { await startCameraScanner(); } catch (_) {} }
+        }, 1500);
+        return;
+      }
+
+      if (status) status.innerHTML = '<span class="text-emerald-700 font-bold">Student ID recognised.</span><br>Verifying assignment and recording attendance…';
+      if (result) { result.className = 'hidden rounded-2xl border p-3 text-left'; result.innerHTML = ''; }
+
+      try {
+        const { data, error } = await supabaseClient.rpc('mark_student_attendance_by_qr', {
+          p_school_code: APS_STUDENT_SCHOOL,
+          p_enroll_no: parsed.enroll_no
+        });
+        if (error) throw error;
+
+        if (!data?.success) {
+          const message = data?.code === 'NOT_ASSIGNED'
+            ? 'This student is not assigned to your class.'
+            : (data?.message || 'Attendance could not be marked.');
+          if (result) {
+            result.className = 'rounded-2xl border border-rose-200 bg-rose-50 p-3 text-left';
+            result.innerHTML = '<div class="font-bold text-rose-800">✕ Attendance not marked</div><div class="text-xs text-rose-700 mt-1">' + studentEscape(message) + '</div>' +
+              (data?.student ? '<div class="text-xs text-slate-700 mt-2 font-semibold">' + studentEscape(data.student.student_name) + ' · ' + studentEscape(data.student.class_name) + ' - ' + studentEscape(data.student.section) + '</div>' : '');
+          }
+          if (status) status.textContent = 'Ready to scan another supported QR code.';
+        } else {
+          const student = data.student || {};
+          const alreadyMarked = data.code === 'ALREADY_MARKED';
+          if (result) {
+            result.className = (alreadyMarked ? 'rounded-2xl border border-amber-200 bg-amber-50 p-3 text-left' : 'rounded-2xl border border-emerald-200 bg-emerald-50 p-3 text-left');
+            result.innerHTML = '<div class="font-bold ' + (alreadyMarked ? 'text-amber-800' : 'text-emerald-800') + '">' + (alreadyMarked ? '⚠ Already marked today' : '✓ Student marked present') + '</div>' +
+              '<div class="text-sm font-black text-slate-900 mt-1">' + studentEscape(student.student_name || 'Student') + '</div>' +
+              '<div class="text-xs text-slate-600 mt-1">Admission No. ' + studentEscape(student.enroll_no || parsed.enroll_no) + ' · Class ' + studentEscape(student.class_name || '—') + ' - ' + studentEscape(student.section || '—') + '</div>' +
+              '<div class="text-xs font-bold mt-1 ' + (alreadyMarked ? 'text-amber-700' : 'text-emerald-700') + '">' + studentEscape(data.status || 'PRESENT') + '</div>';
+          }
+          if (status) status.textContent = alreadyMarked ? 'This student was already marked today. Ready for the next scan.' : 'Student attendance saved. Ready for the next scan.';
+          if (!alreadyMarked) { playTone('SUCCESS'); showToast('Student attendance marked present.', 'success'); }
+          else showToast('Student attendance was already marked today.', 'info');
+          const classSelect = document.getElementById('teacher-student-class');
+          if (classSelect?.value) await loadTeacherStudentAttendance();
+        }
+      } catch (error) {
+        if (result) {
+          result.className = 'rounded-2xl border border-rose-200 bg-rose-50 p-3 text-left';
+          result.innerHTML = '<div class="font-bold text-rose-800">Unable to mark attendance</div><div class="text-xs text-rose-700 mt-1">' + studentEscape(error?.message || error) + '</div>';
+        }
+        if (status) status.textContent = 'Attendance was not confirmed by the server. Please retry.';
+      }
+
+      // Reuse the same camera view for continuous scanning; never assume a write succeeded without the RPC response.
+      setTimeout(async () => {
+        if (modal && !modal.classList.contains('hidden') && pinPanelIsHidden()) {
+          smartQrScanLocked = false;
+          try { await startCameraScanner(); } catch (_) {}
+        }
+      }, 1500);
+    }
+
+    function pinPanelIsHidden() {
+      return document.getElementById('scanner-pin-panel')?.classList.contains('hidden') !== false;
     }
 
     function handleSimulateScanSuccess() {
@@ -6145,16 +6240,19 @@ async function handleTeacherLogin(event) {
     }
 
     function openPunchModal() {
-      if (!currentStaffId) return;
-      const staff = staffDatabase.find(s => s.id === currentStaffId) || currentAuthUser?.staffRecord;
-      if (isStaffIdExpired(staff)) {
-        showToast(`ID CARD EXPIRED. Valid Through: ${formatValidThruDate(staff.validThru)}. Please contact the school administrator for renewal.`, "error");
+      if (!currentStaffId) {
+        showToast('Please sign in to your staff account before using attendance scanning.', 'error');
         return;
       }
       pendingScannedQR = null;
+      smartQrScanLocked = false;
       document.getElementById('scanner-pin-panel')?.classList.add('hidden');
+      const smartResult = document.getElementById('scanner-smart-result');
+      if (smartResult) { smartResult.className = 'hidden rounded-2xl border p-3 text-left'; smartResult.innerHTML = ''; }
       const pinInput = document.getElementById('scanner-attendance-pin');
       if (pinInput) pinInput.value = '';
+      const status = document.getElementById('scanner-status-text');
+      if (status) status.textContent = 'Scan the school QR for staff attendance (PIN required), or a student ID QR to mark student attendance.';
       document.getElementById("modal-punch").classList.remove("hidden");
       if (window.lucide) lucide.createIcons();
       setTimeout(startCameraScanner, 150);
@@ -6163,6 +6261,7 @@ async function handleTeacherLogin(event) {
     async function closePunchModal() {
       await stopCameraScanner();
       pendingScannedQR = null;
+      smartQrScanLocked = false;
       document.getElementById('scanner-pin-panel')?.classList.add('hidden');
       document.getElementById("modal-punch").classList.add("hidden");
     }
@@ -6301,20 +6400,11 @@ async function handleTeacherLogin(event) {
     }
 
     async function openStudentQrAttendanceScanner(){
+      // Compatibility alias: all attendance QR entry points now open the same smart scanner.
       if(!canAccessStudentAttendance()||!supabaseClient){
         showToast('Student QR attendance is available to teaching staff only.','error');return;
       }
-      studentQrScanLocked=false;
-      const modal=document.getElementById('student-qr-attendance-modal');
-      const result=document.getElementById('student-qr-result');
-      const status=document.getElementById('student-qr-scanner-status');
-      if(!modal)return;
-      if(result){result.className='hidden rounded-2xl border p-3';result.innerHTML='';}
-      if(status)status.textContent='Point the camera at the student\'s ID card QR code.';
-      modal.classList.remove('hidden');modal.classList.add('flex');
-      if(window.lucide)lucide.createIcons();
-      try{await startStudentQrScanner();}
-      catch(e){if(status)status.innerHTML='<span class="text-rose-600 font-bold">'+studentEscape(e.message||'Could not start camera.')+'</span>';}
+      openPunchModal();
     }
 
     async function closeStudentQrAttendanceScanner(event){
