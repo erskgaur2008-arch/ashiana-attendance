@@ -711,6 +711,53 @@
 .staff-comm-head{padding-top:calc(10px + env(safe-area-inset-top))!important}
 }
 </style>
+
+<style id="ashiana-dashboard-polish-v1">
+/* Dashboard refresh: visual-only overrides; existing IDs, handlers, data and permissions remain unchanged. */
+#staff-portal-view{gap:0!important}
+#staff-portal-view .staff-dashboard-card{background:#f8fafc;border-color:#dbe7e1;box-shadow:0 18px 50px rgba(6,78,59,.12)}
+#staff-portal-view .staff-dashboard-header{box-shadow:0 5px 18px rgba(2,44,34,.12)}
+#staff-portal-view .staff-dashboard-content{background:linear-gradient(180deg,#f8fafc 0%,#f1f7f4 100%);overscroll-behavior:contain}
+#staff-tab-punch>div:not(#staff-id-card-preview-modal),#staff-tab-history>div,#staff-tab-students>div{box-shadow:0 4px 16px rgba(15,23,42,.045);transition:border-color .18s,box-shadow .18s}
+#staff-tab-punch .staff-action-card{border-color:#a7e4c1;background:linear-gradient(145deg,#ecfdf5,#f8fffb 70%,#e4f7eb);box-shadow:0 8px 22px rgba(6,95,70,.08)}
+#staff-tab-punch #btn-mark-attendance{min-height:54px;box-shadow:0 9px 20px rgba(6,105,58,.2);letter-spacing:.045em}
+#staff-tab-punch #btn-mark-attendance:focus-visible,#staff-portal-view button:focus-visible,#admin-portal-view button:focus-visible{outline:3px solid #34d399;outline-offset:3px}
+#staff-portal-view input,#staff-portal-view select,#staff-portal-view textarea{max-width:100%;min-width:0}
+#admin-portal-view{gap:14px!important}
+#admin-portal-view .admin-dashboard-header{isolation:isolate}
+#admin-portal-view .admin-quick-actions{gap:10px}
+#admin-portal-view .admin-quick-actions button{min-height:58px;justify-content:flex-start;padding:12px;line-height:1.25;text-align:left;overflow-wrap:anywhere;box-shadow:0 4px 14px rgba(15,23,42,.045)}
+#admin-portal-view .admin-quick-actions button svg{width:18px;height:18px;flex:0 0 18px}
+#admin-portal-view .admin-quick-actions button:focus-visible{outline:3px solid #34d399;outline-offset:2px}
+#admin-portal-view>.grid.grid-cols-2>div{box-shadow:0 4px 15px rgba(15,23,42,.045)}
+#admin-portal-view>.grid.grid-cols-2>div>span:nth-child(2){font-variant-numeric:tabular-nums}
+#admin-portal-view .admin-dashboard-header h1{overflow-wrap:anywhere}
+@media(max-width:640px){
+ #staff-portal-view .staff-dashboard-card{width:100%;min-height:calc(100dvh - 72px);border-radius:20px}
+ #staff-portal-view .staff-dashboard-content{padding:12px!important;gap:12px}
+ #staff-tab-punch .staff-action-card{padding:16px!important}
+ #staff-tab-punch #btn-mark-attendance{min-height:56px;font-size:14px}
+ #staff-tab-punch .staff-dashboard-content [class*="grid-cols-4"]{grid-template-columns:repeat(2,minmax(0,1fr))}
+ #admin-portal-view{padding-left:0;padding-right:0;gap:12px!important}
+ #admin-portal-view .admin-dashboard-header{padding:14px;border-radius:18px;gap:8px}
+ #admin-portal-view .admin-dashboard-brand{gap:9px}
+ #admin-portal-view .admin-dashboard-brand h1{font-size:clamp(14px,4vw,18px);line-height:1.15}
+ #admin-portal-view .admin-dashboard-actions{gap:5px}
+ #admin-portal-view .admin-quick-actions{gap:7px}
+ #admin-portal-view .admin-quick-actions button{min-height:58px;padding:10px 9px;border-radius:13px;font-size:10px;gap:7px}
+ #admin-portal-view>.grid.grid-cols-2>div{padding:12px!important;border-radius:15px}
+}
+@media(max-width:360px){
+ #admin-portal-view .admin-dashboard-brand h1{font-size:13px}
+ #admin-portal-view .admin-dashboard-logo{width:36px;height:36px;flex-basis:36px}
+ #admin-portal-view .admin-quick-actions button{font-size:9px;padding:8px 7px}
+ #staff-portal-view .staff-dashboard-content{padding:9px!important}
+}
+@media(prefers-reduced-motion:reduce){
+ #staff-portal-view *,#admin-portal-view *{scroll-behavior:auto!important;transition:none!important;animation:none!important}
+}
+</style>
+
 </head>
 <body class="bg-slate-100 text-slate-800 antialiased min-h-screen min-h-screen-safe flex flex-col selection:bg-emerald-600 selection:text-white">
 
