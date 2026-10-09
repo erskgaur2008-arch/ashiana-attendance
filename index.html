@@ -756,6 +756,32 @@
 @media(prefers-reduced-motion:reduce){
  #staff-portal-view *,#admin-portal-view *{scroll-behavior:auto!important;transition:none!important;animation:none!important}
 }
+
+<style id="ashiana-admin-mobile-readability-v2">
+/* Narrow-screen refinements: presentation only; preserve dashboard actions and data. */
+@media(max-width:480px){
+  #admin-portal-view .admin-quick-actions button{
+    font-size:clamp(11px,2.9vw,13px)!important;
+    line-height:1.3;
+    min-width:0;
+    overflow-wrap:anywhere;
+  }
+  #admin-portal-view>.grid.grid-cols-2>div{
+    min-width:0;
+    overflow-wrap:anywhere;
+  }
+  #admin-portal-view>.grid.grid-cols-2>div span{
+    overflow-wrap:anywhere;
+  }
+  #ashiana-ai-launcher{
+    bottom:max(18px,calc(env(safe-area-inset-bottom) + 14px));
+  }
+}
+@media(max-width:360px){
+  #admin-portal-view .admin-quick-actions button{font-size:11px!important}
+}
+</style>
+
 </style>
 
 </head>
