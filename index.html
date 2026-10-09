@@ -782,6 +782,28 @@
 }
 </style>
 
+<style id="ashiana-ai-launcher-clearance-v1">
+/* Keep floating AI controls reachable without covering the final dashboard content. */
+@media(max-width:700px){
+  #staff-portal-view .staff-dashboard-content,
+  #admin-portal-view{
+    padding-bottom:calc(104px + env(safe-area-inset-bottom))!important;
+    scroll-padding-bottom:calc(104px + env(safe-area-inset-bottom));
+  }
+  #ashiana-ai-launcher{
+    right:12px;
+    bottom:calc(12px + env(safe-area-inset-bottom));
+    max-width:calc(100vw - 24px);
+    min-height:44px;
+    padding:10px 14px;
+    font-size:12px;
+  }
+}
+@media(max-width:360px){
+  #ashiana-ai-launcher{padding:9px 12px;font-size:11px}
+}
+</style>
+
 </head>
 <body class="bg-slate-100 text-slate-800 antialiased min-h-screen min-h-screen-safe flex flex-col selection:bg-emerald-600 selection:text-white">
 
