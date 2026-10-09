@@ -2204,6 +2204,20 @@
     <div id="teacher-portal-editor" class="mt-3 space-y-2"></div>
   </div>
 
+
+  <div id="teacher-student-leave-popup" class="hidden fixed inset-0 z-[125] bg-slate-950/70 backdrop-blur-sm p-3 items-center justify-center" role="dialog" aria-modal="true" aria-labelledby="teacher-student-leave-popup-title" onclick="closeTeacherStudentLeavePopup(event)">
+    <div class="bg-white w-full max-w-md rounded-2xl shadow-2xl overflow-hidden" onclick="event.stopPropagation()">
+      <div class="bg-rose-700 text-white p-4 flex items-center justify-between">
+        <div><h3 id="teacher-student-leave-popup-title" class="font-bold">Student Leave Requests</h3><p class="text-xs text-rose-100">New requests need your attention.</p></div>
+        <button type="button" onclick="closeTeacherStudentLeavePopup()" class="w-9 h-9 rounded-xl bg-white/10" aria-label="Close">✕</button>
+      </div>
+      <div id="teacher-student-leave-popup-content" class="p-4 text-sm text-slate-700">Checking for pending leave requests…</div>
+      <div class="p-3 border-t flex gap-2">
+        <button type="button" onclick="closeTeacherStudentLeavePopup();focusTeacherStudentsSection('leave')" class="flex-1 p-2.5 rounded-xl bg-rose-50 text-rose-800 font-bold text-sm">Review Leave Requests</button>
+        <button type="button" onclick="closeTeacherStudentLeavePopup()" class="p-2.5 rounded-xl bg-slate-100 text-slate-700 font-bold text-sm">Close</button>
+      </div>
+    </div>
+  </div>
   <div id="teacher-student-leave-section" class="bg-white rounded-2xl p-4 border border-slate-200 shadow-sm">
     <div class="flex items-center justify-between gap-2">
       <div><h4 class="font-bold">Student Leave Requests</h4><p class="text-[10px] text-slate-500">Review leave applications from your assigned students.</p></div>
@@ -5337,8 +5351,38 @@ async function saveTeacherTimetable(){
 }
 async function saveTeacherCalendar(){const date=document.getElementById('tp-date')?.value,title=document.getElementById('tp-title')?.value.trim(),body=document.getElementById('tp-body')?.value.trim(),a=teacherPortalClass();if(!date||!title)return showToast('Enter date and event title.','error');const {error}=await supabaseClient.from('student_calendar_events').insert({school_code:APS_STUDENT_SCHOOL,event_date:date,title,description:body||null,class_name:a?.class_name||null,section:a?.section||null,created_by:teacherPortalEmail()});if(error)return showToast(error.message,'error');showToast('Calendar event added.','success');}
 async function saveTeacherReportCard(){const a=teacherPortalClass(),sid=document.getElementById('tp-student')?.value,term=document.getElementById('tp-term')?.value.trim(),year=document.getElementById('tp-year')?.value.trim()||'2026-27';let subjects=[];try{subjects=JSON.parse(document.getElementById('tp-subjects')?.value||'[]');if(!Array.isArray(subjects))throw Error();}catch(e){return showToast('Subjects must be valid JSON array.','error');}if(!a||!sid||!term)return showToast('Select class, student and term.','error');const {error}=await supabaseClient.from('student_report_cards').upsert({school_code:APS_STUDENT_SCHOOL,student_id:sid,academic_year:year,term,subjects,overall_grade:document.getElementById('tp-grade')?.value.trim()||null,remarks:document.getElementById('tp-remarks')?.value.trim()||null,published:document.getElementById('tp-published')?.checked||false,published_by:teacherPortalEmail()},{onConflict:'school_code,student_id,academic_year,term'});if(error)return showToast(error.message,'error');showToast('Report card saved.','success');}
-async function loadTeacherLeaveRequests(){const host=document.getElementById('teacher-leave-requests');if(!host||!supabaseClient)return;if(!teacherIsClassTeacher()){host.textContent='Leave management is available to Class Teachers only.';return;}const {data,error}=await supabaseClient.from('student_leave_requests').select('id,student_id,from_date,to_date,reason,status,remarks').eq('school_code',APS_STUDENT_SCHOOL).eq('teacher_email',teacherPortalEmail()).order('created_at',{ascending:false}).limit(50);if(error){host.textContent=error.message;return;}const ids=[...(new Set((data||[]).map(x=>x.student_id)))];let names={};if(ids.length){const q=await supabaseClient.from('student_roster').select('id,student_name,enroll_no').in('id',ids);(q.data||[]).forEach(s=>names[s.id]=s.student_name+' ('+s.enroll_no+')');}host.innerHTML=(data||[]).length?(data||[]).map(l=>'<div class="border rounded-xl p-2"><div class="font-bold">'+studentEscape(names[l.student_id]||'Student')+'</div><div>'+studentEscape(l.from_date)+' → '+studentEscape(l.to_date)+'</div><div class="text-slate-500">'+studentEscape(l.reason)+'</div><div class="flex gap-2 mt-2"><button onclick="updateStudentLeave(\''+l.id+'\',\'APPROVED\')" class="px-2 py-1 bg-emerald-100 text-emerald-800 rounded">Approve</button><button onclick="updateStudentLeave(\''+l.id+'\',\'REJECTED\')" class="px-2 py-1 bg-rose-100 text-rose-800 rounded">Reject</button><span class="ml-auto font-bold">'+studentEscape(l.status)+'</span></div></div>').join(''):'<div class="text-slate-400">No student leave requests.</div>';}
-async function updateStudentLeave(id,status){if(!teacherIsClassTeacher())return showToast('Student leave management is available to Class Teachers only.','error');const {error}=await supabaseClient.from('student_leave_requests').update({status,updated_at:new Date().toISOString()}).eq('id',id).eq('teacher_email',teacherPortalEmail());if(error)return showToast(error.message,'error');showToast('Leave '+status.toLowerCase()+'.','success');loadTeacherLeaveRequests();}
+async function loadTeacherLeaveRequests(){
+  const host=document.getElementById('teacher-leave-requests');
+  if(!host||!supabaseClient)return [];
+  if(!teacherIsClassTeacher()){host.textContent='Leave management is available to Class Teachers only.';return [];}
+  const {data,error}=await supabaseClient.from('student_leave_requests').select('id,student_id,from_date,to_date,reason,status,remarks,created_at').eq('school_code',APS_STUDENT_SCHOOL).eq('teacher_email',teacherPortalEmail()).order('created_at',{ascending:false}).limit(100);
+  if(error){host.textContent=error.message;throw error;}
+  const requests=data||[],ids=[...new Set(requests.map(x=>x.student_id))],names={};
+  if(ids.length){const q=await supabaseClient.from('student_roster').select('id,student_name,enroll_no').in('id',ids);if(q.error)throw q.error;(q.data||[]).forEach(st=>names[st.id]=st.student_name+' ('+st.enroll_no+')');}
+  const pending=requests.filter(l=>!['APPROVED','REJECTED','CANCELLED','WITHDRAWN'].includes(String(l.status||'').trim().toUpperCase()));
+  host.innerHTML=requests.length?requests.map(l=>'<div class="border rounded-xl p-2"><div class="font-bold">'+studentEscape(names[l.student_id]||'Student')+'</div><div>'+studentEscape(l.from_date)+' → '+studentEscape(l.to_date)+'</div><div class="text-slate-500">'+studentEscape(l.reason)+'</div><div class="flex gap-2 mt-2"><button onclick="updateStudentLeave(\''+l.id+'\',\'APPROVED\')" class="px-2 py-1 bg-emerald-100 text-emerald-800 rounded">Approve</button><button onclick="updateStudentLeave(\''+l.id+'\',\'REJECTED\')" class="px-2 py-1 bg-rose-100 text-rose-800 rounded">Reject</button><span class="ml-auto font-bold">'+studentEscape(l.status||'PENDING')+'</span></div></div>').join(''):'<div class="text-slate-400">No student leave requests.</div>';
+  return pending.map(l=>({...l,displayStudent:names[l.student_id]||'Student'}));
+}
+async function openTeacherStudentLeavePopup(){
+  if(!teacherIsClassTeacher())return;
+  const modal=document.getElementById('teacher-student-leave-popup'),content=document.getElementById('teacher-student-leave-popup-content');
+  if(!modal||!content)return;
+  try{
+    const pending=await loadTeacherLeaveRequests();
+    if(!pending.length){modal.classList.add('hidden');modal.classList.remove('flex');return;}
+    content.innerHTML='<p class="font-bold text-rose-700">'+pending.length+' pending leave request'+(pending.length===1?'':'s')+'.</p><ul class="mt-2 space-y-1">'+pending.slice(0,5).map(l=>'<li>• '+studentEscape(l.displayStudent)+' — '+studentEscape(l.from_date)+' to '+studentEscape(l.to_date)+'</li>').join('')+'</ul>'+(pending.length>5?'<p class="mt-2 text-xs text-slate-500">And '+(pending.length-5)+' more.</p>':'');
+    modal.classList.remove('hidden');modal.classList.add('flex');
+  }catch(e){
+    content.textContent='Unable to check leave requests right now. Open Student Leave Requests to try again.';
+    modal.classList.remove('hidden');modal.classList.add('flex');
+  }
+}
+function closeTeacherStudentLeavePopup(event){
+  if(event&&event.target!==event.currentTarget)return;
+  const modal=document.getElementById('teacher-student-leave-popup');
+  if(modal){modal.classList.add('hidden');modal.classList.remove('flex');}
+}
+async function updateStudentLeave(id,status){if(!teacherIsClassTeacher())return showToast('Student leave management is available to Class Teachers only.','error');const {error}=await supabaseClient.from('student_leave_requests').update({status,updated_at:new Date().toISOString()}).eq('id',id).eq('teacher_email',teacherPortalEmail());if(error)return showToast(error.message,'error');showToast('Leave '+status.toLowerCase()+'.','success');await loadTeacherLeaveRequests();await openTeacherStudentLeavePopup();}
 async function handleStudentLogin(event){
       event.preventDefault();
       const admission=(document.getElementById("student-login-admission")?.value||"").trim().toUpperCase();
@@ -6550,7 +6594,7 @@ async function handleTeacherLogin(event) {
         const leave=document.getElementById('teacher-student-leave-section'),leaveQuick=document.getElementById('teacher-student-leave-quick-btn');if(leave)leave.classList.toggle('hidden',!classTeacher);if(leaveQuick)leaveQuick.classList.toggle('hidden',!classTeacher);
         if(!teacherAttendanceClasses.length){sel.innerHTML='<option value="">No active classes found</option>';if(host)host.textContent='No active student classes are available.';return;}
         sel.innerHTML='<option value="">Select class & section</option>'+teacherAttendanceClasses.map((a,i)=>'<option value="'+i+'">'+studentEscape(a.class_name+' - '+a.section+(a.isClassTeacher?' • Class Teacher':' • View only'))+'</option>').join('');
-        if(teacherAttendanceClasses.length===1){sel.value='0';await loadTeacherStudentAttendance();}else if(host)host.textContent='Select a class to view attendance.';
+        const classTeacherIndex=teacherAttendanceClasses.findIndex(a=>a.isClassTeacher); if(classTeacherIndex>=0){sel.value=String(classTeacherIndex);await loadTeacherStudentAttendance();}else if(teacherAttendanceClasses.length===1){sel.value='0';await loadTeacherStudentAttendance();}else if(host)host.textContent='Select a class to view attendance.';
         updateTeacherAttendanceEditControls();
       }catch(e){console.error('Teacher class/subject assignment load failed:',e);sel.innerHTML='<option value="">Unable to load classes</option>';if(host)host.textContent=e.message||'Could not load classes.';}
     }
@@ -7280,7 +7324,7 @@ async function loadAdminStudentAttendance(){
         punchView?.classList.add('hidden');historyView?.classList.add('hidden');studentsView?.classList.remove('hidden');
 
         const date=document.getElementById('teacher-student-date');if(date){const today=studentDateToday();date.value=today;date.min=today;date.max=today;}
-        await loadTeacherPortalManager();
+        await loadTeacherPortalManager(); if(teacherIsClassTeacher()) await openTeacherStudentLeavePopup();
       }
       if (window.lucide) lucide.createIcons();
     }
