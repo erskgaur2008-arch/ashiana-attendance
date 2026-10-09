@@ -758,6 +758,42 @@
 }
 </style>
 
+<style id="ashiana-dashboard-refresh-v3">
+/* Safe, presentation-only refresh for existing Staff and Admin dashboards. */
+#staff-portal-view,#admin-portal-view{color:#17352b}
+#staff-portal-view .staff-dashboard-card{background:#f8fbf9;border-color:#d9e8e0;box-shadow:0 16px 42px rgba(6,78,59,.10)}
+#staff-portal-view .staff-dashboard-header{box-shadow:0 5px 18px rgba(2,44,34,.13)}
+#staff-portal-view .staff-dashboard-content{background:linear-gradient(180deg,#f7fbf8 0%,#f0f7f3 100%)}
+#staff-portal-view .staff-action-card{border-radius:18px;box-shadow:0 4px 14px rgba(6,78,59,.06)}
+#staff-portal-view #btn-mark-attendance{min-height:56px;border-radius:15px;font-weight:850;box-shadow:0 8px 18px rgba(6,105,58,.2)}
+#staff-portal-view .staff-drawer-item{min-height:46px;border-radius:12px}
+#staff-portal-view button:focus-visible,#admin-portal-view button:focus-visible{outline:3px solid #34d399;outline-offset:3px}
+#admin-portal-view .admin-dashboard-header{box-shadow:0 14px 34px rgba(2,44,34,.15)}
+#admin-portal-view .admin-quick-actions{gap:10px}
+#admin-portal-view .admin-quick-actions button{min-height:62px;justify-content:flex-start;padding:12px;border-radius:14px;line-height:1.25;text-align:left;overflow-wrap:anywhere;box-shadow:0 4px 14px rgba(15,23,42,.045)}
+#admin-portal-view .admin-quick-actions button svg{width:18px;height:18px;flex:0 0 18px}
+#admin-portal-view>.grid.grid-cols-2>div{border-radius:16px;box-shadow:0 4px 14px rgba(15,23,42,.045);transition:box-shadow .16s ease}
+#admin-portal-view>.grid.grid-cols-2>div:hover{box-shadow:0 8px 22px rgba(6,78,59,.09)}
+#admin-portal-view .admin-header-action{min-height:42px;border-radius:11px}
+@media(max-width:800px){
+ #admin-portal-view .admin-dashboard-header{gap:10px}
+ #admin-portal-view .admin-quick-actions{grid-template-columns:repeat(3,minmax(0,1fr))}
+}
+@media(max-width:640px){
+ #staff-portal-view .staff-dashboard-card{width:100%;border-radius:18px;min-height:calc(100dvh - 76px)}
+ #staff-portal-view .staff-dashboard-content{padding:12px!important;gap:12px}
+ #staff-portal-view #btn-mark-attendance{min-height:56px;font-size:14px}
+ #admin-portal-view .admin-dashboard-header{padding:14px;border-radius:17px}
+ #admin-portal-view .admin-dashboard-brand h1{font-size:clamp(14px,4vw,18px)}
+ #admin-portal-view .admin-quick-actions{grid-template-columns:repeat(2,minmax(0,1fr));gap:8px}
+ #admin-portal-view .admin-quick-actions button{min-height:58px;padding:10px;font-size:11px}
+ #admin-portal-view>.grid.grid-cols-2>div{min-width:0;padding:12px!important}
+}
+@media(prefers-reduced-motion:reduce){
+ #staff-portal-view *,#admin-portal-view *{transition:none!important;animation:none!important}
+}
+</style>
+
 </head>
 <body class="bg-slate-100 text-slate-800 antialiased min-h-screen min-h-screen-safe flex flex-col selection:bg-emerald-600 selection:text-white">
 
