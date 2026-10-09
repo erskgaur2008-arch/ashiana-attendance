@@ -6117,7 +6117,7 @@ async function handleTeacherLogin(event) {
         l.from <= today &&
         l.to >= today
       );
-      if (leave && punches.length === 0) currentStatus = "ON LEAVE";
+      if (leave) currentStatus = "ON LEAVE";
 
       const nextPunchType = punches.length % 2 === 0 ? "IN" : "OUT";
 
@@ -6408,6 +6408,7 @@ async function handleTeacherLogin(event) {
         else if (msg.includes('INVALID_OR_EXPIRED_QR')) showToast("QR expired. Please scan the latest school QR.", "error");
         else if (msg.includes('INVALID_PIN')) showToast("Incorrect PIN. Attendance was not marked.", "error");
         else if (msg.includes('DUPLICATE_SCAN')) showToast("Please wait 30 seconds before scanning again.", "error");
+        else if (msg.includes('STAFF_ON_APPROVED_LEAVE')) showToast("Your leave is approved for today. Staff attendance cannot be punched.", "info");
         else showToast("Attendance verification failed: " + msg, "error");
       }
     }
@@ -6542,17 +6543,20 @@ async function handleTeacherLogin(event) {
           if(status)status.textContent='Scan another student ID card.';
         }else{
           const st=data.student||{};
+          const leaveApproved=data.code==='LEAVE_APPROVED'||data.status==='LEAVE';
           const already=data.code==='ALREADY_MARKED';
           if(result){
-            result.className=(already?'rounded-2xl border border-amber-200 bg-amber-50 p-3':'rounded-2xl border border-emerald-200 bg-emerald-50 p-3');
-            result.innerHTML='<div class="font-bold '+(already?'text-amber-800':'text-emerald-800')+'">'+(already?'⚠ Already marked':'✓ Attendance marked')+'</div>'+
+            result.className=leaveApproved?'rounded-2xl border border-amber-200 bg-amber-50 p-3':(already?'rounded-2xl border border-amber-200 bg-amber-50 p-3':'rounded-2xl border border-emerald-200 bg-emerald-50 p-3');
+            const headline=leaveApproved?'✓ Approved leave — attendance is LEAVE':(already?'⚠ Already marked':'✓ Attendance marked');
+            const headlineClass=(leaveApproved||already)?'text-amber-800':'text-emerald-800';
+            result.innerHTML='<div class="font-bold '+headlineClass+'">'+headline+'</div>'+
               '<div class="text-sm font-black text-slate-900 mt-1">'+studentEscape(st.student_name||'Student')+'</div>'+
               '<div class="text-xs text-slate-600 mt-1">Admission No. '+studentEscape(st.enroll_no||parsed.enroll_no)+' · Class '+studentEscape(st.class_name||'—')+' - '+studentEscape(st.section||'—')+'</div>'+
-              '<div class="text-xs font-bold mt-1 '+(already?'text-amber-700':'text-emerald-700')+'">'+studentEscape(data.status||'PRESENT')+'</div>';
+              '<div class="text-xs font-bold mt-1 '+((leaveApproved||already)?'text-amber-700':'text-emerald-700')+'">'+studentEscape(data.status||'PRESENT')+'</div>';
           }
-          if(status)status.textContent=already?'This student was already marked today.':'Ready for the next student.';
-          if(!already)playTone('SUCCESS');
-          showToast(already?'Student already marked.':'Student attendance marked.','success');
+          if(status)status.textContent=leaveApproved?'Leave is approved for today; attendance remains LEAVE.':(already?'This student was already marked today.':'Ready for the next student.');
+          if(!already&&!leaveApproved)playTone('SUCCESS');
+          showToast(leaveApproved?'Leave approved: attendance remains LEAVE.':(already?'Student already marked.':'Student attendance marked.'),leaveApproved?'info':'success');
           await loadTeacherStudentAttendance();
         }
       }catch(e){
