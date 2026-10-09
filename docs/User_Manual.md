@@ -44,13 +44,14 @@ After login, the Student Portal provides:
 ## 4. Teacher / Staff User Manual
 The staff side menu contains **Punch, Students (teachers only), History, Leave, Profile, and Sign Out**.
 
-### A. Staff Attendance
-1. Tap **MARK ATTENDANCE**.
+### A. Smart QR Attendance Scanner
+1. Tap **MARK ATTENDANCE** or **Scan QR** in the teacher's Student Attendance panel. Both buttons open the same scanner.
 2. Allow camera access.
-3. Scan the school's current **Daily QR**.
-4. Enter your personal **4-digit PIN**.
-5. Tap **Verify PIN & Mark Attendance**.
-6. The system records the next **PUNCH IN** or **PUNCH OUT**.
+3. Scan either supported QR type:
+   - **School Daily QR:** enter your personal **4-digit PIN**, then tap **Verify PIN & Mark Attendance**. The system records the next **PUNCH IN** or **PUNCH OUT**.
+   - **Student ID QR:** the system verifies your teacher permissions and the student's class assignment, then automatically marks the student **PRESENT** for today. No confirmation tap is required.
+4. A result message confirms whether attendance was saved or was already marked. Keep scanning for the next student when needed.
+5. An expired staff ID or an unauthorised teacher does not bypass server-side attendance checks.
 
 Today's dashboard shows first IN, last OUT, work time, break time, late/early minutes and punch history.
 
