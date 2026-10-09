@@ -2160,9 +2160,7 @@
       <div><h4 class="font-bold">Student Attendance</h4><p id="teacher-student-attendance-help" class="text-[10px] text-slate-500 mt-0.5">View attendance for your assigned class.</p></div>
       <div class="flex items-center gap-2">
         <span id="teacher-student-marked-badge" class="text-[9px] font-bold px-2 py-1 rounded-full bg-slate-100 text-slate-500">Not loaded</span>
-        <button type="button" id="teacher-student-qr-btn" onclick="openStudentQrAttendanceScanner()" class="p-2.5 bg-ashiana-green hover:bg-[#08693A] text-white rounded-xl shadow-sm flex items-center gap-1.5 text-[10px] font-bold" title="Scan Student QR">
-          <i data-lucide="scan-line" class="w-4 h-4"></i><span>Scan QR</span>
-        </button>
+        <!-- Student QR attendance uses the single prominent dashboard scanner. -->
       </div>
     </div>
     <div class="grid grid-cols-2 gap-2 mt-3">
@@ -7527,6 +7525,15 @@ async function loadAdminStudentAttendance(){
       document.getElementById("metric-work-hours").innerText = fmtMins(stats.totalWorkMinutes);
       document.getElementById("metric-break-time").innerText = `${stats.totalBreakMinutes}m`;
       document.getElementById("metric-late-mins").innerText = stats.lateMinutes > 0 ? `${stats.lateMinutes}m Late` : "On Time";
+
+      // Keep the dedicated Today's Status card in sync with the same calculated
+      // attendance stats that drive the summary and punch timeline above.
+      const staffStatusFirstIn = document.getElementById("staff-status-first-in");
+      const staffStatusLastOut = document.getElementById("staff-status-last-out");
+      const staffStatusWorkTime = document.getElementById("staff-status-work-time");
+      if (staffStatusFirstIn) staffStatusFirstIn.innerText = stats.firstIn || "--:--";
+      if (staffStatusLastOut) staffStatusLastOut.innerText = stats.lastOut || "--:--";
+      if (staffStatusWorkTime) staffStatusWorkTime.innerText = fmtMins(stats.totalWorkMinutes);
 
       document.getElementById("lbl-next-punch").innerText = `PUNCH ${stats.nextPunchType}`;
       document.getElementById("lbl-punches-today").innerText = `Punches: ${stats.punches.length}`;
