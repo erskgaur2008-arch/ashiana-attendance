@@ -931,6 +931,18 @@
       #student-portal-view>div>div:nth-child(2)>.grid>button{padding:10px!important;min-height:104px}
       #student-portal-view>div>div:first-child .text-lg{font-size:15px}
     }
+    /* Mobile refinement v1: compact card rhythm and reliable scroll clearance near browser/system bars. */
+    @media(max-width:640px){
+      #student-portal-view{padding-bottom:calc(24px + env(safe-area-inset-bottom))!important;scroll-padding-bottom:calc(24px + env(safe-area-inset-bottom))}
+      #student-portal-view>div{margin-bottom:0}
+      #student-portal-view>div>div:nth-child(2)>.grid{row-gap:8px!important;column-gap:8px!important}
+      #student-portal-view>div>div:nth-child(2)>.grid>button{min-height:96px;padding:11px!important}
+      #student-portal-view>div>div:nth-child(2)>button:first-child{min-height:72px}
+      #student-portal-view>div>div:first-child{gap:12px!important}
+    }
+    @media(max-width:360px){
+      #student-portal-view>div>div:nth-child(2)>.grid>button{min-height:92px;padding:9px!important}
+    }
     @media(prefers-reduced-motion:reduce){#student-portal-view *{transition:none!important;animation:none!important}}
   </style>
 
