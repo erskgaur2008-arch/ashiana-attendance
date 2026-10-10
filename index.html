@@ -2382,6 +2382,7 @@
       <div class="admin-quick-actions">
         <button type="button" onclick="window.switchAdminTab('students')"><i data-lucide="graduation-cap"></i><span>Students</span></button>
         <button type="button" onclick="window.switchAdminTab('student-portal')" title="Student Portal Management"><i data-lucide="panels-top-left"></i><span>Student Portal</span></button>
+<button type="button" id="admin-nav-examinations" onclick="window.switchAdminTab('examinations')" title="Examinations Management"><i data-lucide="book-open-check"></i><span>Examinations</span></button>
         <button type="button" id="admin-nav-student-attendance" onclick="openAdminStudentAttendanceRecordsModal()" title="View Students Attendance"><i data-lucide="clipboard-check"></i><span>View Students Attendance</span></button>
         <button type="button" onclick="openAdminStudentAttendanceReport()" title="Students Attendance Report"><i data-lucide="clipboard-list"></i><span>Attendance Report</span></button><button type="button" onclick="openAdminAttendanceAnalytics()" title="Advanced Attendance Analytics"><i data-lucide="chart-no-axes-combined"></i><span>Analytics 2.0</span></button>
         <button type="button" onclick="window.switchAdminTab('directory')"><i data-lucide="users"></i><span>Faculty</span></button>
@@ -2975,7 +2976,7 @@
         </div>
       </div>
 
-      <div id="admin-tab-reports" class="hidden space-y-4">
+<div id="admin-tab-examinations" class="hidden space-y-4"><div class="bg-white rounded-2xl border p-4"><h3 class="text-lg font-extrabold">Examinations</h3><p class="text-xs text-slate-500">Examination setup and master records.</p></div><div class="grid grid-cols-1 lg:grid-cols-[minmax(240px,0.8fr)_minmax(0,1.7fr)] gap-3"><div class="bg-slate-50 border rounded-xl p-3 space-y-2" id="admin-exam-menu"><button type="button" class="admin-exam-menu-item w-full p-3 rounded-xl border bg-white text-left font-bold" data-exam-section="subject-master" onclick="showAdminExamSection('subject-master')">◯　Subject Master　⌄</button><button type="button" class="admin-exam-menu-item w-full p-3 rounded-xl border bg-white text-left font-bold" data-exam-section="class-subject" onclick="showAdminExamSection('class-subject')">◯　Class Subject Master　⌄</button><button type="button" class="admin-exam-menu-item w-full p-3 rounded-xl border bg-white text-left font-bold" data-exam-section="teacher-issue" onclick="showAdminExamSection('teacher-issue')">◯　Class/Subject Issue to Teacher　⌄</button><button type="button" class="admin-exam-menu-item w-full p-3 rounded-xl border bg-white text-left font-bold" data-exam-section="optional-students" onclick="showAdminExamSection('optional-students')">◯　Optional Subject Students　⌄</button><button type="button" class="admin-exam-menu-item w-full p-3 rounded-xl border bg-white text-left font-bold" data-exam-section="exam-head" onclick="showAdminExamSection('exam-head')">◯　Exam Head Master　⌄</button><button type="button" class="admin-exam-menu-item w-full p-3 rounded-xl border bg-white text-left font-bold" data-exam-section="exam-type" onclick="showAdminExamSection('exam-type')">◯　Exam Type Master　⌄</button><button type="button" class="admin-exam-menu-item w-full p-3 rounded-xl border bg-white text-left font-bold" data-exam-section="exam-master" onclick="showAdminExamSection('exam-master')">◯　Exam Master　⌄</button></div><div class="bg-white border rounded-xl p-4"><h4 id="admin-exam-section-title" class="font-extrabold">Subject Master</h4><p id="admin-exam-section-description" class="text-sm text-slate-500 mt-1">Create and maintain the school's subject list.</p><div id="admin-exam-section-content" class="mt-4 space-y-3"><label class="block text-sm font-semibold">Subject name<input id="admin-exam-subject-name" maxlength="100" class="block w-full mt-1 p-2.5 border rounded-xl font-normal" placeholder="e.g. English"></label><label class="block text-sm font-semibold">Subject code<input id="admin-exam-subject-code" maxlength="30" class="block w-full mt-1 p-2.5 border rounded-xl font-normal" placeholder="e.g. ENG"></label><label class="flex gap-2 text-sm"><input id="admin-exam-subject-optional" type="checkbox"> Optional subject</label><button type="button" disabled class="px-4 py-2 rounded-xl bg-slate-300 text-slate-600 text-sm font-bold">Save — database setup pending</button></div><p class="mt-4 rounded-xl border border-amber-200 bg-amber-50 p-3 text-xs text-amber-900">UI scaffold only. No records are written until database tables and permissions are reviewed.</p></div></div></div>      <div id="admin-tab-reports" class="hidden space-y-4">
         
         <!-- Controls & Parameter Config Card -->
         <div class="bg-white rounded-2xl border border-slate-200 shadow-sm p-4 sm:p-5">
@@ -8679,8 +8680,9 @@ window.addEventListener('load',async function(){
       if (el) el.textContent = new Date().toLocaleDateString("en-IN", { weekday: "long", day: "numeric", month: "short", year: "numeric" });
     }
 
+    function showAdminExamSection(section){const cfg={'subject-master':['Subject Master',"Create and maintain the school's subject list."],'class-subject':['Class Subject Master','Assign subjects to a class and section.'],'teacher-issue':['Class/Subject Issue to Teacher','Assign classes and subjects to teachers.'],'optional-students':['Optional Subject Students','Manage students taking optional subjects.'],'exam-head':['Exam Head Master','Configure theory, practical and project exam heads.'],'exam-type':['Exam Type Master','Configure Term I, Half Yearly, Pre-Annual and Annual.'],'exam-master':['Exam Master','Create examinations by academic year, class, section and exam type.']};if(!cfg[section])return;const t=document.getElementById('admin-exam-section-title'),d=document.getElementById('admin-exam-section-description'),host=document.getElementById('admin-exam-section-content');if(t)t.textContent=cfg[section][0];if(d)d.textContent=cfg[section][1];if(host)host.textContent='This master screen is a UI preview. Database-backed saving is pending schema and permissions review.';document.querySelectorAll('.admin-exam-menu-item').forEach(b=>{b.classList.toggle('border-sky-500',b.dataset.examSection===section);});}
     function switchAdminTab(tab) {
-      const allowedTabs = ['live', 'qr', 'directory', 'corrections', 'leave', 'audit', 'reports', 'students', 'student-portal'];
+      const allowedTabs = ['live', 'qr', 'directory', 'corrections', 'leave', 'audit', 'reports', 'students', 'student-portal', 'examinations'];
       if (!allowedTabs.includes(tab)) return;
 
       // Force the panel visibility with both the utility class and inline display.
@@ -8702,7 +8704,7 @@ window.addEventListener('load',async function(){
       });
 
       // Keep the selected quick-action visibly active.
-      ["reports","leave","corrections","student-portal"].forEach(t => {
+      ["reports","leave","corrections","student-portal","examinations"].forEach(t => {
         const quickBtn = document.getElementById(`admin-nav-${t}`);
         if (quickBtn) {
           quickBtn.style.borderColor = t === tab ? "#0A7E46" : "";
