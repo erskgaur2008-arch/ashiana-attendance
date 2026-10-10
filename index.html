@@ -8687,7 +8687,37 @@ window.addEventListener('load',async function(){
       if (el) el.textContent = new Date().toLocaleDateString("en-IN", { weekday: "long", day: "numeric", month: "short", year: "numeric" });
     }
 
-    function showAdminExamSection(section){const cfg={'subject-master':['Subject Master',"Create and maintain the school's subject list."],'class-subject':['Class Subject Master','Assign subjects to a class and section.'],'teacher-issue':['Class/Subject Issue to Teacher','Assign classes and subjects to teachers.'],'optional-students':['Optional Subject Students','Manage students taking optional subjects.'],'exam-head':['Exam Head Master','Configure theory, practical and project exam heads.'],'exam-type':['Exam Type Master','Configure Term I, Half Yearly, Pre-Annual and Annual.'],'exam-master':['Exam Master','Create examinations by academic year, class, section and exam type.']};if(!cfg[section])return;const t=document.getElementById('admin-exam-section-title'),d=document.getElementById('admin-exam-section-description'),host=document.getElementById('admin-exam-section-content');if(t)t.textContent=cfg[section][0];if(d)d.textContent=cfg[section][1];if(host)host.textContent='This master screen is a UI preview. Database-backed saving is pending schema and permissions review.';document.querySelectorAll('.admin-exam-menu-item').forEach(b=>{b.classList.toggle('border-sky-500',b.dataset.examSection===section);});}
+    function showAdminExamSection(section){
+      const cfg={
+        'subject-master':['Subject Master',"Create and maintain the school's subject list."],
+        'class-subject':['Class Subject Master','Map subjects to a class and section.'],
+        'teacher-issue':['Class/Subject Issue to Teacher','Review teacher assignments by class, section and subject.'],
+        'optional-students':['Optional Subject Students','Select students taking an optional subject.'],
+        'exam-head':['Exam Head Master','Configure theory, practical and project components.'],
+        'exam-type':['Exam Type Master','Configure Term I, Half Yearly, Pre-Annual and Annual.'],
+        'exam-master':['Exam Master','Set academic year, class, section, exam type and dates.']
+      };
+      if(!cfg[section])return;
+      const title=document.getElementById('admin-exam-section-title');
+      const desc=document.getElementById('admin-exam-section-description');
+      const host=document.getElementById('admin-exam-section-content');
+      if(title)title.textContent=cfg[section][0];
+      if(desc)desc.textContent=cfg[section][1];
+      const input=(label,id,placeholder,type)=>'<label class="block text-xs font-semibold">'+label+'<input id="'+id+'" type="'+(type||'text')+'" placeholder="'+placeholder+'" class="block w-full mt-1 p-2.5 border rounded-xl font-normal"></label>';
+      const select=(label,id,items)=>'<label class="block text-xs font-semibold">'+label+'<select id="'+id+'" class="block w-full mt-1 p-2.5 border rounded-xl font-normal">'+items.map(x=>'<option>'+x+'</option>').join('')+'</select></label>';
+      const classes=['Select class','I','II','III','IV','V','VI','VII','VIII','IX','X','XI','XII'];
+      const forms={
+        'subject-master':input('Subject name','admin-exam-subject-name','e.g. English')+input('Subject code','admin-exam-subject-code','e.g. ENG')+'<label class="flex gap-2 text-xs"><input id="admin-exam-subject-optional" type="checkbox"> Optional subject</label>',
+        'class-subject':select('Class','admin-exam-class-subject-class',classes)+input('Section','admin-exam-class-subject-section','e.g. A')+input('Subject name','admin-exam-class-subject-name','Subject'),
+        'teacher-issue':input('Teacher email / staff identifier','admin-exam-teacher','Assigned teacher')+select('Class','admin-exam-teacher-class',classes)+input('Section','admin-exam-teacher-section','e.g. A')+input('Subject','admin-exam-teacher-subject','Subject name'),
+        'optional-students':select('Class','admin-exam-optional-class',classes)+input('Section','admin-exam-optional-section','e.g. A')+input('Admission number','admin-exam-optional-admission','Student admission number'),
+        'exam-head':input('Exam head name','admin-exam-head-name','Theory / Practical / Project')+input('Maximum marks','admin-exam-head-max','e.g. 80','number')+input('Pass marks','admin-exam-head-pass','e.g. 26','number'),
+        'exam-type':input('Exam type name','admin-exam-type-name','e.g. Half Yearly')+input('Display order','admin-exam-type-order','e.g. 2','number'),
+        'exam-master':input('Examination name','admin-exam-name','e.g. Half Yearly Examination')+input('Academic year','admin-exam-year','2026-27')+select('Class','admin-exam-master-class',classes)+input('Section','admin-exam-master-section','e.g. A')+select('Exam type','admin-exam-master-type',['Select exam type','Term I','Half Yearly','Pre-Annual','Annual'])+input('Start date','admin-exam-start-date','','date')+input('End date','admin-exam-end-date','','date')
+      };
+      if(host)host.innerHTML=(forms[section]||'')+'<button type="button" disabled class="w-full px-4 py-2.5 rounded-xl bg-slate-300 text-slate-600 text-sm font-bold cursor-not-allowed">Save unavailable — database / permissions review pending</button><p class="text-[11px] text-slate-500">UI-only preview. Inputs are not persisted and no backend request is sent.</p>';
+      document.querySelectorAll('.admin-exam-menu-item').forEach(button=>{const active=button.dataset.examSection===section;button.classList.toggle('border-sky-500',active);button.classList.toggle('bg-sky-50',active);button.setAttribute('aria-current',active?'page':'false');});
+    }
     function switchAdminTab(tab) {
       const allowedTabs = ['live', 'qr', 'directory', 'corrections', 'leave', 'audit', 'reports', 'students', 'student-portal', 'examinations'];
       if (!allowedTabs.includes(tab)) return;
