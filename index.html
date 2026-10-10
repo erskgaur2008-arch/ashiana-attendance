@@ -7184,7 +7184,8 @@ async function loadAdminStudentAttendance(){
     (sr.data||[]).forEach(student=>{
       const className=String(student.class_name||'').trim(),section=String(student.section||'').trim();
       if(!className||!section)return;
-      if(cls&&className.toUpperCase()!==cls.toUpperCase())return;
+      const normalizeClass=v=>String(v||'').trim().toUpperCase().replace(/^CLASS\s+/,'').replace(/\s+/g,' ');
+      if(cls&&normalizeClass(className)!==normalizeClass(cls))return;
       if(sec&&section.toUpperCase()!==sec.toUpperCase())return;
       const key=className+'||'+section;
       if(!groups.has(key))groups.set(key,{className,section,total:0,present:0,leave:[],absent:[]});
@@ -10646,12 +10647,12 @@ window.addEventListener('load',async function(){
           seen.add(key);
           rows.push({cls,sec,key});
         });
-        // Class X is known to have active sections A/B/C in the school roster.
-        // Keep these options visible even if an RLS/status filter changes what
-        // the browser receives from student_roster.
-        ['A','B','C'].forEach(sec=>{
-          const key='X||'+sec;
-          if(!seen.has(key)){seen.add(key);rows.push({cls:'X',sec,key});}
+        // Preserve expected senior-class sections in the selector if a roster response is incomplete.
+        [['IX',['A','B','C','D']],['X',['A','B','C']]].forEach(([fallbackClass,sections])=>{
+          sections.forEach(sec=>{
+            const key=fallbackClass+'||'+sec;
+            if(!seen.has(key)){seen.add(key);rows.push({cls:fallbackClass,sec,key});}
+          });
         });
         rows.sort((a,b)=>rank(a.cls)-rank(b.cls)||a.cls.localeCompare(b.cls,undefined,{numeric:true})||a.sec.localeCompare(b.sec,undefined,{numeric:true}));
         const options=['<option value="ALL">All Classes</option>'];
