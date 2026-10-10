@@ -10757,7 +10757,7 @@ window.addEventListener('load',async function(){
       if(type==='notice') await loadAdminStudentPortalNotices();
       if(type==='timetable'){await loadAdminStudentPortalTeachers();await loadAdminStudentPortalTimetable();}
       if(type==='calendar') await loadAdminStudentPortalCalendar();
-      if(type==='report'){await loadAdminStudentPortalReportStudents();await loadAdminStudentPortalReports();}
+      if(type==='report'){initAdminReportCardSubjectRows();await loadAdminStudentPortalReportStudents();await loadAdminStudentPortalReports();}
     }
 
     async function loadAdminStudentPortalTeachers(){
