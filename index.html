@@ -1785,7 +1785,6 @@
             <button onclick="studentDashboardSection('timetable')" class="p-4 rounded-2xl border bg-violet-50 text-left"><i data-lucide="calendar-clock" class="w-5 h-5 text-violet-700"></i><b class="block mt-2 text-sm">Timetable</b><span class="text-[10px] text-slate-500">Class schedule</span></button>
             <button onclick="studentDashboardSection('leave')" class="p-4 rounded-2xl border bg-rose-50 text-left"><i data-lucide="file-pen-line" class="w-5 h-5 text-rose-700"></i><b class="block mt-2 text-sm">Leave Request</b><span class="text-[10px] text-slate-500">Apply / track</span></button>
             <button onclick="studentDashboardSection('report')" class="p-4 rounded-2xl border bg-cyan-50 text-left"><i data-lucide="graduation-cap" class="w-5 h-5 text-cyan-700"></i><b class="block mt-2 text-sm">Report Card</b><span id="student-count-report" class="text-[10px] text-slate-500">Published results</span></button>
-            <button onclick="studentDashboardSection('examinations')" class="p-4 rounded-2xl border bg-sky-50 text-left"><i data-lucide="book-open-check" class="w-5 h-5 text-sky-700"></i><b class="block mt-2 text-sm">Examinations</b><span class="text-[10px] text-slate-500">View published exam results</span></button>
             <button onclick="studentDashboardSection('calendar')" class="p-4 rounded-2xl border bg-orange-50 text-left"><i data-lucide="calendar-days" class="w-5 h-5 text-orange-700"></i><b class="block mt-2 text-sm">School Calendar</b><span class="text-[10px] text-slate-500">Events & holidays</span></button>
             <button onclick="createStudentPortalIdCard()" class="p-4 rounded-2xl border bg-slate-50 text-left"><i data-lucide="contact" class="w-5 h-5 text-slate-700"></i><b class="block mt-2 text-sm">ID Card</b><span class="text-[10px] text-slate-500">View digital ID</span></button>
           </div>
@@ -2199,7 +2198,7 @@
     <div class="grid grid-cols-2 gap-2 mt-3">
       <select id="teacher-portal-class" onchange="loadTeacherPortalStudents()" class="p-2 border rounded"><option value="">Select class & section</option></select>
       <select id="teacher-portal-type" onchange="renderTeacherPortalEditor()" class="p-2 border rounded">
-        <option value="notice">Notice</option><option value="homework">Homework</option><option value="timetable">Timetable</option><option value="calendar">Calendar Event</option><option value="report">Report Card</option><option value="examinations">Examinations</option>
+        <option value="notice">Notice</option><option value="homework">Homework</option><option value="timetable">Timetable</option><option value="calendar">Calendar Event</option><option value="report">Report Card</option>
       </select>
     </div>
     <div id="teacher-portal-editor" class="mt-3 space-y-2"></div>
@@ -2383,7 +2382,6 @@
       <div class="admin-quick-actions">
         <button type="button" onclick="window.switchAdminTab('students')"><i data-lucide="graduation-cap"></i><span>Students</span></button>
         <button type="button" onclick="window.switchAdminTab('student-portal')" title="Student Portal Management"><i data-lucide="panels-top-left"></i><span>Student Portal</span></button>
-<button type="button" id="admin-nav-examinations" onclick="window.switchAdminTab('examinations')" title="Examinations Management"><i data-lucide="book-open-check"></i><span>Examinations</span></button>
         <button type="button" id="admin-nav-student-attendance" onclick="openAdminStudentAttendanceRecordsModal()" title="View Students Attendance"><i data-lucide="clipboard-check"></i><span>View Students Attendance</span></button>
         <button type="button" onclick="openAdminStudentAttendanceReport()" title="Students Attendance Report"><i data-lucide="clipboard-list"></i><span>Attendance Report</span></button><button type="button" onclick="openAdminAttendanceAnalytics()" title="Advanced Attendance Analytics"><i data-lucide="chart-no-axes-combined"></i><span>Analytics 2.0</span></button>
         <button type="button" onclick="window.switchAdminTab('directory')"><i data-lucide="users"></i><span>Faculty</span></button>
@@ -2977,7 +2975,7 @@
         </div>
       </div>
 
-<div id="admin-tab-examinations" class="hidden space-y-4"><div class="bg-white rounded-2xl border p-4"><h3 class="text-lg font-extrabold">Examinations</h3><p class="text-xs text-slate-500">Examination setup and master records.</p></div><div class="grid grid-cols-1 lg:grid-cols-[minmax(240px,0.8fr)_minmax(0,1.7fr)] gap-3"><div class="bg-slate-50 border rounded-xl p-3 space-y-2" id="admin-exam-menu"><button type="button" class="admin-exam-menu-item w-full p-3 rounded-xl border bg-white text-left font-bold" data-exam-section="subject-master" onclick="showAdminExamSection('subject-master')">◯　Subject Master　⌄</button><button type="button" class="admin-exam-menu-item w-full p-3 rounded-xl border bg-white text-left font-bold" data-exam-section="class-subject" onclick="showAdminExamSection('class-subject')">◯　Class Subject Master　⌄</button><button type="button" class="admin-exam-menu-item w-full p-3 rounded-xl border bg-white text-left font-bold" data-exam-section="teacher-issue" onclick="showAdminExamSection('teacher-issue')">◯　Class/Subject Issue to Teacher　⌄</button><button type="button" class="admin-exam-menu-item w-full p-3 rounded-xl border bg-white text-left font-bold" data-exam-section="optional-students" onclick="showAdminExamSection('optional-students')">◯　Optional Subject Students　⌄</button><button type="button" class="admin-exam-menu-item w-full p-3 rounded-xl border bg-white text-left font-bold" data-exam-section="exam-head" onclick="showAdminExamSection('exam-head')">◯　Exam Head Master　⌄</button><button type="button" class="admin-exam-menu-item w-full p-3 rounded-xl border bg-white text-left font-bold" data-exam-section="exam-type" onclick="showAdminExamSection('exam-type')">◯　Exam Type Master　⌄</button><button type="button" class="admin-exam-menu-item w-full p-3 rounded-xl border bg-white text-left font-bold" data-exam-section="exam-master" onclick="showAdminExamSection('exam-master')">◯　Exam Master　⌄</button></div><div class="bg-white border rounded-xl p-4"><h4 id="admin-exam-section-title" class="font-extrabold">Subject Master</h4><p id="admin-exam-section-description" class="text-sm text-slate-500 mt-1">Create and maintain the school's subject list.</p><div id="admin-exam-section-content" class="mt-4 space-y-3"><label class="block text-sm font-semibold">Subject name<input id="admin-exam-subject-name" maxlength="100" class="block w-full mt-1 p-2.5 border rounded-xl font-normal" placeholder="e.g. English"></label><label class="block text-sm font-semibold">Subject code<input id="admin-exam-subject-code" maxlength="30" class="block w-full mt-1 p-2.5 border rounded-xl font-normal" placeholder="e.g. ENG"></label><label class="flex gap-2 text-sm"><input id="admin-exam-subject-optional" type="checkbox"> Optional subject</label><button type="button" disabled class="px-4 py-2 rounded-xl bg-slate-300 text-slate-600 text-sm font-bold">Save — database setup pending</button></div><p class="mt-4 rounded-xl border border-amber-200 bg-amber-50 p-3 text-xs text-amber-900">UI scaffold only. No records are written until database tables and permissions are reviewed.</p></div></div></div>      <div id="admin-tab-reports" class="hidden space-y-4">
+      <div id="admin-tab-reports" class="hidden space-y-4">
         
         <!-- Controls & Parameter Config Card -->
         <div class="bg-white rounded-2xl border border-slate-200 shadow-sm p-4 sm:p-5">
@@ -5216,10 +5214,7 @@ function renderTeacherPortalEditor(){
   const host=document.getElementById('teacher-portal-editor');
   if(!host)return;
   const type=document.getElementById('teacher-portal-type')?.value||'notice';
-  if(type==='examinations'){
-    const assigned=teacherPortalClass();
-    host.innerHTML='<div class="rounded-xl border border-sky-200 bg-sky-50 p-3"><b class="text-sm text-sky-950">Examination workspace</b><p class="text-xs text-slate-600 mt-1">This workspace is limited to your selected assigned class/section. Use Report Card to enter subject-wise marks through the existing workflow. A separate examination register will be enabled after schema and permissions review.</p></div><div class="rounded-xl border bg-white p-3 text-xs text-slate-700"><b>Selected assignment</b><p class="mt-1">'+(assigned?studentEscape(assigned.class_name)+' / '+studentEscape(assigned.section):'Select an assigned class/section above to continue.')+'</p><p class="mt-2 text-slate-500">'+(assigned?'Assigned subjects: '+studentEscape((assigned.subjects||[]).join(', ')||'Existing assignment permissions apply'):'No class assignment selected.')+'</p></div><label class="block text-xs font-semibold">Academic year<input id="tp-exam-year" value="2026-27" class="w-full mt-1 p-2.5 border rounded-xl"></label><label class="block text-xs font-semibold">Examination<select id="tp-exam-type" class="w-full mt-1 p-2.5 border rounded-xl"><option>Term I</option><option>Half Yearly</option><option>Pre-Annual</option><option>Annual</option></select></label><button type="button" onclick="document.getElementById(&quot;teacher-portal-type&quot;).value=&quot;report&quot;;renderTeacherPortalEditor()" class="w-full p-2.5 rounded-xl bg-cyan-700 text-white font-bold">Open Report Card / Marks Entry</button><button type="button" disabled class="w-full p-2.5 bg-slate-300 text-slate-600 rounded-xl font-bold">Load examination register — setup pending</button>';
-  }else if(type==='notice'){
+  if(type==='notice'){
     host.innerHTML='<input id="tp-title" placeholder="Notice title" class="w-full p-2.5 border rounded-xl text-sm"><textarea id="tp-body" rows="5" placeholder="Notice details — paragraphs and line breaks are preserved for students." class="w-full p-2.5 border rounded-xl text-sm leading-6 resize-y"></textarea><label class="flex items-center gap-2 p-2.5 rounded-xl border border-dashed border-emerald-200 bg-emerald-50/50 text-xs text-slate-700 cursor-pointer"><i data-lucide="paperclip" class="w-4 h-4 text-emerald-700"></i><span class="font-bold">Attach PDF</span><input id="tp-attachment" type="file" accept="application/pdf,.pdf" class="hidden" onchange="showTeacherPortalPdfSelection(this)"><span id="tp-attachment-name" class="ml-auto text-[10px] text-slate-400 truncate">Optional • PDF up to 10 MB</span></label><button type="button" id="tp-publish-notice" onclick="saveTeacherNotice()" class="w-full p-2.5 bg-emerald-800 text-white rounded-xl font-bold">Publish Notice</button><div id="tp-existing-content" class="mt-4"></div>';
     loadTeacherPortalContentItems('notice');
   }else if(type==='homework'){
@@ -5425,7 +5420,7 @@ async function studentDashboardSection(type){
     title=document.getElementById("student-dashboard-panel-title"),
     loading=document.getElementById("student-dashboard-panel-loading");
   if(!host||!panel)return;
-  const names={notice:"Notice",attendance:"Attendance",homework:"Homework",timetable:"Timetable",leave:"Leave Request & Status",report:"Report Card",examinations:"Examination Results",calendar:"School Calendar",profile:"Student Profile"};
+  const names={notice:"Notice",attendance:"Attendance",homework:"Homework",timetable:"Timetable",leave:"Leave Request & Status",report:"Report Card",calendar:"School Calendar",profile:"Student Profile"};
   title.textContent=names[type]||"Dashboard";
   panel.classList.remove("hidden");
   document.body.classList.add("overflow-hidden");
@@ -5473,7 +5468,7 @@ async function studentDashboardSection(type){
     host.innerHTML=(fresh.timetable||[]).map(x=>'<div class="flex items-start gap-3 bg-white border rounded-xl px-4 py-3"><b class="w-20 shrink-0">'+days[x.day_of_week]+'</b><div class="min-w-0 flex-1"><div>Period '+x.period_no+' · '+studentEscape(x.subject_name)+' · '+studentEscape(x.teacher_name||"")+' '+studentEscape(x.room||"")+'</div>'+(x.attachment_path?'<a href="'+studentEscape(teacherPortalPdfUrl(x.attachment_path))+'" target="_blank" rel="noopener" class="mt-2 inline-flex items-center gap-2 px-3 py-2 rounded-xl bg-rose-50 text-rose-700 border border-rose-200 text-xs font-bold"><i data-lucide="file-text" class="w-4 h-4"></i><span>View PDF'+(x.attachment_name?' • '+studentEscape(x.attachment_name):'')+'</span></a>':'')+'</div></div>').join("")||'<div class="p-6 bg-white border rounded-2xl text-center text-slate-400">No timetable published.</div>';
   }else if(type==="leave"){
     host.innerHTML='<form onsubmit="submitStudentLeave(event)" class="space-y-3 bg-white border rounded-2xl p-4"><div class="grid grid-cols-2 gap-2"><input id="student-leave-from" type="date" required class="p-3 border rounded-xl"><input id="student-leave-to" type="date" required class="p-3 border rounded-xl"></div><textarea id="student-leave-reason" required rows="3" placeholder="Reason" class="w-full p-3 border rounded-xl"></textarea><input id="student-leave-dob" required maxlength="8" pattern="[0-9]{8}" placeholder="DOB password DDMMYYYY" class="w-full p-3 border rounded-xl"><button class="w-full p-3 bg-rose-700 text-white rounded-xl font-bold">Submit Leave Request</button></form><div class="pt-2">'+(fresh.leave_requests||[]).map(x=>'<div class="p-4 bg-white border rounded-2xl mb-2"><b>'+studentEscape(x.from_date)+' → '+studentEscape(x.to_date)+'</b><div class="mt-1">'+studentEscape(x.reason)+'</div><span class="font-bold mt-1 inline-block">'+studentEscape(x.status)+'</span></div>').join("")+'</div>';
-  }else if(type==="report"||type==="examinations"){
+  }else if(type==="report"){
     host.innerHTML=(fresh.report_cards||[]).map(x=>{const subjects=Array.isArray(x.subjects)?x.subjects:[],totals=reportCardTotals(subjects);return '<div class="p-4 bg-white border rounded-2xl"><b class="text-sm">'+studentEscape(x.academic_year)+' · '+studentEscape(x.term)+' · Grade '+studentEscape(x.overall_grade||totals.grade||'—')+'</b><div class="mt-3 space-y-1">'+(subjects.map(s=>'<div class="flex items-center justify-between gap-3 border-b py-2"><span>'+studentEscape(s.subject||'')+'</span><span class="text-right"><b>'+studentEscape(s.marks??'—')+' / '+studentEscape(s.max_marks??'—')+'</b><small class="block text-slate-500">Grade '+studentEscape(s.grade||((Number(s.max_marks)>0&&Number.isFinite(Number(s.marks)))?reportCardGrade(Number(s.marks)/Number(s.max_marks)*100):'—'))+'</small></span></div>').join('')||studentEscape(JSON.stringify(x.subjects)))+'</div><div class="mt-3 rounded-lg bg-slate-50 p-3 text-sm"><div class="flex justify-between"><span>Total marks</span><b>'+studentEscape(totals.totalMarks)+' / '+studentEscape(totals.totalMax)+'</b></div><div class="flex justify-between mt-1"><span>Percentage</span><b>'+totals.percentage.toFixed(2)+'%</b></div><div class="flex justify-between mt-1"><span>Overall grade</span><b>'+studentEscape(x.overall_grade||totals.grade||'—')+'</b></div></div><p class="mt-2 text-slate-500">'+studentEscape(x.remarks||'')+'</p></div>';}).join('')||'<div class="p-6 bg-white border rounded-2xl text-center text-slate-400">No report card published.</div>';
   }else if(type==="calendar"){
     host.innerHTML=(fresh.calendar||[]).map(x=>'<div class="p-4 bg-white border rounded-2xl"><b>'+studentEscape(x.event_date)+' — '+studentEscape(x.title)+'</b><div class="mt-1 text-slate-600">'+studentEscape(x.description||"")+'</div></div>').join("")||'<div class="p-6 bg-white border rounded-2xl text-center text-slate-400">No calendar events.</div>';
@@ -8684,107 +8679,8 @@ window.addEventListener('load',async function(){
       if (el) el.textContent = new Date().toLocaleDateString("en-IN", { weekday: "long", day: "numeric", month: "short", year: "numeric" });
     }
 
-    const EXAM_TABLES = {
-      'subject-master':'exam_subjects','class-subject':'exam_class_subjects',
-      'teacher-issue':'exam_teacher_assignments','optional-students':'exam_optional_students',
-      'exam-head':'exam_heads','exam-type':'exam_types','exam-master':'exams'
-    };
-    const EXAM_LABELS = {
-      'subject-master':['Subject Master',"Create and maintain the school's subject list."],
-      'class-subject':['Class Subject Master','Map subjects to a class and section.'],
-      'teacher-issue':['Class/Subject Issue to Teacher','Assign classes and subjects to teachers.'],
-      'optional-students':['Optional Subject Students','Manage students taking optional subjects.'],
-      'exam-head':['Exam Head Master','Configure theory, practical and project components.'],
-      'exam-type':['Exam Type Master','Configure examination types.'],
-      'exam-master':['Exam Master','Create examinations by academic year, class, section and exam type.']
-    };
-    function examEsc(value){return String(value??'').replace(/[&<>"']/g,c=>({'&':'&amp;','<':'&lt;','>':'&gt;','"':'&quot;',"'":'&#39;'}[c]));}
-    function examInput(label,id,placeholder,type='text',required=true){
-      return '<label class="block text-xs font-semibold">'+label+'<input id="'+id+'" type="'+type+'" '+(required?'required':'')+' placeholder="'+examEsc(placeholder)+'" class="block w-full mt-1 p-2.5 border rounded-xl font-normal"></label>';
-    }
-    function examSelect(label,id,options){
-      return '<label class="block text-xs font-semibold">'+label+'<select id="'+id+'" required class="block w-full mt-1 p-2.5 border rounded-xl font-normal">'+options.map(o=>'<option value="'+examEsc(o.value)+'">'+examEsc(o.label)+'</option>').join('')+'</select></label>';
-    }
-    async function examOptions(table,labelColumn='name'){
-      const {data,error}=await supabaseClient.from(table).select('id,'+labelColumn).eq('school_code','ashiana').eq('active',true).order(labelColumn);
-      if(error) throw error;
-      return [{value:'',label:'Select '+labelColumn},...(data||[]).map(x=>({value:x.id,label:x[labelColumn]}))];
-    }
-    async function saveAdminExamRecord(section){
-      const button=document.getElementById('admin-exam-save');
-      const val=id=>document.getElementById(id)?.value?.trim()||'';
-      const num=id=>Number(document.getElementById(id)?.value);
-      let table=EXAM_TABLES[section], payload={school_code:'ashiana'};
-      if(!table||!supabaseClient){showToast('Database client is unavailable. Please sign in again.','error');return;}
-      if(section==='subject-master'){
-        payload={...payload,name:val('admin-exam-subject-name'),code:val('admin-exam-subject-code').toUpperCase(),is_optional:!!document.getElementById('admin-exam-subject-optional')?.checked};
-      }else if(section==='class-subject'){
-        payload={...payload,class_name:val('admin-exam-class-subject-class'),section:val('admin-exam-class-subject-section').toUpperCase(),subject_id:val('admin-exam-class-subject-subject')};
-      }else if(section==='teacher-issue'){
-        payload={...payload,teacher_email:val('admin-exam-teacher').toLowerCase(),class_name:val('admin-exam-teacher-class'),section:val('admin-exam-teacher-section').toUpperCase(),subject_id:val('admin-exam-teacher-subject')};
-      }else if(section==='optional-students'){
-        const {data:student,error:studentError}=await supabaseClient.from('student_roster').select('id').eq('school_code','ashiana').eq('enroll_no',val('admin-exam-optional-admission')).maybeSingle();
-        if(studentError||!student){showToast('Student admission number was not found.','error');return;}
-        payload={...payload,student_id:student.id,subject_id:val('admin-exam-optional-subject')};
-      }else if(section==='exam-head'){
-        payload={...payload,name:val('admin-exam-head-name'),max_marks:num('admin-exam-head-max'),pass_marks:num('admin-exam-head-pass')};
-      }else if(section==='exam-type'){
-        payload={...payload,name:val('admin-exam-type-name'),display_order:num('admin-exam-type-order')};
-      }else if(section==='exam-master'){
-        payload={...payload,name:val('admin-exam-name'),academic_year:val('admin-exam-year'),class_name:val('admin-exam-master-class'),section:val('admin-exam-master-section').toUpperCase(),exam_type_id:val('admin-exam-master-type'),start_date:val('admin-exam-start-date')||null,end_date:val('admin-exam-end-date')||null,created_by:currentAuthUser?.email||currentAuthUser?.staffRecord?.email||''};
-      }
-      if(!Object.keys(payload).length)return;
-      if(button){button.disabled=true;button.textContent='Saving…';}
-      try{
-        const {error}=await supabaseClient.from(table).insert(payload);
-        if(error)throw error;
-        showToast('Record saved successfully.','success');
-        showAdminExamSection(section);
-      }catch(error){
-        console.error('Examination save failed',error);
-        showToast('Unable to save: '+(error?.message||'check database permissions and required fields'),'error');
-      }finally{if(button){button.disabled=false;button.textContent='Save record';}}
-    }
-    async function showAdminExamSection(section){
-      const cfg=EXAM_LABELS[section];if(!cfg)return;
-      const title=document.getElementById('admin-exam-section-title'),desc=document.getElementById('admin-exam-section-description'),host=document.getElementById('admin-exam-section-content');
-      if(title)title.textContent=cfg[0];if(desc)desc.textContent=cfg[1];if(!host)return;
-      host.innerHTML='<p class="text-sm text-slate-500">Loading saved records…</p>';
-      document.querySelectorAll('.admin-exam-menu-item').forEach(b=>{const active=b.dataset.examSection===section;b.classList.toggle('border-sky-500',active);b.classList.toggle('bg-sky-50',active);b.setAttribute('aria-current',active?'page':'false');});
-      try{
-        let form='';
-        const classes=['I','II','III','IV','V','VI','VII','VIII','IX','X','XI','XII'].map(x=>({value:x,label:x}));
-        if(section==='subject-master'){
-          form=examInput('Subject name','admin-exam-subject-name','e.g. English')+examInput('Subject code','admin-exam-subject-code','e.g. ENG')+'<label class="flex gap-2 text-xs"><input id="admin-exam-subject-optional" type="checkbox"> Optional subject</label>';
-        }else if(section==='class-subject'){
-          const subjects=await examOptions('exam_subjects');
-          form=examSelect('Class','admin-exam-class-subject-class',[{value:'',label:'Select class'},...classes])+examInput('Section','admin-exam-class-subject-section','e.g. A')+examSelect('Subject','admin-exam-class-subject-subject',subjects);
-        }else if(section==='teacher-issue'){
-          const subjects=await examOptions('exam_subjects');
-          form=examInput('Teacher registered email','admin-exam-teacher','teacher@school.org','email')+examSelect('Class','admin-exam-teacher-class',[{value:'',label:'Select class'},...classes])+examInput('Section','admin-exam-teacher-section','e.g. A')+examSelect('Subject','admin-exam-teacher-subject',subjects);
-        }else if(section==='optional-students'){
-          const subjects=await examOptions('exam_subjects');
-          form=examInput('Student admission number','admin-exam-optional-admission','Admission number')+examSelect('Optional subject','admin-exam-optional-subject',subjects);
-        }else if(section==='exam-head'){
-          form=examInput('Exam head name','admin-exam-head-name','Theory / Practical / Project')+examInput('Maximum marks','admin-exam-head-max','e.g. 80','number')+examInput('Pass marks','admin-exam-head-pass','e.g. 26','number');
-        }else if(section==='exam-type'){
-          form=examInput('Exam type name','admin-exam-type-name','e.g. Half Yearly')+examInput('Display order','admin-exam-type-order','e.g. 2','number');
-        }else{
-          const types=await examOptions('exam_types');
-          form=examInput('Examination name','admin-exam-name','e.g. Half Yearly Examination')+examInput('Academic year','admin-exam-year','2026-27')+examSelect('Class','admin-exam-master-class',[{value:'',label:'Select class'},...classes])+examInput('Section','admin-exam-master-section','e.g. A')+examSelect('Exam type','admin-exam-master-type',types)+examInput('Start date','admin-exam-start-date','','date',false)+examInput('End date','admin-exam-end-date','','date',false);
-        }
-        const table=EXAM_TABLES[section];
-        const {data,error}=await supabaseClient.from(table).select('*').eq('school_code','ashiana').order('created_at',{ascending:false}).limit(50);
-        if(error)throw error;
-        const rows=(data||[]).map(row=>'<div class="flex items-start justify-between gap-3 p-3 border rounded-xl bg-white"><div class="min-w-0 text-sm font-medium">'+examEsc(row.name||row.code||row.class_name||row.teacher_email||row.id)+'<div class="text-xs text-slate-500 mt-1">'+examEsc(row.code||[row.class_name,row.section,row.academic_year].filter(Boolean).join(' · '))+'</div></div><span class="text-[10px] text-slate-500">'+examEsc(row.active===false?'Inactive':'Saved')+'</span></div>').join('');
-        host.innerHTML='<form id="admin-exam-form" class="space-y-3" onsubmit="event.preventDefault();saveAdminExamRecord(\''+section+'\')">'+form+'<button id="admin-exam-save" type="submit" class="w-full px-4 py-3 rounded-xl bg-emerald-800 text-white text-sm font-bold">Save record</button></form><div class="mt-5"><h4 class="font-bold text-sm mb-2">Saved records</h4><div class="space-y-2">'+(rows||'<p class="text-sm text-slate-500">No records saved yet.</p>')+'</div></div><p class="text-[11px] text-slate-500 mt-3">Records are stored in the examination tables and access is enforced by database RLS.</p>';
-      }catch(error){
-        console.error('Examination master load failed',error);
-        host.innerHTML='<div class="p-3 rounded-xl bg-amber-50 text-amber-900 text-sm">Could not load examination records. Apply the Phase 3 database migration in the isolated test project and verify your admin permissions. '+examEsc(error?.message||'')+'</div>';
-      }
-    }
     function switchAdminTab(tab) {
-      const allowedTabs = ['live', 'qr', 'directory', 'corrections', 'leave', 'audit', 'reports', 'students', 'student-portal', 'examinations'];
+      const allowedTabs = ['live', 'qr', 'directory', 'corrections', 'leave', 'audit', 'reports', 'students', 'student-portal'];
       if (!allowedTabs.includes(tab)) return;
 
       // Force the panel visibility with both the utility class and inline display.
@@ -8806,7 +8702,7 @@ window.addEventListener('load',async function(){
       });
 
       // Keep the selected quick-action visibly active.
-      ["reports","leave","corrections","student-portal","examinations"].forEach(t => {
+      ["reports","leave","corrections","student-portal"].forEach(t => {
         const quickBtn = document.getElementById(`admin-nav-${t}`);
         if (quickBtn) {
           quickBtn.style.borderColor = t === tab ? "#0A7E46" : "";
