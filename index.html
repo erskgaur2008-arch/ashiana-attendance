@@ -1785,6 +1785,7 @@
             <button onclick="studentDashboardSection('timetable')" class="p-4 rounded-2xl border bg-violet-50 text-left"><i data-lucide="calendar-clock" class="w-5 h-5 text-violet-700"></i><b class="block mt-2 text-sm">Timetable</b><span class="text-[10px] text-slate-500">Class schedule</span></button>
             <button onclick="studentDashboardSection('leave')" class="p-4 rounded-2xl border bg-rose-50 text-left"><i data-lucide="file-pen-line" class="w-5 h-5 text-rose-700"></i><b class="block mt-2 text-sm">Leave Request</b><span class="text-[10px] text-slate-500">Apply / track</span></button>
             <button onclick="studentDashboardSection('report')" class="p-4 rounded-2xl border bg-cyan-50 text-left"><i data-lucide="graduation-cap" class="w-5 h-5 text-cyan-700"></i><b class="block mt-2 text-sm">Report Card</b><span id="student-count-report" class="text-[10px] text-slate-500">Published results</span></button>
+            <button onclick="studentDashboardSection('examinations')" class="p-4 rounded-2xl border bg-sky-50 text-left"><i data-lucide="book-open-check" class="w-5 h-5 text-sky-700"></i><b class="block mt-2 text-sm">Examinations</b><span class="text-[10px] text-slate-500">View published exam results</span></button>
             <button onclick="studentDashboardSection('calendar')" class="p-4 rounded-2xl border bg-orange-50 text-left"><i data-lucide="calendar-days" class="w-5 h-5 text-orange-700"></i><b class="block mt-2 text-sm">School Calendar</b><span class="text-[10px] text-slate-500">Events & holidays</span></button>
             <button onclick="createStudentPortalIdCard()" class="p-4 rounded-2xl border bg-slate-50 text-left"><i data-lucide="contact" class="w-5 h-5 text-slate-700"></i><b class="block mt-2 text-sm">ID Card</b><span class="text-[10px] text-slate-500">View digital ID</span></button>
           </div>
@@ -2198,7 +2199,7 @@
     <div class="grid grid-cols-2 gap-2 mt-3">
       <select id="teacher-portal-class" onchange="loadTeacherPortalStudents()" class="p-2 border rounded"><option value="">Select class & section</option></select>
       <select id="teacher-portal-type" onchange="renderTeacherPortalEditor()" class="p-2 border rounded">
-        <option value="notice">Notice</option><option value="homework">Homework</option><option value="timetable">Timetable</option><option value="calendar">Calendar Event</option><option value="report">Report Card</option>
+        <option value="notice">Notice</option><option value="homework">Homework</option><option value="timetable">Timetable</option><option value="calendar">Calendar Event</option><option value="report">Report Card</option><option value="examinations">Examinations</option>
       </select>
     </div>
     <div id="teacher-portal-editor" class="mt-3 space-y-2"></div>
@@ -5215,7 +5216,10 @@ function renderTeacherPortalEditor(){
   const host=document.getElementById('teacher-portal-editor');
   if(!host)return;
   const type=document.getElementById('teacher-portal-type')?.value||'notice';
-  if(type==='notice'){
+  if(type==='examinations'){
+    const assigned=teacherPortalClass();
+    host.innerHTML='<div class="rounded-xl border border-sky-200 bg-sky-50 p-3"><b class="text-sm text-sky-950">Examination workspace</b><p class="text-xs text-slate-600 mt-1">This workspace is limited to your selected assigned class/section. Use Report Card to enter subject-wise marks through the existing workflow. A separate examination register will be enabled after schema and permissions review.</p></div><div class="rounded-xl border bg-white p-3 text-xs text-slate-700"><b>Selected assignment</b><p class="mt-1">'+(assigned?studentEscape(assigned.class_name)+' / '+studentEscape(assigned.section):'Select an assigned class/section above to continue.')+'</p><p class="mt-2 text-slate-500">'+(assigned?'Assigned subjects: '+studentEscape((assigned.subjects||[]).join(', ')||'Existing assignment permissions apply'):'No class assignment selected.')+'</p></div><label class="block text-xs font-semibold">Academic year<input id="tp-exam-year" value="2026-27" class="w-full mt-1 p-2.5 border rounded-xl"></label><label class="block text-xs font-semibold">Examination<select id="tp-exam-type" class="w-full mt-1 p-2.5 border rounded-xl"><option>Term I</option><option>Half Yearly</option><option>Pre-Annual</option><option>Annual</option></select></label><button type="button" onclick="document.getElementById(&quot;teacher-portal-type&quot;).value=&quot;report&quot;;renderTeacherPortalEditor()" class="w-full p-2.5 rounded-xl bg-cyan-700 text-white font-bold">Open Report Card / Marks Entry</button><button type="button" disabled class="w-full p-2.5 bg-slate-300 text-slate-600 rounded-xl font-bold">Load examination register — setup pending</button>';
+  }else if(type==='notice'){
     host.innerHTML='<input id="tp-title" placeholder="Notice title" class="w-full p-2.5 border rounded-xl text-sm"><textarea id="tp-body" rows="5" placeholder="Notice details — paragraphs and line breaks are preserved for students." class="w-full p-2.5 border rounded-xl text-sm leading-6 resize-y"></textarea><label class="flex items-center gap-2 p-2.5 rounded-xl border border-dashed border-emerald-200 bg-emerald-50/50 text-xs text-slate-700 cursor-pointer"><i data-lucide="paperclip" class="w-4 h-4 text-emerald-700"></i><span class="font-bold">Attach PDF</span><input id="tp-attachment" type="file" accept="application/pdf,.pdf" class="hidden" onchange="showTeacherPortalPdfSelection(this)"><span id="tp-attachment-name" class="ml-auto text-[10px] text-slate-400 truncate">Optional • PDF up to 10 MB</span></label><button type="button" id="tp-publish-notice" onclick="saveTeacherNotice()" class="w-full p-2.5 bg-emerald-800 text-white rounded-xl font-bold">Publish Notice</button><div id="tp-existing-content" class="mt-4"></div>';
     loadTeacherPortalContentItems('notice');
   }else if(type==='homework'){
@@ -5421,7 +5425,7 @@ async function studentDashboardSection(type){
     title=document.getElementById("student-dashboard-panel-title"),
     loading=document.getElementById("student-dashboard-panel-loading");
   if(!host||!panel)return;
-  const names={notice:"Notice",attendance:"Attendance",homework:"Homework",timetable:"Timetable",leave:"Leave Request & Status",report:"Report Card",calendar:"School Calendar",profile:"Student Profile"};
+  const names={notice:"Notice",attendance:"Attendance",homework:"Homework",timetable:"Timetable",leave:"Leave Request & Status",report:"Report Card",examinations:"Examination Results",calendar:"School Calendar",profile:"Student Profile"};
   title.textContent=names[type]||"Dashboard";
   panel.classList.remove("hidden");
   document.body.classList.add("overflow-hidden");
@@ -5469,7 +5473,7 @@ async function studentDashboardSection(type){
     host.innerHTML=(fresh.timetable||[]).map(x=>'<div class="flex items-start gap-3 bg-white border rounded-xl px-4 py-3"><b class="w-20 shrink-0">'+days[x.day_of_week]+'</b><div class="min-w-0 flex-1"><div>Period '+x.period_no+' · '+studentEscape(x.subject_name)+' · '+studentEscape(x.teacher_name||"")+' '+studentEscape(x.room||"")+'</div>'+(x.attachment_path?'<a href="'+studentEscape(teacherPortalPdfUrl(x.attachment_path))+'" target="_blank" rel="noopener" class="mt-2 inline-flex items-center gap-2 px-3 py-2 rounded-xl bg-rose-50 text-rose-700 border border-rose-200 text-xs font-bold"><i data-lucide="file-text" class="w-4 h-4"></i><span>View PDF'+(x.attachment_name?' • '+studentEscape(x.attachment_name):'')+'</span></a>':'')+'</div></div>').join("")||'<div class="p-6 bg-white border rounded-2xl text-center text-slate-400">No timetable published.</div>';
   }else if(type==="leave"){
     host.innerHTML='<form onsubmit="submitStudentLeave(event)" class="space-y-3 bg-white border rounded-2xl p-4"><div class="grid grid-cols-2 gap-2"><input id="student-leave-from" type="date" required class="p-3 border rounded-xl"><input id="student-leave-to" type="date" required class="p-3 border rounded-xl"></div><textarea id="student-leave-reason" required rows="3" placeholder="Reason" class="w-full p-3 border rounded-xl"></textarea><input id="student-leave-dob" required maxlength="8" pattern="[0-9]{8}" placeholder="DOB password DDMMYYYY" class="w-full p-3 border rounded-xl"><button class="w-full p-3 bg-rose-700 text-white rounded-xl font-bold">Submit Leave Request</button></form><div class="pt-2">'+(fresh.leave_requests||[]).map(x=>'<div class="p-4 bg-white border rounded-2xl mb-2"><b>'+studentEscape(x.from_date)+' → '+studentEscape(x.to_date)+'</b><div class="mt-1">'+studentEscape(x.reason)+'</div><span class="font-bold mt-1 inline-block">'+studentEscape(x.status)+'</span></div>').join("")+'</div>';
-  }else if(type==="report"){
+  }else if(type==="report"||type==="examinations"){
     host.innerHTML=(fresh.report_cards||[]).map(x=>{const subjects=Array.isArray(x.subjects)?x.subjects:[],totals=reportCardTotals(subjects);return '<div class="p-4 bg-white border rounded-2xl"><b class="text-sm">'+studentEscape(x.academic_year)+' · '+studentEscape(x.term)+' · Grade '+studentEscape(x.overall_grade||totals.grade||'—')+'</b><div class="mt-3 space-y-1">'+(subjects.map(s=>'<div class="flex items-center justify-between gap-3 border-b py-2"><span>'+studentEscape(s.subject||'')+'</span><span class="text-right"><b>'+studentEscape(s.marks??'—')+' / '+studentEscape(s.max_marks??'—')+'</b><small class="block text-slate-500">Grade '+studentEscape(s.grade||((Number(s.max_marks)>0&&Number.isFinite(Number(s.marks)))?reportCardGrade(Number(s.marks)/Number(s.max_marks)*100):'—'))+'</small></span></div>').join('')||studentEscape(JSON.stringify(x.subjects)))+'</div><div class="mt-3 rounded-lg bg-slate-50 p-3 text-sm"><div class="flex justify-between"><span>Total marks</span><b>'+studentEscape(totals.totalMarks)+' / '+studentEscape(totals.totalMax)+'</b></div><div class="flex justify-between mt-1"><span>Percentage</span><b>'+totals.percentage.toFixed(2)+'%</b></div><div class="flex justify-between mt-1"><span>Overall grade</span><b>'+studentEscape(x.overall_grade||totals.grade||'—')+'</b></div></div><p class="mt-2 text-slate-500">'+studentEscape(x.remarks||'')+'</p></div>';}).join('')||'<div class="p-6 bg-white border rounded-2xl text-center text-slate-400">No report card published.</div>';
   }else if(type==="calendar"){
     host.innerHTML=(fresh.calendar||[]).map(x=>'<div class="p-4 bg-white border rounded-2xl"><b>'+studentEscape(x.event_date)+' — '+studentEscape(x.title)+'</b><div class="mt-1 text-slate-600">'+studentEscape(x.description||"")+'</div></div>').join("")||'<div class="p-6 bg-white border rounded-2xl text-center text-slate-400">No calendar events.</div>';
@@ -8680,7 +8684,37 @@ window.addEventListener('load',async function(){
       if (el) el.textContent = new Date().toLocaleDateString("en-IN", { weekday: "long", day: "numeric", month: "short", year: "numeric" });
     }
 
-    function showAdminExamSection(section){const cfg={'subject-master':['Subject Master',"Create and maintain the school's subject list."],'class-subject':['Class Subject Master','Assign subjects to a class and section.'],'teacher-issue':['Class/Subject Issue to Teacher','Assign classes and subjects to teachers.'],'optional-students':['Optional Subject Students','Manage students taking optional subjects.'],'exam-head':['Exam Head Master','Configure theory, practical and project exam heads.'],'exam-type':['Exam Type Master','Configure Term I, Half Yearly, Pre-Annual and Annual.'],'exam-master':['Exam Master','Create examinations by academic year, class, section and exam type.']};if(!cfg[section])return;const t=document.getElementById('admin-exam-section-title'),d=document.getElementById('admin-exam-section-description'),host=document.getElementById('admin-exam-section-content');if(t)t.textContent=cfg[section][0];if(d)d.textContent=cfg[section][1];if(host)host.textContent='This master screen is a UI preview. Database-backed saving is pending schema and permissions review.';document.querySelectorAll('.admin-exam-menu-item').forEach(b=>{b.classList.toggle('border-sky-500',b.dataset.examSection===section);});}
+    function showAdminExamSection(section){
+      const cfg={
+        'subject-master':['Subject Master',"Create and maintain the school's subject list."],
+        'class-subject':['Class Subject Master','Map subjects to a class and section.'],
+        'teacher-issue':['Class/Subject Issue to Teacher','Review teacher assignments by class, section and subject.'],
+        'optional-students':['Optional Subject Students','Select students taking an optional subject.'],
+        'exam-head':['Exam Head Master','Configure theory, practical and project components.'],
+        'exam-type':['Exam Type Master','Configure Term I, Half Yearly, Pre-Annual and Annual.'],
+        'exam-master':['Exam Master','Set academic year, class, section, exam type and dates.']
+      };
+      if(!cfg[section])return;
+      const title=document.getElementById('admin-exam-section-title');
+      const desc=document.getElementById('admin-exam-section-description');
+      const host=document.getElementById('admin-exam-section-content');
+      if(title)title.textContent=cfg[section][0];
+      if(desc)desc.textContent=cfg[section][1];
+      const input=(label,id,placeholder,type)=>'<label class="block text-xs font-semibold">'+label+'<input id="'+id+'" type="'+(type||'text')+'" placeholder="'+placeholder+'" class="block w-full mt-1 p-2.5 border rounded-xl font-normal"></label>';
+      const select=(label,id,items)=>'<label class="block text-xs font-semibold">'+label+'<select id="'+id+'" class="block w-full mt-1 p-2.5 border rounded-xl font-normal">'+items.map(x=>'<option>'+x+'</option>').join('')+'</select></label>';
+      const classes=['Select class','I','II','III','IV','V','VI','VII','VIII','IX','X','XI','XII'];
+      const forms={
+        'subject-master':input('Subject name','admin-exam-subject-name','e.g. English')+input('Subject code','admin-exam-subject-code','e.g. ENG')+'<label class="flex gap-2 text-xs"><input id="admin-exam-subject-optional" type="checkbox"> Optional subject</label>',
+        'class-subject':select('Class','admin-exam-class-subject-class',classes)+input('Section','admin-exam-class-subject-section','e.g. A')+input('Subject name','admin-exam-class-subject-name','Subject'),
+        'teacher-issue':input('Teacher email / staff identifier','admin-exam-teacher','Assigned teacher')+select('Class','admin-exam-teacher-class',classes)+input('Section','admin-exam-teacher-section','e.g. A')+input('Subject','admin-exam-teacher-subject','Subject name'),
+        'optional-students':select('Class','admin-exam-optional-class',classes)+input('Section','admin-exam-optional-section','e.g. A')+input('Admission number','admin-exam-optional-admission','Student admission number'),
+        'exam-head':input('Exam head name','admin-exam-head-name','Theory / Practical / Project')+input('Maximum marks','admin-exam-head-max','e.g. 80','number')+input('Pass marks','admin-exam-head-pass','e.g. 26','number'),
+        'exam-type':input('Exam type name','admin-exam-type-name','e.g. Half Yearly')+input('Display order','admin-exam-type-order','e.g. 2','number'),
+        'exam-master':input('Examination name','admin-exam-name','e.g. Half Yearly Examination')+input('Academic year','admin-exam-year','2026-27')+select('Class','admin-exam-master-class',classes)+input('Section','admin-exam-master-section','e.g. A')+select('Exam type','admin-exam-master-type',['Select exam type','Term I','Half Yearly','Pre-Annual','Annual'])+input('Start date','admin-exam-start-date','','date')+input('End date','admin-exam-end-date','','date')
+      };
+      if(host)host.innerHTML=(forms[section]||'')+'<button type="button" disabled class="w-full px-4 py-2.5 rounded-xl bg-slate-300 text-slate-600 text-sm font-bold cursor-not-allowed">Save unavailable — database / permissions review pending</button><p class="text-[11px] text-slate-500">UI-only preview. Inputs are not persisted and no backend request is sent.</p>';
+      document.querySelectorAll('.admin-exam-menu-item').forEach(button=>{const active=button.dataset.examSection===section;button.classList.toggle('border-sky-500',active);button.classList.toggle('bg-sky-50',active);button.setAttribute('aria-current',active?'page':'false');});
+    }
     function switchAdminTab(tab) {
       const allowedTabs = ['live', 'qr', 'directory', 'corrections', 'leave', 'audit', 'reports', 'students', 'student-portal', 'examinations'];
       if (!allowedTabs.includes(tab)) return;
