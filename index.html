@@ -7174,8 +7174,27 @@ async function loadAdminStudentAttendance(){
   const date=adminDate?.value||studentDateToday(),cls=document.getElementById('admin-student-att-class')?.value?.trim()||'',sec=document.getElementById('admin-student-att-section')?.value?.trim()||'';
   tbody.innerHTML='';if(tfoot)tfoot.innerHTML='';if(status)status.textContent='Loading attendance summary…';
   try{
+    // Supabase/PostgREST commonly caps each response at 1,000 rows.
+    // Fetch active roster records in pages so later classes (including Class X)
+    // are not silently omitted when the roster exceeds that cap.
+    const rosterPromise=(async()=>{
+      const pageSize=1000,all=[];
+      for(let from=0;from<50000;from+=pageSize){
+        const to=from+pageSize-1;
+        const page=await supabaseClient.from('student_roster')
+          .select('id,enroll_no,roll_no,class_name,section,status')
+          .eq('school_code',APS_STUDENT_SCHOOL).eq('status','ACTIVE')
+          .order('class_name').order('section').order('id')
+          .range(from,to);
+        if(page.error)throw page.error;
+        const records=page.data||[];
+        all.push(...records);
+        if(records.length<pageSize)break;
+      }
+      return {data:all,error:null};
+    })();
     const [sr,ar]=await Promise.all([
-      supabaseClient.from('student_roster').select('id,enroll_no,roll_no,class_name,section,status').eq('school_code',APS_STUDENT_SCHOOL).eq('status','ACTIVE').order('class_name').order('section').range(0,4999),
+      rosterPromise,
       supabaseClient.from('student_attendance').select('student_id,status').eq('school_code',APS_STUDENT_SCHOOL).eq('attendance_date',date)
     ]);
     if(sr.error)throw sr.error;if(ar.error)throw ar.error;
