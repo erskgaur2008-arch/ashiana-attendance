@@ -1033,19 +1033,29 @@
   cursor:zoom-in;
   touch-action:manipulation;
 }
-#admin-daily-qr-preview-content img,
-#admin-daily-qr-preview-content canvas {
+#admin-daily-qr-preview-content .admin-daily-qr-preview-code {
   display:block!important;
-  width:min(88vw, 88vh, 620px)!important;
-  height:auto!important;
-  max-width:88vw!important;
-  max-height:88vh!important;
+  width:min(78vw, 68vh, 560px)!important;
+  height:min(78vw, 68vh, 560px)!important;
+  max-width:78vw!important;
+  max-height:68vh!important;
   object-fit:contain;
   image-rendering:pixelated;
 }
-#admin-daily-qr-preview-content canvas {
-  width:min(88vw, 88vh, 620px)!important;
-  height:min(88vw, 88vh, 620px)!important;
+#admin-daily-qr-preview-content .admin-daily-qr-preview-logo {
+  position:absolute;
+  left:50%;
+  top:50%;
+  transform:translate(-50%,-50%);
+  width:clamp(54px, 14vw, 92px);
+  height:clamp(54px, 14vw, 92px);
+  object-fit:contain;
+  padding:5px;
+  background:#fff;
+  border:3px solid #fff;
+  border-radius:14px;
+  box-shadow:0 1px 6px rgba(2,44,34,.22);
+  image-rendering:auto;
 }
 #qr-token-preview { display:none!important; }
 @media(max-width:640px){
@@ -8138,7 +8148,7 @@ window.addEventListener('load',async function(){
           text: qrPayload,
           width: 90,
           height: 90,
-          correctLevel: QRCode.CorrectLevel.M
+          correctLevel: QRCode.CorrectLevel.H
         });
       }
 
@@ -8644,8 +8654,23 @@ window.addEventListener('load',async function(){
       } else {
         largeCode = code.cloneNode(true);
       }
-      largeCode.style.cssText = "display:block;width:min(88vw,88vh,620px);height:min(88vw,88vh,620px);max-width:88vw;max-height:88vh;object-fit:contain;image-rendering:pixelated";
-      target.appendChild(largeCode);
+      largeCode.className = "admin-daily-qr-preview-code";
+      const heading = document.createElement("div");
+      heading.textContent = "Scan Me";
+      heading.setAttribute("aria-label", "Scan Me");
+      heading.style.cssText = "font-size:clamp(28px,5vw,42px);font-weight:800;letter-spacing:.04em;color:#064E3B;text-align:center;margin-bottom:14px;line-height:1.1";
+      const codeFrame = document.createElement("div");
+      codeFrame.style.cssText = "position:relative;display:flex;align-items:center;justify-content:center;background:#fff;padding:10px;border-radius:18px;box-shadow:0 8px 28px rgba(2,44,34,.12)";
+      codeFrame.appendChild(largeCode);
+      const schoolLogo = document.createElement("img");
+      schoolLogo.src = "logo 2.png";
+      schoolLogo.alt = "Ashiana Public School logo";
+      schoolLogo.className = "admin-daily-qr-preview-logo";
+      schoolLogo.onerror = () => { schoolLogo.remove(); };
+      codeFrame.appendChild(schoolLogo);
+      target.style.cssText = "width:100%;height:100%;display:flex;flex-direction:column;align-items:center;justify-content:center;padding:18px;box-sizing:border-box;overflow:hidden";
+      target.appendChild(heading);
+      target.appendChild(codeFrame);
       preview.classList.remove("hidden");
       preview.classList.add("flex");
       preview.style.setProperty("display", "flex", "important");
