@@ -49,7 +49,7 @@ jobs:
       - name: Add Android platform
         run: npx cap add android
 
-      - name: Apply school logo as Android app icon
+      - name: Apply school logo to legacy and adaptive Android app icons
         shell: bash
         run: |
           set -e
@@ -60,17 +60,48 @@ jobs:
 
           SRC="logo 2.png"
           RES="android/app/src/main/res"
+          test -s "$SRC"
 
-          for spec in             "mipmap-mdpi:48"             "mipmap-hdpi:72"             "mipmap-xhdpi:96"             "mipmap-xxhdpi:144"             "mipmap-xxxhdpi:192"
-          do
+          # Legacy launcher icons for older Android launchers.
+          for spec in "mipmap-mdpi:48" "mipmap-hdpi:72" "mipmap-xhdpi:96" "mipmap-xxhdpi:144" "mipmap-xxxhdpi:192"; do
             DIR="${spec%%:*}"
             SIZE="${spec##*:}"
             mkdir -p "$RES/$DIR"
-            convert "$SRC" -resize "${SIZE}x${SIZE}" -gravity center -background none -extent "${SIZE}x${SIZE}" "$RES/$DIR/ic_launcher.png"
+            convert "$SRC" -resize "${SIZE}x${SIZE}" -gravity center -background white -alpha remove -alpha off -extent "${SIZE}x${SIZE}" "$RES/$DIR/ic_launcher.png"
             cp "$RES/$DIR/ic_launcher.png" "$RES/$DIR/ic_launcher_round.png"
           done
 
+          # Adaptive icons are used by modern Android launchers. Keep the logo
+          # centered with safe padding so it is not cropped by circular/squircle masks.
+          for spec in "mipmap-mdpi:108" "mipmap-hdpi:162" "mipmap-xhdpi:216" "mipmap-xxhdpi:324" "mipmap-xxxhdpi:432"; do
+            DIR="${spec%%:*}"
+            SIZE="${spec##*:}"
+            mkdir -p "$RES/$DIR"
+            convert "$SRC" -resize "$((SIZE * 68 / 100))x$((SIZE * 68 / 100))" -gravity center -background none -extent "${SIZE}x${SIZE}" "$RES/$DIR/ic_launcher_foreground.png"
+          done
+
+          mkdir -p "$RES/color" "$RES/mipmap-anydpi-v26"
+          cat > "$RES/color/ic_launcher_background.xml" <<'EOF'
+          <?xml version="1.0" encoding="utf-8"?>
+          <resources>
+              <color name="ic_launcher_background">#FFFFFF</color>
+          </resources>
+          EOF
+
+          cat > "$RES/mipmap-anydpi-v26/ic_launcher.xml" <<'EOF'
+          <?xml version="1.0" encoding="utf-8"?>
+          <adaptive-icon xmlns:android="http://schemas.android.com/apk/res/android">
+              <background android:drawable="@color/ic_launcher_background" />
+              <foreground android:drawable="@mipmap/ic_launcher_foreground" />
+          </adaptive-icon>
+          EOF
+
+          # Round adaptive icon uses the same school logo and background.
+          cp "$RES/mipmap-anydpi-v26/ic_launcher.xml" "$RES/mipmap-anydpi-v26/ic_launcher_round.xml"
+
           test -s "$RES/mipmap-xxxhdpi/ic_launcher.png"
+          test -s "$RES/mipmap-xxxhdpi/ic_launcher_foreground.png"
+          test -s "$RES/mipmap-anydpi-v26/ic_launcher.xml"
 
       - name: Sync web assets
         run: npx cap sync android
