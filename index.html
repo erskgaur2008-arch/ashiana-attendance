@@ -126,7 +126,40 @@
       box-shadow:0 4px 12px rgba(2,44,34,.18);
     }
 
-    /* Full-screen mobile login: remove the large vertical white gap around the card. */
+    /* Full-screen Android/PWA dashboard: keep the school identity below the top system inset.
+   Some devices launch in immersive mode and otherwise clip the first header row. */
+@media (max-width: 640px) {
+  #admin-portal-view {
+    padding-top: max(12px, env(safe-area-inset-top)) !important;
+    scroll-margin-top: env(safe-area-inset-top);
+  }
+  #admin-portal-view .admin-dashboard-header {
+    box-sizing: border-box;
+    margin-top: max(8px, env(safe-area-inset-top));
+    padding-top: max(18px, calc(14px + env(safe-area-inset-top))) !important;
+    min-height: 82px;
+  }
+  #admin-portal-view .admin-dashboard-brand {
+    align-items: center;
+    padding-top: 2px;
+    min-width: 0;
+  }
+  #admin-portal-view .admin-dashboard-brand h1 {
+    display: block;
+    visibility: visible;
+    line-height: 1.25;
+    overflow: visible;
+    overflow-wrap: anywhere;
+  }
+}
+@media (display-mode: standalone) and (max-width: 640px) {
+  #admin-portal-view .admin-dashboard-header {
+    margin-top: max(12px, env(safe-area-inset-top));
+    padding-top: max(20px, calc(16px + env(safe-area-inset-top))) !important;
+  }
+}
+
+/* Full-screen mobile login: remove the large vertical white gap around the card. */
     @media (max-width: 640px){
       body:has(#auth-gateway-view:not(.hidden)){overflow-x:hidden;}
       #auth-main{max-width:none;padding:0!important;justify-content:flex-start!important;align-items:stretch!important;}
