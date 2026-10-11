@@ -11,6 +11,20 @@
   <meta name="apple-mobile-web-app-title" content="Ashiana Attendance">
   <link id="ashiana-manifest" rel="manifest">
   <script>
+    // Single source for the staff <select> options (was copy-pasted 8 times).
+    function staffOptionsHtml() {
+      return staffDatabase.map(s => `<option value="${escHtml(s.id)}">${escHtml(s.name)} (${escHtml(s.empId)})</option>`).join("");
+    }
+  </script>
+  <script>
+    // Shared HTML escaper. Escapes quotes too, so it is safe in text AND attributes.
+    window.escHtml = function (v) {
+      return String(v == null ? "" : v)
+        .replace(/&/g, "&amp;").replace(/</g, "&lt;").replace(/>/g, "&gt;")
+        .replace(/"/g, "&quot;").replace(/'/g, "&#39;");
+    };
+  </script>
+  <script>
     // Select a role-specific PWA manifest before the browser installs the app.
     (function () {
       try {
@@ -1287,7 +1301,7 @@
                 return;
               }
               var script = document.createElement("script");
-              script.src = "https://cdn.jsdelivr.net/npm/@supabase/supabase-js@2";
+              script.src = "https://cdn.jsdelivr.net/npm/@supabase/supabase-js@2.45.4/dist/umd/supabase.js";
               script.async = true;
               script.dataset.supabaseRuntime = "true";
               script.onload = resolve;
@@ -3069,10 +3083,6 @@
                 <i data-lucide="refresh-cw" class="w-3.5 h-3.5"></i>
                 <span>Refresh Report</span>
               </button>
-              <button onclick="seedSampleMonthlyAttendanceData()" class="px-3 py-2 bg-slate-100 hover:bg-slate-200 text-slate-700 rounded-xl text-xs font-semibold flex items-center space-x-1 transition-colors" title="Populate sample punches for earlier days of this month to preview monthly reports">
-                <i data-lucide="sparkles" class="w-3.5 h-3.5 text-amber-500"></i>
-                <span class="hidden sm:inline">Seed Sample Month Punches</span>
-              </button>
             </div>
 
             <div class="flex items-center space-x-1.5">
@@ -3944,12 +3954,10 @@
     let authRestoreEventBusy = false;
 
     // Staff Directory Selection State
-    let selectedStaffIds = new Set();
 
     // Current Report State
     let currentReportType = 'daily'; // 'daily' | 'monthly' | 'faculty'
     let lastGeneratedReportData = [];
-    let lastGeneratedReportColumns = [];
 
     // Universally Unique Identifier generator (compatible with both UUID & TEXT columns)
     function generateUUID() {
@@ -4401,7 +4409,7 @@
       if (window.supabase && window.supabase.createClient) return true;
 
       const sources = [
-        "https://cdn.jsdelivr.net/npm/@supabase/supabase-js@2",
+        "https://cdn.jsdelivr.net/npm/@supabase/supabase-js@2.45.4/dist/umd/supabase.js",
         "https://unpkg.com/@supabase/supabase-js@2"
       ];
 
@@ -4788,7 +4796,7 @@
       };
       toast.className = `p-3 rounded-2xl shadow-xl border pointer-events-auto flex items-center space-x-2 text-xs transition-all transform duration-200 translate-y-2 opacity-0 ${bgMap[type] || bgMap.info}`;
       const icon = type === 'success' ? 'check-circle' : type === 'error' ? 'alert-circle' : 'info';
-      toast.innerHTML = `<i data-lucide="${icon}" class="w-4 h-4 flex-shrink-0"></i><span class="font-medium">${message}</span>`;
+      toast.innerHTML = `<i data-lucide="${icon}" class="w-4 h-4 flex-shrink-0"></i><span class="font-medium">${escHtml(message)}</span>`;
       container.appendChild(toast);
       if (window.lucide) lucide.createIcons();
 
@@ -5383,17 +5391,6 @@ function closeTeacherStudentLeavePopup(event){
   if(modal){modal.classList.add('hidden');modal.classList.remove('flex');}
 }
 async function updateStudentLeave(id,status){if(!teacherIsClassTeacher())return showToast('Student leave management is available to Class Teachers only.','error');status=String(status||'').trim().toUpperCase();if(!['APPROVED','REJECTED'].includes(status))return showToast('Invalid leave decision.','error');const {data:current,error:readError}=await supabaseClient.from('student_leave_requests').select('id,status').eq('id',id).eq('teacher_email',teacherPortalEmail()).maybeSingle();if(readError)return showToast(readError.message,'error');if(!current)return showToast('Leave request not found or you do not have permission.','error');if(['APPROVED','REJECTED','CANCELLED','WITHDRAWN'].includes(String(current.status||'').trim().toUpperCase())){showToast('This leave request already has a final decision.','info');await loadTeacherLeaveRequests();return;}const {data:updated,error}=await supabaseClient.from('student_leave_requests').update({status,updated_at:new Date().toISOString()}).eq('id',id).eq('teacher_email',teacherPortalEmail()).not('status','in','("APPROVED","REJECTED","CANCELLED","WITHDRAWN")').select('id');if(error)return showToast(error.message,'error');if(!updated?.length){showToast('This leave request was already decided.','info');await loadTeacherLeaveRequests();return;}showToast('Leave '+status.toLowerCase()+'.','success');await loadTeacherLeaveRequests();await openTeacherStudentLeavePopup();}
-async function handleStudentLogin(event){
-      event.preventDefault();
-      const admission=(document.getElementById("student-login-admission")?.value||"").trim().toUpperCase();
-      const dob=(document.getElementById("student-login-dob")?.value||"").replace(/\D/g,"");
-      if(!admission||!/^[0-9]{8}$/.test(dob)){showToast("Enter Admission No. and DOB password in DDMMYYYY format.","error");return;}
-      if(!supabaseClient){showToast("Cloud authentication is unavailable. Please try again.","error");return;}
-      const btn=document.getElementById("btn-student-login");if(btn){btn.disabled=true;btn.textContent="Verifying…";}
-      try{const {data,error}=await supabaseClient.rpc("student_login",{p_school_code:APS_STUDENT_SCHOOL,p_enroll_no:admission,p_dob_password:dob});if(error)throw error;if(!data?.success||!data?.student)throw new Error("INVALID_STUDENT_LOGIN");const {data:bundle}=await supabaseClient.rpc("student_portal_bundle",{p_enroll_no:admission,p_dob_password:dob});currentAuthUser={type:"STUDENT",studentRecord:data.student,portalData:bundle||{}};currentStaffId=null;sessionStorage.setItem(STORAGE_KEY_CURRENT_USER,JSON.stringify(currentAuthUser));applyAuthenticatedUI();showToast("Welcome, "+data.student.student_name+"!","success");}
-      catch(err){showToast(String(err?.message||err).includes("INVALID_STUDENT_LOGIN")?"Incorrect Admission No. or DOB password.":"Student login failed. Please try again.","error");}
-      finally{if(btn){btn.disabled=false;btn.textContent="Login to Student Portal";}}
-    }
     function formatStudentPortalDate(value){
   if(!value)return "—";
   const d=new Date(value);
@@ -5601,108 +5598,6 @@ async function refreshStudentPortalData(dobOverride){
       requestAnimationFrame(scaleStudentIdCardPreview);
       window.setTimeout(scaleStudentIdCardPreview,120);
     }
-async function handleTeacherLogin(event) {
-      event.preventDefault();
-      const idVal = normalizeLoginId(document.getElementById("teacher-login-id")?.value);
-      const pinVal = (document.getElementById("teacher-login-pin")?.value || "").trim();
-
-      if (!idVal || !/^\d{4}$/.test(pinVal)) {
-        showToast("Enter your Employee ID/email and exactly 4 digits.", "error");
-        return;
-      }
-      if (!supabaseClient) {
-        showToast("Cloud authentication is unavailable. Please try again.", "error");
-        return;
-      }
-
-      try {
-        showToast("Verifying staff PIN securely...", "info");
-
-        // The Edge Function verifies the 4-digit PIN against bcrypt and, when
-        // needed, migrates/repairs the Auth password to the derived credential.
-        const loginResult = await invokeVerifyAttendance({
-          action: "staff_login",
-          login_id: idVal,
-          pin: pinVal
-        });
-
-        if (!loginResult?.success || !loginResult?.staff?.email || !loginResult?.staff?.id) {
-          throw new Error("Staff authentication failed.");
-        }
-
-        // The login bridge now returns a real Auth session after verifying the PIN.
-        // Prefer it directly so mobile browsers do not lose the session between the
-        // Edge Function password sync and the second browser-side password login.
-        let authUser = loginResult?.session?.user || null;
-        if (loginResult?.session?.access_token && loginResult?.session?.refresh_token) {
-          const { data: sessionData, error: sessionError } = await supabaseClient.auth.setSession({
-            access_token: loginResult.session.access_token,
-            refresh_token: loginResult.session.refresh_token
-          });
-          if (sessionError || !sessionData?.user) {
-            throw new Error(sessionError?.message || "Supabase Auth session could not be established.");
-          }
-          authUser = sessionData.user;
-        } else {
-          const authPassword = deriveStaffAuthPassword(loginResult.staff.id, pinVal);
-          const { data: authData, error: authError } = await supabaseClient.auth.signInWithPassword({
-            email: loginResult.staff.email,
-            password: authPassword
-          });
-          if (authError || !authData?.user) {
-            throw new Error(authError?.message || "Supabase Auth sign-in failed.");
-          }
-          authUser = authData.user;
-        }
-
-        const matched = {
-          id: loginResult.staff.id,
-          empId: loginResult.staff.emp_id,
-          name: loginResult.staff.name,
-          department: loginResult.staff.department,
-          role: loginResult.staff.role,
-          email: loginResult.staff.email,
-          avatarUrl: loginResult.staff.avatar_url || '',
-          gender: loginResult.staff.gender || '',
-          dob: loginResult.staff.dob || '',
-          validThru: loginResult.staff.valid_thru || '',
-          phone: loginResult.staff.phone || '',
-          address: loginResult.staff.address || '',
-          pinHash: "",
-          status: loginResult.staff.status || "ACTIVE"
-        };
-        const idx = staffDatabase.findIndex(s => s.id === matched.id);
-        if (idx >= 0) staffDatabase[idx] = { ...staffDatabase[idx], ...matched };
-        else staffDatabase.push(matched);
-        savePersistedData();
-
-        currentAuthUser = { type: 'STAFF', staffRecord: matched };
-        currentStaffId = matched.id;
-        sessionStorage.setItem(STORAGE_KEY_CURRENT_USER, JSON.stringify(currentAuthUser));
-
-        await syncAllDataFromSupabase(false);
-        playTone('SUCCESS');
-        showToast(`Welcome, ${matched.name}!`, "success");
-        applyAuthenticatedUI();
-      } catch (err) {
-        playTone('ERROR');
-        const msg = String(err?.message || err);
-        if (msg.includes('RATE_LIMIT')) {
-          showToast("Too many PIN attempts. Please wait a few minutes and try again.", "error");
-        } else if (msg.includes('ID_CARD_EXPIRED')) {
-          showToast("ID CARD EXPIRED. Your Valid Thru date has passed. Please contact the school administrator for renewal.", "error");
-        } else if (msg.includes('INVALID_PIN') || msg.includes('STAFF_NOT_FOUND')) {
-          showToast("Incorrect Employee ID/email or PIN.", "error");
-        } else if (msg.includes('ADMIN_ACCOUNT')) {
-          window.switchLoginTab("admin");
-          const adminInput = document.getElementById("admin-login-user");
-          if (adminInput && !adminInput.value) adminInput.value = idVal;
-          showToast("This is an administrator account. The Administrator login has been opened for you.", "info");
-        } else {
-          showToast("Staff sign-in failed: " + msg, "error");
-        }
-      }
-    }
 
     async function requestAdminPasswordReset() {
       const emailInput = document.getElementById("admin-login-user");
@@ -5729,55 +5624,6 @@ async function handleTeacherLogin(event) {
       }
     }
 
-    async function handleAdminLogin(event) {
-      event.preventDefault();
-      const userVal = normalizeLoginId(document.getElementById("admin-login-user")?.value).toLowerCase();
-      const passVal = (document.getElementById("admin-login-pass")?.value || "").trim();
-
-      if (!userVal || !passVal) {
-        showToast("Enter the administrator email and password.", "error");
-        return;
-      }
-      if (!supabaseClient) {
-        showToast("Cloud authentication is unavailable.", "error");
-        return;
-      }
-
-      try {
-        const { data, error } = await supabaseClient.auth.signInWithPassword({
-          email: userVal,
-          password: passVal
-        });
-        if (error || !data?.user) throw new Error(error?.message || "Administrator sign-in failed.");
-
-        const { data: adminAuthz, error: adminAuthzError } =
-          await supabaseClient.rpc('authorize_admin_login');
-        if (adminAuthzError) {
-          await supabaseClient.auth.signOut({ scope: 'local' });
-          throw new Error("Administrator authorization check failed: " + (adminAuthzError.message || "Database error"));
-        }
-        if (!adminAuthz?.authorized) {
-          await supabaseClient.auth.signOut({ scope: 'local' });
-          throw new Error("Administrator account is not authorized.");
-        }
-
-        currentAuthUser = {
-          type: 'ADMIN',
-          username: adminAuthz.email || userVal,
-          role: adminAuthz.role || 'ADMIN'
-        };
-        currentStaffId = null;
-        sessionStorage.setItem(STORAGE_KEY_CURRENT_USER, JSON.stringify(currentAuthUser));
-        await syncAllDataFromSupabase(false);
-        recordAuditLog("ADMIN_LOGIN", "Security Gateway", "Administrator signed in to console.");
-        playTone('SUCCESS');
-        showToast("Administrator signed in successfully.", "success");
-        applyAuthenticatedUI();
-      } catch (err) {
-        playTone('ERROR');
-        showToast("Administrator sign-in failed: " + (err?.message || err), "error");
-      }
-    }
 
     async function handleLogout() {
       try { if (supabaseClient) await supabaseClient.auth.signOut({ scope: 'local' }); } catch (e) {}
@@ -6336,10 +6182,6 @@ async function handleTeacherLogin(event) {
       return document.getElementById('scanner-pin-panel')?.classList.contains('hidden') !== false;
     }
 
-    function handleSimulateScanSuccess() {
-      const payload = JSON.stringify({ school: "ASHIANA_PUBLIC_SCHOOL", date: activeQRSession.date, token: activeQRSession.token });
-      onQRCodeDetected(payload);
-    }
 
     function openPunchModal() {
       if (!currentStaffId) {
@@ -6502,13 +6344,6 @@ async function handleTeacherLogin(event) {
       catch(e){if(status)status.textContent=e.message||'Could not start camera.';}
     }
 
-    async function openStudentQrAttendanceScanner(){
-      // Compatibility alias: all attendance QR entry points now open the same smart scanner.
-      if(!canAccessStudentAttendance()||!supabaseClient){
-        showToast('Student QR attendance is available to teaching staff only.','error');return;
-      }
-      openPunchModal();
-    }
 
     async function closeStudentQrAttendanceScanner(event){
       if(event&&event.target!==event.currentTarget)return;
@@ -7154,18 +6989,6 @@ function closeAdminStudentAttendanceRecordsModal(event){
   document.body.classList.remove('overflow-hidden');
 }
 
-function toggleAdminStudentAttendancePanel(){
-  const panel=document.getElementById('admin-student-attendance-panel');
-  if(!panel)return;
-  const opening=panel.classList.contains('hidden');
-  panel.classList.toggle('hidden');
-  if(opening){
-    const d=document.getElementById('admin-student-att-date');
-    if(d&&!d.value)d.value=studentDateToday();
-    if(window.lucide)lucide.createIcons();
-    loadAdminStudentAttendance();
-  }
-}
 async function loadAdminStudentAttendance(){
   const adminDate=document.getElementById('admin-student-att-date');
   if(adminDate&&!adminDate.value)adminDate.value=studentDateToday();
@@ -7975,23 +7798,6 @@ window.addEventListener('load',async function(){
       document.getElementById("admin-bulk-delete-staff-modal")?.classList.add("hidden");
     }
 
-    function promptBulkDeleteConfirmation() {
-      const count = modalBulkSelectedIds.size;
-      if (count === 0) {
-        showToast("Please select at least one staff member to delete.", "error");
-        return;
-      }
-      const defaultActions = document.getElementById("bulk-delete-default-actions");
-      const confirmPrompt = document.getElementById("bulk-delete-confirm-prompt");
-      const confirmText = document.getElementById("bulk-delete-confirm-text");
-
-      if (confirmText) {
-        confirmText.innerText = `Permanently delete ${count} faculty member(s)? This cannot be undone.`;
-      }
-      if (defaultActions) defaultActions.classList.add("hidden");
-      if (confirmPrompt) confirmPrompt.classList.remove("hidden");
-      if (window.lucide) lucide.createIcons();
-    }
 
     function cancelBulkDeleteConfirmation() {
       const defaultActions = document.getElementById("bulk-delete-default-actions");
@@ -8000,33 +7806,6 @@ window.addEventListener('load',async function(){
       if (confirmPrompt) confirmPrompt.classList.add("hidden");
     }
 
-    async function executeBulkStaffDeletionNow() {
-      const count = modalBulkSelectedIds.size;
-      if (count === 0) return;
-
-      const idsToDelete = Array.from(modalBulkSelectedIds);
-      staffDatabase = staffDatabase.filter(s => !modalBulkSelectedIds.has(s.id));
-      modalBulkSelectedIds.clear();
-      savePersistedData();
-
-      // Cloud deletion from Supabase
-      if (supabaseClient) {
-        idsToDelete.forEach(id => {
-          supabaseClient.from('staff').delete().eq('id', id).then(() => {});
-        });
-      }
-
-      recordAuditLog("BULK_DELETE", `${count} Faculty`, `Bulk deleted ${count} faculty records`);
-      playTone('SUCCESS');
-      showToast(`Successfully deleted ${count} faculty members.`, "info");
-      closeBulkDeleteStaffModal();
-      renderStaffDirectoryTable();
-      renderLiveAttendanceTable();
-      updateKPICards();
-
-      const sel = document.getElementById("correction-staff-select");
-      if (sel) sel.innerHTML = staffDatabase.map(s => `<option value="${s.id}">${s.name} (${s.empId})</option>`).join('');
-    }
 
     function renderModalBulkStaffList() {
       const tbody = document.getElementById("modal-bulk-staff-tbody");
@@ -8122,7 +7901,7 @@ window.addEventListener('load',async function(){
       updateKPICards();
 
       const sel = document.getElementById("correction-staff-select");
-      if (sel) sel.innerHTML = staffDatabase.map(s => `<option value="${s.id}">${s.name} (${s.empId})</option>`).join('');
+      if (sel) sel.innerHTML = staffOptionsHtml();
     }
 
     function escapeIdCardHtml(value) {
@@ -8752,7 +8531,7 @@ window.addEventListener('load',async function(){
         if (tab === 'corrections') {
           const sel = document.getElementById("correction-staff-select");
           if (sel && staffDatabase.length) {
-            sel.innerHTML = staffDatabase.map(s => `<option value="${s.id}">${s.name} (${s.empId})</option>`).join('');
+            sel.innerHTML = staffOptionsHtml();
           }
         }
         if (tab === 'student-portal' && currentAuthUser?.type === 'ADMIN') {
@@ -8810,7 +8589,7 @@ window.addEventListener('load',async function(){
     function populateReportFacultySelect() {
       const sel = document.getElementById("report-faculty-select");
       if (!sel) return;
-      sel.innerHTML = staffDatabase.map(s => `<option value="${s.id}">${s.name} (${s.empId})</option>`).join('');
+      sel.innerHTML = staffOptionsHtml();
     }
 
     // Helper to calculate attendance stats for a specific date
@@ -9433,63 +9212,6 @@ window.addEventListener('load',async function(){
       window.print();
     }
 
-    // Utility: Seed realistic sample punches across the current month for demo / audit testing
-    function seedSampleMonthlyAttendanceData() {
-      const monthStr = document.getElementById("report-month-input")?.value || systemConfig.currentAttendanceDate.substring(0, 7);
-      const [year, month] = monthStr.split('-').map(Number);
-      const daysInMonth = new Date(year, month, 0).getDate();
-      const todayDay = new Date().getDate();
-
-      let seededCount = 0;
-      const staffSubset = staffDatabase.slice(0, 35); // Seed for first 35 faculty
-
-      for (let day = 1; day <= Math.min(todayDay, daysInMonth); day++) {
-        const dObj = new Date(year, month - 1, day);
-        if (dObj.getDay() === 0) continue; // Skip Sunday
-
-        const dStr = `${year}-${String(month).padStart(2, '0')}-${String(day).padStart(2, '0')}`;
-        
-        staffSubset.forEach((s, idx) => {
-          // Check if punch already exists
-          const existing = punchLedger.some(p => p.staffId === s.id && p.attendanceDate === dStr);
-          if (!existing) {
-            // Semi-realistic timings
-            const isLate = (idx % 7 === 0);
-            const inHour = isLate ? "07:56" : (idx % 2 === 0 ? "07:34" : "07:39");
-            const outHour = "14:32";
-
-            punchLedger.push({
-              id: `seed_in_${s.id}_${dStr}`,
-              staffId: s.id,
-              staffName: s.name,
-              empId: s.empId,
-              attendanceDate: dStr,
-              type: "IN",
-              timestamp: inHour,
-              method: "QR_CAMERA"
-            });
-
-            punchLedger.push({
-              id: `seed_out_${s.id}_${dStr}`,
-              staffId: s.id,
-              staffName: s.name,
-              empId: s.empId,
-              attendanceDate: dStr,
-              type: "OUT",
-              timestamp: outHour,
-              method: "QR_CAMERA"
-            });
-
-            seededCount += 2;
-          }
-        });
-      }
-
-      savePersistedData();
-      playTone('SUCCESS');
-      showToast(`Seeded ${seededCount} sample punches for ${monthStr}!`, "success");
-      runAdminReportGeneration();
-    }
 
     function getStaffInitials(name) {
       return String(name || '')
@@ -9841,7 +9563,7 @@ window.addEventListener('load',async function(){
         updateKPICards();
 
         const sel = document.getElementById("correction-staff-select");
-        if (sel) sel.innerHTML = staffDatabase.map(s => `<option value="${s.id}">${s.name} (${s.empId})</option>`).join('');
+        if (sel) sel.innerHTML = staffOptionsHtml();
       } catch (e) {
         playTone('ERROR');
         showToast("Staff creation failed: " + (e?.message || e), "error");
@@ -10040,7 +9762,7 @@ window.addEventListener('load',async function(){
       updateKPICards();
 
       const sel = document.getElementById("correction-staff-select");
-      if (sel) sel.innerHTML = staffDatabase.map(s => `<option value="${s.id}">${s.name} (${s.empId})</option>`).join('');
+      if (sel) sel.innerHTML = staffOptionsHtml();
     }
 
     function openLeaveApplyModal() {
@@ -10473,7 +10195,7 @@ window.addEventListener('load',async function(){
         renderLiveAttendanceTable();
         updateKPICards();
         const sel = document.getElementById("correction-staff-select");
-        if (sel) sel.innerHTML = staffDatabase.map(s => `<option value="${s.id}">${s.name} (${s.empId})</option>`).join('');
+        if (sel) sel.innerHTML = staffOptionsHtml();
       } catch (err) {
         console.error("Secure Excel import error:", err);
         showToast("Import stopped: " + (err?.message || err), "error");
@@ -10486,10 +10208,16 @@ window.addEventListener('load',async function(){
       }
     }
 
+    function csvCell(v) {
+      let t = String(v == null ? "" : v);
+      if (/^[=+\-@\t\r]/.test(t)) t = "'" + t; // block spreadsheet formula injection
+      return '"' + t.replace(/"/g, '""') + '"';
+    }
+
     function exportStaffCredentialsWithPIN() {
       let csv = "Employee ID,Staff Name,Department,Role,Email,Attendance PIN,Status\n";
       staffDatabase.forEach(s => {
-        csv += `"${s.empId}","${s.name}","${s.department}","${s.role}","${s.email}","Managed securely","${s.status}"\n`;
+        csv += [s.empId,s.name,s.department,s.role,s.email,"Managed securely",s.status].map(csvCell).join(",") + "\n";
       });
       const blob = new Blob([csv], { type: "text/csv" });
       const a = document.createElement("a");
@@ -10957,9 +10685,6 @@ window.addEventListener('load',async function(){
       }catch(e){showToast('Calendar delete failed: '+(e.message||e),'error');}
     }
 
-    async function deleteAdminStudentPortalCalendar(id){
-      return deleteAdminStudentPortalCalendarTopic([id]);
-    }
     async function loadAdminStudentPortalReportStudents(){
       const sel=document.getElementById('admin-student-portal-report-student');if(!sel||!supabaseClient||currentAuthUser?.type!=='ADMIN')return;
       const target=adminStudentPortalTarget();if(!adminStudentPortalRequiresSingleTarget()){sel.innerHTML='<option value="">Select exactly one class/section first</option>';return;}
@@ -11045,7 +10770,7 @@ window.addEventListener('load',async function(){
       }
 
       const sel = document.getElementById("correction-staff-select");
-      if (sel) sel.innerHTML = staffDatabase.map(s => `<option value="${s.id}">${s.name} (${s.empId})</option>`).join('');
+      if (sel) sel.innerHTML = staffOptionsHtml();
 
       try { startLiveClocks(); } catch (e) { console.warn("Clock startup warning:", e); }
       try { applyAuthenticatedUI(); } catch (e) {
