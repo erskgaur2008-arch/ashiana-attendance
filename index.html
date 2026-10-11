@@ -8491,7 +8491,16 @@ window.addEventListener('load',async function(){
       qrHost.setAttribute("role", "button");
       qrHost.setAttribute("tabindex", "0");
       qrHost.setAttribute("aria-label", "Open Daily Attendance QR full screen");
-      qrHost.addEventListener("click", event => { event.preventDefault(); event.stopPropagation(); openAdminDailyQRPreview(); });
+      qrHost.addEventListener("click", event => {
+        event.preventDefault();
+        event.stopPropagation();
+        window.openAdminDailyQRPreview();
+      });
+      qrHost.addEventListener("pointerup", event => {
+        event.preventDefault();
+        event.stopPropagation();
+        window.openAdminDailyQRPreview();
+      });
       qrHost.addEventListener("keydown", event => {
         if (event.key === "Enter" || event.key === " ") {
           event.preventDefault();
@@ -8598,13 +8607,28 @@ window.addEventListener('load',async function(){
         return;
       }
       target.replaceChildren();
-      const clone = code.cloneNode(true);
-      clone.removeAttribute("id");
-      clone.style.cssText = "display:block;width:min(88vw,88vh,620px);height:min(88vw,88vh,620px);max-width:88vw;max-height:88vh;object-fit:contain;image-rendering:pixelated";
-      target.appendChild(clone);
+      let largeCode;
+      if (code.tagName === "CANVAS") {
+        largeCode = document.createElement("img");
+        try {
+          largeCode.src = code.toDataURL("image/png");
+        } catch (error) {
+          showToast("Unable to open the QR preview. Please reload today's QR.", "error");
+          return;
+        }
+        largeCode.alt = "Daily attendance QR code";
+      } else {
+        largeCode = code.cloneNode(true);
+      }
+      largeCode.style.cssText = "display:block;width:min(88vw,88vh,620px);height:min(88vw,88vh,620px);max-width:88vw;max-height:88vh;object-fit:contain;image-rendering:pixelated";
+      target.appendChild(largeCode);
       preview.classList.remove("hidden");
       preview.classList.add("flex");
-      preview.style.display = "flex";
+      preview.style.setProperty("display", "flex", "important");
+      preview.style.setProperty("position", "fixed", "important");
+      preview.style.setProperty("inset", "0", "important");
+      preview.style.setProperty("z-index", "2147483647", "important");
+      preview.style.setProperty("background", "#ffffff", "important");
       document.body.style.overflow = "hidden";
       if (window.lucide) lucide.createIcons();
     }
@@ -8615,7 +8639,7 @@ window.addEventListener('load',async function(){
       if (preview) {
         preview.classList.add("hidden");
         preview.classList.remove("flex");
-        preview.style.display = "none";
+        preview.style.setProperty("display", "none", "important");
       }
       const target = document.getElementById("admin-daily-qr-preview-content");
       if (target) target.innerHTML = "";
