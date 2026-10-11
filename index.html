@@ -8615,6 +8615,7 @@ window.addEventListener('load',async function(){
       if (preview) {
         preview.classList.add("hidden");
         preview.classList.remove("flex");
+        preview.style.display = "none";
       }
       const target = document.getElementById("admin-daily-qr-preview-content");
       if (target) target.innerHTML = "";
