@@ -8224,10 +8224,10 @@ window.addEventListener('load',async function(){
         return;
       }
       const requestedId = String(staffId ?? "").trim();
-      const requestedDigits = requestedId.replace(/\\D/g, "");
+      const requestedDigits = requestedId.replace(/\D/g, "");
       const staff = staffDatabase.find(s => String(s.id) === requestedId)
         || staffDatabase.find(s => String(s.empId || "").trim().toLowerCase() === requestedId.toLowerCase())
-        || (requestedDigits ? staffDatabase.find(s => String(s.empId || "").replace(/\\D/g, "") === requestedDigits) : null)
+        || (requestedDigits ? staffDatabase.find(s => String(s.empId || "").replace(/\D/g, "") === requestedDigits) : null)
         || (String(currentAuthUser?.staffRecord?.id || "") === requestedId ? currentAuthUser.staffRecord : null)
         || (String(currentAuthUser?.staffRecord?.empId || "").trim().toLowerCase() === requestedId.toLowerCase() ? currentAuthUser.staffRecord : null);
       if (!staff) {
