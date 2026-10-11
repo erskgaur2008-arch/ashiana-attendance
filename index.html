@@ -583,7 +583,8 @@
     .staff-id-preview-card .id-valid{font-size:1.55mm;color:#64748b;line-height:1.25;max-width:31mm;}
     .staff-id-preview-card .id-qrcode{width:11mm;height:11mm;flex:0 0 11mm;}
     .staff-id-preview-card .id-qrcode img,.staff-id-preview-card .id-qrcode canvas{width:11mm!important;height:11mm!important;display:block;}
-    .staff-id-preview-card .id-footer{flex:1 1 auto;min-height:1.5mm;text-align:center;font-size:1.25mm;line-height:1.2;color:#94a3b8;padding-top:.2mm;}
+    .staff-id-preview-card .id-footer{flex:0 0 3.2mm;height:3.2mm;min-height:3.2mm;display:flex;align-items:center;justify-content:center;text-align:center;font-size:1.15mm;line-height:1.1;color:#64748b;padding:0 .8mm;white-space:nowrap;overflow:hidden;}
+    .staff-id-preview-card .id-qr-caption{position:absolute;right:0;top:-1.65mm;padding:0 .5mm;background:#fff;color:#64748b;font-size:1.1mm;line-height:1;font-weight:800;letter-spacing:.08mm;z-index:4;}
     @media (max-width: 480px) {
       #staff-id-card-preview-modal { overflow:auto; }
       #staff-id-card-preview { flex-shrink:0; }
@@ -592,11 +593,11 @@
     /* Staff ID preview layout: photo must visually sit between header and name band. */
     .staff-id-preview-card{box-sizing:border-box;}
     .staff-id-preview-card .id-top{box-sizing:border-box;flex:0 0 22mm;height:22mm;}
-    .staff-id-preview-card .id-photo-wrap{box-sizing:border-box;flex:0 0 27mm;width:27mm;height:27mm;margin:0 auto;position:relative;z-index:3;}
+    .staff-id-preview-card .id-photo-wrap{box-sizing:border-box;flex:0 0 26mm;width:26mm;height:26mm;margin:0 auto;position:relative;z-index:3;}
     .staff-id-preview-card .id-photo-wrap img,.staff-id-preview-card .photo-fallback{position:relative;z-index:4;box-sizing:border-box;}
     .staff-id-preview-card .id-name-band{box-sizing:border-box;flex:0 0 7mm;min-height:7mm;position:relative;z-index:5;}
-    .staff-id-preview-card .id-details{box-sizing:border-box;flex:0 0 16mm;height:16mm;position:relative;z-index:1;}
-    .staff-id-preview-card .id-qr-area{box-sizing:border-box;flex:0 0 12mm;height:12mm;position:relative;z-index:1;}
+    .staff-id-preview-card .id-details{box-sizing:border-box;flex:0 0 15mm;height:15mm;position:relative;z-index:1;}
+    .staff-id-preview-card .id-qr-area{box-sizing:border-box;flex:0 0 11mm;height:11mm;position:relative;z-index:1;}
 
     #staff-id-card-preview {
       display:flex;
@@ -5897,7 +5898,13 @@ async function refreshStudentPortalData(dobOverride){
         } else {
           const s = currentAuthUser.staffRecord || {};
           if (navAvatar) {
-            navAvatar.className = "w-5 h-5 sm:w-6 sm:h-6 rounded-full bg-ashiana-green text-white font-bold flex items-center justify-center text-[10px] overflow-hidden";
+            navAvatar.className = "w-5 h-5 sm:w-6 sm:h-6 rounded-full bg-ashiana-green text-white font-bold flex items-center justify-center text-[10px] overflow-hidden cursor-pointer ring-1 ring-emerald-300/50 hover:ring-2";
+            navAvatar.setAttribute("role","button");
+            navAvatar.setAttribute("tabindex","0");
+            navAvatar.setAttribute("aria-label","Open my official staff ID card");
+            navAvatar.title = "Open my official staff ID card";
+            navAvatar.onclick = () => viewMyStaffIdCard();
+            navAvatar.onkeydown = (event) => { if (event.key === "Enter" || event.key === " ") { event.preventDefault(); viewMyStaffIdCard(); } };
             try { renderStaffAvatar("nav-user-avatar", s); } catch (e) {}
           }
           if (navName) navName.innerText = s.name || "Staff";
@@ -7836,6 +7843,7 @@ async function loadAdminStudentAttendance(){
       <div class="row"><div class="label">Address</div><div class="value">${escapeIdCardHtml(staff.address || staff.residentialAddress || "—")}</div></div>
           </div>
           <div class="qr-area">
+            <div class="qr-caption">QR CODE</div>
             <div class="valid">Property of<br><b>Ashiana Public School</b><br>Sector 46-A, Chandigarh<br>Scan to verify staff identity</div>
             <div class="qrcode" id="bulk-qr-${index}"></div>
           </div>
@@ -7905,21 +7913,22 @@ body{font-family:Arial,Helvetica,sans-serif;}
 .school-aff{font-size:1.25mm;line-height:1.05;margin-top:.3mm;font-weight:700;white-space:nowrap;}
 .school-line{height:.25mm;background:#ef3340;margin:.55mm 8mm .35mm;width:calc(100% - 16mm);}
 .card-title{font-size:1.5mm;font-weight:800;letter-spacing:.28mm;}
-.photo-wrap{flex:0 0 27mm;width:27mm;height:27mm;margin:0 auto;position:relative;z-index:2;background:#fff;border:.65mm solid #fff;box-shadow:0 1mm 2.5mm rgba(0,0,0,.25);}
+.photo-wrap{flex:0 0 26mm;width:26mm;height:26mm;margin:0 auto;position:relative;z-index:2;background:#fff;border:.65mm solid #fff;box-shadow:0 1mm 2.5mm rgba(0,0,0,.25);}
 .photo-wrap img,.photo-fallback{width:100%;height:100%;object-fit:cover;object-position:center top;display:block;background:#e5e7eb;}
 .photo-fallback{display:flex;align-items:center;justify-content:center;background:#d1fae5;color:#08693a;font-size:7mm;font-weight:900;}
 .name-band{flex:0 0 7mm;min-height:7mm;background:#064e3b;color:#fff;padding:1mm 2mm .7mm;text-align:center;}
 .name{font-size:2.8mm;line-height:1.05;font-weight:900;text-transform:uppercase;letter-spacing:.12mm;white-space:nowrap;overflow:hidden;text-overflow:ellipsis;}
 .role{font-size:2mm;line-height:1.05;margin-top:.45mm;font-weight:700;white-space:nowrap;overflow:hidden;text-overflow:ellipsis;}
-.details{flex:0 0 16mm;height:16mm;padding:.5mm 3mm .2mm;background:#fff;}
+.details{flex:0 0 15mm;height:15mm;padding:.5mm 3mm .2mm;background:#fff;}
 .row{display:flex;align-items:center;height:2.25mm;margin:0;font-size:1.55mm;line-height:1;}
 .label{flex:0 0 15mm;color:#64748b;font-weight:700;}
 .value{flex:1;min-width:0;color:#111827;font-weight:800;overflow:hidden;white-space:nowrap;text-overflow:ellipsis;}
-.qr-area{flex:0 0 12mm;height:12mm;margin:0 3mm;border-top:.25mm solid #e2e8f0;padding-top:1.1mm;display:flex;align-items:center;justify-content:space-between;}
+.qr-area{flex:0 0 11mm;height:11mm;margin:0 3mm;border-top:.25mm solid #e2e8f0;padding-top:1.1mm;display:flex;align-items:center;justify-content:space-between;}
 .valid{font-size:1.55mm;color:#64748b;line-height:1.25;max-width:31mm;}
 .qrcode{width:11mm;height:11mm;flex:0 0 11mm;}
 .qrcode img,.qrcode canvas{width:11mm!important;height:11mm!important;display:block;}
-.footer{flex:1 1 auto;min-height:1.5mm;text-align:center;font-size:1.25mm;line-height:1.2;color:#94a3b8;padding-top:.2mm;}
+.footer{flex:0 0 3.2mm;height:3.2mm;min-height:3.2mm;display:flex;align-items:center;justify-content:center;text-align:center;font-size:1.15mm;line-height:1.1;color:#64748b;padding:0 .8mm;white-space:nowrap;overflow:hidden;}
+    .qr-caption{position:absolute;right:0;top:-1.65mm;padding:0 .5mm;background:#fff;color:#64748b;font-size:1.1mm;line-height:1;font-weight:800;letter-spacing:.08mm;z-index:4;}
 @media print{html,body{background:#fff}.page{margin:0}.card{box-shadow:none;}}
 </style></head><body>${pages.join('')}
 <script src="./assets/vendor/qrcode.min.js"><\/script>
@@ -8093,7 +8102,10 @@ window.addEventListener('load',async function(){
     }
 
     async function getMyStaffIdCardIssued() {
-      const staffId=currentStaffId||currentAuthUser?.staffRecord?.id||null;
+      const record=currentAuthUser?.staffRecord||{};
+      const resolved=staffDatabase.find(s => String(s.id)===String(record.id) || (record.empId && String(s.empId||"").trim().toLowerCase()===String(record.empId).trim().toLowerCase()));
+      const staffId=record.id||resolved?.id||currentStaffId||null;
+      if(staffId) currentStaffId=staffId;
       return getStaffIdCardIssued(staffId);
     }
 
@@ -8122,9 +8134,9 @@ window.addEventListener('load',async function(){
     }
 
     async function viewMyStaffIdCard() {
-      if (!currentStaffId) {
-        currentStaffId = currentAuthUser?.staffRecord?.id || null;
-      }
+      const signedInRecord=currentAuthUser?.staffRecord||{};
+      const resolvedStaff=staffDatabase.find(s => String(s.id)===String(signedInRecord.id) || (signedInRecord.empId && String(s.empId||"").trim().toLowerCase()===String(signedInRecord.empId).trim().toLowerCase()));
+      currentStaffId=signedInRecord.id||resolvedStaff?.id||currentStaffId||null;
       if (!currentStaffId) {
         showToast("Your staff account is not fully loaded. Please sign out and sign in again.", "error");
         return;
@@ -8136,7 +8148,8 @@ window.addEventListener('load',async function(){
         return;
       }
       const staff = staffDatabase.find(s => String(s.id) === String(currentStaffId))
-        || (String(currentAuthUser?.staffRecord?.id || "") === String(currentStaffId) ? currentAuthUser.staffRecord : null);
+        || (signedInRecord.empId ? staffDatabase.find(s => String(s.empId||"").trim().toLowerCase()===String(signedInRecord.empId).trim().toLowerCase()) : null)
+        || (String(signedInRecord.id || "") === String(currentStaffId) ? signedInRecord : null);
       if (!staff) {
         showToast("Your staff record could not be loaded. Please refresh and sign in again.", "error");
         return;
@@ -8196,6 +8209,7 @@ window.addEventListener('load',async function(){
             <div class="id-row"><span>Address</span><b>${escapeIdCardHtml(staff.address || staff.residentialAddress || "—")}</b></div>
           </div>
           <div class="id-qr-area">
+            <div class="id-qr-caption">QR CODE</div>
             <div class="id-valid">Property of<br><strong>Ashiana Public School</strong><br>Sector 46-A, Chandigarh<br>Scan to verify staff identity</div>
             <div id="staff-preview-qr" class="id-qrcode"></div>
           </div>
@@ -8219,6 +8233,7 @@ window.addEventListener('load',async function(){
       modal.classList.remove("hidden");
       modal.classList.add("flex");
       document.body.classList.add("overflow-hidden");
+      try { history.pushState({ ashianaApp: true, modal: "staff-id-card-preview" }, "", location.href); } catch (_) {}
 
       const scaleStaffIdCardPreview = () => {
         const card = preview.querySelector(".staff-id-preview-card");
@@ -8386,7 +8401,7 @@ window.addEventListener('load',async function(){
   .card-title { font-size:1.65mm; font-weight:800; letter-spacing:.32mm; }
 
   .photo-wrap {
-    flex: 0 0 27mm; width: 27mm; height: 27mm; margin: 0 auto;
+    flex: 0 0 26mm; width: 26mm; height: 26mm; margin: 0 auto;
     position:relative; z-index:2; background:#fff; border:.65mm solid #fff;
     box-shadow:0 1mm 2.5mm rgba(0,0,0,.25);
   }
@@ -8401,7 +8416,7 @@ window.addEventListener('load',async function(){
   .role { font-size:2mm; line-height:1.05; margin-top:.45mm; font-weight:700; white-space:nowrap; overflow:hidden; text-overflow:ellipsis; }
 
   .details {
-    flex: 0 0 16mm; height:16mm; padding:.5mm 3mm .2mm;
+    flex: 0 0 15mm; height:15mm; padding:.5mm 3mm .2mm;
     background:#fff;
   }
   .row { display:flex; align-items:center; height:2.25mm; margin:0; font-size:1.55mm; line-height:1; }
@@ -8409,17 +8424,18 @@ window.addEventListener('load',async function(){
   .value { flex:1; min-width:0; color:#111827; font-weight:800; overflow:hidden; white-space:nowrap; text-overflow:ellipsis; }
 
   .qr-area {
-    flex: 0 0 12mm; height:12mm; margin:0 3mm;
-    border-top:.25mm solid #e2e8f0; padding-top:1.1mm;
+    flex: 0 0 11mm; height:11mm; margin:0 3mm; position:relative;
+    border-top:.25mm solid #e2e8f0; padding-top:.7mm;
     display:flex; align-items:center; justify-content:space-between;
   }
   .valid { font-size:1.55mm; color:#64748b; line-height:1.25; max-width:31mm; }
   #qrcode { width:11mm; height:11mm; flex:0 0 11mm; }
   #qrcode img, #qrcode canvas { width:11mm !important; height:11mm !important; display:block; }
 
+  .qr-caption{position:absolute;right:0;top:-1.65mm;padding:0 .5mm;background:#fff;color:#64748b;font-size:1.1mm;line-height:1;font-weight:800;letter-spacing:.08mm;z-index:4;}
   .footer {
-    flex:1 1 auto; min-height:1.5mm; text-align:center;
-    font-size:1.25mm; line-height:1.2; color:#94a3b8; padding-top:.2mm;
+    flex:0 0 3.2mm; height:3.2mm; min-height:3.2mm; display:flex; align-items:center; justify-content:center; text-align:center;
+    font-size:1.15mm; line-height:1.1; color:#64748b; padding:0 .8mm; white-space:nowrap; overflow:hidden;
   }
 
   @media print {
@@ -8459,6 +8475,7 @@ window.addEventListener('load',async function(){
       <div class="row"><div class="label">Address</div><div class="value">${escapeIdCardHtml(staff.address || staff.residentialAddress || "—")}</div></div>
     </div>
     <div class="qr-area">
+      <div class="qr-caption">QR CODE</div>
       <div class="valid">Property of<br><b>Ashiana Public School</b><br>Sector 46-A, Chandigarh<br>Scan to verify staff identity</div>
       <div id="qrcode"></div>
     </div>
@@ -10656,9 +10673,13 @@ window.addEventListener('load',async function(){
           const visibleModal = Array.from(document.querySelectorAll('[id$="-modal"]'))
             .find(el => !el.classList.contains("hidden"));
 
-          if (visibleModal) {
+          if (visibleModal?.id === "staff-id-card-preview-modal") {
+            closeStaffIdCardPreview();
+          } else if (visibleModal) {
             visibleModal.classList.add("hidden");
+            visibleModal.classList.remove("flex");
           }
+          document.body.classList.toggle("overflow-hidden", Array.from(document.querySelectorAll('[id$="-modal"]')).some(el => !el.classList.contains("hidden")));
 
           history.pushState({ ashianaApp: true, root: true }, "", location.href);
         });
