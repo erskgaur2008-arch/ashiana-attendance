@@ -80,13 +80,13 @@ jobs:
             convert "$SRC" -resize "$((SIZE * 68 / 100))x$((SIZE * 68 / 100))" -gravity center -background none -extent "${SIZE}x${SIZE}" "$RES/$DIR/ic_launcher_foreground.png"
           done
 
-          mkdir -p "$RES/color" "$RES/mipmap-anydpi-v26"
-          cat > "$RES/color/ic_launcher_background.xml" <<'EOF'
-          <?xml version="1.0" encoding="utf-8"?>
-          <resources>
-              <color name="ic_launcher_background">#FFFFFF</color>
-          </resources>
-          EOF
+          mkdir -p "$RES/mipmap-anydpi-v26"
+          # Capacitor's generated Android project already defines
+          # ic_launcher_background in res/values. Do not create a second
+          # resource with the same name under res/color (Android merges both
+          # folders into the same resource namespace).
+          rm -f "$RES/color/ic_launcher_background.xml"
+          test -s "$RES/values/ic_launcher_background.xml"
 
           cat > "$RES/mipmap-anydpi-v26/ic_launcher.xml" <<'EOF'
           <?xml version="1.0" encoding="utf-8"?>
