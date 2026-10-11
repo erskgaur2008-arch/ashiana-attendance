@@ -2159,6 +2159,12 @@
               </button>
               <div class="text-white text-xs font-bold mb-2 bg-black/40 px-3 py-1 rounded-full">My Staff ID Card</div>
               <div id="staff-id-card-preview" class="bg-white shadow-2xl"></div>
+              <div class="mt-3 flex items-center justify-center gap-2">
+                <button type="button" onclick="printStaffIdCard(currentStaffId)" class="px-4 py-2 bg-emerald-700 hover:bg-emerald-800 text-white rounded-xl text-xs font-bold shadow">
+                  <i data-lucide="printer" class="w-3.5 h-3.5 inline-block mr-1"></i>Print ID Card
+                </button>
+                <button type="button" onclick="closeStaffIdCardPreview()" class="px-4 py-2 bg-white text-slate-700 rounded-xl text-xs font-bold shadow">Close</button>
+              </div>
             </div>
           </div>
 
@@ -8199,9 +8205,11 @@ window.addEventListener('load',async function(){
     }
 
     async function printStaffIdCard(staffId, options = {}) {
-      const staff = staffDatabase.find(s => s.id === staffId);
+      const sessionStaff = currentAuthUser?.staffRecord || {};
+      const staff = staffDatabase.find(s => String(s.id) === String(staffId))
+        || (String(sessionStaff.id || "") === String(staffId) ? sessionStaff : null);
       if (!staff) {
-        showToast("Staff record not found.", "error");
+        showToast("Your staff profile could not be loaded. Please refresh and sign in again.", "error");
         return;
       }
 
