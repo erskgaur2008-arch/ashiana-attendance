@@ -2160,10 +2160,7 @@
               </button>
               <div class="text-white text-xs font-bold mb-2 bg-black/40 px-3 py-1 rounded-full">My Staff ID Card</div>
               <div id="staff-id-card-preview" class="bg-white shadow-2xl"></div>
-              <button type="button" onclick="printStaffIdCard(currentStaffId, { autoPrint: true })" class="mt-4 inline-flex items-center justify-center gap-2 px-4 py-2.5 rounded-xl bg-emerald-700 hover:bg-emerald-800 text-white text-xs font-extrabold shadow-lg">
-                <i data-lucide="printer" class="w-4 h-4"></i>
-                <span>View / Print Official ID Card</span>
-              </button>
+              <div class="mt-3 flex items-center justify-center gap-2 flex-wrap"><button type="button" onclick="printStaffIdCard(currentStaffId,{autoPrint:true})" class="px-3 py-2 rounded-xl bg-emerald-700 text-white text-xs font-bold">Print</button><button type="button" onclick="downloadCurrentStaffIdCard('png')" class="px-3 py-2 rounded-xl bg-indigo-700 text-white text-xs font-bold">Download PNG</button><button type="button" onclick="downloadCurrentStaffIdCard('pdf')" class="px-3 py-2 rounded-xl bg-rose-700 text-white text-xs font-bold">Download PDF</button></div>
             </div>
           </div>
 
@@ -2664,7 +2661,7 @@
                 <i data-lucide="key" class="w-3.5 h-3.5 text-amber-300"></i>
                 <span>Export PINs (CSV)</span>
               </button>
-              <button onclick="openBulkIdCardModal()" class="px-3 py-2 bg-blue-700 hover:bg-blue-800 text-white text-xs font-bold rounded-xl flex items-center space-x-1.5 shadow transition-all active:scale-95 border-b-2 border-blue-950" title="Generate selected staff ID cards on A4">
+              <button onclick="downloadIssuedStaffIdCards('pdf')" class="px-3 py-2 bg-rose-700 text-white text-xs font-bold rounded-xl shadow">Download Issued PDF</button><button onclick="downloadIssuedStaffIdCards('zip')" class="px-3 py-2 bg-slate-800 text-white text-xs font-bold rounded-xl shadow">Download PNG ZIP</button><button onclick="openBulkIdCardModal()" class="px-3 py-2 bg-blue-700 hover:bg-blue-800 text-white text-xs font-bold rounded-xl flex items-center space-x-1.5 shadow transition-all active:scale-95 border-b-2 border-blue-950" title="Generate selected staff ID cards on A4">
                 <i data-lucide="contact-round" class="w-3.5 h-3.5"></i>
                 <span>Bulk ID Cards (A4)</span>
               </button>
@@ -2721,7 +2718,7 @@
       <button type="button" onclick="toggleAllAdminStudents(true)" class="px-3 py-2 bg-slate-100 rounded-xl text-xs font-bold">Select All</button>
       <button type="button" onclick="toggleAllAdminStudents(false)" class="px-3 py-2 bg-slate-100 rounded-xl text-xs font-bold">Clear</button>
       <button type="button" onclick="deleteSelectedStudents()" class="px-3 py-2 bg-rose-600 text-white rounded-xl text-xs font-bold">Delete Selected</button>
-      <button type="button" onclick="createSelectedStudentIdCards()" class="px-3 py-2 bg-indigo-700 text-white rounded-xl text-xs font-bold"><i data-lucide="contact" class="w-3.5 h-3.5 inline-block mr-1"></i>Create ID Cards</button>
+      <button type="button" onclick="createSelectedStudentIdCards()" class="px-3 py-2 bg-indigo-700 text-white rounded-xl text-xs font-bold"><i data-lucide="contact" class="w-3.5 h-3.5 inline-block mr-1"></i>Create ID Cards</button><button type="button" onclick="downloadIssuedStudentIdCards('pdf')" class="px-3 py-2 bg-rose-700 text-white rounded-xl text-xs font-bold">Download Issued PDF</button><button type="button" onclick="downloadIssuedStudentIdCards('zip')" class="px-3 py-2 bg-slate-800 text-white rounded-xl text-xs font-bold">Download PNG ZIP</button>
       <span id="admin-student-selected-count" class="text-[10px] text-slate-500">0 selected</span>
     </div>
     <form onsubmit="adminAddStudent(event)" class="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-7 gap-2 my-4 border-t pt-4">
@@ -2773,7 +2770,7 @@
   <div class="relative flex flex-col items-center max-h-[95vh]" onclick="event.stopPropagation()">
     <button type="button" onclick="closeStudentIdCardPreview()" class="absolute -top-3 -right-3 z-10 w-9 h-9 rounded-full bg-white text-slate-700 shadow-lg flex items-center justify-center">✕</button>
     <div id="student-id-card-preview" class="bg-white shadow-2xl"></div>
-    <div class="mt-3 flex gap-2 flex-shrink-0 justify-center"><button type="button" onclick="printCurrentStudentIdCard()" class="px-4 py-2 bg-emerald-700 text-white rounded-xl text-xs font-bold shadow">Print ID Card</button><button type="button" onclick="closeStudentIdCardPreview()" class="px-4 py-2 bg-white text-slate-700 rounded-xl text-xs font-bold shadow">Close</button></div>
+    <div class="mt-3 flex gap-2 flex-shrink-0 justify-center flex-wrap"><button type="button" onclick="printCurrentStudentIdCard()" class="px-3 py-2 bg-emerald-700 text-white rounded-xl text-xs font-bold shadow">Print</button><button type="button" onclick="downloadCurrentStudentIdCard('png')" class="px-3 py-2 bg-indigo-700 text-white rounded-xl text-xs font-bold shadow">Download PNG</button><button type="button" onclick="downloadCurrentStudentIdCard('pdf')" class="px-3 py-2 bg-rose-700 text-white rounded-xl text-xs font-bold shadow">Download PDF</button><button type="button" onclick="closeStudentIdCardPreview()" class="px-3 py-2 bg-white text-slate-700 rounded-xl text-xs font-bold shadow">Close</button></div>
   </div>
 </div>
 
@@ -8066,6 +8063,62 @@ window.addEventListener('load',async function(){
 
       const sel = document.getElementById("correction-staff-select");
       if (sel) sel.innerHTML = staffOptionsHtml();
+    }
+
+
+    let idCardExportLibrariesPromise=null;
+    async function ensureIdCardExportLibraries(){
+      if(idCardExportLibrariesPromise)return idCardExportLibrariesPromise;
+      idCardExportLibrariesPromise=(async()=>{const load=(src,ready)=>new Promise((resolve,reject)=>{if(ready())return resolve();const e=document.createElement('script');e.src=src;e.async=true;e.onload=()=>ready()?resolve():reject(new Error('Download library initialization failed.'));e.onerror=()=>reject(new Error('Could not load download library.'));document.head.appendChild(e);});await load('https://cdnjs.cloudflare.com/ajax/libs/html2canvas/1.4.1/html2canvas.min.js',()=>typeof window.html2canvas==='function');await load('https://cdnjs.cloudflare.com/ajax/libs/jspdf/2.5.1/jspdf.umd.min.js',()=>!!window.jspdf?.jsPDF);await load('https://cdnjs.cloudflare.com/ajax/libs/jszip/3.10.1/jszip.min.js',()=>typeof window.JSZip==='function');})().catch(e=>{idCardExportLibrariesPromise=null;throw e;});return idCardExportLibrariesPromise;
+    }
+    function buildStaffIdCardExport(s){
+      const v=x=>escapeIdCardHtml(x||'—'),logo=escapeIdCardHtml(new URL('logo 2.png',location.href).href),photo=String(s.avatarUrl||s.avatar_url||'').trim(),ph=photo?'<img src="'+escapeIdCardHtml(photo)+'" alt="Staff Photo">':'<div class="photo-fallback">'+escapeIdCardHtml(getStaffInitials(s.name))+'</div>';
+      const payload={school:'ASHIANA_PUBLIC_SCHOOL',employee_id:s.empId||s.emp_id||'',name:s.name||'',role:s.role||'',department:s.department||'',gender:s.gender||'',dob:s.dob||'',valid_thru:s.validThru||s.valid_thru||''};
+      const html='<div class="staff-id-preview-card"><div class="id-top"><div class="id-school"><img class="id-logo" src="'+logo+'"><div class="id-school-name">ASHIANA PUBLIC SCHOOL</div><div class="id-school-sub">SECTOR 46-CHANDIGARH</div><div class="id-school-phone">PHONE: +91-9872500460</div><div class="id-school-aff">Affiliated to CBSE | Affiliation No. 2630065</div><div class="id-red-line"></div><div class="id-title">STAFF IDENTITY CARD</div></div></div><div class="id-photo-wrap">'+ph+'</div><div class="id-name-band"><div class="id-name">'+v(s.name||'STAFF MEMBER')+'</div><div class="id-role">'+v(s.role||'STAFF')+' • '+v(s.department||'School')+'</div></div><div class="id-details"><div class="id-row"><span>Employee ID</span><b>'+v(s.empId||s.emp_id)+'</b></div><div class="id-row"><span>Gender</span><b>'+v(s.gender)+'</b></div><div class="id-row"><span>DOB</span><b>'+v(s.dob)+'</b></div><div class="id-row"><span>Valid Thru</span><b>'+v(s.validThru||s.valid_thru)+'</b></div><div class="id-row"><span>Phone</span><b>'+v(s.phone||s.mobile||s.mobileNumber)+'</b></div><div class="id-row"><span>Address</span><b>'+v(s.address||s.residentialAddress)+'</b></div></div><div class="id-qr-area"><div class="id-qr-caption">QR CODE</div><div class="id-valid">Property of<br><strong>Ashiana Public School</strong><br>Sector 46-A, Chandigarh<br>Scan to verify staff identity</div><div class="id-qrcode"></div></div><div class="id-footer">Authorized Staff Identification • Ashiana Public School</div></div>';
+      return {html,payload};
+    }
+    async function exportIdCards(items,format,baseName){
+      if(!items.length)return showToast('No officially issued ID cards found to download.','info');let stage=null;
+      try{
+        await ensureIdCardExportLibraries();const zip=format==='zip'?new window.JSZip():null,PDF=window.jspdf.jsPDF;let pdf=null;
+        for(let i=0;i<items.length;i++){
+          stage=document.createElement('div');stage.style.cssText='position:fixed;left:-12000px;top:0;width:54mm;height:85.6mm;overflow:visible;background:#fff;z-index:-1;';stage.innerHTML=items[i].html;document.body.appendChild(stage);const card=stage.firstElementChild;await ensureQRCodeLibrary();
+          if(items[i].kind==='staff')new QRCode(card.querySelector('.id-qrcode'),{text:JSON.stringify(items[i].payload),width:160,height:160,correctLevel:QRCode.CorrectLevel.M});else renderStudentCardQr(card.querySelector('[data-student-qr]'),items[i].record);
+          await Promise.all(Array.from(card.querySelectorAll('img')).map(im=>im.decode?im.decode().catch(()=>{}):new Promise(r=>{if(im.complete)r();else{im.onload=r;im.onerror=r;}})));await new Promise(r=>requestAnimationFrame(()=>requestAnimationFrame(r)));
+          const canvas=await window.html2canvas(card,{scale:4,backgroundColor:'#fff',useCORS:true,allowTaint:false,logging:false}),blob=await new Promise((resolve,reject)=>canvas.toBlob(b=>b?resolve(b):reject(new Error('PNG conversion failed.')),'image/png')),name=String(items[i].fileName||'id-card').replace(/[^a-zA-Z0-9_-]+/g,'-').slice(0,70)||'id-card';
+          if(format==='png'){const u=URL.createObjectURL(blob),a=document.createElement('a');a.href=u;a.download=name+'.png';document.body.appendChild(a);a.click();a.remove();setTimeout(()=>URL.revokeObjectURL(u),1500);}
+          else if(format==='zip')zip.file(name+'.png',blob);
+          else{const data=await new Promise((resolve,reject)=>{const r=new FileReader();r.onload=()=>resolve(r.result);r.onerror=reject;r.readAsDataURL(blob);});if(!pdf)pdf=new PDF({orientation:'portrait',unit:'mm',format:[54,85.6],compress:true});else pdf.addPage([54,85.6],'portrait');pdf.addImage(data,'PNG',0,0,54,85.6,undefined,'FAST');}
+          stage.remove();stage=null;
+        }
+        if(format==='zip'){const b=await zip.generateAsync({type:'blob'}),u=URL.createObjectURL(b),a=document.createElement('a');a.href=u;a.download=(baseName||'ashiana-id-cards')+'.zip';document.body.appendChild(a);a.click();a.remove();setTimeout(()=>URL.revokeObjectURL(u),1500);}
+        else if(format==='pdf')pdf.save((baseName||'ashiana-id-cards')+'.pdf');showToast(items.length+' ID card(s) downloaded.','success');
+      }catch(e){console.error('ID card download failed:',e);showToast('Download failed: '+(e.message||e),'error');}finally{if(stage)stage.remove();}
+    }
+    async function downloadCurrentStaffIdCard(format){
+      const id=currentStaffId||currentAuthUser?.staffRecord?.id,s=staffDatabase.find(x=>String(x.id)===String(id))||currentAuthUser?.staffRecord;
+      if(!s)return showToast('Staff profile is not ready.','error');if(currentAuthUser?.type!=='ADMIN'&&!(await getStaffIdCardIssued(s.id)))return showToast('Your official ID card has not been issued yet.','error');
+      const b=buildStaffIdCardExport(s);await exportIdCards([{...b,kind:'staff',record:s,fileName:'staff-'+(s.empId||s.emp_id||s.id)}],format,'staff-'+(s.empId||s.emp_id||'id-card'));
+    }
+    async function downloadCurrentStudentIdCard(format){
+      const s=adminStudentRows.find(x=>String(x.id)===String(currentStudentIdCardId))||currentAuthUser?.portalData?.student||currentAuthUser?.studentRecord;
+      if(!s)return showToast('Student profile is not ready.','error');if(currentAuthUser?.type!=='ADMIN'&&!(await studentIdCardIssued(s)))return showToast('Your official ID card has not been issued yet.','error');
+      const photo=await getStudentPhotoUrl(s).catch(()=>''),item={html:makeStudentIdCardHtml(s,photo),payload:'ASHIANA|STUDENT|'+String(s.enroll_no||'')+'|'+String(s.student_name||''),kind:'student',record:s,fileName:'student-'+(s.enroll_no||s.id)};
+      await exportIdCards([item],format,'student-'+(s.enroll_no||'id-card'));
+    }
+    async function downloadIssuedStaffIdCards(format){
+      if(currentAuthUser?.type!=='ADMIN')return showToast('Administrator access is required.','error');
+      const chosen=bulkIdCardSelectedIds.size?[...bulkIdCardSelectedIds]:staffDatabase.map(s=>s.id),records=chosen.map(id=>staffDatabase.find(s=>String(s.id)===String(id))).filter(Boolean);
+      const {data,error}=await supabaseClient.from('staff_id_cards').select('staff_id,generated_at').in('staff_id',records.map(s=>s.id));if(error)return showToast('Could not verify issued staff cards: '+error.message,'error');
+      const issued=new Set((data||[]).filter(x=>x.generated_at).map(x=>String(x.staff_id))),items=records.filter(s=>issued.has(String(s.id))).map(s=>({...buildStaffIdCardExport(s),kind:'staff',record:s,fileName:'staff-'+(s.empId||s.id)}));
+      await exportIdCards(items,format,'ashiana-issued-staff-id-cards');
+    }
+    async function downloadIssuedStudentIdCards(format){
+      if(currentAuthUser?.type!=='ADMIN')return showToast('Administrator access is required.','error');
+      const selected=studentSelectedIds(),records=(selected.length?selected.map(id=>adminStudentRows.find(s=>String(s.id)===String(id))).filter(Boolean):adminStudentRows),issued=records.filter(s=>s.id_card_generated_at);
+      if(!issued.length)return showToast('No issued student ID cards in the selected records.','info');
+      const items=[];for(const s of issued){const photo=await getStudentPhotoUrl(s).catch(()=>'' );items.push({html:makeStudentIdCardHtml(s,photo),payload:'ASHIANA|STUDENT|'+String(s.enroll_no||'')+'|'+String(s.student_name||''),kind:'student',record:s,fileName:'student-'+(s.enroll_no||s.id)});}
+      await exportIdCards(items,format,'ashiana-issued-student-id-cards');
     }
 
     function escapeIdCardHtml(value) {
