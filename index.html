@@ -1047,6 +1047,7 @@
   width:min(88vw, 88vh, 620px)!important;
   height:min(88vw, 88vh, 620px)!important;
 }
+#qr-token-preview { display:none!important; }
 @media(max-width:640px){
   #admin-tab-qr.admin-qr-page-active > .max-w-md{padding:18px!important;border-radius:22px}
 }
@@ -2580,7 +2581,6 @@
         <div class="max-w-4xl mx-auto flex items-center justify-between gap-3 px-1">
           <div>
             <h2 class="text-lg font-black text-slate-800">Daily Attendance QR</h2>
-            <p class="text-xs text-slate-500">Tap the QR code to open a clean, full-screen scan view.</p>
           </div>
           <button type="button" onclick="window.closeAdminDailyQRPage()" class="shrink-0 inline-flex items-center gap-1.5 px-3 py-2 rounded-xl bg-white border border-slate-200 text-slate-700 text-xs font-bold shadow-sm">
             <i data-lucide="arrow-left" class="w-4 h-4"></i><span>Back</span>
@@ -2600,12 +2600,10 @@
           <h2 class="text-xl font-black text-slate-900 font-serif">ASHIANA PUBLIC SCHOOL</h2>
           <div class="w-16 h-1 bg-ashiana-red mx-auto my-1.5 rounded-full"></div>
           <p class="text-[11px] font-bold text-ashiana-green uppercase tracking-widest">Faculty Attendance Station</p>
-          <p class="text-[10px] text-slate-500">Sector 46-A, Chandigarh • Daily Attendance QR</p>
 
           <div class="my-4 p-4 bg-slate-50 rounded-2xl border border-slate-200 inline-block shadow-inner">
             <div id="qr-code-canvas-container" class="flex justify-center items-center w-52 h-52 mx-auto bg-white p-2.5 rounded-xl border border-emerald-300"></div>
             <div class="mt-2 space-y-1">
-              <span id="qr-token-preview" class="text-[9px] font-mono text-emerald-800 font-bold block bg-emerald-50 px-2 py-0.5 rounded border border-emerald-200">APS-DAY-TOKEN-ACTIVE</span>
               <span class="inline-flex items-center space-x-1 text-[10px] font-bold text-emerald-700 bg-emerald-100/70 px-2.5 py-0.5 rounded-full">
                 <i data-lucide="shield-check" class="w-3 h-3 text-ashiana-green"></i>
                 <span id="qr-valid-day-text">Valid for Today: All Day</span>
@@ -2618,9 +2616,6 @@
               <span>Attendance Date:</span>
               <span id="qr-station-date" class="font-mono text-ashiana-green">Today</span>
             </div>
-            <p class="text-[10px] text-slate-500 text-left">
-              Teachers scan the school QR and then verify with their personal 4-digit PIN before PUNCH IN / PUNCH OUT.
-            </p>
           </div>
 
           <div class="flex items-center justify-center space-x-2">
@@ -8496,7 +8491,7 @@ window.addEventListener('load',async function(){
       qrHost.setAttribute("role", "button");
       qrHost.setAttribute("tabindex", "0");
       qrHost.setAttribute("aria-label", "Open Daily Attendance QR full screen");
-      qrHost.addEventListener("click", openAdminDailyQRPreview);
+      qrHost.addEventListener("click", event => { event.preventDefault(); event.stopPropagation(); openAdminDailyQRPreview(); });
       qrHost.addEventListener("keydown", event => {
         if (event.key === "Enter" || event.key === " ") {
           event.preventDefault();
@@ -8519,7 +8514,7 @@ window.addEventListener('load',async function(){
       }
 
       const tokenPreview = document.getElementById("qr-token-preview");
-      if (tokenPreview) tokenPreview.innerText = activeQRSession.token || "NOT_GENERATED";
+      if (tokenPreview) tokenPreview.textContent = "";
       const stationDate = document.getElementById("qr-station-date");
       if (stationDate) stationDate.innerText = new Date().toLocaleDateString("en-US", { day: "numeric", month: "long", year: "numeric" });
       const expiryText = document.getElementById("qr-valid-day-text");
@@ -8597,17 +8592,19 @@ window.addEventListener('load',async function(){
       const preview = document.getElementById("admin-daily-qr-preview");
       const target = document.getElementById("admin-daily-qr-preview-content");
       if (!source || !preview || !target) return;
-      const code = source.querySelector("canvas, img");
+      const code = source.querySelector(".admin-daily-qr-code-host canvas, .admin-daily-qr-code-host img, canvas, img");
       if (!code) {
         showToast("Daily QR is not ready yet. Please load today's QR first.", "error");
         return;
       }
-      target.innerHTML = "";
+      target.replaceChildren();
       const clone = code.cloneNode(true);
       clone.removeAttribute("id");
+      clone.style.cssText = "display:block;width:min(88vw,88vh,620px);height:min(88vw,88vh,620px);max-width:88vw;max-height:88vh;object-fit:contain;image-rendering:pixelated";
       target.appendChild(clone);
       preview.classList.remove("hidden");
       preview.classList.add("flex");
+      preview.style.display = "flex";
       document.body.style.overflow = "hidden";
       if (window.lucide) lucide.createIcons();
     }
@@ -8618,6 +8615,7 @@ window.addEventListener('load',async function(){
       if (preview) {
         preview.classList.add("hidden");
         preview.classList.remove("flex");
+        preview.style.display = "none";
       }
       const target = document.getElementById("admin-daily-qr-preview-content");
       if (target) target.innerHTML = "";
