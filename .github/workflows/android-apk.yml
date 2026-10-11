@@ -106,6 +106,30 @@ jobs:
       - name: Sync web assets
         run: npx cap sync android
 
+      - name: Declare Android camera permission
+        shell: bash
+        run: |
+          set -e
+          MANIFEST="android/app/src/main/AndroidManifest.xml"
+          test -s "$MANIFEST"
+          python3 - <<'PY'
+          from pathlib import Path
+          import re
+
+          path = Path("android/app/src/main/AndroidManifest.xml")
+          xml = path.read_text()
+          permission = '    <uses-permission android:name="android.permission.CAMERA" />'
+          if 'android.permission.CAMERA' not in xml:
+              match = re.search(r'<manifest\b[^>]*>', xml)
+              if not match:
+                  raise SystemExit("Could not locate manifest root element")
+              xml = xml[:match.end()] + "\n" + permission + xml[match.end():]
+              path.write_text(xml)
+          if 'android.permission.CAMERA' not in path.read_text():
+              raise SystemExit("Camera permission was not added")
+          print("Android CAMERA permission is declared.")
+          PY
+
       - name: Build debug APK
         working-directory: android
         run: ./gradlew assembleDebug --no-daemon --stacktrace
