@@ -8596,6 +8596,30 @@ window.addEventListener('load',async function(){
       if (adminView) adminView.scrollIntoView({ behavior: "auto", block: "start" });
     }
 
+    // Keep the device awake only while the Daily Attendance QR is open.
+    let adminDailyQRWakeLock = null;
+    async function acquireAdminDailyQRWakeLock() {
+      if (!("wakeLock" in navigator) || document.visibilityState !== "visible" || adminDailyQRWakeLock) return;
+      try {
+        adminDailyQRWakeLock = await navigator.wakeLock.request("screen");
+        adminDailyQRWakeLock.addEventListener("release", () => {
+          adminDailyQRWakeLock = null;
+        }, { once: true });
+      } catch (error) {
+        adminDailyQRWakeLock = null;
+        console.info("Screen wake lock unavailable:", error && error.name ? error.name : error);
+      }
+    }
+
+    async function releaseAdminDailyQRWakeLock() {
+      const lock = adminDailyQRWakeLock;
+      adminDailyQRWakeLock = null;
+      if (lock) {
+        try { await lock.release(); } catch (error) {
+          console.info("Could not release screen wake lock:", error && error.name ? error.name : error);
+        }
+      }
+    }
     function openAdminDailyQRPreview() {
       const source = document.getElementById("qr-code-canvas-container");
       const preview = document.getElementById("admin-daily-qr-preview");
@@ -8630,6 +8654,7 @@ window.addEventListener('load',async function(){
       preview.style.setProperty("z-index", "2147483647", "important");
       preview.style.setProperty("background", "#ffffff", "important");
       document.body.style.overflow = "hidden";
+      acquireAdminDailyQRWakeLock();
       if (window.lucide) lucide.createIcons();
     }
 
@@ -8644,7 +8669,15 @@ window.addEventListener('load',async function(){
       const target = document.getElementById("admin-daily-qr-preview-content");
       if (target) target.innerHTML = "";
       document.body.style.overflow = "";
+      releaseAdminDailyQRWakeLock();
     }
+
+    document.addEventListener("visibilitychange", () => {
+      const preview = document.getElementById("admin-daily-qr-preview");
+      if (document.visibilityState === "visible" && preview && !preview.classList.contains("hidden")) {
+        acquireAdminDailyQRWakeLock();
+      }
+    });
 
     window.closeAdminDailyQRPage = closeAdminDailyQRPage;
     window.openAdminDailyQRPreview = openAdminDailyQRPreview;
