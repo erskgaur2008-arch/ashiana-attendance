@@ -159,6 +159,25 @@
   }
 }
 
+/* Refine fullscreen mobile header spacing: keep the school name clear without a large top gap. */
+@media (max-width: 640px) {
+  #admin-portal-view {
+    padding-top: 0 !important;
+  }
+  #admin-portal-view .admin-dashboard-header {
+    margin-top: 4px !important;
+    padding-top: 14px !important;
+    border-top: 3px solid rgba(167, 243, 208, .8);
+    min-height: 0;
+  }
+}
+@media (display-mode: standalone) and (max-width: 640px) {
+  #admin-portal-view .admin-dashboard-header {
+    margin-top: 4px !important;
+    padding-top: 14px !important;
+  }
+}
+
 /* Full-screen mobile login: remove the large vertical white gap around the card. */
     @media (max-width: 640px){
       body:has(#auth-gateway-view:not(.hidden)){overflow-x:hidden;}
