@@ -1012,6 +1012,45 @@
     @media(prefers-reduced-motion:reduce){#student-portal-view *{transition:none!important;animation:none!important}}
   </style>
 
+<style id="admin-daily-qr-page-preview">
+/* Daily QR behaves as its own page instead of a panel buried in the dashboard. */
+#admin-tab-qr.admin-qr-page-active {
+  position:fixed!important;
+  inset:0!important;
+  z-index:150!important;
+  display:block!important;
+  overflow-y:auto!important;
+  overscroll-behavior:contain;
+  box-sizing:border-box;
+  padding: max(14px, env(safe-area-inset-top)) 14px max(24px, env(safe-area-inset-bottom))!important;
+  background:#eef1f6!important;
+}
+#admin-tab-qr.admin-qr-page-active > .max-w-md {
+  max-width: min(100%, 640px)!important;
+  margin: 16px auto 0!important;
+}
+#admin-tab-qr .admin-daily-qr-code-host {
+  cursor:zoom-in;
+  touch-action:manipulation;
+}
+#admin-daily-qr-preview-content img,
+#admin-daily-qr-preview-content canvas {
+  display:block!important;
+  width:min(88vw, 88vh, 620px)!important;
+  height:auto!important;
+  max-width:88vw!important;
+  max-height:88vh!important;
+  object-fit:contain;
+  image-rendering:pixelated;
+}
+#admin-daily-qr-preview-content canvas {
+  width:min(88vw, 88vh, 620px)!important;
+  height:min(88vw, 88vh, 620px)!important;
+}
+@media(max-width:640px){
+  #admin-tab-qr.admin-qr-page-active > .max-w-md{padding:18px!important;border-radius:22px}
+}
+</style>
 </head>
 <body class="bg-slate-100 text-slate-800 antialiased min-h-screen min-h-screen-safe flex flex-col selection:bg-emerald-600 selection:text-white">
 
@@ -2538,6 +2577,15 @@
 
       <!-- TAB 2: DAILY QR CODE STATION -->
       <div id="admin-tab-qr" class="hidden space-y-3">
+        <div class="max-w-4xl mx-auto flex items-center justify-between gap-3 px-1">
+          <div>
+            <h2 class="text-lg font-black text-slate-800">Daily Attendance QR</h2>
+            <p class="text-xs text-slate-500">Tap the QR code to open a clean, full-screen scan view.</p>
+          </div>
+          <button type="button" onclick="window.closeAdminDailyQRPage()" class="shrink-0 inline-flex items-center gap-1.5 px-3 py-2 rounded-xl bg-white border border-slate-200 text-slate-700 text-xs font-bold shadow-sm">
+            <i data-lucide="arrow-left" class="w-4 h-4"></i><span>Back</span>
+          </button>
+        </div>
         <div class="max-w-md mx-auto bg-white rounded-3xl border border-slate-200 shadow-xl overflow-hidden text-center p-6">
           <div class="w-16 h-16 mx-auto mb-2 rounded-full bg-white p-1 shadow border-2 border-emerald-500 flex items-center justify-center overflow-hidden">
             <img src="logo 2.png" alt="Ashiana Public School" 
@@ -6762,7 +6810,15 @@ async function loadAdminStudents(){
           }catch(_){}
         }
       }
-      const printWin=window.open('','_blank','width=900,height=900');if(!printWin){showToast('Please allow pop-ups to print student ID cards.','error');return;}printWin.document.open();printWin.document.write('<html><head><title>Ashiana Student ID Cards</title><script src="./assets/vendor/qrcode.min.js"><\/script><style>@page{size:A4 portrait;margin:0}*{box-sizing:border-box}html,body{margin:0;padding:0;background:#fff}body{font-family:Arial,Helvetica,sans-serif}.student-id-print-page{width:210mm;height:297mm;padding:12mm 18mm;display:grid;grid-template-columns:repeat(3,54mm);grid-auto-rows:85.6mm;column-gap:6mm;row-gap:5mm;align-content:start;page-break-after:always;break-after:page}.student-id-print-page:last-child{page-break-after:auto;break-after:auto}.student-id-preview-card{width:54mm;height:85.6mm;overflow:hidden;display:flex;flex-direction:column;background:#fff;border:.3mm solid #9ca3af;border-radius:2mm;color:#111827}.student-id-preview-card .sid-top{height:19mm;flex:0 0 19mm;padding:1.2mm 3mm .8mm;color:#fff;background:linear-gradient(145deg,#063f32,#075b46 62%,#0a7655);text-align:center;overflow:hidden}.student-id-preview-card .sid-logo{width:7mm;height:7mm;object-fit:contain;background:#fff;border-radius:50%;padding:.3mm;display:block;margin:0 auto .35mm}.student-id-preview-card .sid-school{font-size:2.65mm;line-height:1.05;font-weight:900;white-space:nowrap}.student-id-preview-card .sid-sub{font-size:1.45mm;line-height:1.05;margin-top:.35mm;font-weight:800;white-space:nowrap}.student-id-preview-card .sid-line{height:.25mm;background:#ef3340;margin:.45mm 8mm 0}.student-id-preview-card .sid-photo-wrap{height:25mm;flex:0 0 25mm;width:20mm;margin:-.5mm auto 0;background:#fff;border:.55mm solid #fff;box-shadow:0 1mm 2.5mm rgba(0,0,0,.22);position:relative;z-index:2}.student-id-preview-card .sid-photo-wrap img,.student-id-preview-card .sid-photo-fallback{width:100%;height:100%;object-fit:cover;display:block;background:#e5e7eb}.student-id-preview-card .sid-photo-fallback{display:flex;align-items:center;justify-content:center;color:#08693a;font-size:6mm;font-weight:900}.student-id-preview-card .sid-name-band{height:8mm;min-height:8mm;flex:0 0 8mm;background:#064e3b;color:#fff;padding:1mm 2mm .7mm;text-align:center}.student-id-preview-card .sid-name{font-size:2.7mm;line-height:1.05;font-weight:900;text-transform:uppercase;white-space:nowrap;overflow:hidden;text-overflow:ellipsis}.student-id-preview-card .sid-class{font-size:1.9mm;line-height:1.05;margin-top:.45mm;font-weight:700;white-space:nowrap}.student-id-preview-card .sid-details{height:31mm;flex:0 0 31mm;padding:1.1mm 3mm .3mm;background:#fff}.student-id-preview-card{position:relative}.student-id-preview-card .sid-qr-wrap{position:absolute;left:50%;bottom:4.5mm;transform:translateX(-50%);width:17mm!important;height:17mm!important;display:flex;align-items:center;justify-content:center;z-index:5;background:#fff}.student-id-preview-card .sid-qr-wrap canvas,.student-id-preview-card .sid-qr-wrap img{width:16mm!important;height:16mm!important}.student-id-back-card{width:54mm;height:85.6mm;display:flex;align-items:center;justify-content:center;background:#fff;border:.3mm solid #9ca3af;border-radius:2mm}.student-id-back-card .sid-back-qr{width:46mm;height:46mm;display:flex;align-items:center;justify-content:center;background:#fff}.student-id-back-card .sid-back-qr canvas,.student-id-back-card .sid-back-qr img{width:44mm!important;height:44mm!important;display:block}.student-id-back-print-page{page-break-after:always;break-after:page}.student-id-back-print-page:last-child{page-break-after:auto;break-after:auto}.student-id-preview-card .sid-footer{display:flex!important}.student-id-preview-card .sid-row{display:flex;align-items:center;min-height:2.8mm;font-size:1.7mm;line-height:1.05}.student-id-preview-card .sid-row span{flex:0 0 15mm;color:#64748b;font-weight:700}.student-id-preview-card .sid-row b{flex:1;min-width:0;overflow:hidden;white-space:nowrap;text-overflow:ellipsis}.student-id-preview-card .sid-row.transport-row b{color:#111827;font-weight:900}.student-id-preview-card .sid-row.address-row{min-height:4mm;align-items:flex-start;margin-top:0;padding-right:0}.student-id-preview-card .sid-row.address-row b{white-space:normal;display:block;overflow:hidden;line-height:1.05;overflow-wrap:anywhere;padding-right:0}.student-id-preview-card .sid-footer{flex:1 1 auto;text-align:center;font-size:.82mm;line-height:1;white-space:nowrap;color:#94a3b8;padding:.25mm 1mm 0}.student-id-preview-card img{display:block}.student-id-preview-card .sid-top{height:19mm;flex:0 0 19mm;padding:1mm 3mm .5mm;position:relative;overflow:hidden}.student-id-preview-card .sid-school-name{font-size:2.7mm;line-height:1.05;font-weight:900}.student-id-preview-card .sid-school-sub{font-size:1.65mm;line-height:1.05;margin-top:.4mm;font-weight:800}.student-id-preview-card .sid-school-phone{font-size:1.5mm;line-height:1.05;margin-top:.35mm;font-weight:700}.student-id-preview-card .sid-school-aff{font-size:1.25mm;line-height:1.05;margin-top:.3mm;font-weight:700}.student-id-preview-card .sid-title{font-size:1.7mm;line-height:1;font-weight:800;letter-spacing:.15mm;white-space:nowrap;}.student-id-preview-card .sid-photo-wrap{height:30mm;flex:0 0 30mm;width:24mm;margin:0 auto}.student-id-preview-card .sid-name-band{height:7mm;min-height:7mm;flex:0 0 7mm;padding:1mm 2mm .7mm}.student-id-preview-card .sid-name{font-size:2.8mm}.student-id-preview-card .sid-class{font-size:2mm;margin-top:.45mm}.student-id-preview-card .sid-details{height:25.5mm;flex:0 0 25.5mm;padding:1mm 3mm .3mm;position:relative}.student-id-preview-card .sid-info{padding-right:0;height:100%;display:flex;flex-direction:column;justify-content:space-between;box-sizing:border-box}.student-id-preview-card .sid-row{min-height:2.8mm;font-size:1.55mm;line-height:1.05}.student-id-preview-card .sid-row span{flex:0 0 17mm}.student-id-preview-card .sid-qr-wrap{position:absolute;left:auto;right:2.5mm;bottom:8.2mm;transform:none;width:10mm!important;height:10mm!important}.student-id-preview-card .sid-qr-wrap canvas,.student-id-preview-card .sid-qr-wrap img{width:8mm!important;height:8mm!important}.student-id-preview-card .sid-footer{display:flex!important;align-items:center;justify-content:center;flex:1 1 auto;min-height:0;text-align:center;font-size:.82mm;line-height:1;white-space:nowrap;color:#64748b;padding:.45mm 1mm .45mm;background:#fff;border-top:.2mm solid #e2e8f0;box-sizing:border-box}.student-id-preview-card .sid-school-name,.student-id-preview-card .sid-school-sub,.student-id-preview-card .sid-school-phone,.student-id-preview-card .sid-school-aff{white-space:nowrap}</style></head><body><div id="pages"></div><script>\n  // Register the PWA service worker only for the browser/PWA build.\n  // Capacitor Android uses its own bundled WebView cache and must not be\n  // intercepted by the web service worker.\n  if ("serviceWorker" in navigator && window.location.hostname !== "localhost") {\n    window.addEventListener("load", () => {\n      navigator.serviceWorker.register("./sw.js", { scope: "./" }).catch((error) => {\n        console.warn("Ashiana Attendance service worker registration failed:", error);\n      });\n    });\n  }\n<\/script>\n</body></html>');printWin.document.close();const paths=students.filter(s=>s.photo_path&&!s.__printPhotoUrl).map(s=>s.photo_path);let photoMap={};if(paths.length){for(let i=0;i<paths.length;i+=500){const chunk=paths.slice(i,i+500),{data,error}=await supabaseClient.storage.from('student-photos').createSignedUrls(chunk,3600);if(!error)(data||[]).forEach(x=>{if(x.path&&x.signedUrl)photoMap[x.path]=x.signedUrl;});}}const pages=[];for(let i=0;i<students.length;i+=9)pages.push(students.slice(i,i+9));
+      const printWin=window.open('','_blank','width=900,height=900');if(!printWin){showToast('Please allow pop-ups to print student ID cards.','error');return;}printWin.document.open();printWin.document.write('<html><head><title>Ashiana Student ID Cards</title><script src="./assets/vendor/qrcode.min.js"><\/script><style>@page{size:A4 portrait;margin:0}*{box-sizing:border-box}html,body{margin:0;padding:0;background:#fff}body{font-family:Arial,Helvetica,sans-serif}.student-id-print-page{width:210mm;height:297mm;padding:12mm 18mm;display:grid;grid-template-columns:repeat(3,54mm);grid-auto-rows:85.6mm;column-gap:6mm;row-gap:5mm;align-content:start;page-break-after:always;break-after:page}.student-id-print-page:last-child{page-break-after:auto;break-after:auto}.student-id-preview-card{width:54mm;height:85.6mm;overflow:hidden;display:flex;flex-direction:column;background:#fff;border:.3mm solid #9ca3af;border-radius:2mm;color:#111827}.student-id-preview-card .sid-top{height:19mm;flex:0 0 19mm;padding:1.2mm 3mm .8mm;color:#fff;background:linear-gradient(145deg,#063f32,#075b46 62%,#0a7655);text-align:center;overflow:hidden}.student-id-preview-card .sid-logo{width:7mm;height:7mm;object-fit:contain;background:#fff;border-radius:50%;padding:.3mm;display:block;margin:0 auto .35mm}.student-id-preview-card .sid-school{font-size:2.65mm;line-height:1.05;font-weight:900;white-space:nowrap}.student-id-preview-card .sid-sub{font-size:1.45mm;line-height:1.05;margin-top:.35mm;font-weight:800;white-space:nowrap}.student-id-preview-card .sid-line{height:.25mm;background:#ef3340;margin:.45mm 8mm 0}.student-id-preview-card .sid-photo-wrap{height:25mm;flex:0 0 25mm;width:20mm;margin:-.5mm auto 0;background:#fff;border:.55mm solid #fff;box-shadow:0 1mm 2.5mm rgba(0,0,0,.22);position:relative;z-index:2}.student-id-preview-card .sid-photo-wrap img,.student-id-preview-card .sid-photo-fallback{width:100%;height:100%;object-fit:cover;display:block;background:#e5e7eb}.student-id-preview-card .sid-photo-fallback{display:flex;align-items:center;justify-content:center;color:#08693a;font-size:6mm;font-weight:900}.student-id-preview-card .sid-name-band{height:8mm;min-height:8mm;flex:0 0 8mm;background:#064e3b;color:#fff;padding:1mm 2mm .7mm;text-align:center}.student-id-preview-card .sid-name{font-size:2.7mm;line-height:1.05;font-weight:900;text-transform:uppercase;white-space:nowrap;overflow:hidden;text-overflow:ellipsis}.student-id-preview-card .sid-class{font-size:1.9mm;line-height:1.05;margin-top:.45mm;font-weight:700;white-space:nowrap}.student-id-preview-card .sid-details{height:31mm;flex:0 0 31mm;padding:1.1mm 3mm .3mm;background:#fff}.student-id-preview-card{position:relative}.student-id-preview-card .sid-qr-wrap{position:absolute;left:50%;bottom:4.5mm;transform:translateX(-50%);width:17mm!important;height:17mm!important;display:flex;align-items:center;justify-content:center;z-index:5;background:#fff}.student-id-preview-card .sid-qr-wrap canvas,.student-id-preview-card .sid-qr-wrap img{width:16mm!important;height:16mm!important}.student-id-back-card{width:54mm;height:85.6mm;display:flex;align-items:center;justify-content:center;background:#fff;border:.3mm solid #9ca3af;border-radius:2mm}.student-id-back-card .sid-back-qr{width:46mm;height:46mm;display:flex;align-items:center;justify-content:center;background:#fff}.student-id-back-card .sid-back-qr canvas,.student-id-back-card .sid-back-qr img{width:44mm!important;height:44mm!important;display:block}.student-id-back-print-page{page-break-after:always;break-after:page}.student-id-back-print-page:last-child{page-break-after:auto;break-after:auto}.student-id-preview-card .sid-footer{display:flex!important}.student-id-preview-card .sid-row{display:flex;align-items:center;min-height:2.8mm;font-size:1.7mm;line-height:1.05}.student-id-preview-card .sid-row span{flex:0 0 15mm;color:#64748b;font-weight:700}.student-id-preview-card .sid-row b{flex:1;min-width:0;overflow:hidden;white-space:nowrap;text-overflow:ellipsis}.student-id-preview-card .sid-row.transport-row b{color:#111827;font-weight:900}.student-id-preview-card .sid-row.address-row{min-height:4mm;align-items:flex-start;margin-top:0;padding-right:0}.student-id-preview-card .sid-row.address-row b{white-space:normal;display:block;overflow:hidden;line-height:1.05;overflow-wrap:anywhere;padding-right:0}.student-id-preview-card .sid-footer{flex:1 1 auto;text-align:center;font-size:.82mm;line-height:1;white-space:nowrap;color:#94a3b8;padding:.25mm 1mm 0}.student-id-preview-card img{display:block}.student-id-preview-card .sid-top{height:19mm;flex:0 0 19mm;padding:1mm 3mm .5mm;position:relative;overflow:hidden}.student-id-preview-card .sid-school-name{font-size:2.7mm;line-height:1.05;font-weight:900}.student-id-preview-card .sid-school-sub{font-size:1.65mm;line-height:1.05;margin-top:.4mm;font-weight:800}.student-id-preview-card .sid-school-phone{font-size:1.5mm;line-height:1.05;margin-top:.35mm;font-weight:700}.student-id-preview-card .sid-school-aff{font-size:1.25mm;line-height:1.05;margin-top:.3mm;font-weight:700}.student-id-preview-card .sid-title{font-size:1.7mm;line-height:1;font-weight:800;letter-spacing:.15mm;white-space:nowrap;}.student-id-preview-card .sid-photo-wrap{height:30mm;flex:0 0 30mm;width:24mm;margin:0 auto}.student-id-preview-card .sid-name-band{height:7mm;min-height:7mm;flex:0 0 7mm;padding:1mm 2mm .7mm}.student-id-preview-card .sid-name{font-size:2.8mm}.student-id-preview-card .sid-class{font-size:2mm;margin-top:.45mm}.student-id-preview-card .sid-details{height:25.5mm;flex:0 0 25.5mm;padding:1mm 3mm .3mm;position:relative}.student-id-preview-card .sid-info{padding-right:0;height:100%;display:flex;flex-direction:column;justify-content:space-between;box-sizing:border-box}.student-id-preview-card .sid-row{min-height:2.8mm;font-size:1.55mm;line-height:1.05}.student-id-preview-card .sid-row span{flex:0 0 17mm}.student-id-preview-card .sid-qr-wrap{position:absolute;left:auto;right:2.5mm;bottom:8.2mm;transform:none;width:10mm!important;height:10mm!important}.student-id-preview-card .sid-qr-wrap canvas,.student-id-preview-card .sid-qr-wrap img{width:8mm!important;height:8mm!important}.student-id-preview-card .sid-footer{display:flex!important;align-items:center;justify-content:center;flex:1 1 auto;min-height:0;text-align:center;font-size:.82mm;line-height:1;white-space:nowrap;color:#64748b;padding:.45mm 1mm .45mm;background:#fff;border-top:.2mm solid #e2e8f0;box-sizing:border-box}.student-id-preview-card .sid-school-name,.student-id-preview-card .sid-school-sub,.student-id-preview-card .sid-school-phone,.student-id-preview-card .sid-school-aff{white-space:nowrap}</style></head><body><div id="pages"></div><script>\n  // Register the PWA service worker only for the browser/PWA build.\n  // Capacitor Android uses its own bundled WebView cache and must not be\n  // intercepted by the web service worker.\n  if ("serviceWorker" in navigator && window.location.hostname !== "localhost") {\n    window.addEventListener("load", () => {\n      navigator.serviceWorker.register("./sw.js", { scope: "./" }).catch((error) => {\n        console.warn("Ashiana Attendance service worker registration failed:", error);\n      });\n    });\n  }\n<\/script>\n 
+<!-- Full-screen Daily Attendance QR preview: intentionally shows only the QR and close control. -->
+<div id="admin-daily-qr-preview" class="hidden fixed inset-0 z-[220] bg-white items-center justify-center" role="dialog" aria-modal="true" aria-label="Full-screen attendance QR" onclick="closeAdminDailyQRPreview(event)">
+  <button type="button" onclick="closeAdminDailyQRPreview()" aria-label="Close full-screen QR" class="absolute top-4 right-4 z-10 w-11 h-11 rounded-full bg-slate-100 text-slate-800 flex items-center justify-center shadow" style="top:max(16px,env(safe-area-inset-top));right:max(16px,env(safe-area-inset-right))">
+    <i data-lucide="x" class="w-6 h-6"></i>
+  </button>
+  <div id="admin-daily-qr-preview-content" class="w-full h-full flex items-center justify-center p-5" onclick="event.stopPropagation()"></div>
+</div>
+</body></html>');printWin.document.close();const paths=students.filter(s=>s.photo_path&&!s.__printPhotoUrl).map(s=>s.photo_path);let photoMap={};if(paths.length){for(let i=0;i<paths.length;i+=500){const chunk=paths.slice(i,i+500),{data,error}=await supabaseClient.storage.from('student-photos').createSignedUrls(chunk,3600);if(!error)(data||[]).forEach(x=>{if(x.path&&x.signedUrl)photoMap[x.path]=x.signedUrl;});}}const pages=[];for(let i=0;i<students.length;i+=9)pages.push(students.slice(i,i+9));
       const frontPagesHtml=pages.map((group,pageIdx)=>'<div class="student-id-print-page">'+group.map((s,idx)=>makeStudentIdCardHtml(s,s.__printPhotoUrl||photoMap[s.photo_path]||'',pageIdx*9+idx)).join('')+'</div>').join('');
       const backPagesHtml=pages.map((group,pageIdx)=>{
         const backItems=group.map((s,idx)=>({s,idx:pageIdx*9+idx}));
@@ -8444,6 +8500,17 @@ window.addEventListener('load',async function(){
 
       const qrHost = document.createElement("div");
       qrHost.className = "w-[180px] h-[180px] bg-white p-2 rounded-xl flex items-center justify-center";
+      qrHost.classList.add("admin-daily-qr-code-host");
+      qrHost.setAttribute("role", "button");
+      qrHost.setAttribute("tabindex", "0");
+      qrHost.setAttribute("aria-label", "Open Daily Attendance QR full screen");
+      qrHost.addEventListener("click", openAdminDailyQRPreview);
+      qrHost.addEventListener("keydown", event => {
+        if (event.key === "Enter" || event.key === " ") {
+          event.preventDefault();
+          openAdminDailyQRPreview();
+        }
+      });
       container.appendChild(qrHost);
 
       if (typeof QRCode === "function") {
@@ -8525,9 +8592,60 @@ window.addEventListener('load',async function(){
       if (el) el.textContent = new Date().toLocaleDateString("en-IN", { weekday: "long", day: "numeric", month: "short", year: "numeric" });
     }
 
+    function closeAdminDailyQRPage() {
+      const qrTab = document.getElementById("admin-tab-qr");
+      if (qrTab) qrTab.classList.remove("admin-qr-page-active");
+      switchAdminTab("live");
+      const adminView = document.getElementById("admin-portal-view");
+      if (adminView) adminView.scrollIntoView({ behavior: "auto", block: "start" });
+    }
+
+    function openAdminDailyQRPreview() {
+      const source = document.getElementById("qr-code-canvas-container");
+      const preview = document.getElementById("admin-daily-qr-preview");
+      const target = document.getElementById("admin-daily-qr-preview-content");
+      if (!source || !preview || !target) return;
+      const code = source.querySelector("canvas, img");
+      if (!code) {
+        showToast("Daily QR is not ready yet. Please load today's QR first.", "error");
+        return;
+      }
+      target.innerHTML = "";
+      const clone = code.cloneNode(true);
+      clone.removeAttribute("id");
+      target.appendChild(clone);
+      preview.classList.remove("hidden");
+      preview.classList.add("flex");
+      document.body.style.overflow = "hidden";
+      if (window.lucide) lucide.createIcons();
+    }
+
+    function closeAdminDailyQRPreview(event) {
+      if (event && event.target !== event.currentTarget) return;
+      const preview = document.getElementById("admin-daily-qr-preview");
+      if (preview) {
+        preview.classList.add("hidden");
+        preview.classList.remove("flex");
+      }
+      const target = document.getElementById("admin-daily-qr-preview-content");
+      if (target) target.innerHTML = "";
+      document.body.style.overflow = "";
+    }
+
+    window.closeAdminDailyQRPage = closeAdminDailyQRPage;
+    window.openAdminDailyQRPreview = openAdminDailyQRPreview;
+    window.closeAdminDailyQRPreview = closeAdminDailyQRPreview;
+
+    document.addEventListener("keydown", event => {
+      if (event.key === "Escape") closeAdminDailyQRPreview();
+    });
+
     function switchAdminTab(tab) {
       const allowedTabs = ['live', 'qr', 'directory', 'corrections', 'leave', 'audit', 'reports', 'students', 'student-portal'];
       if (!allowedTabs.includes(tab)) return;
+
+      const dailyQrTab = document.getElementById("admin-tab-qr");
+      if (dailyQrTab) dailyQrTab.classList.toggle("admin-qr-page-active", tab === "qr");
 
       // Force the panel visibility with both the utility class and inline display.
       // This avoids browsers retaining a stale hidden/flex state after SPA navigation.
