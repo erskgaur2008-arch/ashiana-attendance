@@ -1,8 +1,13 @@
 import { createSupabaseContext } from "npm:@supabase/server@1";
+import { createClient } from "npm:@supabase/supabase-js@2.45.4";
 
-const PRIMARY_MODEL = "gemini-3.8-flash";
-const FALLBACK_MODEL = "gemini-3.7-flash";
-const LAST_RESORT_MODEL = "gemini-3.5-flash-lite";
+// Models can be changed from Supabase secrets without redeploying code.
+const PRIMARY_MODEL = Deno.env.get("GEMINI_MODEL_PRIMARY") || "gemini-3.8-flash";
+const FALLBACK_MODEL = Deno.env.get("GEMINI_MODEL_FALLBACK") || "gemini-3.7-flash";
+const LAST_RESORT_MODEL = Deno.env.get("GEMINI_MODEL_LAST_RESORT") || "gemini-3.5-flash-lite";
+
+// Per-user daily request cap (protects the Gemini bill from abuse).
+const DAILY_LIMIT_PER_USER = Number(Deno.env.get("AI_DAILY_LIMIT_PER_USER") || "40");
 const MAX_INPUT_CHARS = 4000;
 const MAX_OUTPUT_TOKENS = 800;
 
@@ -106,6 +111,24 @@ Deno.serve(async (req: Request) => {
   const { data: ctx, error: authError } = await createSupabaseContext(req, { auth: "user" });
   if (authError || !ctx?.userClaims) {
     return json({ error: "AUTH_REQUIRED" }, 401);
+  }
+
+  // ---- per-user daily quota ----
+  const userId = String((ctx.userClaims as Record<string, unknown>)?.sub ?? "").trim();
+  if (!userId) return json({ error: "AUTH_REQUIRED" }, 401);
+  const supabaseUrl = Deno.env.get("SUPABASE_URL");
+  const serviceRoleKey = Deno.env.get("SUPABASE_SERVICE_ROLE_KEY");
+  if (!supabaseUrl || !serviceRoleKey) return json({ error: "SERVER_CONFIGURATION_ERROR" }, 500);
+  const quotaClient = createClient(supabaseUrl, serviceRoleKey, {
+    auth: { autoRefreshToken: false, persistSession: false, detectSessionInUrl: false },
+  });
+  const quota = await quotaClient.rpc("consume_ai_quota", { p_user_id: userId, p_max: DAILY_LIMIT_PER_USER });
+  if (quota.error) {
+    console.error("AI quota check failed:", quota.error.message);
+    return json({ error: "AI_QUOTA_CHECK_FAILED", message: "AI assistant is temporarily unavailable." }, 503);
+  }
+  if (quota.data?.allowed !== true) {
+    return json({ error: "AI_DAILY_LIMIT", message: "Daily AI question limit reached. Please try again tomorrow." }, 429);
   }
 
   const apiKey = Deno.env.get("GEMINI_API_KEY")?.trim();
