@@ -569,21 +569,22 @@
     .staff-id-preview-card .id-school-aff{font-size:1.25mm;line-height:1.05;margin-top:.3mm;font-weight:700;white-space:nowrap;}
     .staff-id-preview-card .id-red-line{height:.25mm;background:#ef3340;margin:.55mm 8mm .35mm;}
     .staff-id-preview-card .id-title{font-size:1.5mm;font-weight:800;letter-spacing:.28mm;}
-    .staff-id-preview-card .id-photo-wrap{flex:0 0 24mm;width:24mm;height:24mm;margin:0 auto;background:#fff;border:.65mm solid #fff;box-shadow:0 1mm 2.5mm rgba(0,0,0,.25);position:relative;z-index:2;}
-    .staff-id-preview-card .id-photo-wrap img,.staff-id-preview-card .photo-fallback{width:100%;height:100%;object-fit:cover;object-position:center;display:block;background:#e5e7eb;}
+    .staff-id-preview-card .id-photo-wrap{flex:0 0 27mm;width:27mm;height:27mm;margin:0 auto;background:#fff;border:.65mm solid #fff;box-shadow:0 1mm 2.5mm rgba(0,0,0,.25);position:relative;z-index:2;}
+    .staff-id-preview-card .id-photo-wrap img,.staff-id-preview-card .photo-fallback{width:100%;height:100%;object-fit:cover;object-position:center top;display:block;background:#e5e7eb;}
     .staff-id-preview-card .photo-fallback{display:flex;align-items:center;justify-content:center;color:#08693a;font-size:7mm;font-weight:900;}
     .staff-id-preview-card .id-name-band{flex:0 0 7mm;min-height:7mm;background:#064e3b;color:#fff;padding:1mm 2mm .7mm;text-align:center;}
     .staff-id-preview-card .id-name{font-size:2.8mm;line-height:1.05;font-weight:900;text-transform:uppercase;white-space:nowrap;overflow:hidden;text-overflow:ellipsis;}
     .staff-id-preview-card .id-role{font-size:2mm;line-height:1.05;margin-top:.45mm;font-weight:700;white-space:nowrap;overflow:hidden;text-overflow:ellipsis;}
     .staff-id-preview-card .id-details{flex:0 0 18mm;height:18mm;padding:1mm 3mm .3mm;background:#fff;}
-    .staff-id-preview-card .id-row{display:flex;align-items:center;height:2.75mm;font-size:1.8mm;line-height:1;}
-    .staff-id-preview-card .id-row span{flex:0 0 16mm;color:#64748b;font-weight:700;}
+    .staff-id-preview-card .id-row{display:flex;align-items:center;height:2.25mm;font-size:1.55mm;line-height:1;}
+    .staff-id-preview-card .id-row span{flex:0 0 15mm;color:#64748b;font-weight:700;}
     .staff-id-preview-card .id-row b{flex:1;min-width:0;overflow:hidden;white-space:nowrap;text-overflow:ellipsis;}
     .staff-id-preview-card .id-qr-area{flex:0 0 12mm;height:12mm;margin:0 3mm;border-top:.25mm solid #e2e8f0;padding-top:1mm;display:flex;align-items:center;justify-content:space-between;}
     .staff-id-preview-card .id-valid{font-size:1.55mm;color:#64748b;line-height:1.25;max-width:31mm;}
     .staff-id-preview-card .id-qrcode{width:11mm;height:11mm;flex:0 0 11mm;}
     .staff-id-preview-card .id-qrcode img,.staff-id-preview-card .id-qrcode canvas{width:11mm!important;height:11mm!important;display:block;}
-    .staff-id-preview-card .id-footer{flex:1 1 auto;min-height:1.5mm;text-align:center;font-size:1.25mm;line-height:1.2;color:#94a3b8;padding-top:.2mm;}
+    .staff-id-preview-card .id-footer{flex:0 0 3.2mm;height:3.2mm;min-height:3.2mm;display:flex;align-items:center;justify-content:center;text-align:center;font-size:1.15mm;line-height:1.1;color:#64748b;padding:0 .8mm;white-space:nowrap;overflow:hidden;}
+    .staff-id-preview-card .id-qr-caption{position:absolute;right:0;top:-1.65mm;padding:0 .5mm;background:#fff;color:#64748b;font-size:1.1mm;line-height:1;font-weight:800;letter-spacing:.08mm;z-index:4;}
     @media (max-width: 480px) {
       #staff-id-card-preview-modal { overflow:auto; }
       #staff-id-card-preview { flex-shrink:0; }
@@ -592,11 +593,11 @@
     /* Staff ID preview layout: photo must visually sit between header and name band. */
     .staff-id-preview-card{box-sizing:border-box;}
     .staff-id-preview-card .id-top{box-sizing:border-box;flex:0 0 22mm;height:22mm;}
-    .staff-id-preview-card .id-photo-wrap{box-sizing:border-box;flex:0 0 24mm;height:24mm;margin:0 auto;position:relative;z-index:3;}
+    .staff-id-preview-card .id-photo-wrap{box-sizing:border-box;flex:0 0 26mm;width:26mm;height:26mm;margin:0 auto;position:relative;z-index:3;}
     .staff-id-preview-card .id-photo-wrap img,.staff-id-preview-card .photo-fallback{position:relative;z-index:4;box-sizing:border-box;}
     .staff-id-preview-card .id-name-band{box-sizing:border-box;flex:0 0 7mm;min-height:7mm;position:relative;z-index:5;}
-    .staff-id-preview-card .id-details{box-sizing:border-box;flex:0 0 18mm;height:18mm;position:relative;z-index:1;}
-    .staff-id-preview-card .id-qr-area{box-sizing:border-box;flex:0 0 12mm;height:12mm;position:relative;z-index:1;}
+    .staff-id-preview-card .id-details{box-sizing:border-box;flex:0 0 15mm;height:15mm;position:relative;z-index:1;}
+    .staff-id-preview-card .id-qr-area{box-sizing:border-box;flex:0 0 11mm;height:11mm;position:relative;z-index:1;}
 
     #staff-id-card-preview {
       display:flex;
@@ -2159,10 +2160,7 @@
               </button>
               <div class="text-white text-xs font-bold mb-2 bg-black/40 px-3 py-1 rounded-full">My Staff ID Card</div>
               <div id="staff-id-card-preview" class="bg-white shadow-2xl"></div>
-              <button type="button" onclick="printStaffIdCard(currentStaffId, { autoPrint: true })" class="mt-4 inline-flex items-center justify-center gap-2 px-4 py-2.5 rounded-xl bg-emerald-700 hover:bg-emerald-800 text-white text-xs font-extrabold shadow-lg">
-                <i data-lucide="printer" class="w-4 h-4"></i>
-                <span>Generate / Print My ID Card</span>
-              </button>
+              <div class="mt-3 flex items-center justify-center gap-2 flex-wrap"><button type="button" onclick="printStaffIdCard(currentStaffId,{autoPrint:true})" class="px-3 py-2 rounded-xl bg-emerald-700 text-white text-xs font-bold">Print</button><button type="button" onclick="downloadCurrentStaffIdCard('png')" class="px-3 py-2 rounded-xl bg-indigo-700 text-white text-xs font-bold">Download PNG</button><button type="button" onclick="downloadCurrentStaffIdCard('pdf')" class="px-3 py-2 rounded-xl bg-rose-700 text-white text-xs font-bold">Download PDF</button></div>
             </div>
           </div>
 
@@ -2663,7 +2661,7 @@
                 <i data-lucide="key" class="w-3.5 h-3.5 text-amber-300"></i>
                 <span>Export PINs (CSV)</span>
               </button>
-              <button onclick="openBulkIdCardModal()" class="px-3 py-2 bg-blue-700 hover:bg-blue-800 text-white text-xs font-bold rounded-xl flex items-center space-x-1.5 shadow transition-all active:scale-95 border-b-2 border-blue-950" title="Generate selected staff ID cards on A4">
+              <button onclick="downloadIssuedStaffIdCards('pdf')" class="px-3 py-2 bg-rose-700 text-white text-xs font-bold rounded-xl shadow">Download Issued PDF</button><button onclick="downloadIssuedStaffIdCards('zip')" class="px-3 py-2 bg-slate-800 text-white text-xs font-bold rounded-xl shadow">Download PNG ZIP</button><button onclick="openBulkIdCardModal()" class="px-3 py-2 bg-blue-700 hover:bg-blue-800 text-white text-xs font-bold rounded-xl flex items-center space-x-1.5 shadow transition-all active:scale-95 border-b-2 border-blue-950" title="Generate selected staff ID cards on A4">
                 <i data-lucide="contact-round" class="w-3.5 h-3.5"></i>
                 <span>Bulk ID Cards (A4)</span>
               </button>
@@ -5882,7 +5880,13 @@ async function refreshStudentPortalData(dobOverride){
         } else {
           const s = currentAuthUser.staffRecord || {};
           if (navAvatar) {
-            navAvatar.className = "w-5 h-5 sm:w-6 sm:h-6 rounded-full bg-ashiana-green text-white font-bold flex items-center justify-center text-[10px] overflow-hidden";
+            navAvatar.className = "w-5 h-5 sm:w-6 sm:h-6 rounded-full bg-ashiana-green text-white font-bold flex items-center justify-center text-[10px] overflow-hidden cursor-pointer ring-1 ring-emerald-300/50 hover:ring-2";
+            navAvatar.setAttribute("role","button");
+            navAvatar.setAttribute("tabindex","0");
+            navAvatar.setAttribute("aria-label","Open my official staff ID card");
+            navAvatar.title = "Open my official staff ID card";
+            navAvatar.onclick = () => viewMyStaffIdCard();
+            navAvatar.onkeydown = (event) => { if (event.key === "Enter" || event.key === " ") { event.preventDefault(); viewMyStaffIdCard(); } };
             try { renderStaffAvatar("nav-user-avatar", s); } catch (e) {}
           }
           if (navName) navName.innerText = s.name || "Staff";
@@ -7791,11 +7795,12 @@ async function loadAdminStudentAttendance(){
             <div class="row"><div class="label">Employee ID</div><div class="value">${escapeIdCardHtml(staff.empId || "—")}</div></div>
             <div class="row"><div class="label">Gender</div><div class="value">${escapeIdCardHtml(staff.gender || "—")}</div></div>
             <div class="row"><div class="label">DOB</div><div class="value">${escapeIdCardHtml(staff.dob || "—")}</div></div>
-            <div class="row"><div class="label">Valid Thru</div><div class="value">${escapeIdCardHtml(staff.validThru || staff.valid_thru || "—")}</div></div>      <div class="row"><div class="label">Phone</div><div class="value">${escapeIdCardHtml(staff.phone || staff.mobile || staff.mobileNumber || "—")}</div></div>
-      <div class="row"><div class="label">Address</div><div class="value">${escapeIdCardHtml(staff.address || staff.residentialAddress || "—")}</div></div>            <div class="row"><div class="label">Phone</div><div class="value">${escapeIdCardHtml(staff.phone || staff.mobile || staff.mobileNumber || "—")}</div></div>
-            <div class="row"><div class="label">Address</div><div class="value">${escapeIdCardHtml(staff.address || staff.residentialAddress || "—")}</div></div>
+            <div class="row"><div class="label">Valid Thru</div><div class="value">${escapeIdCardHtml(staff.validThru || staff.valid_thru || "—")}</div></div>
+      <div class="row"><div class="label">Phone</div><div class="value">${escapeIdCardHtml(staff.phone || staff.mobile || staff.mobileNumber || "—")}</div></div>
+      <div class="row"><div class="label">Address</div><div class="value">${escapeIdCardHtml(staff.address || staff.residentialAddress || "—")}</div></div>
           </div>
           <div class="qr-area">
+            <div class="qr-caption">QR CODE</div>
             <div class="valid">Property of<br><b>Ashiana Public School</b><br>Sector 46-A, Chandigarh<br>Scan to verify staff identity</div>
             <div class="qrcode" id="bulk-qr-${index}"></div>
           </div>
@@ -7854,32 +7859,33 @@ body{font-family:Arial,Helvetica,sans-serif;}
 .page{width:210mm;height:297mm;background:#fff;display:grid;grid-template-columns:repeat(3,54mm);grid-template-rows:repeat(3,85.6mm);column-gap:3mm;row-gap:3mm;align-content:center;justify-content:center;page-break-after:always;break-after:page;}
 .page:last-child{page-break-after:auto;break-after:auto;}
 .card{width:54mm;height:85.6mm;overflow:hidden;display:flex;flex-direction:column;position:relative;background:#fff;border:.35mm solid #cbd5e1;border-radius:3mm;}
-.top{flex:0 0 19mm;height:19mm;padding:1.5mm 3mm 1mm;color:#fff;background:linear-gradient(145deg,#063f32,#075b46 62%,#0a7655);position:relative;overflow:hidden;}
+.top{flex:0 0 22mm;height:22mm;padding:1.5mm 3mm 1mm;color:#fff;background:linear-gradient(145deg,#063f32,#075b46 62%,#0a7655);position:relative;overflow:hidden;}
 .top:after{content:"";position:absolute;width:38mm;height:18mm;right:-13mm;bottom:-8mm;background:rgba(255,255,255,.08);border-radius:50%;}
 .school{position:relative;z-index:1;text-align:center;padding:1mm 2.5mm 0;width:100%;}
-.school-logo{width:6.5mm;height:6.5mm;object-fit:contain;background:#fff;border-radius:50%;padding:.35mm;display:block;margin:0 auto .65mm;}
+.school-logo{width:6.5mm;height:6.5mm;object-fit:contain;background:#fff;border-radius:50%;padding:.35mm;display:block;margin:0 auto .45mm;}
 .school-copy{width:100%;}
-.school-name{font-size:2.85mm;line-height:1.05;font-weight:900;letter-spacing:.08mm;white-space:nowrap;}
-.school-sub{font-size:1.75mm;line-height:1.05;margin-top:.55mm;font-weight:800;letter-spacing:.06mm;white-space:nowrap;}
-.school-phone{font-size:1.6mm;line-height:1.05;margin-top:.45mm;font-weight:700;white-space:nowrap;}
-.school-aff{font-size:1.35mm;line-height:1.05;margin-top:.4mm;font-weight:700;white-space:nowrap;}
-.school-line{height:.28mm;background:#ef3340;margin:.7mm 8mm .55mm;width:calc(100% - 16mm);}
-.card-title{font-size:1.65mm;font-weight:800;letter-spacing:.32mm;}
-.photo-wrap{flex:0 0 30mm;width:24mm;height:30mm;margin:-1mm auto 0;position:relative;z-index:2;background:#fff;border:.65mm solid #fff;box-shadow:0 1mm 2.5mm rgba(0,0,0,.25);}
-.photo-wrap img,.photo-fallback{width:100%;height:100%;object-fit:cover;object-position:center center;display:block;background:#e5e7eb;}
+.school-name{font-size:2.7mm;line-height:1.05;font-weight:900;letter-spacing:.08mm;white-space:nowrap;}
+.school-sub{font-size:1.65mm;line-height:1.05;margin-top:.4mm;font-weight:800;letter-spacing:.06mm;white-space:nowrap;}
+.school-phone{font-size:1.5mm;line-height:1.05;margin-top:.35mm;font-weight:700;white-space:nowrap;}
+.school-aff{font-size:1.25mm;line-height:1.05;margin-top:.3mm;font-weight:700;white-space:nowrap;}
+.school-line{height:.25mm;background:#ef3340;margin:.55mm 8mm .35mm;width:calc(100% - 16mm);}
+.card-title{font-size:1.5mm;font-weight:800;letter-spacing:.28mm;}
+.photo-wrap{flex:0 0 26mm;width:26mm;height:26mm;margin:0 auto;position:relative;z-index:2;background:#fff;border:.65mm solid #fff;box-shadow:0 1mm 2.5mm rgba(0,0,0,.25);}
+.photo-wrap img,.photo-fallback{width:100%;height:100%;object-fit:cover;object-position:center top;display:block;background:#e5e7eb;}
 .photo-fallback{display:flex;align-items:center;justify-content:center;background:#d1fae5;color:#08693a;font-size:7mm;font-weight:900;}
-.name-band{flex:0 0 7mm;min-height:7mm;background:#064e3b;color:#fff;padding:1.3mm 2mm 1mm;text-align:center;}
-.name{font-size:3.05mm;line-height:1.05;font-weight:900;text-transform:uppercase;letter-spacing:.12mm;white-space:nowrap;overflow:hidden;text-overflow:ellipsis;}
-.role{font-size:2.15mm;line-height:1.05;margin-top:.7mm;font-weight:700;white-space:nowrap;overflow:hidden;text-overflow:ellipsis;}
-.details{flex:0 0 18mm;height:18mm;padding:1mm 3mm .3mm;background:#fff;}
-.row{display:flex;align-items:center;height:2.75mm;margin:0;font-size:1.9mm;line-height:1;}
-.label{flex:0 0 16mm;color:#64748b;font-weight:700;}
+.name-band{flex:0 0 7mm;min-height:7mm;background:#064e3b;color:#fff;padding:1mm 2mm .7mm;text-align:center;}
+.name{font-size:2.8mm;line-height:1.05;font-weight:900;text-transform:uppercase;letter-spacing:.12mm;white-space:nowrap;overflow:hidden;text-overflow:ellipsis;}
+.role{font-size:2mm;line-height:1.05;margin-top:.45mm;font-weight:700;white-space:nowrap;overflow:hidden;text-overflow:ellipsis;}
+.details{flex:0 0 15mm;height:15mm;padding:.5mm 3mm .2mm;background:#fff;}
+.row{display:flex;align-items:center;height:2.25mm;margin:0;font-size:1.55mm;line-height:1;}
+.label{flex:0 0 15mm;color:#64748b;font-weight:700;}
 .value{flex:1;min-width:0;color:#111827;font-weight:800;overflow:hidden;white-space:nowrap;text-overflow:ellipsis;}
-.qr-area{flex:0 0 12mm;height:12mm;margin:0 3mm;border-top:.25mm solid #e2e8f0;padding-top:1.1mm;display:flex;align-items:center;justify-content:space-between;}
-.valid{font-size:1.65mm;color:#64748b;line-height:1.25;max-width:31mm;}
+.qr-area{flex:0 0 11mm;height:11mm;margin:0 3mm;border-top:.25mm solid #e2e8f0;padding-top:1.1mm;display:flex;align-items:center;justify-content:space-between;}
+.valid{font-size:1.55mm;color:#64748b;line-height:1.25;max-width:31mm;}
 .qrcode{width:11mm;height:11mm;flex:0 0 11mm;}
 .qrcode img,.qrcode canvas{width:11mm!important;height:11mm!important;display:block;}
-.footer{flex:1 1 auto;min-height:1.5mm;text-align:center;font-size:1.35mm;line-height:1.2;color:#94a3b8;padding-top:.2mm;}
+.footer{flex:0 0 3.2mm;height:3.2mm;min-height:3.2mm;display:flex;align-items:center;justify-content:center;text-align:center;font-size:1.15mm;line-height:1.1;color:#64748b;padding:0 .8mm;white-space:nowrap;overflow:hidden;}
+    .qr-caption{position:absolute;right:0;top:-1.65mm;padding:0 .5mm;background:#fff;color:#64748b;font-size:1.1mm;line-height:1;font-weight:800;letter-spacing:.08mm;z-index:4;}
 @media print{html,body{background:#fff}.page{margin:0}.card{box-shadow:none;}}
 </style></head><body>${pages.join('')}
 <script src="./assets/vendor/qrcode.min.js"><\/script>
@@ -8019,6 +8025,48 @@ window.addEventListener('load',async function(){
       if (sel) sel.innerHTML = staffOptionsHtml();
     }
 
+
+    let idCardExportLibrariesPromise=null;
+    async function ensureIdCardExportLibraries(){
+      if(idCardExportLibrariesPromise)return idCardExportLibrariesPromise;
+      idCardExportLibrariesPromise=(async()=>{const load=(src,ready)=>new Promise((resolve,reject)=>{if(ready())return resolve();const e=document.createElement('script');e.src=src;e.async=true;e.onload=()=>ready()?resolve():reject(new Error('Download library initialization failed.'));e.onerror=()=>reject(new Error('Could not load download library.'));document.head.appendChild(e);});await load('https://cdnjs.cloudflare.com/ajax/libs/html2canvas/1.4.1/html2canvas.min.js',()=>typeof window.html2canvas==='function');await load('https://cdnjs.cloudflare.com/ajax/libs/jspdf/2.5.1/jspdf.umd.min.js',()=>!!window.jspdf?.jsPDF);await load('https://cdnjs.cloudflare.com/ajax/libs/jszip/3.10.1/jszip.min.js',()=>typeof window.JSZip==='function');})().catch(e=>{idCardExportLibrariesPromise=null;throw e;});return idCardExportLibrariesPromise;
+    }
+    function buildStaffIdCardExport(s){
+      const v=x=>escapeIdCardHtml(x||'—'),logo=escapeIdCardHtml(new URL('logo 2.png',location.href).href),photo=String(s.avatarUrl||s.avatar_url||'').trim(),ph=photo?'<img src="'+escapeIdCardHtml(photo)+'" alt="Staff Photo">':'<div class="photo-fallback">'+escapeIdCardHtml(getStaffInitials(s.name))+'</div>';
+      const payload={school:'ASHIANA_PUBLIC_SCHOOL',employee_id:s.empId||s.emp_id||'',name:s.name||'',role:s.role||'',department:s.department||'',gender:s.gender||'',dob:s.dob||'',valid_thru:s.validThru||s.valid_thru||''};
+      const html='<div class="staff-id-preview-card"><div class="id-top"><div class="id-school"><img class="id-logo" src="'+logo+'"><div class="id-school-name">ASHIANA PUBLIC SCHOOL</div><div class="id-school-sub">SECTOR 46-CHANDIGARH</div><div class="id-school-phone">PHONE: +91-9872500460</div><div class="id-school-aff">Affiliated to CBSE | Affiliation No. 2630065</div><div class="id-red-line"></div><div class="id-title">STAFF IDENTITY CARD</div></div></div><div class="id-photo-wrap">'+ph+'</div><div class="id-name-band"><div class="id-name">'+v(s.name||'STAFF MEMBER')+'</div><div class="id-role">'+v(s.role||'STAFF')+' • '+v(s.department||'School')+'</div></div><div class="id-details"><div class="id-row"><span>Employee ID</span><b>'+v(s.empId||s.emp_id)+'</b></div><div class="id-row"><span>Gender</span><b>'+v(s.gender)+'</b></div><div class="id-row"><span>DOB</span><b>'+v(s.dob)+'</b></div><div class="id-row"><span>Valid Thru</span><b>'+v(s.validThru||s.valid_thru)+'</b></div><div class="id-row"><span>Phone</span><b>'+v(s.phone||s.mobile||s.mobileNumber)+'</b></div><div class="id-row"><span>Address</span><b>'+v(s.address||s.residentialAddress)+'</b></div></div><div class="id-qr-area"><div class="id-qr-caption">QR CODE</div><div class="id-valid">Property of<br><strong>Ashiana Public School</strong><br>Sector 46-A, Chandigarh<br>Scan to verify staff identity</div><div class="id-qrcode"></div></div><div class="id-footer">Authorized Staff Identification • Ashiana Public School</div></div>';
+      return {html,payload};
+    }
+    async function exportIdCards(items,format,baseName){
+      if(!items.length)return showToast('No officially issued ID cards found to download.','info');let stage=null;
+      try{
+        await ensureIdCardExportLibraries();const zip=format==='zip'?new window.JSZip():null,PDF=window.jspdf.jsPDF;let pdf=null;
+        for(let i=0;i<items.length;i++){
+          stage=document.createElement('div');stage.style.cssText='position:fixed;left:-12000px;top:0;width:54mm;height:85.6mm;overflow:visible;background:#fff;z-index:-1;';stage.innerHTML=items[i].html;document.body.appendChild(stage);const card=stage.firstElementChild;await ensureQRCodeLibrary();
+          if(items[i].kind==='staff')new QRCode(card.querySelector('.id-qrcode'),{text:JSON.stringify(items[i].payload),width:160,height:160,correctLevel:QRCode.CorrectLevel.M});else renderStudentCardQr(card.querySelector('[data-student-qr]'),items[i].record);
+          await Promise.all(Array.from(card.querySelectorAll('img')).map(im=>im.decode?im.decode().catch(()=>{}):new Promise(r=>{if(im.complete)r();else{im.onload=r;im.onerror=r;}})));await new Promise(r=>requestAnimationFrame(()=>requestAnimationFrame(r)));
+          const canvas=await window.html2canvas(card,{scale:4,backgroundColor:'#fff',useCORS:true,allowTaint:false,logging:false}),blob=await new Promise((resolve,reject)=>canvas.toBlob(b=>b?resolve(b):reject(new Error('PNG conversion failed.')),'image/png')),name=String(items[i].fileName||'id-card').replace(/[^a-zA-Z0-9_-]+/g,'-').slice(0,70)||'id-card';
+          if(format==='png'){const u=URL.createObjectURL(blob),a=document.createElement('a');a.href=u;a.download=name+'.png';document.body.appendChild(a);a.click();a.remove();setTimeout(()=>URL.revokeObjectURL(u),1500);}
+          else if(format==='zip')zip.file(name+'.png',blob);
+          else{const data=await new Promise((resolve,reject)=>{const r=new FileReader();r.onload=()=>resolve(r.result);r.onerror=reject;r.readAsDataURL(blob);});if(!pdf)pdf=new PDF({orientation:'portrait',unit:'mm',format:[54,85.6],compress:true});else pdf.addPage([54,85.6],'portrait');pdf.addImage(data,'PNG',0,0,54,85.6,undefined,'FAST');}
+          stage.remove();stage=null;
+        }
+        if(format==='zip'){const b=await zip.generateAsync({type:'blob'}),u=URL.createObjectURL(b),a=document.createElement('a');a.href=u;a.download=(baseName||'ashiana-id-cards')+'.zip';document.body.appendChild(a);a.click();a.remove();setTimeout(()=>URL.revokeObjectURL(u),1500);}
+        else if(format==='pdf')pdf.save((baseName||'ashiana-id-cards')+'.pdf');showToast(items.length+' ID card(s) downloaded.','success');
+      }catch(e){console.error('ID card download failed:',e);showToast('Download failed: '+(e.message||e),'error');}finally{if(stage)stage.remove();}
+    }
+    async function downloadCurrentStaffIdCard(format){
+      const id=currentStaffId||currentAuthUser?.staffRecord?.id,s=staffDatabase.find(x=>String(x.id)===String(id))||currentAuthUser?.staffRecord;
+      if(!s)return showToast('Staff profile is not ready.','error');if(currentAuthUser?.type!=='ADMIN'&&!(await getStaffIdCardIssued(s.id)))return showToast('Your official ID card has not been issued yet.','error');
+      const b=buildStaffIdCardExport(s);await exportIdCards([{...b,kind:'staff',record:s,fileName:'staff-'+(s.empId||s.emp_id||s.id)}],format,'staff-'+(s.empId||s.emp_id||'id-card'));
+    }
+    async function downloadIssuedStaffIdCards(format){
+      if(currentAuthUser?.type!=='ADMIN')return showToast('Administrator access is required.','error');
+      const chosen=bulkIdCardSelectedIds.size?[...bulkIdCardSelectedIds]:staffDatabase.map(s=>s.id),records=chosen.map(id=>staffDatabase.find(s=>String(s.id)===String(id))).filter(Boolean);
+      const {data,error}=await supabaseClient.from('staff_id_cards').select('staff_id,generated_at').in('staff_id',records.map(s=>s.id));if(error)return showToast('Could not verify issued staff cards: '+error.message,'error');
+      const issued=new Set((data||[]).filter(x=>x.generated_at).map(x=>String(x.staff_id))),items=records.filter(s=>issued.has(String(s.id))).map(s=>({...buildStaffIdCardExport(s),kind:'staff',record:s,fileName:'staff-'+(s.empId||s.id)}));
+      await exportIdCards(items,format,'ashiana-issued-staff-id-cards');
+    }
     function escapeIdCardHtml(value) {
       return String(value ?? '')
         .replace(/&/g, '&amp;')
@@ -8044,12 +8092,20 @@ window.addEventListener('load',async function(){
       if (error) throw error;
     }
 
-    async function getMyStaffIdCardIssued() {
-      if (!supabaseClient || !currentStaffId) return false;
+    async function getStaffIdCardIssued(staffId) {
+      if (!supabaseClient || !staffId) return false;
       const { data, error } = await supabaseClient.from('staff_id_cards')
-        .select('staff_id, generated_at').eq('staff_id', currentStaffId).maybeSingle();
+        .select('staff_id, generated_at').eq('staff_id', staffId).maybeSingle();
       if (error) { console.warn("Staff ID card status error:", error); return false; }
-      return !!data;
+      return !!data?.generated_at;
+    }
+
+    async function getMyStaffIdCardIssued() {
+      const record=currentAuthUser?.staffRecord||{};
+      const resolved=staffDatabase.find(s => String(s.id)===String(record.id) || (record.empId && String(s.empId||"").trim().toLowerCase()===String(record.empId).trim().toLowerCase()));
+      const staffId=record.id||resolved?.id||currentStaffId||null;
+      if(staffId) currentStaffId=staffId;
+      return getStaffIdCardIssued(staffId);
     }
 
     async function refreshStaffIdCardWidget() {
@@ -8068,27 +8124,31 @@ window.addEventListener('load',async function(){
       }
 
       const issued = await getMyStaffIdCardIssued();
-      button.disabled = false;
-      button.className = "flex-shrink-0 px-3 py-1.5 rounded-xl bg-ashiana-green hover:bg-[#08693A] text-white text-[10px] font-bold flex items-center space-x-1.5 shadow-sm transition-colors";
+      button.disabled = !issued;
+      button.className = "flex-shrink-0 px-3 py-1.5 rounded-xl text-white text-[10px] font-bold flex items-center space-x-1.5 shadow-sm transition-colors "+(issued?"bg-ashiana-green hover:bg-[#08693A]":"bg-slate-400 cursor-not-allowed");
       status.innerText = issued
-        ? "Your ID card has been generated by the school administration."
-        : "Your digital ID card is ready to preview and print. Admin issuance status is pending.";
+        ? "Your official ID card has been issued by the school administration."
+        : "Your ID card is pending. Only the school administrator can generate it.";
       if (window.lucide) lucide.createIcons();
     }
 
     async function viewMyStaffIdCard() {
-      if (!currentStaffId) {
-        currentStaffId = currentAuthUser?.staffRecord?.id || null;
-      }
+      const signedInRecord=currentAuthUser?.staffRecord||{};
+      const resolvedStaff=staffDatabase.find(s => String(s.id)===String(signedInRecord.id) || (signedInRecord.empId && String(s.empId||"").trim().toLowerCase()===String(signedInRecord.empId).trim().toLowerCase()));
+      currentStaffId=signedInRecord.id||resolvedStaff?.id||currentStaffId||null;
       if (!currentStaffId) {
         showToast("Your staff account is not fully loaded. Please sign out and sign in again.", "error");
         return;
       }
 
-      // Staff can preview and print their own card from Staff Login.
-      // Issuance status remains an admin-tracking field and is not changed here.
+      // Only show the official card after the administrator has issued it.
+      if(currentAuthUser?.type!=="ADMIN" && !(await getStaffIdCardIssued(currentStaffId))){
+        showToast("Your official ID card has not been generated by the school administration yet.","info");
+        return;
+      }
       const staff = staffDatabase.find(s => String(s.id) === String(currentStaffId))
-        || (String(currentAuthUser?.staffRecord?.id || "") === String(currentStaffId) ? currentAuthUser.staffRecord : null);
+        || (signedInRecord.empId ? staffDatabase.find(s => String(s.empId||"").trim().toLowerCase()===String(signedInRecord.empId).trim().toLowerCase()) : null)
+        || (String(signedInRecord.id || "") === String(currentStaffId) ? signedInRecord : null);
       if (!staff) {
         showToast("Your staff record could not be loaded. Please refresh and sign in again.", "error");
         return;
@@ -8148,6 +8208,7 @@ window.addEventListener('load',async function(){
             <div class="id-row"><span>Address</span><b>${escapeIdCardHtml(staff.address || staff.residentialAddress || "—")}</b></div>
           </div>
           <div class="id-qr-area">
+            <div class="id-qr-caption">QR CODE</div>
             <div class="id-valid">Property of<br><strong>Ashiana Public School</strong><br>Sector 46-A, Chandigarh<br>Scan to verify staff identity</div>
             <div id="staff-preview-qr" class="id-qrcode"></div>
           </div>
@@ -8171,6 +8232,7 @@ window.addEventListener('load',async function(){
       modal.classList.remove("hidden");
       modal.classList.add("flex");
       document.body.classList.add("overflow-hidden");
+      try { history.pushState({ ashianaApp: true, modal: "staff-id-card-preview" }, "", location.href); } catch (_) {}
 
       const scaleStaffIdCardPreview = () => {
         const card = preview.querySelector(".staff-id-preview-card");
@@ -8238,13 +8300,28 @@ window.addEventListener('load',async function(){
         return;
       }
 
-      if (options.markGenerated) {
-        try {
+      if(options.markGenerated && currentAuthUser?.type!=="ADMIN"){
+        win.document.write("<!doctype html><title>Administrator required</title><p style='font:16px Arial;padding:24px'>Only the school administrator can issue ID cards.</p>");
+        win.document.close();
+        showToast("Only the school administrator can generate official ID cards.","error");
+        return;
+      }
+      if(options.markGenerated){
+        try{
           await markStaffIdCardsGenerated([staff.id]);
-        } catch (e) {
-          console.error("Generate staff ID card tracking error:", e);
-          showToast("ID card will print, but generation status could not be saved.", "warning");
+        }catch(e){
+          console.error("Generate staff ID card tracking error:",e);
+          win.document.open();
+          win.document.write("<!doctype html><title>ID card not issued</title><p style='font:16px Arial;padding:24px'>The official ID card was not issued because its status could not be saved. Please retry.</p>");
+          win.document.close();
+          showToast("ID card was not issued because its official status could not be saved.","error");
+          return;
         }
+      }else if(currentAuthUser?.type!=="ADMIN" && !(await getStaffIdCardIssued(staff.id))){
+        win.document.write("<!doctype html><title>ID card not issued</title><p style='font:16px Arial;padding:24px'>Only the school administrator can issue this ID card.</p>");
+        win.document.close();
+        showToast("Your official ID card has not been issued by the school administration yet.","info");
+        return;
       }
 
       const photo = String(staff.avatarUrl || staff.avatar_url || '').trim();
@@ -8297,23 +8374,23 @@ window.addEventListener('load',async function(){
   .school-logo {
     width:6.5mm; height:6.5mm; object-fit:contain;
     background:#fff; border-radius:50%; padding:.35mm;
-    display:block; margin:0 auto .65mm;
+    display:block; margin:0 auto .45mm;
   }
   .school-copy { width:100%; }
   .school-name {
-    font-size:2.85mm; line-height:1.05; font-weight:900;
+    font-size:2.7mm; line-height:1.05; font-weight:900;
     letter-spacing:.08mm; white-space:nowrap;
   }
   .school-sub {
-    font-size:1.75mm; line-height:1.05; margin-top:.55mm;
+    font-size:1.65mm; line-height:1.05; margin-top:.4mm;
     font-weight:800; letter-spacing:.06mm; white-space:nowrap;
   }
   .school-phone {
-    font-size:1.6mm; line-height:1.05; margin-top:.45mm;
+    font-size:1.5mm; line-height:1.05; margin-top:.35mm;
     font-weight:700; white-space:nowrap;
   }
   .school-aff {
-    font-size:1.35mm; line-height:1.05; margin-top:.4mm;
+    font-size:1.25mm; line-height:1.05; margin-top:.3mm;
     font-weight:700; white-space:nowrap;
   }
   .school-line {
@@ -8323,40 +8400,41 @@ window.addEventListener('load',async function(){
   .card-title { font-size:1.65mm; font-weight:800; letter-spacing:.32mm; }
 
   .photo-wrap {
-    flex: 0 0 24mm; width: 24mm; height: 24mm; margin: 0 auto;
+    flex: 0 0 26mm; width: 26mm; height: 26mm; margin: 0 auto;
     position:relative; z-index:2; background:#fff; border:.65mm solid #fff;
     box-shadow:0 1mm 2.5mm rgba(0,0,0,.25);
   }
-  .photo-wrap img, .photo-fallback { width:100%; height:100%; object-fit:cover; object-position:center center; display:block; background:#e5e7eb; }
+  .photo-wrap img, .photo-fallback { width:100%; height:100%; object-fit:cover; object-position:center top; display:block; background:#e5e7eb; }
   .photo-fallback { display:flex; align-items:center; justify-content:center; background:#d1fae5; color:#08693a; font-size:7mm; font-weight:900; }
 
   .name-band {
     flex: 0 0 7mm; min-height:7mm; background:#064e3b; color:#fff;
-    padding:1.3mm 2mm 1mm; text-align:center;
+    padding:1mm 2mm .7mm; text-align:center;
   }
-  .name { font-size:3.05mm; line-height:1.05; font-weight:900; text-transform:uppercase; letter-spacing:.12mm; white-space:nowrap; overflow:hidden; text-overflow:ellipsis; }
-  .role { font-size:2.15mm; line-height:1.05; margin-top:.7mm; font-weight:700; white-space:nowrap; overflow:hidden; text-overflow:ellipsis; }
+  .name { font-size:2.8mm; line-height:1.05; font-weight:900; text-transform:uppercase; letter-spacing:.12mm; white-space:nowrap; overflow:hidden; text-overflow:ellipsis; }
+  .role { font-size:2mm; line-height:1.05; margin-top:.45mm; font-weight:700; white-space:nowrap; overflow:hidden; text-overflow:ellipsis; }
 
   .details {
-    flex: 0 0 18mm; height:18mm; padding:.7mm 3mm .2mm;
+    flex: 0 0 15mm; height:15mm; padding:.5mm 3mm .2mm;
     background:#fff;
   }
-  .row { display:flex; align-items:center; height:2.7mm; margin:0; font-size:1.8mm; line-height:1; }
-  .label { flex:0 0 16mm; color:#64748b; font-weight:700; }
+  .row { display:flex; align-items:center; height:2.25mm; margin:0; font-size:1.55mm; line-height:1; }
+  .label { flex:0 0 15mm; color:#64748b; font-weight:700; }
   .value { flex:1; min-width:0; color:#111827; font-weight:800; overflow:hidden; white-space:nowrap; text-overflow:ellipsis; }
 
   .qr-area {
-    flex: 0 0 12mm; height:12mm; margin:0 3mm;
-    border-top:.25mm solid #e2e8f0; padding-top:1.1mm;
+    flex: 0 0 11mm; height:11mm; margin:0 3mm; position:relative;
+    border-top:.25mm solid #e2e8f0; padding-top:.7mm;
     display:flex; align-items:center; justify-content:space-between;
   }
-  .valid { font-size:1.65mm; color:#64748b; line-height:1.25; max-width:31mm; }
+  .valid { font-size:1.55mm; color:#64748b; line-height:1.25; max-width:31mm; }
   #qrcode { width:11mm; height:11mm; flex:0 0 11mm; }
   #qrcode img, #qrcode canvas { width:11mm !important; height:11mm !important; display:block; }
 
+  .qr-caption{position:absolute;right:0;top:-1.65mm;padding:0 .5mm;background:#fff;color:#64748b;font-size:1.1mm;line-height:1;font-weight:800;letter-spacing:.08mm;z-index:4;}
   .footer {
-    flex:1 1 auto; min-height:1.5mm; text-align:center;
-    font-size:1.35mm; line-height:1.2; color:#94a3b8; padding-top:.2mm;
+    flex:0 0 3.2mm; height:3.2mm; min-height:3.2mm; display:flex; align-items:center; justify-content:center; text-align:center;
+    font-size:1.15mm; line-height:1.1; color:#64748b; padding:0 .8mm; white-space:nowrap; overflow:hidden;
   }
 
   @media print {
@@ -8392,8 +8470,11 @@ window.addEventListener('load',async function(){
       <div class="row"><div class="label">Gender</div><div class="value">${escapeIdCardHtml(staff.gender || "—")}</div></div>
       <div class="row"><div class="label">DOB</div><div class="value">${escapeIdCardHtml(staff.dob || "—")}</div></div>
       <div class="row"><div class="label">Valid Thru</div><div class="value">${escapeIdCardHtml(staff.validThru || staff.valid_thru || "—")}</div></div>
+      <div class="row"><div class="label">Phone</div><div class="value">${escapeIdCardHtml(staff.phone || staff.mobile || staff.mobileNumber || "—")}</div></div>
+      <div class="row"><div class="label">Address</div><div class="value">${escapeIdCardHtml(staff.address || staff.residentialAddress || "—")}</div></div>
     </div>
     <div class="qr-area">
+      <div class="qr-caption">QR CODE</div>
       <div class="valid">Property of<br><b>Ashiana Public School</b><br>Sector 46-A, Chandigarh<br>Scan to verify staff identity</div>
       <div id="qrcode"></div>
     </div>
@@ -10591,9 +10672,13 @@ window.addEventListener('load',async function(){
           const visibleModal = Array.from(document.querySelectorAll('[id$="-modal"]'))
             .find(el => !el.classList.contains("hidden"));
 
-          if (visibleModal) {
+          if (visibleModal?.id === "staff-id-card-preview-modal") {
+            closeStaffIdCardPreview();
+          } else if (visibleModal) {
             visibleModal.classList.add("hidden");
+            visibleModal.classList.remove("flex");
           }
+          document.body.classList.toggle("overflow-hidden", Array.from(document.querySelectorAll('[id$="-modal"]')).some(el => !el.classList.contains("hidden")));
 
           history.pushState({ ashianaApp: true, root: true }, "", location.href);
         });
