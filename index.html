@@ -8346,6 +8346,7 @@ window.addEventListener('load',async function(){
 <html>
 <head>
 <meta charset="utf-8">
+<base href="${new URL(".", window.location.href).href}">
 <title>Ashiana Staff ID Card - ${escapeIdCardHtml(staff.name)}</title>
 <style>
   @page { size: 54mm 85.6mm; margin: 0; }
@@ -10698,11 +10699,11 @@ window.addEventListener('load',async function(){
       if (!printWin) { frame.remove(); return null; }
       printWin.__ashianaNativePrintFrame = frame;
       printWin.focus = function () {};
-      printWin.close = function () { frame.remove(); };
+      printWin.close = function () { frame.remove(); if (window.__ashianaActivePrintFrame === frame) window.__ashianaActivePrintFrame = null; };
       printWin.print = function () {
         const html = serializePrintDocument(printWin.document);
         const printJob = window.AshianaNative.printHtml(html, title || printWin.document.title || "Ashiana ID Card");
-        Promise.resolve(printJob).then(() => frame.remove()).catch(error => {
+        Promise.resolve(printJob).then(() => printWin.close()).catch(error => {
           console.error("Native ID-card printing failed:", error);
           showToast("Printing failed: " + (error?.message || error), "error");
         });
