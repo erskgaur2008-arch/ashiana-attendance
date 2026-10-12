@@ -1,4 +1,4 @@
-const CACHE_NAME = "ashiana-attendance-v42";
+const CACHE_NAME = "ashiana-attendance-v43";
 const APP_SHELL = [
   "./",
   "./index.html",
@@ -91,4 +91,39 @@ self.addEventListener("fetch", (event) => {
       })
       .catch(() => caches.match(event.request).then((cached) => cached || caches.match("./")))
   );
+});
+
+
+// Display Web Push notifications. The service worker does not trust payload URLs.
+self.addEventListener("push", (event) => {
+  let payload = {};
+  try { payload = event.data ? event.data.json() : {}; } catch (_) {}
+  const title = String(payload.title || "Ashiana Public School").slice(0, 120);
+  const body = String(payload.body || "You have a new school update.").slice(0, 500);
+  const category = String(payload.category || "school_notice");
+  const allowed = ["school_notice", "leave_status", "homework_timetable", "attendance_update"];
+  const safeCategory = allowed.includes(category) ? category : "school_notice";
+  event.waitUntil(self.registration.showNotification(title, {
+    body,
+    icon: "./logo%202.png",
+    badge: "./logo%202.png",
+    tag: String(payload.tag || safeCategory).slice(0, 120),
+    data: { category: safeCategory },
+    renotify: false
+  }));
+});
+
+self.addEventListener("notificationclick", (event) => {
+  event.notification.close();
+  const target = new URL("./", self.registration.scope).href;
+  event.waitUntil((async () => {
+    const clients = await self.clients.matchAll({ type: "window", includeUncontrolled: true });
+    for (const client of clients) {
+      if (client.url.startsWith(self.registration.scope) && "focus" in client) {
+        await client.focus();
+        return;
+      }
+    }
+    if (self.clients.openWindow) await self.clients.openWindow(target);
+  })());
 });
