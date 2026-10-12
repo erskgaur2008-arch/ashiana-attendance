@@ -5672,7 +5672,7 @@ async function refreshStudentPortalData(dobOverride){
         const dobValue=String(s.dob||currentAuthUser?.studentRecord?.dob||"").slice(0,10);
         const parts=dobValue.split("-");
         const dobPassword=parts.length===3?parts[2]+parts[1]+parts[0]:"";
-        if(!enrollNo||!/^\\d{8}$/.test(dobPassword))return false;
+        if(!enrollNo||!/^\d{8}$/.test(dobPassword))return false;
         try{
           const {data,error}=await supabaseClient.rpc("student_id_card_issued",{p_school_code:APS_STUDENT_SCHOOL,p_enroll_no:enrollNo,p_dob_password:dobPassword});
           if(error)throw error;
