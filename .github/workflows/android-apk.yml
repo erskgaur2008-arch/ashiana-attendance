@@ -43,13 +43,15 @@ jobs:
       - name: Install Capacitor
         shell: bash
         run: |
-          # Reproducible install when package-lock.json is committed.
-          if [ -f package-lock.json ]; then
-            npm ci --no-audit --no-fund
-          else
-            echo "::warning::package-lock.json is missing - run 'npm install' locally and commit it."
-            npm install --no-audit --no-fund
+          set -e
+          # The repository currently has no committed lockfile. Generate one
+          # in the runner so the install step is explicit and the build can
+          # continue for browser-only maintainers. Commit package-lock.json
+          # later to make dependency resolution reproducible between builds.
+          if [ ! -f package-lock.json ]; then
+            npm install --package-lock-only --ignore-scripts --no-audit --no-fund
           fi
+          npm ci --no-audit --no-fund
 
       - name: Verify Capacitor environment
         run: npx cap doctor
