@@ -1681,7 +1681,7 @@
               };
               // Student uses the lightweight portal session; bootstrap restores it
               // after reload and never touches the main Auth session.
-              localStorage.setItem("aps_student_session_v1", JSON.stringify(pendingStudentUser));
+              sessionStorage.setItem("aps_student_session_v1", JSON.stringify(pendingStudentUser));
               sessionStorage.setItem("aps_current_auth_session_v1", JSON.stringify(pendingStudentUser));
               sessionStorage.setItem("aps_login_handoff_v1", "STUDENT");
 
@@ -4182,10 +4182,6 @@
 
     // The 4-digit PIN remains the user's credential. Supabase Auth receives
     // only this deterministic, policy-compliant derived password.
-    function deriveStaffAuthPassword(staffId, pin) {
-      return `EduPunch!${String(staffId)}!${String(pin)}`;
-    }
-
     async function invokeVerifyAttendance(body) {
       if (!supabaseClient) throw new Error('Supabase client is not initialized.');
 
@@ -4273,7 +4269,8 @@
         // Student login must never be replaced by a stale Staff/Admin Auth
         // session left in local storage from an earlier login.
         const savedRaw = sessionStorage.getItem(STORAGE_KEY_CURRENT_USER);
-        const savedStudentRaw = localStorage.getItem("aps_student_session_v1");
+        try { localStorage.removeItem("aps_student_session_v1"); } catch (_) {} /* legacy persistent copy */
+        const savedStudentRaw = sessionStorage.getItem("aps_student_session_v1");
         const loginHandoff = sessionStorage.getItem("aps_login_handoff_v1");
         let savedUser = null;
         try {
@@ -4309,7 +4306,7 @@
           });
           if (loginCheckError) throw loginCheckError;
           if (!loginCheck?.success || !loginCheck?.student) {
-            localStorage.removeItem("aps_student_session_v1");
+            localStorage.removeItem("aps_student_session_v1"); sessionStorage.removeItem("aps_student_session_v1");
             sessionStorage.removeItem(STORAGE_KEY_CURRENT_USER);
             sessionStorage.removeItem("aps_login_handoff_v1");
             throw new Error('STUDENT_SESSION_EXPIRED');
@@ -4326,7 +4323,7 @@
             studentRecord: loginCheck.student,
             portalData: bundleData || {}
           };
-          localStorage.setItem("aps_student_session_v1", JSON.stringify(restoredStudentUser));
+          sessionStorage.setItem("aps_student_session_v1", JSON.stringify(restoredStudentUser));
           sessionStorage.setItem(STORAGE_KEY_CURRENT_USER, JSON.stringify(restoredStudentUser));
           sessionStorage.removeItem("aps_login_handoff_v1");
           currentAuthUser = restoredStudentUser;
@@ -4450,7 +4447,7 @@
         currentStaffId = null;
         sessionStorage.removeItem(STORAGE_KEY_CURRENT_USER);
         if (String(e?.message || '').includes('STUDENT_SESSION_EXPIRED')) {
-          try { localStorage.removeItem("aps_student_session_v1"); } catch (_) {}
+          try { localStorage.removeItem("aps_student_session_v1"); sessionStorage.removeItem("aps_student_session_v1"); } catch (_) {}
         }
         return false;
       }
@@ -5738,7 +5735,7 @@ async function refreshStudentPortalData(dobOverride){
       sessionStorage.removeItem(STORAGE_KEY_CURRENT_USER);
       sessionStorage.removeItem("aps_admin_login_handoff_v1");
       sessionStorage.removeItem("aps_login_handoff_v1");
-      localStorage.removeItem("aps_student_session_v1");
+      localStorage.removeItem("aps_student_session_v1"); sessionStorage.removeItem("aps_student_session_v1");
       try { localStorage.removeItem("sb-oalfzgluqroqbbrulhpr-auth-token"); } catch (_) {}
       try { localStorage.removeItem("aps_student_session_expiry_v1"); } catch (_) {}
       try { sessionStorage.removeItem("aps_student_session_expiry_v1"); } catch (_) {}
@@ -9767,17 +9764,18 @@ window.addEventListener('load',async function(){
       }
 
       try {
-        const { data: currentOk, error: currentErr } = await supabaseClient
-          .rpc('verify_staff_pin_internal', { p_staff_id: staff.id, p_pin: current });
-        if (currentErr || currentOk !== true) throw new Error("Current PIN is incorrect.");
-
-        const { data: changed, error: pinErr } = await supabaseClient
-          .rpc('set_staff_pin', { p_staff_id: staff.id, p_pin: newPin });
-        if (pinErr || changed !== true) throw new Error(pinErr?.message || "PIN update failed.");
-
-        const authPassword = deriveStaffAuthPassword(staff.id, newPin);
-        const { error: authErr } = await supabaseClient.auth.updateUser({ password: authPassword });
-        if (authErr) throw authErr;
+        // PIN is verified and changed on the server (rate limited). No PIN-derived
+        // password is ever written to Supabase Auth.
+        let changeResult;
+        try {
+          changeResult = await invokeVerifyAttendance({ action: 'change_pin', current_pin: current, new_pin: newPin });
+        } catch (changeErr) {
+          const m = String(changeErr?.message || changeErr);
+          if (m.includes('INVALID_PIN')) throw new Error("Current PIN is incorrect.");
+          if (m.includes('RATE_LIMIT')) throw new Error("Too many attempts. Please wait and try again.");
+          throw new Error("PIN update failed.");
+        }
+        if (!changeResult?.success) throw new Error("PIN update failed.");
 
         recordAuditLog("PIN_CHANGE", staff.name, "Staff changed personal attendance PIN");
         playTone('SUCCESS');

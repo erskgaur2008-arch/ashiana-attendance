@@ -1,4 +1,4 @@
-const CACHE_NAME = "ashiana-attendance-v41";
+const CACHE_NAME = "ashiana-attendance-v42";
 const APP_SHELL = [
   "./",
   "./index.html",
@@ -47,8 +47,11 @@ self.addEventListener("fetch", (event) => {
         try {
           const preload = await event.preloadResponse;
           const response = preload || await fetch(event.request);
-          const copy = response.clone();
-          caches.open(CACHE_NAME).then((cache) => cache.put(event.request, copy));
+          // Only cache good responses (never a 404/500 error page).
+          if (response && response.ok && response.type === "basic") {
+            const copy = response.clone();
+            caches.open(CACHE_NAME).then((cache) => cache.put(event.request, copy));
+          }
           return response;
         } catch (_) {
           return caches.match(event.request).then((cached) => cached || caches.match("./"));
@@ -80,8 +83,10 @@ self.addEventListener("fetch", (event) => {
   event.respondWith(
     fetch(event.request)
       .then((response) => {
-        const copy = response.clone();
-        caches.open(CACHE_NAME).then((cache) => cache.put(event.request, copy));
+        if (response && response.ok && response.type === "basic") {
+          const copy = response.clone();
+          caches.open(CACHE_NAME).then((cache) => cache.put(event.request, copy));
+        }
         return response;
       })
       .catch(() => caches.match(event.request).then((cached) => cached || caches.match("./")))
