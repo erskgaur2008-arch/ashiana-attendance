@@ -16,9 +16,9 @@ create table if not exists public.push_subscriptions (
   )
 );
 create unique index if not exists push_subscriptions_user_endpoint_uidx
-  on public.push_subscriptions(user_id, endpoint) where endpoint is not null;
+  on public.push_subscriptions(user_id, endpoint);
 create unique index if not exists push_subscriptions_user_token_uidx
-  on public.push_subscriptions(user_id, device_token) where device_token is not null;
+  on public.push_subscriptions(user_id, device_token);
 create index if not exists push_subscriptions_user_platform_idx
   on public.push_subscriptions(user_id, platform);
 alter table public.push_subscriptions enable row level security;
