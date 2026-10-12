@@ -6122,7 +6122,9 @@ async function refreshStudentPortalData(dobOverride){
         );
         isScannerRunning = true;
       } catch (err) {
-        document.getElementById("scanner-status-text").innerHTML = `<span class="text-ashiana-red font-bold">Camera Blocked.</span><br><span class="text-[10px] text-slate-500">Allow camera access and try again.</span>`;
+        console.warn("Ashiana camera start failed:", err);
+        const status = document.getElementById("scanner-status-text");
+        if (status) status.textContent = "Camera blocked: " + String(err?.message || err || "Android camera permission or WebView access was denied.");
       }
     }
 
@@ -6810,7 +6812,7 @@ async function loadAdminStudents(){
       if(!students.length)return;
       // Reserve the print window during the original click gesture. Awaiting
       // private photo URLs first causes popup blocking on mobile browsers.
-      const printWin=window.open('','_blank','width=900,height=900');
+      const printWin=openIdCardPrintWindow("Ashiana Student ID Cards");
       if(!printWin){showToast('Please allow pop-ups to print student ID cards.','error');return;}
       setupPrintWindowBackHandling(printWin);
       printWin.document.open();
@@ -7820,7 +7822,7 @@ async function loadAdminStudentAttendance(){
         return;
       }
 
-      const win = window.open("", "_blank", "width=1000,height=900");
+      const win = openIdCardPrintWindow("Ashiana Staff ID Cards");
       if (!win) {
         showToast("Please allow pop-ups to print the A4 ID cards.", "error");
         return;
@@ -8278,7 +8280,7 @@ window.addEventListener('load',async function(){
     async function printStaffIdCard(staffId, options = {}) {
       // Open synchronously during the click gesture; mobile browsers block
       // pop-ups opened only after an awaited database request.
-      const win = window.open("", "_blank", "width=700,height=900");
+      const win = openIdCardPrintWindow("Ashiana Staff ID Card");
       if (!win) {
         showToast("Please allow pop-ups to print the ID card.", "error");
         return;
@@ -10660,10 +10662,66 @@ window.addEventListener('load',async function(){
       }, 1000);
     }
 
+    // Android WebView does not reliably support window.open() as a separate
+    // print window. Use an isolated iframe plus Capacitor native printing in the APK.
+    function isAshianaNativeAndroid() {
+      try { return Boolean(window.AshianaNative?.isAndroid?.()); } catch (_) { return false; }
+    }
+
+    function serializePrintDocument(doc) {
+      const clone = doc.documentElement.cloneNode(true);
+      const originalCanvases = Array.from(doc.querySelectorAll("canvas"));
+      const clonedCanvases = Array.from(clone.querySelectorAll("canvas"));
+      originalCanvases.forEach((canvas, index) => {
+        const target = clonedCanvases[index];
+        if (!target) return;
+        try {
+          const img = doc.createElement("img");
+          img.src = canvas.toDataURL("image/png");
+          img.width = canvas.width;
+          img.height = canvas.height;
+          img.style.cssText = target.getAttribute("style") || "";
+          target.replaceWith(img);
+        } catch (_) {}
+      });
+      return "<!doctype html>" + clone.outerHTML;
+    }
+
+    function openIdCardPrintWindow(title) {
+      if (!isAshianaNativeAndroid()) return window.open("", "_blank", "width=900,height=900");
+      const frame = document.createElement("iframe");
+      frame.setAttribute("aria-hidden", "true");
+      frame.title = title || "ID card print preview";
+      frame.style.cssText = "position:fixed;left:-10000px;top:0;width:800px;height:1100px;border:0;opacity:0;pointer-events:none;";
+      document.body.appendChild(frame);
+      const printWin = frame.contentWindow;
+      if (!printWin) { frame.remove(); return null; }
+      printWin.__ashianaNativePrintFrame = frame;
+      printWin.focus = function () {};
+      printWin.close = function () { frame.remove(); };
+      printWin.print = function () {
+        const html = serializePrintDocument(printWin.document);
+        const printJob = window.AshianaNative.printHtml(html, title || printWin.document.title || "Ashiana ID Card");
+        Promise.resolve(printJob).then(() => frame.remove()).catch(error => {
+          console.error("Native ID-card printing failed:", error);
+          showToast("Printing failed: " + (error?.message || error), "error");
+        });
+      };
+      window.__ashianaActivePrintFrame = frame;
+      return printWin;
+    }
+
+    async function shareGeneratedIdCardFile(blob, fileName, mimeType) {
+      if (!isAshianaNativeAndroid()) return false;
+      await window.AshianaNative.saveBlob(blob, fileName, mimeType);
+      return true;
+    }
+
     // Give standalone ID-card print windows their own Back-button history entry.
     // Android/browser Back should close the print window instead of leaving the app.
     function setupPrintWindowBackHandling(printWin) {
       if (!printWin) return;
+      if (printWin.__ashianaNativePrintFrame) return;
       try {
         if (printWin.__ashianaBackHandlingInstalled) return;
         printWin.__ashianaBackHandlingInstalled = true;
