@@ -581,9 +581,9 @@
     .staff-id-preview-card .id-row b{display:block;flex:1 1 auto;min-width:0;box-sizing:border-box;overflow:hidden;white-space:nowrap;text-overflow:ellipsis;font-size:5pt!important;line-height:1!important;margin:0!important;padding:0!important;}
     .staff-id-preview-card .id-qr-area{flex:0 0 12mm;height:12mm;margin:0 3mm;border-top:.25mm solid #e2e8f0;padding-top:1mm;display:flex;align-items:center;justify-content:space-between;}
     .staff-id-preview-card .id-valid{font-size:1.55mm;color:#64748b;line-height:1.25;max-width:31mm;}
-    .staff-id-preview-card .id-qrcode{width:11mm;height:11mm;flex:0 0 11mm;}
-    .staff-id-preview-card .id-qrcode img,.staff-id-preview-card .id-qrcode canvas{width:11mm!important;height:11mm!important;display:block;}
-    .staff-id-preview-card .id-footer{flex:0 0 3.2mm;height:3.2mm;min-height:3.2mm;display:flex;align-items:center;justify-content:center;text-align:center;font-size:1.15mm;line-height:1.1;color:#64748b;padding:0 .8mm;white-space:nowrap;overflow:hidden;}
+    .staff-id-preview-card .id-qrcode{width:9mm;height:9mm;flex:0 0 9mm;}
+    .staff-id-preview-card .id-qrcode img,.staff-id-preview-card .id-qrcode canvas{width:9mm!important;height:9mm!important;display:block;}
+    .staff-id-preview-card .id-footer{flex:0 0 2.6mm;height:2.6mm;min-height:2.6mm;display:flex;align-items:center;justify-content:center;text-align:center;font-size:1.15mm;line-height:1.1;color:#64748b;padding:0 .8mm;white-space:nowrap;overflow:hidden;}
     .staff-id-preview-card .id-qr-caption{position:absolute;right:0;top:-1.65mm;padding:0 .5mm;background:#fff;color:#64748b;font-size:1.1mm;line-height:1;font-weight:800;letter-spacing:.08mm;z-index:4;}
     @media (max-width: 480px) {
       #staff-id-card-preview-modal { overflow:auto; }
@@ -593,11 +593,11 @@
     /* Staff ID preview layout: photo must visually sit between header and name band. */
     .staff-id-preview-card{box-sizing:border-box;}
     .staff-id-preview-card .id-top{box-sizing:border-box;flex:0 0 22mm;height:22mm;}
-    .staff-id-preview-card .id-photo-wrap{box-sizing:border-box;flex:0 0 26mm;width:26mm;height:26mm;margin:0 auto;position:relative;z-index:3;}
+    .staff-id-preview-card .id-photo-wrap{box-sizing:border-box;flex:0 0 24mm;width:24mm;height:24mm;margin:0 auto;position:relative;z-index:3;}
     .staff-id-preview-card .id-photo-wrap img,.staff-id-preview-card .photo-fallback{position:relative;z-index:4;box-sizing:border-box;}
     .staff-id-preview-card .id-name-band{box-sizing:border-box;flex:0 0 7mm;min-height:7mm;position:relative;z-index:5;}
-    .staff-id-preview-card .id-details{box-sizing:border-box;flex:0 0 15mm;height:15mm;position:relative;z-index:1;}
-    .staff-id-preview-card .id-qr-area{box-sizing:border-box;flex:0 0 11mm;height:11mm;position:relative;z-index:1;}
+    .staff-id-preview-card .id-details{box-sizing:border-box;display:flex;flex-direction:column;justify-content:flex-start;flex:0 0 15mm;height:15mm;min-height:15mm;max-height:15mm;padding:.3mm 3mm 0;position:relative;z-index:1;overflow:hidden;}
+    .staff-id-preview-card .id-qr-area{box-sizing:border-box;flex:0 0 10mm;height:10mm;min-height:10mm;max-height:10mm;padding-top:.5mm;margin:0 3mm;position:relative;z-index:1;}
 
     #staff-id-card-preview {
       display:flex;
