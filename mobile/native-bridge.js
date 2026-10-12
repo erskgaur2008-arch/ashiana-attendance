@@ -1,6 +1,7 @@
 import { Printer } from "@capgo/capacitor-printer";
 import { Directory, Filesystem } from "@capacitor/filesystem";
 import { Share } from "@capacitor/share";
+import { PushNotifications } from "@capacitor/push-notifications";
 
 function isNativeAndroid() {
   return Boolean(window.Capacitor?.isNativePlatform?.() && window.Capacitor?.getPlatform?.() === "android");
@@ -34,8 +35,32 @@ async function saveBlob(blob, fileName, mimeType = "application/octet-stream") {
   });
 }
 
+async function registerPushNotifications() {
+  if (!isNativeAndroid()) throw new Error("Native push notifications are available only in the Android app.");
+  const permission = await PushNotifications.checkPermissions();
+  const result = permission.receive === "granted" ? permission : await PushNotifications.requestPermissions();
+  if (result.receive !== "granted") throw new Error("Notification permission was not granted.");
+  return await new Promise(async (resolve, reject) => {
+    let settled = false;
+    const timeout = setTimeout(() => {
+      if (!settled) { settled = true; reject(new Error("Timed out waiting for a Firebase device token. Check Firebase Android configuration.")); }
+    }, 20000);
+    await PushNotifications.addListener("registration", token => {
+      if (settled) return;
+      settled = true; clearTimeout(timeout); resolve(token.value);
+    });
+    await PushNotifications.addListener("registrationError", error => {
+      if (settled) return;
+      settled = true; clearTimeout(timeout); reject(new Error(error?.error || "Push registration failed."));
+    });
+    try { await PushNotifications.register(); }
+    catch (error) { if (!settled) { settled = true; clearTimeout(timeout); reject(error); } }
+  });
+}
+
 window.AshianaNative = Object.freeze({
   isAndroid: isNativeAndroid,
   printHtml,
-  saveBlob
+  saveBlob,
+  registerPushNotifications
 });
