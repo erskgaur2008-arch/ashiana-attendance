@@ -6816,7 +6816,122 @@ async function loadAdminStudents(){
       if(!printWin){showToast('Please allow pop-ups to print student ID cards.','error');return;}
       setupPrintWindowBackHandling(printWin);
       printWin.document.open();
-      printWin.document.write('<!doctype html><title>Preparing student ID cards…</title><body style="font:16px Arial;padding:24px">Preparing student ID cards…</body>');
+      printWin.document.write('<!doctype html><title>Preparing student ID cards…</title><body style="font:16px Arial;padding:24px">Preparing student ID cards…
+<script>
+(function(){
+  if(window.__ashianaPushUiBound)return;
+  window.__ashianaPushUiBound=true;
+  const supported=()=>("serviceWorker" in navigator)&&("PushManager" in window)&&("Notification" in window)&&!window.Capacitor?.isNativePlatform?.();
+  function b64ToBytes(value){
+    const padded=value.replace(/-/g,"+").replace(/_/g,"/")+"===".slice((value.length+3)%4);
+    const raw=atob(padded),out=new Uint8Array(raw.length);
+    for(let i=0;i<raw.length;i++)out[i]=raw.charCodeAt(i);
+    return out;
+  }
+  async function client(){
+    for(let i=0;i<30;i++){
+      const c=window.__ashianaMainSupabaseClient;
+      if(c?.auth?.getUser)return c;
+      await new Promise(r=>setTimeout(r,500));
+    }
+    throw new Error("Sign in first, then enable notifications.");
+  }
+  function toast(message,type){
+    if(typeof window.showToast==="function")window.showToast(message,type||"info");
+    else alert(message);
+  }
+  async function enable(){
+    try{
+      const sb=await client();
+      const {data:{user},error:userError}=await sb.auth.getUser();
+      if(userError||!user)throw new Error("Sign in first, then enable notifications.");
+      const permission=await Notification.requestPermission();
+      if(permission!=="granted")throw new Error("Notification permission was not granted.");
+      const reg=await navigator.serviceWorker.ready;
+      const {data:cfg,error:cfgError}=await sb.functions.invoke("push-notifications",{body:{action:"config"}});
+      if(cfgError)throw cfgError;
+      if(!cfg?.vapidPublicKey||!cfg.webPushConfigured)throw new Error("Web Push is not configured on the server yet.");
+      let sub=await reg.pushManager.getSubscription();
+      if(!sub)sub=await reg.pushManager.subscribe({userVisibleOnly:true,applicationServerKey:b64ToBytes(cfg.vapidPublicKey)});
+      const {error}=await sb.functions.invoke("push-notifications",{body:{action:"subscribe",subscription:sub.toJSON()}});
+      if(error)throw error;
+      toast("Push notifications enabled on this device.","success");
+      const btn=document.getElementById("ashiana-push-enable");
+      if(btn)btn.textContent="Notifications enabled";
+    }catch(e){toast(e?.message||"Could not enable push notifications.","error");}
+  }
+  function mount(){
+    if(!supported()||document.getElementById("ashiana-push-enable"))return;
+    const btn=document.createElement("button");
+    btn.id="ashiana-push-enable";
+    btn.type="button";
+    btn.textContent="Enable notifications";
+    btn.setAttribute("aria-label","Enable school push notifications");
+    btn.style.cssText="position:fixed;right:14px;bottom:84px;z-index:9990;border:0;border-radius:999px;padding:11px 15px;background:#064e3b;color:#fff;font:700 12px system-ui;box-shadow:0 4px 16px #0002";
+    btn.addEventListener("click",enable);
+    document.body.appendChild(btn);
+  }
+  if(document.readyState==="loading")document.addEventListener("DOMContentLoaded",mount,{once:true});else mount();
+  window.addEventListener("load",mount,{once:true});
+})();
+</script>
+
+<script>
+(function(){
+  async function enableAshianaNotifications(){
+    const btn=document.getElementById("ashiana-push-enable");
+    try{
+      const native=Boolean(window.AshianaNative?.isAndroid?.());
+      const sb=window.__ashianaMainSupabaseClient;
+      if(!sb?.auth?.getUser)throw new Error("Sign in first, then enable notifications.");
+      const {data:{user},error:userError}=await sb.auth.getUser();
+      if(userError||!user)throw new Error("Sign in first, then enable notifications.");
+      if(native){
+        if(!window.AshianaNative?.registerPushNotifications)throw new Error("Update the Android app with the push-enabled build first.");
+        const deviceToken=await window.AshianaNative.registerPushNotifications();
+        const {error}=await sb.functions.invoke("push-notifications",{body:{action:"subscribe",platform:"android",deviceToken}});
+        if(error)throw error;
+        if(typeof window.showToast==="function")window.showToast("This device is registered. Server delivery still needs Firebase setup.","info");
+        return;
+      }
+      if(!("serviceWorker" in navigator)||!("PushManager" in window)||!("Notification" in window))throw new Error("This browser does not support Web Push.");
+      const permission=await Notification.requestPermission();
+      if(permission!=="granted")throw new Error("Notification permission was not granted.");
+      const reg=await navigator.serviceWorker.ready;
+      const {data:cfg,error:cfgError}=await sb.functions.invoke("push-notifications",{body:{action:"config"}});
+      if(cfgError)throw cfgError;
+      if(!cfg?.vapidPublicKey||!cfg.webPushConfigured)throw new Error("Web Push keys have not been configured on the server yet.");
+      const value=cfg.vapidPublicKey.replace(/-/g,"+").replace(/_/g,"/");
+      const padded=value+"=".repeat((4-value.length%4)%4);
+      const raw=atob(padded),key=new Uint8Array(raw.length);
+      for(let i=0;i<raw.length;i++)key[i]=raw.charCodeAt(i);
+      let sub=await reg.pushManager.getSubscription();
+      if(!sub)sub=await reg.pushManager.subscribe({userVisibleOnly:true,applicationServerKey:key});
+      const {error}=await sb.functions.invoke("push-notifications",{body:{action:"subscribe",platform:"web",subscription:sub.toJSON()}});
+      if(error)throw error;
+      if(typeof window.showToast==="function")window.showToast("Web push notifications enabled on this device.","success");
+      if(btn)btn.textContent="Notifications enabled";
+    }catch(e){
+      if(typeof window.showToast==="function")window.showToast(e?.message||"Could not enable notifications.","error");
+      else alert(e?.message||"Could not enable notifications.");
+    }
+  }
+  function mount(){
+    if(document.getElementById("ashiana-push-enable"))return;
+    const native=Boolean(window.AshianaNative?.isAndroid?.());
+    const web=("serviceWorker" in navigator)&&("PushManager" in window)&&("Notification" in window);
+    if(!native&&!web)return;
+    const btn=document.createElement("button");
+    btn.id="ashiana-push-enable";btn.type="button";btn.textContent="Enable notifications";
+    btn.setAttribute("aria-label","Enable Ashiana school push notifications");
+    btn.style.cssText="position:fixed;right:14px;bottom:84px;z-index:9990;border:0;border-radius:999px;padding:11px 15px;background:#064e3b;color:#fff;font:700 12px system-ui;box-shadow:0 4px 16px #0002";
+    btn.addEventListener("click",enableAshianaNotifications);document.body.appendChild(btn);
+  }
+  if(document.readyState==="loading")document.addEventListener("DOMContentLoaded",mount,{once:true});else mount();
+  window.addEventListener("load",mount,{once:true});
+})();
+</script>
+</body>');
       printWin.document.close();
       // For student login, resolve private photo URLs before rendering the card.
       if(options.studentMode){
