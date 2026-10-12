@@ -6812,6 +6812,7 @@ async function loadAdminStudents(){
       // private photo URLs first causes popup blocking on mobile browsers.
       const printWin=window.open('','_blank','width=900,height=900');
       if(!printWin){showToast('Please allow pop-ups to print student ID cards.','error');return;}
+      setupPrintWindowBackHandling(printWin);
       printWin.document.open();
       printWin.document.write('<!doctype html><title>Preparing student ID cards…</title><body style="font:16px Arial;padding:24px">Preparing student ID cards…</body>');
       printWin.document.close();
@@ -7824,6 +7825,7 @@ async function loadAdminStudentAttendance(){
         showToast("Please allow pop-ups to print the A4 ID cards.", "error");
         return;
       }
+      setupPrintWindowBackHandling(win);
 
       const logoUrl = new URL('logo 2.png', window.location.href).href;
       const cards = selectedStaff.map((s, i) => makeBulkIdCardHtml(s, logoUrl, i));
@@ -8281,6 +8283,7 @@ window.addEventListener('load',async function(){
         showToast("Please allow pop-ups to print the ID card.", "error");
         return;
       }
+      setupPrintWindowBackHandling(win);
       const requestedId = String(staffId ?? "").trim();
       const requestedDigits = requestedId.replace(/\D/g, "");
       const staff = staffDatabase.find(s => String(s.id) === requestedId)
@@ -10655,6 +10658,23 @@ window.addEventListener('load',async function(){
           if (currentAuthUser?.type === 'ADMIN') loadAdminQRSession();
         }
       }, 1000);
+    }
+
+    // Give standalone ID-card print windows their own Back-button history entry.
+    // Android/browser Back should close the print window instead of leaving the app.
+    function setupPrintWindowBackHandling(printWin) {
+      if (!printWin) return;
+      try {
+        if (printWin.__ashianaBackHandlingInstalled) return;
+        printWin.__ashianaBackHandlingInstalled = true;
+        printWin.history.replaceState({ ashianaPrint: true, root: true }, "", window.location.href);
+        printWin.history.pushState({ ashianaPrint: true, backSentinel: true }, "", window.location.href);
+        printWin.addEventListener("popstate", function closePrintWindowOnBack() {
+          try { printWin.close(); } catch (_) {}
+        });
+      } catch (e) {
+        console.warn("ID-card print Back-button handling could not be initialized:", e);
+      }
     }
 
     // Android/browser Back handling for the single-page app.
