@@ -57,6 +57,7 @@
   
   <!-- Supabase JS Client (v2) for PostgreSQL Cloud Sync -->
   <script src="./assets/vendor/supabase.js"></script>
+  <script src="./assets/vendor/ashiana-native-bridge.js"></script>
 
   <script>
     tailwind.config = {
@@ -8046,13 +8047,13 @@ window.addEventListener('load',async function(){
           if(items[i].kind==='staff')new QRCode(card.querySelector('.id-qrcode'),{text:JSON.stringify(items[i].payload),width:160,height:160,correctLevel:QRCode.CorrectLevel.M});else renderStudentCardQr(card.querySelector('[data-student-qr]'),items[i].record);
           await Promise.all(Array.from(card.querySelectorAll('img')).map(im=>im.decode?im.decode().catch(()=>{}):new Promise(r=>{if(im.complete)r();else{im.onload=r;im.onerror=r;}})));await new Promise(r=>requestAnimationFrame(()=>requestAnimationFrame(r)));
           const canvas=await window.html2canvas(card,{scale:4,backgroundColor:'#fff',useCORS:true,allowTaint:false,logging:false}),blob=await new Promise((resolve,reject)=>canvas.toBlob(b=>b?resolve(b):reject(new Error('PNG conversion failed.')),'image/png')),name=String(items[i].fileName||'id-card').replace(/[^a-zA-Z0-9_-]+/g,'-').slice(0,70)||'id-card';
-          if(format==='png'){const u=URL.createObjectURL(blob),a=document.createElement('a');a.href=u;a.download=name+'.png';document.body.appendChild(a);a.click();a.remove();setTimeout(()=>URL.revokeObjectURL(u),1500);}
+          if(format==='png'){if(isAshianaNativeAndroid()){await shareGeneratedIdCardFile(blob,name+'.png','image/png');}else{const u=URL.createObjectURL(blob),a=document.createElement('a');a.href=u;a.download=name+'.png';document.body.appendChild(a);a.click();a.remove();setTimeout(()=>URL.revokeObjectURL(u),1500);}}
           else if(format==='zip')zip.file(name+'.png',blob);
           else{const data=await new Promise((resolve,reject)=>{const r=new FileReader();r.onload=()=>resolve(r.result);r.onerror=reject;r.readAsDataURL(blob);});if(!pdf)pdf=new PDF({orientation:'portrait',unit:'mm',format:[54,85.6],compress:true});else pdf.addPage([54,85.6],'portrait');pdf.addImage(data,'PNG',0,0,54,85.6,undefined,'FAST');}
           stage.remove();stage=null;
         }
-        if(format==='zip'){const b=await zip.generateAsync({type:'blob'}),u=URL.createObjectURL(b),a=document.createElement('a');a.href=u;a.download=(baseName||'ashiana-id-cards')+'.zip';document.body.appendChild(a);a.click();a.remove();setTimeout(()=>URL.revokeObjectURL(u),1500);}
-        else if(format==='pdf')pdf.save((baseName||'ashiana-id-cards')+'.pdf');showToast(items.length+' ID card(s) downloaded.','success');
+        if(format==='zip'){const b=await zip.generateAsync({type:'blob'}),name=(baseName||'ashiana-id-cards')+'.zip';if(isAshianaNativeAndroid()){await shareGeneratedIdCardFile(b,name,'application/zip');}else{const u=URL.createObjectURL(b),a=document.createElement('a');a.href=u;a.download=name;document.body.appendChild(a);a.click();a.remove();setTimeout(()=>URL.revokeObjectURL(u),1500);}}
+        else if(format==='pdf'){const name=(baseName||'ashiana-id-cards')+'.pdf';if(isAshianaNativeAndroid()){await shareGeneratedIdCardFile(pdf.output('blob'),name,'application/pdf');}else{pdf.save(name);}}showToast(isAshianaNativeAndroid()?'ID card file prepared. Choose Save or a sharing destination.':items.length+' ID card(s) downloaded.','success');
       }catch(e){console.error('ID card download failed:',e);showToast('Download failed: '+(e.message||e),'error');}finally{if(stage)stage.remove();}
     }
     async function downloadCurrentStaffIdCard(format){
