@@ -11269,15 +11269,16 @@ window.addEventListener('load',async function(){
   const send=document.getElementById("ashiana-ai-send");
   const messages=document.getElementById("ashiana-ai-messages");
 
-  function signedStaffUser(){
+  function signedAdminUser(){
     try{
       return typeof currentAuthUser!=="undefined" && currentAuthUser &&
-        ["ADMIN","TEACHER","STAFF"].includes(String(currentAuthUser.type||"").toUpperCase());
+        String(currentAuthUser.type||"").toUpperCase()==="ADMIN";
     }catch(_){return false;}
   }
   function refreshAiVisibility(){
-    if(launcher) launcher.style.display=signedStaffUser()?"flex":"none";
-    if(!signedStaffUser() && modal) modal.classList.remove("open");
+    const adminOnly=signedAdminUser();
+    if(launcher) launcher.style.display=adminOnly?"flex":"none";
+    if(!adminOnly && modal) modal.classList.remove("open");
   }
   function escapeHtml(value){
     const el=document.createElement("span");
