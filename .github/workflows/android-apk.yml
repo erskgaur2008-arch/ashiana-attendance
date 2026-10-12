@@ -41,7 +41,15 @@ jobs:
           test -s mobile/www/assets/vendor/supabase.js
 
       - name: Install Capacitor
-        run: npm install --no-audit --no-fund
+        shell: bash
+        run: |
+          # Reproducible install when package-lock.json is committed.
+          if [ -f package-lock.json ]; then
+            npm ci --no-audit --no-fund
+          else
+            echo "::warning::package-lock.json is missing - run 'npm install' locally and commit it."
+            npm install --no-audit --no-fund
+          fi
 
       - name: Verify Capacitor environment
         run: npx cap doctor
