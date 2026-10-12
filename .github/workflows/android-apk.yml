@@ -53,6 +53,24 @@ jobs:
           fi
           npm ci --no-audit --no-fund
 
+      - name: Bundle native Android print and file bridge
+        shell: bash
+        run: |
+          set -e
+          mkdir -p mobile/www/assets/vendor
+          npx esbuild mobile/native-bridge.js --bundle --format=iife --platform=browser --target=es2020 --outfile=mobile/www/assets/vendor/ashiana-native-bridge.js
+          test -s mobile/www/assets/vendor/ashiana-native-bridge.js
+          python3 - <<'PY'
+          from pathlib import Path
+          path = Path("mobile/www/index.html")
+          html = path.read_text()
+          anchor = '  <script src="./assets/vendor/supabase.js"></script>'
+          script = anchor + '\n  <script src="./assets/vendor/ashiana-native-bridge.js"></script>'
+          if html.count(anchor) != 1:
+              raise SystemExit("Could not find the expected script insertion point in the Android web bundle")
+          path.write_text(html.replace(anchor, script, 1))
+          PY
+
       - name: Verify Capacitor environment
         run: npx cap doctor
 
