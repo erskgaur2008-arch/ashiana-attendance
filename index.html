@@ -6854,14 +6854,38 @@ async function loadAdminStudents(){
       }
       if(currentAuthUser?.type==="ADMIN"){
         const issuedAt=new Date().toISOString();
-        const {error:issueError}=await supabaseClient.from('student_roster')
-          .update({id_card_generated_at:issuedAt})
-          .in('id',students.map(s=>s.id)).eq('school_code',APS_STUDENT_SCHOOL);
-        if(issueError){
-          console.error("Student ID-card issuance could not be stored:",issueError);
-          try{printWin.close();}catch(_){}
-          showToast("ID card was not issued because its official status could not be saved. Please retry.","error");
-          return;
+        const ids=[...new Set(students.map(s=>String(s.id||"")).filter(Boolean))];
+        // Small batches avoid excessively long PostgREST URL filters for whole-class/school issuance.
+        // Confirm every requested row was updated before marking cards officially issued.
+        const batchSize=50;
+        for(let start=0;start<ids.length;start+=batchSize){
+          const batch=ids.slice(start,start+batchSize);
+          let issueResult;
+          try{
+            issueResult=await supabaseClient.from('student_roster')
+              .update({id_card_generated_at:issuedAt})
+              .in('id',batch).eq('school_code',APS_STUDENT_SCHOOL)
+              .select('id');
+          }catch(issueError){
+            console.error("Student ID-card issuance save threw an exception:",issueError);
+            try{printWin.close();}catch(_){}
+            showToast("Could not save ID-card status for students "+(start+1)+"–"+Math.min(start+batchSize,ids.length)+": "+(issueError?.message||"network error"),"error");
+            return;
+          }
+          if(issueResult?.error){
+            console.error("Student ID-card issuance could not be stored:",issueResult.error);
+            try{printWin.close();}catch(_){}
+            showToast("Could not save official ID-card status: "+(issueResult.error.message||issueResult.error.code||"database error"),"error");
+            return;
+          }
+          const savedIds=new Set((issueResult?.data||[]).map(row=>String(row.id)));
+          const missing=batch.filter(id=>!savedIds.has(id));
+          if(missing.length){
+            console.error("Student ID-card issuance updated fewer rows than requested.",{requested:batch.length,saved:savedIds.size,missingCount:missing.length,schoolCode:APS_STUDENT_SCHOOL});
+            try{printWin.close();}catch(_){}
+            showToast("Only "+savedIds.size+" of "+batch.length+" student ID-card statuses were saved in this batch. Check admin permissions and retry.","error");
+            return;
+          }
         }
         students.forEach(student=>{student.id_card_generated_at=issuedAt;});
         students.forEach(student=>{
