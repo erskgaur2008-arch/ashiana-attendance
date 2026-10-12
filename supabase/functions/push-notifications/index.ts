@@ -47,6 +47,17 @@ Deno.serve(async (req: Request) => {
     return json({ success: true });
   }
 
+  if (action === "subscribe" && String(body.platform || "") === "android") {
+    const token = String(body.deviceToken || "");
+    if (token.length < 20 || token.length > 4096) return json({ error: "INVALID_DEVICE_TOKEN" }, 400);
+    const { error } = await client.from("push_subscriptions").upsert({
+      user_id: userData.user.id, platform: "android", device_token: token,
+      endpoint: null, subscription: null, updated_at: new Date().toISOString(),
+    }, { onConflict: "user_id,device_token" });
+    if (error) return json({ error: "SUBSCRIPTION_SAVE_FAILED" }, 400);
+    return json({ success: true, deliveryConfigured: false, message: "Firebase server delivery configuration is still required." });
+  }
+
   if (action === "unsubscribe") {
     const endpoint = String(body.endpoint || "");
     if (!endpoint.startsWith("https://")) return json({ error: "INVALID_ENDPOINT" }, 400);
