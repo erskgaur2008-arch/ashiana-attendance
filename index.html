@@ -5663,7 +5663,23 @@ async function refreshStudentPortalData(dobOverride){
 
 
     async function studentIdCardIssued(s){
-      if(!supabaseClient||!s?.id)return false;
+      if(!supabaseClient||!s)return false;
+      // Student login is RPC-based and uses the anon client; student_roster has
+      // no anon SELECT policy by design. Check issuance through a DOB-verified,
+      // read-only RPC rather than treating RLS-hidden rows as unissued.
+      if(currentAuthUser?.type==="STUDENT"){
+        const enrollNo=String(s.enroll_no||currentAuthUser?.studentRecord?.enroll_no||"").trim();
+        const dobValue=String(s.dob||currentAuthUser?.studentRecord?.dob||"").slice(0,10);
+        const parts=dobValue.split("-");
+        const dobPassword=parts.length===3?parts[2]+parts[1]+parts[0]:"";
+        if(!enrollNo||!/^\\d{8}$/.test(dobPassword))return false;
+        try{
+          const {data,error}=await supabaseClient.rpc("student_id_card_issued",{p_school_code:APS_STUDENT_SCHOOL,p_enroll_no:enrollNo,p_dob_password:dobPassword});
+          if(error)throw error;
+          return data?.success===true&&data?.issued===true;
+        }catch(error){console.warn("Student ID-card issuance RPC check failed:",error);return false;}
+      }
+      if(!s.id)return false;
       try{
         const {data,error}=await supabaseClient.from("student_roster")
           .select("id_card_generated_at").eq("id",s.id).eq("school_code",APS_STUDENT_SCHOOL).maybeSingle();
