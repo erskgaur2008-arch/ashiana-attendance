@@ -583,8 +583,7 @@
     .staff-id-preview-card .id-valid{font-size:1.55mm;color:#64748b;line-height:1.25;max-width:31mm;}
     .staff-id-preview-card .id-qrcode{width:9mm;height:9mm;flex:0 0 9mm;}
     .staff-id-preview-card .id-qrcode img,.staff-id-preview-card .id-qrcode canvas{width:9mm!important;height:9mm!important;display:block;}
-    .staff-id-preview-card .id-footer{flex:0 0 2.6mm;height:2.6mm;min-height:2.6mm;display:flex;align-items:center;justify-content:center;text-align:center;font-size:1.15mm;line-height:1.1;color:#64748b;padding:0 .8mm;white-space:nowrap;overflow:hidden;}
-    .staff-id-preview-card .id-qr-caption{position:absolute;right:0;top:-1.65mm;padding:0 .5mm;background:#fff;color:#64748b;font-size:1.1mm;line-height:1;font-weight:800;letter-spacing:.08mm;z-index:4;}
+    .staff-id-preview-card .id-footer{flex:0 0 2.6mm;height:2.6mm;min-height:2.6mm;margin-top:auto;display:flex;align-items:flex-end;justify-content:center;text-align:center;font-size:1.15mm;line-height:1.1;color:#64748b;padding:0 .8mm .2mm;white-space:nowrap;overflow:hidden;}
     @media (max-width: 480px) {
       #staff-id-card-preview-modal { overflow:auto; }
       #staff-id-card-preview { flex-shrink:0; }
@@ -7800,7 +7799,7 @@ async function loadAdminStudentAttendance(){
       <div class="row"><div class="label">Address</div><div class="value">${escapeIdCardHtml(staff.address || staff.residentialAddress || "—")}</div></div>
           </div>
           <div class="qr-area">
-            <div class="qr-caption">QR CODE</div>
+            
             <div class="valid">Property of<br><b>Ashiana Public School</b><br>Sector 46-A, Chandigarh<br>Scan to verify staff identity</div>
             <div class="qrcode" id="bulk-qr-${index}"></div>
           </div>
@@ -7884,7 +7883,7 @@ body{font-family:Arial,Helvetica,sans-serif;}
 .valid{font-size:1.55mm;color:#64748b;line-height:1.25;max-width:31mm;}
 .qrcode{width:11mm;height:11mm;flex:0 0 11mm;}
 .qrcode img,.qrcode canvas{width:11mm!important;height:11mm!important;display:block;}
-.footer{flex:0 0 3.2mm;height:3.2mm;min-height:3.2mm;display:flex;align-items:center;justify-content:center;text-align:center;font-size:1.15mm;line-height:1.1;color:#64748b;padding:0 .8mm;white-space:nowrap;overflow:hidden;}
+.footer{flex:0 0 3.2mm;height:3.2mm;min-height:3.2mm;margin-top:auto;display:flex;align-items:flex-end;justify-content:center;text-align:center;font-size:1.15mm;line-height:1.1;color:#64748b;padding:0 .8mm .2mm;white-space:nowrap;overflow:hidden;}
     .qr-caption{position:absolute;right:0;top:-1.65mm;padding:0 .5mm;background:#fff;color:#64748b;font-size:1.1mm;line-height:1;font-weight:800;letter-spacing:.08mm;z-index:4;}
 @media print{html,body{background:#fff}.page{margin:0}.card{box-shadow:none;}}
 </style></head><body>${pages.join('')}
@@ -8034,7 +8033,7 @@ window.addEventListener('load',async function(){
     function buildStaffIdCardExport(s){
       const v=x=>escapeIdCardHtml(x||'—'),logo=escapeIdCardHtml(new URL('logo 2.png',location.href).href),photo=String(s.avatarUrl||s.avatar_url||'').trim(),ph=photo?'<img src="'+escapeIdCardHtml(photo)+'" alt="Staff Photo">':'<div class="photo-fallback">'+escapeIdCardHtml(getStaffInitials(s.name))+'</div>';
       const payload={school:'ASHIANA_PUBLIC_SCHOOL',employee_id:s.empId||s.emp_id||'',name:s.name||'',role:s.role||'',department:s.department||'',gender:s.gender||'',dob:s.dob||'',valid_thru:s.validThru||s.valid_thru||''};
-      const html='<div class="staff-id-preview-card"><div class="id-top"><div class="id-school"><img class="id-logo" src="'+logo+'"><div class="id-school-name">ASHIANA PUBLIC SCHOOL</div><div class="id-school-sub">SECTOR 46-CHANDIGARH</div><div class="id-school-phone">PHONE: +91-9872500460</div><div class="id-school-aff">Affiliated to CBSE | Affiliation No. 2630065</div><div class="id-red-line"></div><div class="id-title">STAFF IDENTITY CARD</div></div></div><div class="id-photo-wrap">'+ph+'</div><div class="id-name-band"><div class="id-name">'+v(s.name||'STAFF MEMBER')+'</div><div class="id-role">'+v(s.role||'STAFF')+' • '+v(s.department||'School')+'</div></div><div class="id-details"><div class="staff-card-info-row"><span class="staff-card-info-label">Employee ID</span><b class="staff-card-info-value">'+v(s.empId||s.emp_id)+'</b></div><div class="staff-card-info-row"><span class="staff-card-info-label">Gender</span><b class="staff-card-info-value">'+v(s.gender)+'</b></div><div class="staff-card-info-row"><span class="staff-card-info-label">DOB</span><b class="staff-card-info-value">'+v(s.dob)+'</b></div><div class="staff-card-info-row"><span class="staff-card-info-label">Valid Thru</span><b class="staff-card-info-value">'+v(s.validThru||s.valid_thru)+'</b></div><div class="staff-card-info-row"><span class="staff-card-info-label">Phone</span><b class="staff-card-info-value">'+v(s.phone||s.mobile||s.mobileNumber)+'</b></div><div class="staff-card-info-row"><span class="staff-card-info-label">Address</span><b class="staff-card-info-value">'+v(s.address||s.residentialAddress)+'</b></div></div><div class="id-qr-area"><div class="id-qr-caption">QR CODE</div><div class="id-valid">Property of<br><strong>Ashiana Public School</strong><br>Sector 46-A, Chandigarh<br>Scan to verify staff identity</div><div class="id-qrcode"></div></div><div class="id-footer">Authorized Staff Identification • Ashiana Public School</div></div>';
+      const html='<div class="staff-id-preview-card"><div class="id-top"><div class="id-school"><img class="id-logo" src="'+logo+'"><div class="id-school-name">ASHIANA PUBLIC SCHOOL</div><div class="id-school-sub">SECTOR 46-CHANDIGARH</div><div class="id-school-phone">PHONE: +91-9872500460</div><div class="id-school-aff">Affiliated to CBSE | Affiliation No. 2630065</div><div class="id-red-line"></div><div class="id-title">STAFF IDENTITY CARD</div></div></div><div class="id-photo-wrap">'+ph+'</div><div class="id-name-band"><div class="id-name">'+v(s.name||'STAFF MEMBER')+'</div><div class="id-role">'+v(s.role||'STAFF')+' • '+v(s.department||'School')+'</div></div><div class="id-details"><div class="staff-card-info-row"><span class="staff-card-info-label">Employee ID</span><b class="staff-card-info-value">'+v(s.empId||s.emp_id)+'</b></div><div class="staff-card-info-row"><span class="staff-card-info-label">Gender</span><b class="staff-card-info-value">'+v(s.gender)+'</b></div><div class="staff-card-info-row"><span class="staff-card-info-label">DOB</span><b class="staff-card-info-value">'+v(s.dob)+'</b></div><div class="staff-card-info-row"><span class="staff-card-info-label">Valid Thru</span><b class="staff-card-info-value">'+v(s.validThru||s.valid_thru)+'</b></div><div class="staff-card-info-row"><span class="staff-card-info-label">Phone</span><b class="staff-card-info-value">'+v(s.phone||s.mobile||s.mobileNumber)+'</b></div><div class="staff-card-info-row"><span class="staff-card-info-label">Address</span><b class="staff-card-info-value">'+v(s.address||s.residentialAddress)+'</b></div></div><div class="id-qr-area"><div class="id-valid">Property of<br><strong>Ashiana Public School</strong><br>Sector 46-A, Chandigarh<br>Scan to verify staff identity</div><div class="id-qrcode"></div></div><div class="id-footer">Authorized Staff Identification • Ashiana Public School</div></div>';
       return {html,payload};
     }
     async function exportIdCards(items,format,baseName){
@@ -8208,7 +8207,7 @@ window.addEventListener('load',async function(){
             <div class="id-row" style="height:2.3mm!important;min-height:2.3mm!important;max-height:2.3mm!important;font-size:5pt!important;line-height:1!important;overflow:hidden!important;"><span style="font-size:5pt!important;line-height:1!important;white-space:nowrap!important;">Address</span><b style="font-size:5pt!important;line-height:1!important;white-space:nowrap!important;overflow:hidden!important;text-overflow:ellipsis!important;">${escapeIdCardHtml(staff.address || staff.residentialAddress || "—")}</b></div>
           </div>
           <div class="id-qr-area">
-            <div class="id-qr-caption">QR CODE</div>
+            
             <div class="id-valid">Property of<br><strong>Ashiana Public School</strong><br>Sector 46-A, Chandigarh<br>Scan to verify staff identity</div>
             <div id="staff-preview-qr" class="id-qrcode"></div>
           </div>
@@ -8434,8 +8433,8 @@ window.addEventListener('load',async function(){
 
   .qr-caption{position:absolute;right:0;top:-1.65mm;padding:0 .5mm;background:#fff;color:#64748b;font-size:1.1mm;line-height:1;font-weight:800;letter-spacing:.08mm;z-index:4;}
   .footer {
-    flex:0 0 2.6mm; height:2.6mm; min-height:2.6mm; display:flex; align-items:center; justify-content:center; text-align:center;
-    font-size:1.15mm; line-height:1.1; color:#64748b; padding:0 .8mm; white-space:nowrap; overflow:hidden;
+    flex:0 0 2.6mm; height:2.6mm; min-height:2.6mm; margin-top:auto; display:flex; align-items:flex-end; justify-content:center; text-align:center;
+    font-size:1.15mm; line-height:1.1; color:#64748b; padding:0 .8mm .2mm; white-space:nowrap; overflow:hidden;
   }
 
   @media print {
@@ -8475,7 +8474,7 @@ window.addEventListener('load',async function(){
       <div class="row"><div class="label">Address</div><div class="value">${escapeIdCardHtml(staff.address || staff.residentialAddress || "—")}</div></div>
     </div>
     <div class="qr-area">
-      <div class="qr-caption">QR CODE</div>
+      
       <div class="valid">Property of<br><b>Ashiana Public School</b><br>Sector 46-A, Chandigarh<br>Scan to verify staff identity</div>
       <div id="qrcode"></div>
     </div>
