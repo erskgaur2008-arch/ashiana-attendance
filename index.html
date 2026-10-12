@@ -576,9 +576,9 @@
     .staff-id-preview-card .id-name{font-size:2.8mm;line-height:1.05;font-weight:900;text-transform:uppercase;white-space:nowrap;overflow:hidden;text-overflow:ellipsis;}
     .staff-id-preview-card .id-role{font-size:2mm;line-height:1.05;margin-top:.45mm;font-weight:700;white-space:nowrap;overflow:hidden;text-overflow:ellipsis;}
     .staff-id-preview-card .id-details{display:flex;flex-direction:column;justify-content:flex-start;flex:0 0 21mm;height:21mm;min-height:21mm;max-height:21mm;box-sizing:border-box;padding:.6mm 3mm .2mm;background:#fff;overflow:hidden;}
-    .staff-id-preview-card .id-row{display:flex!important;align-items:center;box-sizing:border-box;width:100%;height:2.65mm;min-height:2.65mm;max-height:2.65mm;font-size:6.5pt!important;line-height:1!important;margin:0!important;padding:0!important;overflow:hidden;}
-    .staff-id-preview-card .id-row span{display:block;flex:0 0 17mm;width:17mm;min-width:17mm;max-width:17mm;box-sizing:border-box;color:#64748b;font-weight:700;font-size:6.5pt!important;line-height:1!important;margin:0!important;padding:0!important;white-space:nowrap;overflow:hidden;}
-    .staff-id-preview-card .id-row b{display:block;flex:1 1 auto;min-width:0;box-sizing:border-box;overflow:hidden;white-space:nowrap;text-overflow:ellipsis;font-size:6.5pt!important;line-height:1!important;margin:0!important;padding:0!important;}
+    .staff-id-preview-card .id-row{display:flex!important;align-items:center;box-sizing:border-box;width:100%;height:2.3mm;min-height:2.3mm;max-height:2.3mm;font-size:5pt!important;line-height:1!important;margin:0!important;padding:0!important;overflow:hidden;}
+    .staff-id-preview-card .id-row span{display:block;flex:0 0 17mm;width:17mm;min-width:17mm;max-width:17mm;box-sizing:border-box;color:#64748b;font-weight:700;font-size:5pt!important;line-height:1!important;margin:0!important;padding:0!important;white-space:nowrap;overflow:hidden;}
+    .staff-id-preview-card .id-row b{display:block;flex:1 1 auto;min-width:0;box-sizing:border-box;overflow:hidden;white-space:nowrap;text-overflow:ellipsis;font-size:5pt!important;line-height:1!important;margin:0!important;padding:0!important;}
     .staff-id-preview-card .id-qr-area{flex:0 0 12mm;height:12mm;margin:0 3mm;border-top:.25mm solid #e2e8f0;padding-top:1mm;display:flex;align-items:center;justify-content:space-between;}
     .staff-id-preview-card .id-valid{font-size:1.55mm;color:#64748b;line-height:1.25;max-width:31mm;}
     .staff-id-preview-card .id-qrcode{width:11mm;height:11mm;flex:0 0 11mm;}
@@ -8201,11 +8201,11 @@ window.addEventListener('load',async function(){
             <div class="id-role">${escapeIdCardHtml(staff.role || "STAFF")} • ${escapeIdCardHtml(staff.department || "School")}</div>
           </div>
           <div class="id-details">
-            <div class="id-row"><span>Employee ID</span><b>${escapeIdCardHtml(staff.empId || "—")}</b></div>
-            <div class="id-row"><span>Gender</span><b>${escapeIdCardHtml(staff.gender || "—")}</b></div>
-            <div class="id-row"><span>DOB</span><b>${escapeIdCardHtml(staff.dob || "—")}</b></div>
-            <div class="id-row"><span>Valid Thru</span><b>${escapeIdCardHtml(staff.validThru || staff.valid_thru || "—")}</b></div>            <div class="id-row"><span>Phone</span><b>${escapeIdCardHtml(staff.phone || staff.mobile || staff.mobileNumber || "—")}</b></div>
-            <div class="id-row"><span>Address</span><b>${escapeIdCardHtml(staff.address || staff.residentialAddress || "—")}</b></div>
+            <div class="id-row" style="height:2.3mm!important;min-height:2.3mm!important;max-height:2.3mm!important;font-size:5pt!important;line-height:1!important;overflow:hidden!important;"><span style="font-size:5pt!important;line-height:1!important;white-space:nowrap!important;">Employee ID</span><b style="font-size:5pt!important;line-height:1!important;white-space:nowrap!important;overflow:hidden!important;text-overflow:ellipsis!important;">${escapeIdCardHtml(staff.empId || "—")}</b></div>
+            <div class="id-row" style="height:2.3mm!important;min-height:2.3mm!important;max-height:2.3mm!important;font-size:5pt!important;line-height:1!important;overflow:hidden!important;"><span style="font-size:5pt!important;line-height:1!important;white-space:nowrap!important;">Gender</span><b style="font-size:5pt!important;line-height:1!important;white-space:nowrap!important;overflow:hidden!important;text-overflow:ellipsis!important;">${escapeIdCardHtml(staff.gender || "—")}</b></div>
+            <div class="id-row" style="height:2.3mm!important;min-height:2.3mm!important;max-height:2.3mm!important;font-size:5pt!important;line-height:1!important;overflow:hidden!important;"><span style="font-size:5pt!important;line-height:1!important;white-space:nowrap!important;">DOB</span><b style="font-size:5pt!important;line-height:1!important;white-space:nowrap!important;overflow:hidden!important;text-overflow:ellipsis!important;">${escapeIdCardHtml(staff.dob || "—")}</b></div>
+            <div class="id-row" style="height:2.3mm!important;min-height:2.3mm!important;max-height:2.3mm!important;font-size:5pt!important;line-height:1!important;overflow:hidden!important;"><span style="font-size:5pt!important;line-height:1!important;white-space:nowrap!important;">Valid Thru</span><b style="font-size:5pt!important;line-height:1!important;white-space:nowrap!important;overflow:hidden!important;text-overflow:ellipsis!important;">${escapeIdCardHtml(staff.validThru || staff.valid_thru || "—")}</b></div>            <div class="id-row" style="height:2.3mm!important;min-height:2.3mm!important;max-height:2.3mm!important;font-size:5pt!important;line-height:1!important;overflow:hidden!important;"><span style="font-size:5pt!important;line-height:1!important;white-space:nowrap!important;">Phone</span><b style="font-size:5pt!important;line-height:1!important;white-space:nowrap!important;overflow:hidden!important;text-overflow:ellipsis!important;">${escapeIdCardHtml(staff.phone || staff.mobile || staff.mobileNumber || "—")}</b></div>
+            <div class="id-row" style="height:2.3mm!important;min-height:2.3mm!important;max-height:2.3mm!important;font-size:5pt!important;line-height:1!important;overflow:hidden!important;"><span style="font-size:5pt!important;line-height:1!important;white-space:nowrap!important;">Address</span><b style="font-size:5pt!important;line-height:1!important;white-space:nowrap!important;overflow:hidden!important;text-overflow:ellipsis!important;">${escapeIdCardHtml(staff.address || staff.residentialAddress || "—")}</b></div>
           </div>
           <div class="id-qr-area">
             <div class="id-qr-caption">QR CODE</div>
@@ -8419,9 +8419,9 @@ window.addEventListener('load',async function(){
     flex:0 0 21mm; height:21mm; padding:.6mm 3mm .2mm;
     box-sizing:border-box; background:#fff; overflow:hidden;
   }
-  .staff-card-info-row { display:flex; align-items:center; box-sizing:border-box; width:100%; height:2.65mm; min-height:2.65mm; max-height:2.65mm; margin:0; padding:0; font-size:6.5pt; line-height:1; overflow:hidden; }
-  .staff-card-info-label { display:block; flex:0 0 17mm; width:17mm; min-width:17mm; max-width:17mm; color:#64748b; font-weight:700; font-size:6.5pt; line-height:1; white-space:nowrap; overflow:hidden; }
-  .staff-card-info-value { display:block; flex:1 1 auto; min-width:0; color:#111827; font-weight:800; font-size:6.5pt; line-height:1; overflow:hidden; white-space:nowrap; text-overflow:ellipsis; }
+  .staff-card-info-row { display:flex; align-items:center; box-sizing:border-box; width:100%; height:2.3mm; min-height:2.3mm; max-height:2.3mm; margin:0; padding:0; font-size:5pt; line-height:1; overflow:hidden; }
+  .staff-card-info-label { display:block; flex:0 0 17mm; width:17mm; min-width:17mm; max-width:17mm; color:#64748b; font-weight:700; font-size:5pt; line-height:1; white-space:nowrap; overflow:hidden; }
+  .staff-card-info-value { display:block; flex:1 1 auto; min-width:0; color:#111827; font-weight:800; font-size:5pt; line-height:1; overflow:hidden; white-space:nowrap; text-overflow:ellipsis; }
 
   .qr-area {
     flex: 0 0 11mm; height:11mm; margin:0 3mm; position:relative;
