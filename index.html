@@ -10746,6 +10746,10 @@ window.addEventListener('load',async function(){
         history.pushState({ ashianaApp: true, root: true }, "", location.href);
 
         window.addEventListener("popstate", function () {
+          if (window.__ashianaActivePrintFrame) {
+            try { window.__ashianaActivePrintFrame.remove(); } catch (_) {}
+            window.__ashianaActivePrintFrame = null;
+          }
           const visibleModal = Array.from(document.querySelectorAll('[id$="-modal"]'))
             .find(el => !el.classList.contains("hidden"));
 
