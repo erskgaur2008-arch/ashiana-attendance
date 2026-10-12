@@ -7788,7 +7788,7 @@ async function loadAdminStudentAttendance(){
           <div class="photo-wrap">${photoHtml}</div>
           <div class="name-band">
             <div class="name">${escapeIdCardHtml(staff.name || "STAFF MEMBER")}</div>
-            <div class="role">${escapeIdCardHtml(staff.role || "STAFF")} • ${escapeIdCardHtml(staff.department || "School")}</div>
+            <div class="role">${escapeIdCardHtml(staff.role || "STAFF")}</div>
           </div>
           <div class="details">
             <div class="row"><div class="label">Employee ID</div><div class="value">${escapeIdCardHtml(staff.empId || "—")}</div></div>
@@ -8034,7 +8034,7 @@ window.addEventListener('load',async function(){
     function buildStaffIdCardExport(s){
       const v=x=>escapeIdCardHtml(x||'—'),logo=escapeIdCardHtml(new URL('logo 2.png',location.href).href),photo=String(s.avatarUrl||s.avatar_url||'').trim(),ph=photo?'<img src="'+escapeIdCardHtml(photo)+'" alt="Staff Photo">':'<div class="photo-fallback">'+escapeIdCardHtml(getStaffInitials(s.name))+'</div>';
       const payload={school:'ASHIANA_PUBLIC_SCHOOL',employee_id:s.empId||s.emp_id||'',name:s.name||'',role:s.role||'',department:s.department||'',gender:s.gender||'',dob:s.dob||'',valid_thru:s.validThru||s.valid_thru||''};
-      const html='<div class="staff-id-preview-card"><div class="id-top"><div class="id-school"><img class="id-logo" src="'+logo+'"><div class="id-school-name">ASHIANA PUBLIC SCHOOL</div><div class="id-school-sub">SECTOR 46-CHANDIGARH</div><div class="id-school-phone">PHONE: +91-9872500460</div><div class="id-school-aff">Affiliated to CBSE | Affiliation No. 2630065</div><div class="id-red-line"></div></div></div><div class="id-photo-wrap">'+ph+'</div><div class="id-name-band"><div class="id-name">'+v(s.name||'STAFF MEMBER')+'</div><div class="id-role">'+v(s.role||'STAFF')+' • '+v(s.department||'School')+'</div></div><div class="id-details"><div class="id-row"><span >Employee ID</span><b >'+v(s.empId||s.emp_id)+'</b></div><div class="id-row"><span >Gender</span><b >'+v(s.gender)+'</b></div><div class="id-row"><span >DOB</span><b >'+v(s.dob)+'</b></div><div class="id-row"><span >Valid Thru</span><b >'+v(s.validThru||s.valid_thru)+'</b></div><div class="id-row"><span >Phone</span><b >'+v(s.phone||s.mobile||s.mobileNumber)+'</b></div><div class="id-row"><span >Address</span><b >'+v(s.address||s.residentialAddress)+'</b></div></div><div class="id-qr-area"><div class="id-valid">Property of<br><strong>Ashiana Public School</strong><br>Sector 46-A, Chandigarh<br>Scan to verify staff identity</div><div class="id-qrcode"></div></div><div class="id-footer">Authorized Staff Identification • Ashiana Public School</div></div>';
+      const html='<div class="staff-id-preview-card"><div class="id-top"><div class="id-school"><img class="id-logo" src="'+logo+'"><div class="id-school-name">ASHIANA PUBLIC SCHOOL</div><div class="id-school-sub">SECTOR 46-CHANDIGARH</div><div class="id-school-phone">PHONE: +91-9872500460</div><div class="id-school-aff">Affiliated to CBSE | Affiliation No. 2630065</div><div class="id-red-line"></div></div></div><div class="id-photo-wrap">'+ph+'</div><div class="id-name-band"><div class="id-name">'+v(s.name||'STAFF MEMBER')+'</div><div class="id-role">'+v(s.role||'STAFF')+'</div></div><div class="id-details"><div class="id-row"><span >Employee ID</span><b >'+v(s.empId||s.emp_id)+'</b></div><div class="id-row"><span >Gender</span><b >'+v(s.gender)+'</b></div><div class="id-row"><span >DOB</span><b >'+v(s.dob)+'</b></div><div class="id-row"><span >Valid Thru</span><b >'+v(s.validThru||s.valid_thru)+'</b></div><div class="id-row"><span >Phone</span><b >'+v(s.phone||s.mobile||s.mobileNumber)+'</b></div><div class="id-row"><span >Address</span><b >'+v(s.address||s.residentialAddress)+'</b></div></div><div class="id-qr-area"><div class="id-valid">Property of<br><strong>Ashiana Public School</strong><br>Sector 46-A, Chandigarh<br>Scan to verify staff identity</div><div class="id-qrcode"></div></div><div class="id-footer">Authorized Staff Identification • Ashiana Public School</div></div>';
       return {html,payload};
     }
     async function exportIdCards(items,format,baseName){
@@ -8198,7 +8198,7 @@ window.addEventListener('load',async function(){
           <div class="id-photo-wrap">${photoHtml}</div>
           <div class="id-name-band">
             <div class="id-name">${escapeIdCardHtml(staff.name || "STAFF MEMBER")}</div>
-            <div class="id-role">${escapeIdCardHtml(staff.role || "STAFF")} • ${escapeIdCardHtml(staff.department || "School")}</div>
+            <div class="id-role">${escapeIdCardHtml(staff.role || "STAFF")}</div>
           </div>
           <div class="id-details">
             <div class="id-row" style="height:2.3mm!important;min-height:2.3mm!important;max-height:2.3mm!important;font-size:4.5pt!important;line-height:1!important;overflow:hidden!important;"><span style="font-size:4.5pt!important;line-height:1!important;white-space:nowrap!important;">Employee ID</span><b style="font-size:4.5pt!important;line-height:1!important;white-space:nowrap!important;overflow:hidden!important;text-overflow:ellipsis!important;">${escapeIdCardHtml(staff.empId || "—")}</b></div>
@@ -8466,7 +8466,7 @@ window.addEventListener('load',async function(){
     <div class="photo-wrap">${photoHtml}</div>
     <div class="name-band">
       <div class="name">${escapeIdCardHtml(staff.name || "STAFF MEMBER")}</div>
-      <div class="role">${escapeIdCardHtml(staff.role || "STAFF")} • ${escapeIdCardHtml(staff.department || "School")}</div>
+      <div class="role">${escapeIdCardHtml(staff.role || "STAFF")}</div>
     </div>
     <div class="details">
       <div class="row"><div class="label">Employee ID</div><div class="value">${escapeIdCardHtml(staff.empId || "—")}</div></div>
