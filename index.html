@@ -1548,7 +1548,7 @@
               // Enrollment failures never block the existing PIN login.
               try {
                 if (window.AshianaNative?.isAndroid?.() && await window.AshianaNative.staffBiometricAvailable()) {
-                  var enrolled = await window.AshianaNative.hasStaffBiometricEnrollment();
+                  var enrolled = await window.AshianaNative.hasStaffBiometricEnrollment(loginResult.staff.id);
                   if (!enrolled && window.confirm("Enable fingerprint sign-in for this staff account on this phone? Your current PIN will remain available as a fallback.")) {
                     await window.AshianaNative.enableStaffBiometric({
                       staffId: loginResult.staff.id,
