@@ -14,6 +14,7 @@ const FCM_SCOPE = "https://www.googleapis.com/auth/firebase.messaging";
 const FCM_TOKEN_URL = "https://oauth2.googleapis.com/token";
 
 type ServiceAccount = { project_id: string; client_email: string; private_key: string };
+type WebPushSubscription = { endpoint: string; keys: { p256dh: string; auth: string } };
 type StudentPushRow = {
   id: string;
   platform: "web" | "android";
@@ -105,7 +106,7 @@ function normalizeServiceAccount() {
 async function sendWebPush(row: StudentPushRow, title: string, message: string, category: string, service: ReturnType<typeof createClient>) {
   if (!row.subscription) return false;
   try {
-    await webpush.sendNotification(row.subscription as webpush.PushSubscription, JSON.stringify({
+    await webpush.sendNotification(row.subscription as WebPushSubscription, JSON.stringify({
       title, body: message, category, tag: category + ":" + crypto.randomUUID(), url: "/",
     }));
     return true;
