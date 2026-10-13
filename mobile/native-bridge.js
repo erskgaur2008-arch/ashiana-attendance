@@ -71,9 +71,16 @@ const STAFF_BIOMETRIC_POINTER_KEY = "aps_staff_biometric_staff_id_v1";
 const STAFF_BIOMETRIC_SERVER_PREFIX = "com.ashiana.attendance.staff.";
 
 function staffBiometricServer(staffId) {
-  const id = String(staffId || "").trim();
-  if (!id || !/^[a-zA-Z0-9-]{8,128}$/.test(id)) throw new Error("Invalid staff account for biometric enrollment.");
-  return STAFF_BIOMETRIC_SERVER_PREFIX + id;
+  const id = String(staffId ?? "").trim();
+  if (!id || id.length > 256) throw new Error("Invalid staff account for biometric enrollment.");
+
+  // Preserve existing server keys for conventional UUID/database IDs. Some
+  // valid staff records use prefixes/underscores, so encode those safely
+  // instead of rejecting them and preventing biometric registration.
+  if (/^[a-zA-Z0-9-]{8,128}$/.test(id)) return STAFF_BIOMETRIC_SERVER_PREFIX + id;
+  const bytes = new TextEncoder().encode(id);
+  const encoded = Array.from(bytes, byte => byte.toString(16).padStart(2, "0")).join("");
+  return STAFF_BIOMETRIC_SERVER_PREFIX + "x" + encoded;
 }
 
 async function staffBiometricAvailable() {
