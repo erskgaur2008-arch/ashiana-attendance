@@ -4567,6 +4567,14 @@
 
               if (authHydrationInProgress) return;
 
+              // A login flow performs deliberate session changes while switching
+              // roles (including local sign-out for the RPC-based Student portal).
+              // Do not let intermediate SIGNED_IN/SIGNED_OUT events race the
+              // explicit login handoff and immediately hide a successfully opened
+              // dashboard. bootstrapApp and the login handoff remain responsible
+              // for validating/restoring the final role.
+              if (window.__ashianaLoginBusy) return;
+
               if (event === 'SIGNED_OUT') {
                 currentAuthUser = null;
                 currentStaffId = null;
