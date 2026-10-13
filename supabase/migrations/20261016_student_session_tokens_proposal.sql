@@ -16,6 +16,21 @@ create index if not exists student_session_tokens_student_active_idx
   on public.student_session_tokens(student_id, expires_at)
   where revoked_at is null;
 
+create table if not exists public.student_leave_requests (
+  id uuid primary key default gen_random_uuid(),
+  school_code text not null default 'ashiana',
+  student_id uuid not null references public.student_roster(id) on delete cascade,
+  enroll_no text not null,
+  from_date date not null,
+  to_date date not null,
+  reason text not null,
+  status text not null default 'PENDING',
+  created_at timestamptz not null default now()
+);
+
+alter table public.student_leave_requests enable row level security;
+revoke all on public.student_leave_requests from public, anon, authenticated;
+
 alter table public.student_session_tokens enable row level security;
 revoke all on public.student_session_tokens from public, anon, authenticated;
 
@@ -150,6 +165,15 @@ begin
   if coalesce((v_bundle->>'success')::boolean, false) is not true then
     return jsonb_build_object('success', false, 'code', 'STUDENT_SESSION_EXPIRED');
   end if;
+  -- The test project does not yet include the legacy leave RPC; expose the
+  -- minimal test-only leave table in the bundle when that RPC is absent.
+  if to_regprocedure('public.student_submit_leave(text,text,date,date,text)') is null then
+    v_bundle := jsonb_set(v_bundle, '{leave_requests}', coalesce((
+      select jsonb_agg(to_jsonb(l) order by l.created_at desc)
+      from public.student_leave_requests l
+      where l.student_id = s.id and l.school_code = 'ashiana'
+    ), '[]'::jsonb), true);
+  end if;
   return v_bundle;
 end;
 $function$;
@@ -192,7 +216,16 @@ begin
   end if;
 
   if to_regprocedure('public.student_submit_leave(text,text,date,date,text)') is null then
-    return jsonb_build_object('success', false, 'code', 'FEATURE_UNAVAILABLE', 'message', 'Leave requests are not configured on this environment.');
+    if exists (
+      select 1 from public.student_leave_requests l
+       where l.student_id = s.id and l.status = 'PENDING'
+         and l.from_date <= p_to_date and l.to_date >= p_from_date
+    ) then
+      return jsonb_build_object('success', false, 'message', 'A leave request for these dates is already pending.');
+    end if;
+    insert into public.student_leave_requests(school_code, student_id, enroll_no, from_date, to_date, reason, status)
+    values ('ashiana', s.id, s.enroll_no, p_from_date, p_to_date, btrim(p_reason), 'PENDING');
+    return jsonb_build_object('success', true, 'message', 'Leave request submitted.');
   end if;
 
   execute 'select public.student_submit_leave($1,$2,$3,$4,$5)'
