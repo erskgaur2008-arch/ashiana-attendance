@@ -1712,8 +1712,15 @@
                 studentRecord: studentLogin.data.student,
                 portalData: bundle.data || {}
               };
-              // Student uses the lightweight portal session; bootstrap restores it
-              // after reload and never touches the main Auth session.
+              // On Android, persist only the credentials needed for server-side revalidation
+              // using Android Keystore-backed storage. Never put the DOB password in localStorage.
+              if (window.AshianaNative?.isAndroid?.()) {
+                await window.AshianaNative.saveStudentSessionCredentials({
+                  admissionNo: admission,
+                  dobPassword: dob
+                });
+              }
+              // Keep the in-memory-tab handoff for web/PWA navigation and immediate UI setup.
               sessionStorage.setItem("aps_student_session_v1", JSON.stringify(pendingStudentUser));
               sessionStorage.setItem("aps_current_auth_session_v1", JSON.stringify(pendingStudentUser));
               sessionStorage.setItem("aps_login_handoff_v1", "STUDENT");
@@ -4444,11 +4451,28 @@
         const savedStudentRaw = sessionStorage.getItem("aps_student_session_v1");
         const loginHandoff = sessionStorage.getItem("aps_login_handoff_v1");
         let savedUser = null;
+        let secureStudentCredentials = null;
+        try {
+          if (window.AshianaNative?.isAndroid?.() &&
+              typeof window.AshianaNative.getStudentSessionCredentials === "function") {
+            secureStudentCredentials = await window.AshianaNative.getStudentSessionCredentials();
+          }
+        } catch (secureStorageError) {
+          console.warn("Secure Student session could not be read:", secureStorageError);
+        }
         try {
           savedUser = savedRaw ? JSON.parse(savedRaw) : null;
           if (!savedUser && savedStudentRaw) savedUser = JSON.parse(savedStudentRaw);
         } catch (_) {
           savedUser = null;
+        }
+        // Native Android secure credentials survive WebView destruction. They are
+        // still revalidated with student_login before the portal can open.
+        if (secureStudentCredentials?.admissionNo && secureStudentCredentials?.dobPassword) {
+          savedUser = savedUser?.type === 'STUDENT' ? savedUser : {
+            type: 'STUDENT',
+            studentRecord: { enroll_no: secureStudentCredentials.admissionNo }
+          };
         }
 
         if (savedUser?.type === 'STUDENT') {
@@ -4459,12 +4483,12 @@
           try { await supabaseClient.auth.signOut({ scope: 'local' }); } catch (_) {}
 
           const student = savedUser.studentRecord || {};
-          const enrollNo = String(student.enroll_no || '').trim().toUpperCase();
+          const enrollNo = String(secureStudentCredentials?.admissionNo || student.enroll_no || '').trim().toUpperCase();
           const dobRaw = String(student.dob || '').slice(0, 10);
           const dobParts = dobRaw.split('-');
-          const dobPassword = dobParts.length === 3
-            ? (dobParts[2] + dobParts[1] + dobParts[0])
-            : '';
+          const dobPassword = String(secureStudentCredentials?.dobPassword || (
+            dobParts.length === 3 ? (dobParts[2] + dobParts[1] + dobParts[0]) : ''
+          ));
 
           if (!enrollNo || !/^\d{8}$/.test(dobPassword)) {
             throw new Error('STUDENT_SESSION_INVALID');
@@ -4480,6 +4504,7 @@
             localStorage.removeItem("aps_student_session_v1"); sessionStorage.removeItem("aps_student_session_v1");
             sessionStorage.removeItem(STORAGE_KEY_CURRENT_USER);
             sessionStorage.removeItem("aps_login_handoff_v1");
+            try { await window.AshianaNative?.clearStudentSessionCredentials?.(); } catch (_) {}
             throw new Error('STUDENT_SESSION_EXPIRED');
           }
 
@@ -4617,8 +4642,10 @@
         currentAuthUser = null;
         currentStaffId = null;
         sessionStorage.removeItem(STORAGE_KEY_CURRENT_USER);
-        if (String(e?.message || '').includes('STUDENT_SESSION_EXPIRED')) {
+        if (String(e?.message || '').includes('STUDENT_SESSION_EXPIRED') ||
+            String(e?.message || '').includes('STUDENT_SESSION_INVALID')) {
           try { localStorage.removeItem("aps_student_session_v1"); sessionStorage.removeItem("aps_student_session_v1"); } catch (_) {}
+          try { await window.AshianaNative?.clearStudentSessionCredentials?.(); } catch (_) {}
         }
         return false;
       }
@@ -5915,6 +5942,9 @@ async function refreshStudentPortalData(dobOverride){
       sessionStorage.removeItem("aps_admin_login_handoff_v1");
       sessionStorage.removeItem("aps_login_handoff_v1");
       localStorage.removeItem("aps_student_session_v1"); sessionStorage.removeItem("aps_student_session_v1");
+      try { await window.AshianaNative?.clearStudentSessionCredentials?.(); } catch (e) {
+        console.warn("Secure Student session cleanup failed:", e);
+      }
       try { localStorage.removeItem("sb-oalfzgluqroqbbrulhpr-auth-token"); } catch (_) {}
       try { localStorage.removeItem("aps_student_session_expiry_v1"); } catch (_) {}
       try { sessionStorage.removeItem("aps_student_session_expiry_v1"); } catch (_) {}
