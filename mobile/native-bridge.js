@@ -35,6 +35,13 @@ async function saveBlob(blob, fileName, mimeType = "application/octet-stream") {
   });
 }
 
+async function requestNotificationPermission() {
+  if (!isNativeAndroid()) return false;
+  const permission = await PushNotifications.checkPermissions();
+  const result = permission.receive === "granted" ? permission : await PushNotifications.requestPermissions();
+  return result.receive === "granted";
+}
+
 async function registerPushNotifications() {
   if (!isNativeAndroid()) throw new Error("Native push notifications are available only in the Android app.");
   const permission = await PushNotifications.checkPermissions();
@@ -62,5 +69,6 @@ window.AshianaNative = Object.freeze({
   isAndroid: isNativeAndroid,
   printHtml,
   saveBlob,
-  registerPushNotifications
+  registerPushNotifications,
+  requestNotificationPermission
 });
