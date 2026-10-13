@@ -6314,8 +6314,17 @@ async function refreshStudentPortalData(dobOverride){
             && await window.AshianaNative.hasStaffBiometricEnrollment(ownStaffId));
         } catch (_) { biometricReady = false; }
         if (biometricButton) biometricButton.style.display = biometricReady ? 'flex' : 'none';
-        if (status) status.innerHTML = '<span class="text-ashiana-green font-bold">School QR verified.</span><br>Verify with your enrolled biometric or enter your personal 4-digit PIN to mark your own attendance.';
+        if (status) status.innerHTML = biometricReady
+          ? '<span class="text-ashiana-green font-bold">School QR verified.</span><br>Verify your fingerprint to mark your own attendance. If cancelled, you can use your PIN.'
+          : '<span class="text-ashiana-green font-bold">School QR verified.</span><br>Enter your personal 4-digit PIN to mark your own attendance.';
         if (window.lucide) lucide.createIcons();
+        if (biometricReady) {
+          // Prefer biometric immediately after scanning the daily school QR.
+          // The PIN panel remains available if the user cancels or biometric fails.
+          setTimeout(() => submitScannedAttendanceBiometric(), 120);
+        } else {
+          if (pinInput) pinInput.focus();
+        }
         return;
       }
 
