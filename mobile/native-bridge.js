@@ -84,9 +84,9 @@ async function staffBiometricAvailable() {
   } catch (_) { return false; }
 }
 
-async function hasStaffBiometricEnrollment() {
+async function hasStaffBiometricEnrollment(forStaffId) {
   if (!isNativeAndroid()) return false;
-  const staffId = window.localStorage.getItem(STAFF_BIOMETRIC_POINTER_KEY);
+  const staffId = String(forStaffId || window.localStorage.getItem(STAFF_BIOMETRIC_POINTER_KEY) || "");
   if (!staffId) return false;
   try {
     const result = await NativeBiometric.isCredentialsSaved({ server: staffBiometricServer(staffId) });
