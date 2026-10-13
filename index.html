@@ -3454,7 +3454,7 @@
         </div>
 
         <div id="scanner-status-text" class="text-center text-xs text-slate-600 font-medium">
-          Scan the school QR for staff attendance (PIN required), or a student ID QR to mark student attendance.
+          Scan the school QR for staff attendance (PIN or enrolled biometric), or a student ID QR to mark student attendance.
         </div>
         <div id="scanner-smart-result" class="hidden rounded-2xl border p-3 text-left" aria-live="polite"></div>
 
@@ -3469,6 +3469,11 @@
           <button type="button" onclick="submitScannedAttendancePIN()" class="w-full py-2.5 bg-ashiana-green hover:bg-[#08693A] text-white rounded-xl text-xs font-bold shadow">
             Verify PIN & Mark Attendance
           </button>
+          <button type="button" id="scanner-biometric-attendance-button" onclick="submitScannedAttendanceBiometric()" style="display:none" class="w-full py-2.5 bg-white hover:bg-emerald-50 border border-emerald-300 text-emerald-800 rounded-xl text-xs font-bold shadow-sm items-center justify-center gap-2">
+            <i data-lucide="fingerprint" class="w-4 h-4"></i>
+            <span>Verify Biometric & Mark Attendance</span>
+          </button>
+          <p class="text-[10px] text-center text-emerald-800">On Android, use your enrolled biometric instead of typing your PIN.</p>
         </div>
 
         <div class="flex items-center space-x-2 pt-1">
@@ -6300,8 +6305,16 @@ async function refreshStudentPortalData(dobOverride){
         pendingScannedQR = parsed;
         if (pinPanel) pinPanel.classList.remove('hidden');
         const pinInput = document.getElementById('scanner-attendance-pin');
-        if (pinInput) { pinInput.value = ''; pinInput.focus(); }
-        if (status) status.innerHTML = '<span class="text-ashiana-green font-bold">School QR verified.</span><br>Enter your personal 4-digit PIN to mark staff attendance.';
+        if (pinInput) { pinInput.value = ''; }
+        const biometricButton = document.getElementById('scanner-biometric-attendance-button');
+        let biometricReady = false;
+        try {
+          const ownStaffId = String(currentAuthUser?.type === 'STAFF' ? currentAuthUser?.staffRecord?.id || '' : '');
+          biometricReady = Boolean(ownStaffId && window.AshianaNative?.isAndroid?.()
+            && await window.AshianaNative.hasStaffBiometricEnrollment(ownStaffId));
+        } catch (_) { biometricReady = false; }
+        if (biometricButton) biometricButton.style.display = biometricReady ? 'flex' : 'none';
+        if (status) status.innerHTML = '<span class="text-ashiana-green font-bold">School QR verified.</span><br>Verify with your enrolled biometric or enter your personal 4-digit PIN to mark your own attendance.';
         if (window.lucide) lucide.createIcons();
         return;
       }
@@ -6420,7 +6433,63 @@ async function refreshStudentPortalData(dobOverride){
       pendingScannedQR = null;
       smartQrScanLocked = false;
       document.getElementById('scanner-pin-panel')?.classList.add('hidden');
+      const biometricButton = document.getElementById('scanner-biometric-attendance-button');
+      if (biometricButton) biometricButton.style.display = 'none';
       document.getElementById("modal-punch").classList.add("hidden");
+    }
+
+    async function submitScannedAttendanceBiometric() {
+      if (!pendingScannedQR?.token) {
+        showToast("Please scan the school QR code first.", "error");
+        return;
+      }
+      const ownStaffId = String(currentAuthUser?.type === 'STAFF' ? currentAuthUser?.staffRecord?.id || '' : '');
+      if (!ownStaffId || !window.AshianaNative?.isAndroid?.()) {
+        showToast("Biometric attendance is available only for the signed-in staff member in the Android app. Use your PIN instead.", "error");
+        return;
+      }
+      const button = document.getElementById('scanner-biometric-attendance-button');
+      if (button) { button.disabled = true; button.classList.add('opacity-60'); }
+      try {
+        const credentials = await window.AshianaNative.getStaffBiometricCredentials();
+        if (String(credentials?.staffId || '') !== ownStaffId) {
+          throw new Error("The enrolled biometric belongs to a different staff account. Sign in with your own account and enroll again.");
+        }
+        const result = await invokeVerifyAttendance({
+          action: 'attendance',
+          qr_token: pendingScannedQR.token,
+          pin: credentials.pin
+        });
+        const punch = result?.punch;
+        if (!punch) throw new Error("Attendance response was incomplete.");
+        const localRecord = {
+          id: punch.id, staffId: punch.staff_id, staffName: punch.staff_name, empId: punch.emp_id,
+          attendanceDate: punch.attendance_date, type: punch.type,
+          timestamp: punch.timestamp, method: punch.method || 'QR+BIOMETRIC'
+        };
+        punchLedger = punchLedger.filter(p => p.id !== localRecord.id);
+        punchLedger.push(localRecord);
+        savePersistedData();
+        playTone('SUCCESS');
+        await closePunchModal();
+        showToast(result.message || `PUNCH ${localRecord.type} recorded successfully.`, "success");
+        refreshStaffUI();
+        renderLiveAttendanceTable();
+        updateKPICards();
+      } catch (e) {
+        playTone('ERROR');
+        const msg = String(e?.message || e);
+        if (/cancel|cancelled|canceled|user denied|authentication failed/i.test(msg)) {
+          showToast("Biometric verification cancelled or failed. Attendance was not marked. You can use your PIN instead.", "error");
+        } else if (msg.includes('ID_CARD_EXPIRED')) showToast("ID CARD EXPIRED. Your Valid Thru date has passed. Please contact the school administrator for renewal.", "error");
+        else if (msg.includes('INVALID_OR_EXPIRED_QR')) showToast("QR expired. Please scan the latest school QR.", "error");
+        else if (msg.includes('INVALID_PIN')) showToast("Saved PIN is no longer valid. Sign in with your current PIN and re-enroll biometric verification.", "error");
+        else if (msg.includes('DUPLICATE_SCAN')) showToast("Please wait 30 seconds before scanning again.", "error");
+        else if (msg.includes('STAFF_ON_APPROVED_LEAVE')) showToast("Your leave is approved for today. Staff attendance cannot be punched.", "info");
+        else showToast("Biometric attendance verification failed: " + msg + ". Attendance was not marked.", "error");
+      } finally {
+        if (button) { button.disabled = false; button.classList.remove('opacity-60'); }
+      }
     }
 
     async function submitScannedAttendancePIN() {
