@@ -10,7 +10,7 @@
 
 ## Required configuration before real delivery
 
-1. Apply `supabase/migrations/20261013_student_push_subscriptions.sql` to the intended Supabase project only after review. It creates a new table and indexes; it does not modify existing student records.
+1. Apply `supabase/migrations/20261015_student_push_subscriptions.sql` to the intended Supabase project only after review. It creates a new table and indexes; it does not modify existing student records.
 2. In Supabase Edge Function secrets, set `FCM_SERVICE_ACCOUNT_JSON` to the complete Firebase service-account JSON for the Android app's Firebase project. Enable the Firebase Cloud Messaging API for that project. Never commit that JSON or its private key to GitHub.
 3. Ensure `VAPID_PUBLIC_KEY`, `VAPID_PRIVATE_KEY`, and `VAPID_SUBJECT` are set for Web Push.
 4. For Android APK builds, add a GitHub Actions repository secret named `GOOGLE_SERVICES_JSON` containing the complete `google-services.json` for the Firebase Android app whose package ID matches the generated APK. The workflow installs this file only during the build and applies the Google Services Gradle plugin; the JSON is not committed. Without this secret, APK builds continue but Android token registration will not work.
