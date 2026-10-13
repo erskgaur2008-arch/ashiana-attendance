@@ -1717,6 +1717,10 @@
               sessionStorage.setItem("aps_student_session_v1", JSON.stringify(pendingStudentUser));
               sessionStorage.setItem("aps_current_auth_session_v1", JSON.stringify(pendingStudentUser));
               sessionStorage.setItem("aps_login_handoff_v1", "STUDENT");
+              // Register this device using the existing student credential check. Do not block login on push setup.
+              if (typeof window.__ashianaRegisterStudentPush === "function") {
+                window.__ashianaRegisterStudentPush({ client: studentClient, admissionNo: admission, dobPassword: dob });
+              }
 
               if (typeof window.__ashianaFinishStudentLogin === "function") {
                 var studentOpened = window.__ashianaFinishStudentLogin(pendingStudentUser);
@@ -11171,10 +11175,30 @@ window.addEventListener('load',async function(){
         }));
         const {error}=await supabaseClient.from('student_notices').insert(payloads);
         if(error) throw error;
+        const targetLabel=targets.length===1 && targets[0].class_name===null ? 'all classes' : targets.map(t=>'Class '+t.class_name+' - Section '+t.section).join(', ');
+        let pushResult=null, pushFailure=null;
+        try{
+          const {data,error:pushError}=await supabaseClient.functions.invoke('push-notifications',{body:{
+            action:'send-school-notice',schoolCode:APS_STUDENT_SCHOOL,title,message:body,category:'school_notice',
+            allStudents:targets.some(t=>t.class_name===null),
+            targetScopes:targets.map(t=>({class_name:t.class_name,section:t.section}))
+          }});
+          if(pushError)throw pushError;
+          pushResult=data||null;
+        }catch(e){
+          pushFailure=e;
+          console.warn('Notice was published, but push delivery could not be started:',e?.message||e);
+        }
         document.getElementById('admin-student-portal-notice-title').value='';
         document.getElementById('admin-student-portal-notice-body').value='';
-        const targetLabel=targets.length===1 && targets[0].class_name===null ? 'all classes' : targets.map(t=>'Class '+t.class_name+' - Section '+t.section).join(', ');
-        showToast('Notice published to '+targetLabel+'.','success');
+        if(pushFailure){
+          showToast('Notice published to '+targetLabel+', but push delivery could not be started. Check Edge Function setup.','error');
+        }else if(!pushResult?.sent){
+          const detail=pushResult?.message||'No registered student devices received a push notification.';
+          showToast('Notice published to '+targetLabel+'. '+detail,'error');
+        }else{
+          showToast('Notice published to '+targetLabel+'. Push sent to '+pushResult.sent+' device(s).','success');
+        }
         await loadAdminStudentPortalNotices();
       }catch(e){
         showToast('Notice publish failed: '+(e.message||e),'error');
@@ -11907,6 +11931,39 @@ function addMessage(text,type){
 </div>
 <script>
 (function(){
+  async function registerStudentPush(options){
+    const client=options?.client;
+    const admissionNo=String(options?.admissionNo||'').trim().toUpperCase();
+    const dobPassword=String(options?.dobPassword||'').replace(/\\D/g,'');
+    if(!client?.functions?.invoke||!admissionNo||!/^\\d{8}$/.test(dobPassword))return;
+    const native=Boolean(window.AshianaNative?.isAndroid?.());
+    if(native){
+      if(!window.AshianaNative?.registerPushNotifications)return;
+      const deviceToken=await window.AshianaNative.registerPushNotifications();
+      const {error}=await client.functions.invoke('push-notifications',{body:{
+        action:'student-subscribe',schoolCode:'ashiana',admissionNo,dobPassword,platform:'android',deviceToken
+      }});
+      if(error)throw error;
+      return;
+    }
+    if(!('serviceWorker' in navigator)||!('PushManager' in window)||!('Notification' in window)||Notification.permission!=='granted')return;
+    const {data:cfg,error:cfgError}=await client.functions.invoke('push-notifications',{body:{action:'config'}});
+    if(cfgError||!cfg?.vapidPublicKey||!cfg.webPushConfigured)return;
+    const value=cfg.vapidPublicKey.replace(/-/g,'+').replace(/_/g,'/');
+    const padded=value+'='.repeat((4-value.length%4)%4);
+    const raw=atob(padded),key=new Uint8Array(raw.length);
+    for(let i=0;i<raw.length;i++)key[i]=raw.charCodeAt(i);
+    const reg=await navigator.serviceWorker.ready;
+    let sub=await reg.pushManager.getSubscription();
+    if(!sub)sub=await reg.pushManager.subscribe({userVisibleOnly:true,applicationServerKey:key});
+    const {error}=await client.functions.invoke('push-notifications',{body:{
+      action:'student-subscribe',schoolCode:'ashiana',admissionNo,dobPassword,platform:'web',subscription:sub.toJSON()
+    }});
+    if(error)throw error;
+  }
+  window.__ashianaRegisterStudentPush=function(options){
+    registerStudentPush(options).catch(e=>console.warn('Student push registration failed:',e?.message||e));
+  };
   async function enableAshianaNotifications(){
     try{
       const native=Boolean(window.AshianaNative?.isAndroid?.());
