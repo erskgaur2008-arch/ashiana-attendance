@@ -94,6 +94,18 @@ async function hasStaffBiometricEnrollment(forStaffId) {
   } catch (_) { return false; }
 }
 
+async function prepareStaffBiometricAccount(staffId) {
+  if (!isNativeAndroid()) return false;
+  const nextId = String(staffId || "").trim();
+  if (!nextId) return false;
+  const currentId = window.localStorage.getItem(STAFF_BIOMETRIC_POINTER_KEY);
+  if (currentId && currentId !== nextId) {
+    try { await NativeBiometric.deleteCredentials({ server: staffBiometricServer(currentId) }); } catch (_) {}
+    window.localStorage.removeItem(STAFF_BIOMETRIC_POINTER_KEY);
+  }
+  return true;
+}
+
 async function enableStaffBiometric({ staffId, loginId, pin }) {
   if (!isNativeAndroid()) throw new Error("Fingerprint login is available only in the Android app.");
   if (!/^\d{4}$/.test(String(pin || ""))) throw new Error("Sign in with your current 4-digit PIN before enabling fingerprint login.");
@@ -165,6 +177,7 @@ window.AshianaNative = Object.freeze({
   staffBiometricAvailable,
   hasStaffBiometricEnrollment,
   enableStaffBiometric,
+  prepareStaffBiometricAccount,
   getStaffBiometricCredentials,
   disableStaffBiometric
 });
