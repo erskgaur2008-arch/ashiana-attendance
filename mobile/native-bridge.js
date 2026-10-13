@@ -3,6 +3,7 @@ import { Directory, Filesystem } from "@capacitor/filesystem";
 import { Share } from "@capacitor/share";
 import { PushNotifications } from "@capacitor/push-notifications";
 import { NativeBiometric, AccessControl } from "@capgo/capacitor-native-biometric";
+import { SecureStorage } from "@aparajita/capacitor-secure-storage";
 
 function isNativeAndroid() {
   return Boolean(window.Capacitor?.isNativePlatform?.() && window.Capacitor?.getPlatform?.() === "android");
@@ -66,6 +67,48 @@ async function registerPushNotifications() {
   });
 }
 
+
+const STUDENT_SESSION_STORAGE_KEY = "credentials";
+const STUDENT_SESSION_STORAGE_PREFIX = "ashiana_student_session_v1_";
+
+async function setStudentSessionStoragePrefix() {
+  await SecureStorage.setKeyPrefix(STUDENT_SESSION_STORAGE_PREFIX);
+}
+
+async function saveStudentSessionCredentials({ admissionNo, dobPassword }) {
+  if (!isNativeAndroid()) throw new Error("Secure student session storage is available only in the Android app.");
+  const admission = String(admissionNo || "").trim().toUpperCase();
+  const dob = String(dobPassword || "").trim();
+  if (!admission || !/^\\d{8}$/.test(dob)) throw new Error("Student session credentials are invalid.");
+  await setStudentSessionStoragePrefix();
+  await SecureStorage.set(STUDENT_SESSION_STORAGE_KEY, {
+    admissionNo: admission,
+    dobPassword: dob,
+    savedAt: Date.now()
+  });
+  return true;
+}
+
+async function getStudentSessionCredentials() {
+  if (!isNativeAndroid()) return null;
+  await setStudentSessionStoragePrefix();
+  const stored = await SecureStorage.get(STUDENT_SESSION_STORAGE_KEY);
+  if (!stored || typeof stored !== "object") return null;
+  const admissionNo = String(stored.admissionNo || "").trim().toUpperCase();
+  const dobPassword = String(stored.dobPassword || "").trim();
+  if (!admissionNo || !/^\\d{8}$/.test(dobPassword)) {
+    await SecureStorage.remove(STUDENT_SESSION_STORAGE_KEY);
+    return null;
+  }
+  return { admissionNo, dobPassword };
+}
+
+async function clearStudentSessionCredentials() {
+  if (!isNativeAndroid()) return false;
+  await setStudentSessionStoragePrefix();
+  await SecureStorage.remove(STUDENT_SESSION_STORAGE_KEY);
+  return true;
+}
 
 const STAFF_BIOMETRIC_POINTER_KEY = "aps_staff_biometric_staff_id_v1";
 const STAFF_BIOMETRIC_SERVER_PREFIX = "com.ashiana.attendance.staff.";
@@ -186,5 +229,8 @@ window.AshianaNative = Object.freeze({
   enableStaffBiometric,
   prepareStaffBiometricAccount,
   getStaffBiometricCredentials,
-  disableStaffBiometric
+  disableStaffBiometric,
+  saveStudentSessionCredentials,
+  getStudentSessionCredentials,
+  clearStudentSessionCredentials
 });
