@@ -34,6 +34,18 @@ Deno.serve(async (req: Request) => {
 
   if (action === "config") return json({ vapidPublicKey: vapidPublic, webPushConfigured: Boolean(vapidPublic && vapidPrivate && vapidSubject) });
 
+  if (action === "subscribe" && String(body.platform || "") === "android") {
+    const token = String(body.deviceToken || "");
+    if (token.length < 20 || token.length > 4096) return json({ error: "INVALID_DEVICE_TOKEN" }, 400);
+    const { error } = await client.from("push_subscriptions").upsert({
+      user_id: userData.user.id, platform: "android", device_token: token,
+      endpoint: null, subscription: null, updated_at: new Date().toISOString(),
+    }, { onConflict: "user_id,device_token" });
+    if (error) return json({ error: "SUBSCRIPTION_SAVE_FAILED" }, 400);
+    return json({ success: true, deliveryConfigured: false, message: "Firebase server delivery configuration is still required." });
+  }
+
+
   if (action === "subscribe") {
     if (!vapidPublic || !vapidPrivate || !vapidSubject) return json({ error: "WEB_PUSH_NOT_CONFIGURED" }, 503);
     const subscription = body.subscription as Record<string, unknown> | undefined;
@@ -45,17 +57,6 @@ Deno.serve(async (req: Request) => {
     }, { onConflict: "user_id,endpoint" });
     if (error) return json({ error: "SUBSCRIPTION_SAVE_FAILED" }, 400);
     return json({ success: true });
-  }
-
-  if (action === "subscribe" && String(body.platform || "") === "android") {
-    const token = String(body.deviceToken || "");
-    if (token.length < 20 || token.length > 4096) return json({ error: "INVALID_DEVICE_TOKEN" }, 400);
-    const { error } = await client.from("push_subscriptions").upsert({
-      user_id: userData.user.id, platform: "android", device_token: token,
-      endpoint: null, subscription: null, updated_at: new Date().toISOString(),
-    }, { onConflict: "user_id,device_token" });
-    if (error) return json({ error: "SUBSCRIPTION_SAVE_FAILED" }, 400);
-    return json({ success: true, deliveryConfigured: false, message: "Firebase server delivery configuration is still required." });
   }
 
   if (action === "unsubscribe") {
