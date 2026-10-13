@@ -1542,6 +1542,7 @@
               } else {
                 throw new Error("Staff authentication returned no secure session.");
               }
+              window.__ashianaBiometricLoginPending = false;
 
               // Offer optional biometric enrollment only after the server has
               // accepted the current PIN and issued a valid staff session.
