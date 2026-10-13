@@ -3523,9 +3523,7 @@
           <div class="scanner-line absolute left-4 right-4 h-0.5 bg-red-500 shadow-[0_0_8px_rgba(217,45,49,0.8)] pointer-events-none"></div>
         </div>
 
-        <div id="scanner-status-text" class="text-center text-xs text-slate-600 font-medium">
-          Scan the school QR for staff attendance (PIN or enrolled biometric), or a student ID QR to mark student attendance.
-        </div>
+        <div id="scanner-status-text" class="text-center text-xs text-slate-600 font-medium"></div>
         <div id="scanner-smart-result" class="hidden rounded-2xl border p-3 text-left" aria-live="polite"></div>
 
         <div id="scanner-pin-panel" class="hidden space-y-2 p-3 bg-emerald-50 border border-emerald-200 rounded-2xl">
@@ -6517,7 +6515,7 @@ async function refreshStudentPortalData(dobOverride){
       const pinInput = document.getElementById('scanner-attendance-pin');
       if (pinInput) pinInput.value = '';
       const status = document.getElementById('scanner-status-text');
-      if (status) status.textContent = 'Scan the school QR for staff attendance. Android staff must register and verify biometrics; web staff use PIN.';
+      if (status) status.textContent = '';
       document.getElementById("modal-punch").classList.remove("hidden");
       if (window.lucide) lucide.createIcons();
       setTimeout(startCameraScanner, 150);
