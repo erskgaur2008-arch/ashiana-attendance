@@ -5,6 +5,7 @@ on:
   push:
     branches:
       - fix/student-secure-session-persistence
+      - fix/student-session-token-correction
 
 permissions:
   contents: read
