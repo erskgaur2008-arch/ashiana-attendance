@@ -96,7 +96,7 @@ async function hasStaffBiometricEnrollment(forStaffId) {
 
 async function enableStaffBiometric({ staffId, loginId, pin }) {
   if (!isNativeAndroid()) throw new Error("Fingerprint login is available only in the Android app.");
-  if (!/^\\d{4}$/.test(String(pin || ""))) throw new Error("Sign in with your current 4-digit PIN before enabling fingerprint login.");
+  if (!/^\d{4}$/.test(String(pin || ""))) throw new Error("Sign in with your current 4-digit PIN before enabling fingerprint login.");
   const server = staffBiometricServer(staffId);
   const available = await staffBiometricAvailable();
   if (!available) throw new Error("No enrolled device biometric is available. Set up a fingerprint in Android Settings first.");
@@ -132,7 +132,7 @@ async function getStaffBiometricCredentials() {
       negativeButtonText: "Use PIN",
       maxAttempts: 3
     });
-    if (!credentials?.username || !/^\\d{4}$/.test(String(credentials.password || ""))) {
+    if (!credentials?.username || !/^\d{4}$/.test(String(credentials.password || ""))) {
       throw new Error("Saved fingerprint credentials are invalid. Please sign in with your PIN.");
     }
     return { staffId, loginId: credentials.username, pin: credentials.password };
