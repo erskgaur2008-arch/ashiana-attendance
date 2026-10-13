@@ -90,6 +90,11 @@ async function saveStudentSessionToken(token) {
 
 async function getStudentSessionToken() {
   if (!isNativeAndroid()) return null;
+  // One-time cleanup for installs that used the old DOB-credential implementation.
+  try {
+    await SecureStorage.setKeyPrefix("ashiana_student_session_v1_");
+    await SecureStorage.remove("credentials");
+  } catch (_) {}
   await setStudentSessionStoragePrefix();
   const stored = await SecureStorage.get(STUDENT_SESSION_STORAGE_KEY);
   const token = typeof stored === "string" ? stored.trim() : "";
