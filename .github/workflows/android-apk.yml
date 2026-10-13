@@ -113,6 +113,38 @@ jobs:
           </adaptive-icon>
           EOF
           cp "$RES/mipmap-anydpi-v26/ic_launcher.xml" "$RES/mipmap-anydpi-v26/ic_launcher_round.xml"
+      - name: Configure Firebase Cloud Messaging when credentials are supplied
+        shell: bash
+        env:
+          GOOGLE_SERVICES_JSON: ${{ secrets.GOOGLE_SERVICES_JSON }}
+        run: |
+          set -e
+          if [ -z "${GOOGLE_SERVICES_JSON}" ]; then
+            echo "::warning::GOOGLE_SERVICES_JSON is not configured. APK will build, but Android push-token registration will not work until Firebase app configuration is added."
+            exit 0
+          fi
+          printf '%s' "${GOOGLE_SERVICES_JSON}" > android/app/google-services.json
+          python3 - <<'PY'
+          import json
+          import re
+          from pathlib import Path
+          config = Path("android/app/google-services.json")
+          parsed = json.loads(config.read_text())
+          if not parsed.get("project_info", {}).get("project_id"):
+              raise SystemExit("GOOGLE_SERVICES_JSON is missing project_info.project_id")
+          root = Path("android/build.gradle")
+          app = Path("android/app/build.gradle")
+          root_text = root.read_text()
+          if "com.google.gms:google-services" not in root_text:
+              match = re.search(r"buildscript\\s*\\{[\\s\\S]*?dependencies\\s*\\{", root_text)
+              if not match:
+                  raise SystemExit("Could not find the Android buildscript dependencies block for Google Services")
+              root_text = root_text[:match.end()] + "\\n        classpath 'com.google.gms:google-services:4.4.2'" + root_text[match.end():]
+              root.write_text(root_text)
+          app_text = app.read_text()
+          if "com.google.gms.google-services" not in app_text:
+              app.write_text(app_text.rstrip() + "\\n\\napply plugin: 'com.google.gms.google-services'\\n")
+          PY
       - name: Sync Android project
         run: npx cap sync android
       - name: Declare Android camera permission
