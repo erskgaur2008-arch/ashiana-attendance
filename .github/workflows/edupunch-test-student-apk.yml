@@ -99,6 +99,24 @@ jobs:
       - name: Add Android platform
         run: npx cap add android
 
+      - name: Set unique test Android application ID
+        shell: bash
+        run: |
+          set -euo pipefail
+          python3 - <<'PY'
+          from pathlib import Path
+          path = Path("capacitor.config.ts")
+          source = path.read_text()
+          old = 'student: { appId: "com.ashianapublicschool.attendance.student", appName: "Ashiana Student" }'
+          new = 'student: { appId: "com.ashianapublicschool.attendance.student.test", appName: "Ashiana Student Test" }'
+          if source.count(old) != 1:
+              raise SystemExit("Expected student app ID mapping was not found exactly once")
+          path.write_text(source.replace(old, new, 1))
+          if "com.ashianapublicschool.attendance.student.test" not in path.read_text():
+              raise SystemExit("Test package ID was not applied")
+          print("Configured unique test-only package ID.")
+          PY
+
       - name: Configure Firebase Cloud Messaging
         shell: bash
         env:
@@ -121,8 +139,8 @@ jobs:
           }
           if not project_id:
               raise SystemExit("Firebase config is missing project_info.project_id")
-          if "com.ashianapublicschool.attendance.student" not in package_names:
-              raise SystemExit("Firebase config does not include the student APK package name")
+          if "com.ashianapublicschool.attendance.student.test" not in package_names:
+              raise SystemExit("Firebase config does not include the test student APK package name")
           print("Firebase config validated for the student package.")
           PY
           python3 - <<'PY'
