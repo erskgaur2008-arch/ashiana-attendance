@@ -1674,7 +1674,7 @@
               }
 
               var studentClient = await ashianaGetStudentLoginClient();
-              var studentLogin = await studentClient.rpc("student_login", {
+              var studentLogin = await studentClient.rpc("student_session_start", {
                 p_school_code: "ashiana",
                 p_enroll_no: admission,
                 p_dob_password: dob
@@ -1687,9 +1687,12 @@
                 throw new Error("Incorrect Admission No. or DOB password.");
               }
 
-              var bundle = await studentClient.rpc("student_portal_bundle", {
-                p_enroll_no: admission,
-                p_dob_password: dob
+              var studentSessionToken = String(studentLogin.data?.session_token || "");
+              if (!/^[a-f0-9]{64}$/i.test(studentSessionToken)) {
+                throw new Error("Student session could not be created. Please try signing in again.");
+              }
+              var bundle = await studentClient.rpc("student_portal_bundle_by_session", {
+                p_token: studentSessionToken
               });
               if (bundle.error) throw new Error(bundle.error.message || "Student portal data could not be loaded.");
               if (bundle.data?.code === "RATE_LIMIT") {
@@ -1709,16 +1712,13 @@
               await ashianaClearMainAuthStorage();
               var pendingStudentUser = {
                 type: "STUDENT",
-                studentRecord: studentLogin.data.student,
+                studentRecord: bundle.data?.student || studentLogin.data.student,
                 portalData: bundle.data || {}
               };
-              // On Android, persist only the credentials needed for server-side revalidation
-              // using Android Keystore-backed storage. Never put the DOB password in localStorage.
+              // Persist only the opaque, revocable token; never save the DOB password.
+              sessionStorage.setItem("aps_student_session_token_v1", studentSessionToken);
               if (window.AshianaNative?.isAndroid?.()) {
-                await window.AshianaNative.saveStudentSessionCredentials({
-                  admissionNo: admission,
-                  dobPassword: dob
-                });
+                await window.AshianaNative.saveStudentSessionToken(studentSessionToken);
               }
               // Keep the in-memory-tab handoff for web/PWA navigation and immediate UI setup.
               sessionStorage.setItem("aps_student_session_v1", JSON.stringify(pendingStudentUser));
@@ -4451,14 +4451,17 @@
         const savedStudentRaw = sessionStorage.getItem("aps_student_session_v1");
         const loginHandoff = sessionStorage.getItem("aps_login_handoff_v1");
         let savedUser = null;
-        let secureStudentCredentials = null;
+        let secureStudentToken = "";
         try {
           if (window.AshianaNative?.isAndroid?.() &&
-              typeof window.AshianaNative.getStudentSessionCredentials === "function") {
-            secureStudentCredentials = await window.AshianaNative.getStudentSessionCredentials();
+              typeof window.AshianaNative.getStudentSessionToken === "function") {
+            secureStudentToken = String(await window.AshianaNative.getStudentSessionToken() || "");
           }
         } catch (secureStorageError) {
           console.warn("Secure Student session could not be read:", secureStorageError);
+        }
+        if (!secureStudentToken) {
+          try { secureStudentToken = String(sessionStorage.getItem("aps_student_session_token_v1") || ""); } catch (_) {}
         }
         try {
           savedUser = savedRaw ? JSON.parse(savedRaw) : null;
@@ -4466,12 +4469,11 @@
         } catch (_) {
           savedUser = null;
         }
-        // Native Android secure credentials survive WebView destruction. They are
-        // still revalidated with student_login before the portal can open.
-        if (secureStudentCredentials?.admissionNo && secureStudentCredentials?.dobPassword) {
+        // The opaque native token survives Android WebView destruction.
+        if (/^[a-f0-9]{64}$/i.test(secureStudentToken)) {
           savedUser = savedUser?.type === 'STUDENT' ? savedUser : {
             type: 'STUDENT',
-            studentRecord: { enroll_no: secureStudentCredentials.admissionNo }
+            studentRecord: {}
           };
         }
 
@@ -4482,44 +4484,27 @@
           // refresh persistence without trusting a client-editable role alone.
           try { await supabaseClient.auth.signOut({ scope: 'local' }); } catch (_) {}
 
-          const student = savedUser.studentRecord || {};
-          const enrollNo = String(secureStudentCredentials?.admissionNo || student.enroll_no || '').trim().toUpperCase();
-          const dobRaw = String(student.dob || '').slice(0, 10);
-          const dobParts = dobRaw.split('-');
-          const dobPassword = String(secureStudentCredentials?.dobPassword || (
-            dobParts.length === 3 ? (dobParts[2] + dobParts[1] + dobParts[0]) : ''
-          ));
+          const studentToken = String(secureStudentToken || "");
+          if (!/^[a-f0-9]{64}$/i.test(studentToken)) throw new Error('STUDENT_SESSION_INVALID');
 
-          if (!enrollNo || !/^\d{8}$/.test(dobPassword)) {
-            throw new Error('STUDENT_SESSION_INVALID');
-          }
-
-          const { data: loginCheck, error: loginCheckError } = await supabaseClient.rpc('student_login', {
-            p_school_code: APS_STUDENT_SCHOOL,
-            p_enroll_no: enrollNo,
-            p_dob_password: dobPassword
+          const { data: bundleData, error: bundleError } = await supabaseClient.rpc('student_portal_bundle_by_session', {
+            p_token: studentToken
           });
-          if (loginCheckError) throw loginCheckError;
-          if (!loginCheck?.success || !loginCheck?.student) {
+          if (bundleError) throw bundleError;
+          if (!bundleData?.success || !bundleData?.student) {
             localStorage.removeItem("aps_student_session_v1"); sessionStorage.removeItem("aps_student_session_v1");
+            sessionStorage.removeItem("aps_student_session_token_v1");
             sessionStorage.removeItem(STORAGE_KEY_CURRENT_USER);
             sessionStorage.removeItem("aps_login_handoff_v1");
-            try { await window.AshianaNative?.clearStudentSessionCredentials?.(); } catch (_) {}
+            try { await window.AshianaNative?.clearStudentSessionToken?.(); } catch (_) {}
             throw new Error('STUDENT_SESSION_EXPIRED');
           }
 
-          const { data: bundleData, error: bundleError } = await supabaseClient.rpc('student_portal_bundle', {
-            p_enroll_no: enrollNo,
-            p_dob_password: dobPassword
-          });
-          if (bundleError) throw bundleError;
-
           const restoredStudentUser = {
             type: 'STUDENT',
-            studentRecord: loginCheck.student,
-            portalData: bundleData || {}
-          };
-          sessionStorage.setItem("aps_student_session_v1", JSON.stringify(restoredStudentUser));
+            studentRecord: bundleData.student,
+            portalData: bundleData
+          };          sessionStorage.setItem("aps_student_session_v1", JSON.stringify(restoredStudentUser));
           sessionStorage.setItem(STORAGE_KEY_CURRENT_USER, JSON.stringify(restoredStudentUser));
           sessionStorage.removeItem("aps_login_handoff_v1");
           currentAuthUser = restoredStudentUser;
@@ -4645,7 +4630,7 @@
         if (String(e?.message || '').includes('STUDENT_SESSION_EXPIRED') ||
             String(e?.message || '').includes('STUDENT_SESSION_INVALID')) {
           try { localStorage.removeItem("aps_student_session_v1"); sessionStorage.removeItem("aps_student_session_v1"); } catch (_) {}
-          try { await window.AshianaNative?.clearStudentSessionCredentials?.(); } catch (_) {}
+          try { await window.AshianaNative?.clearStudentSessionToken?.(); } catch (_) {}
         }
         return false;
       }
@@ -5791,15 +5776,15 @@ async function submitStudentLeave(event){
   const from=document.getElementById("student-leave-from")?.value||"";
   const to=document.getElementById("student-leave-to")?.value||"";
   const reason=(document.getElementById("student-leave-reason")?.value||"").trim();
-  const dob=document.getElementById("student-leave-dob")?.value||"";
-  if(!from||!to||!reason||!/^[0-9]{8}$/.test(dob)){showToast("Please complete all leave details.","error");return false;}
+  const studentToken=String(await window.AshianaNative?.getStudentSessionToken?.() || sessionStorage.getItem("aps_student_session_token_v1") || "");
+  if(!from||!to||!reason||!/^[a-f0-9]{64}$/i.test(studentToken)){showToast("Your student session has expired. Please sign in again.","error");return false;}
   if(from>to){showToast("From date cannot be after To date.","error");return false;}
   form.dataset.submitting="1";
   const btn=event.submitter||form.querySelector('button[type="submit"]');
   if(btn){btn.disabled=true;btn.dataset.originalText=btn.textContent;btn.textContent="Submitting…";}
   try{
-    const {data,error}=await supabaseClient.rpc("student_submit_leave",{
-      p_enroll_no:s.enroll_no,p_dob_password:dob,p_from_date:from,p_to_date:to,p_reason:reason
+    const {data,error}=await supabaseClient.rpc("student_submit_leave_by_session",{
+      p_token:studentToken,p_from_date:from,p_to_date:to,p_reason:reason
     });
     if(error||!data?.success){
       const msg=String(data?.message||error?.message||"Leave request failed.");
@@ -5811,7 +5796,7 @@ async function submitStudentLeave(event){
       return false;
     }
     showToast("Leave request submitted.","success");
-    await refreshStudentPortalData(dob);
+    await refreshStudentPortalData();
     await studentDashboardSection("leave");
     return false;
   }catch(err){
@@ -5822,13 +5807,13 @@ async function submitStudentLeave(event){
     if(btn?.isConnected){btn.disabled=false;btn.textContent=btn.dataset.originalText||"Submit Leave Request";}
   }
 }
-async function refreshStudentPortalData(dobOverride){
+async function refreshStudentPortalData(){
   const s=currentAuthUser?.studentRecord;
   if(!s||!supabaseClient)return;
-  const dob=dobOverride||document.getElementById("student-leave-dob")?.value||"";
-  if(!/^[0-9]{8}$/.test(dob))return;
-  const {data}=await supabaseClient.rpc("student_portal_bundle",{p_enroll_no:s.enroll_no,p_dob_password:dob});
-  if(data?.success){currentAuthUser.portalData=data;populateStudentPortal(s);}
+  const token=String(await window.AshianaNative?.getStudentSessionToken?.() || sessionStorage.getItem("aps_student_session_token_v1") || "");
+  if(!/^[a-f0-9]{64}$/i.test(token))return;
+  const {data,error}=await supabaseClient.rpc("student_portal_bundle_by_session",{p_token:token});
+  if(!error&&data?.success){currentAuthUser.portalData=data;currentAuthUser.studentRecord=data.student||s;populateStudentPortal(currentAuthUser.studentRecord);}
 }
 
     function scaleStudentIdCardPreview(){
@@ -5942,9 +5927,16 @@ async function refreshStudentPortalData(dobOverride){
       sessionStorage.removeItem("aps_admin_login_handoff_v1");
       sessionStorage.removeItem("aps_login_handoff_v1");
       localStorage.removeItem("aps_student_session_v1"); sessionStorage.removeItem("aps_student_session_v1");
-      try { await window.AshianaNative?.clearStudentSessionCredentials?.(); } catch (e) {
+      try {
+        const token = String(await window.AshianaNative?.getStudentSessionToken?.() || sessionStorage.getItem("aps_student_session_token_v1") || "");
+        if (/^[a-f0-9]{64}$/i.test(token) && supabaseClient) {
+          await supabaseClient.rpc("student_session_revoke", { p_token: token });
+        }
+      } catch (e) { console.warn("Student session revoke failed:", e); }
+      try { await window.AshianaNative?.clearStudentSessionToken?.(); } catch (e) {
         console.warn("Secure Student session cleanup failed:", e);
       }
+      sessionStorage.removeItem("aps_student_session_token_v1");
       try { localStorage.removeItem("sb-oalfzgluqroqbbrulhpr-auth-token"); } catch (_) {}
       try { localStorage.removeItem("aps_student_session_expiry_v1"); } catch (_) {}
       try { sessionStorage.removeItem("aps_student_session_expiry_v1"); } catch (_) {}
