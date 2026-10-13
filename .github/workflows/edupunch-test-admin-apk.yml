@@ -57,15 +57,21 @@ jobs:
           html = html.replace(anchor, additions, 1)
 
           # Replace every known production Supabase endpoint/key in this build copy only.
+          # Rewrite known production backend identifiers only in this generated build copy.
           html = html.replace("https://oalfzgluqroqbbrulhpr.supabase.co", os.environ["TEST_SUPABASE_URL"])
           html = html.replace("sb_publishable_PND9f9FKbNrxlEakSgLKYA_5EsqLHkg", os.environ["TEST_SUPABASE_ANON_KEY"])
-          if "oalfzgluqroqbbrulhpr.supabase.co" in html or "sb_publishable_PND9f9FKbNrxlEakSgLKYA_5EsqLHkg" in html:
-              raise SystemExit("Safety check failed: production Supabase configuration remains in test APK bundle")
+          html = html.replace("sb-oalfzgluqroqbbrulhpr-auth-token", "sb-goztsnvscanozcfjzwxy-auth-token")
+          html = html.replace("oalfzgluqroqbbrulhpr", "EduPunch-Test")
+          forbidden = ["oalfzgluqroqbbrulhpr.supabase.co", "sb_publishable_PND9f9FKbNrxlEakSgLKYA_5EsqLHkg", "sb-oalfzgluqroqbbrulhpr-auth-token"]
+          leftovers = [value for value in forbidden if value in html]
+          if leftovers:
+              raise SystemExit("Safety check failed: production backend identifier remains: " + ", ".join(leftovers))
           if os.environ["TEST_SUPABASE_URL"] not in html or os.environ["TEST_SUPABASE_ANON_KEY"] not in html:
               raise SystemExit("Safety check failed: EduPunch-Test Supabase configuration was not injected")
+          if "sb-goztsnvscanozcfjzwxy-auth-token" not in html:
+              raise SystemExit("Safety check failed: test-specific auth storage key was not injected")
           path.write_text(html)
-          print("Safety check passed: student APK bundle targets EduPunch-Test only.")
-          PY
+          print("Safety check passed: generated admin bundle uses EduPunch-Test URL, key and auth storage namespace.")
           test -s mobile/www/assets/vendor/supabase.js
 
       - name: Install dependencies
