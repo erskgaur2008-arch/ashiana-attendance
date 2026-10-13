@@ -4,7 +4,7 @@ on:
   workflow_dispatch:
   push:
     branches:
-      - test/edupunch-test-android-apk
+      - test/edupunch-test-admin-apk
 
 permissions:
   contents: read
@@ -168,12 +168,12 @@ jobs:
         run: ./gradlew assembleDebug --no-daemon --stacktrace
 
       - name: Rename test APK
-        run: cp android/app/build/outputs/apk/debug/app-debug.apk EduPunch-Test-Student-APK.apk
+        run: cp android/app/build/outputs/apk/debug/app-debug.apk EduPunch-Test-Admin-APK.apk
 
       - name: Upload test APK
         uses: actions/upload-artifact@v6
         with:
-          name: EduPunch-Test-Student-APK
-          path: EduPunch-Test-Student-APK.apk
+          name: EduPunch-Test-Admin-APK
+          path: EduPunch-Test-Admin-APK.apk
           if-no-files-found: error
           retention-days: 7
