@@ -116,7 +116,8 @@ $function$;
 revoke all on function public.student_session_revoke(text) from public;
 grant execute on function public.student_session_revoke(text) to anon;
 
--- Return the existing portal bundle only after bearer-token validation.
+-- Return the established portal bundle after validating the opaque session token.
+-- Calling the existing bundle preserves the production portal's current feature set.
 create or replace function public.student_portal_bundle_by_session(p_token text)
 returns jsonb
 language plpgsql
@@ -126,6 +127,8 @@ as $function$
 declare
   v_student_id uuid;
   s public.student_roster%rowtype;
+  v_dob_password text;
+  v_bundle jsonb;
 begin
   v_student_id := public.student_session_student_id(p_token);
   if v_student_id is null then
@@ -134,31 +137,69 @@ begin
 
   select * into s
     from public.student_roster
-   where id = v_student_id and school_code = 'ashiana' and status = 'ACTIVE';
+   where id = v_student_id
+     and school_code = 'ashiana'
+     and lower(coalesce(status, '')) = 'active';
   if not found then
     return jsonb_build_object('success', false, 'code', 'STUDENT_SESSION_EXPIRED');
   end if;
 
-  return jsonb_build_object(
-    'success', true,
-    'student', jsonb_build_object(
-      'id',s.id,'enroll_no',s.enroll_no,'student_name',s.student_name,
-      'class_name',s.class_name,'section',s.section,'roll_no',s.roll_no,
-      'gender',s.gender,'category',s.category,'status',s.status,'dob',s.dob,
-      'mother_name',s.mother_name,'father_name',s.father_name,'address',s.address,
-      'phone_number',s.phone_number,'mode_of_transport',s.mode_of_transport,
-      'photo_path',s.photo_path
-    ),
-    'attendance',(select coalesce(jsonb_agg(to_jsonb(a) order by a.attendance_date desc),'[]'::jsonb) from public.student_attendance a where a.school_code='ashiana' and a.student_id=s.id),
-    'notices',(select coalesce(jsonb_agg(to_jsonb(n) order by n.publish_at desc),'[]'::jsonb) from public.student_notices n where n.school_code='ashiana' and n.active and (n.class_name is null or n.class_name=s.class_name) and (n.section is null or n.section=s.section)),
-    'homework',(select coalesce(jsonb_agg(to_jsonb(h) order by h.due_date nulls last,h.created_at desc),'[]'::jsonb) from public.student_homework h where h.school_code='ashiana' and h.active and h.class_name=s.class_name and h.section=s.section),
-    'timetable',(select coalesce(jsonb_agg(to_jsonb(t) order by t.day_of_week,t.period_no),'[]'::jsonb) from public.student_timetable t where t.school_code='ashiana' and t.active and t.class_name=s.class_name and t.section=s.section),
-    'leave_requests',(select coalesce(jsonb_agg(to_jsonb(l) order by l.created_at desc),'[]'::jsonb) from public.student_leave_requests l where l.school_code='ashiana' and l.student_id=s.id),
-    'report_cards',(select coalesce(jsonb_agg(to_jsonb(r) order by r.academic_year desc,r.term desc),'[]'::jsonb) from public.student_report_cards r where r.school_code='ashiana' and r.student_id=s.id and r.published),
-    'calendar',(select coalesce(jsonb_agg(to_jsonb(c) order by c.event_date),'[]'::jsonb) from public.student_calendar_events c where c.school_code='ashiana' and c.active and (c.class_name is null or c.class_name=s.class_name) and (c.section is null or c.section=s.section))
-  );
+  v_dob_password := to_char(s.dob, 'DDMMYYYY');
+  v_bundle := public.student_portal_bundle(s.enroll_no, v_dob_password);
+  if coalesce((v_bundle->>'success')::boolean, false) is not true then
+    return jsonb_build_object('success', false, 'code', 'STUDENT_SESSION_EXPIRED');
+  end if;
+  return v_bundle;
 end;
 $function$;
 
 revoke all on function public.student_portal_bundle_by_session(text) from public;
 grant execute on function public.student_portal_bundle_by_session(text) to anon;
+
+-- Reuse the existing, production-tested leave function when it exists. The
+-- test project may not have that feature installed yet, so the migration still
+-- installs safely there without referencing a missing function at creation time.
+create or replace function public.student_submit_leave_by_session(
+  p_token text,
+  p_from_date date,
+  p_to_date date,
+  p_reason text
+)
+returns jsonb
+language plpgsql
+security definer
+set search_path = ''
+as $function$
+declare
+  v_student_id uuid;
+  s public.student_roster%rowtype;
+  v_result jsonb;
+begin
+  v_student_id := public.student_session_student_id(p_token);
+  if v_student_id is null then
+    return jsonb_build_object('success', false, 'code', 'STUDENT_SESSION_EXPIRED', 'message', 'Please sign in again.');
+  end if;
+  select * into s from public.student_roster
+   where id = v_student_id and school_code = 'ashiana'
+     and lower(coalesce(status, '')) = 'active';
+  if not found then
+    return jsonb_build_object('success', false, 'code', 'STUDENT_SESSION_EXPIRED', 'message', 'Please sign in again.');
+  end if;
+  if p_from_date is null or p_to_date is null or p_from_date > p_to_date
+     or nullif(btrim(p_reason), '') is null then
+    return jsonb_build_object('success', false, 'message', 'Please provide valid leave dates and reason.');
+  end if;
+
+  if to_regprocedure('public.student_submit_leave(text,text,date,date,text)') is null then
+    return jsonb_build_object('success', false, 'code', 'FEATURE_UNAVAILABLE', 'message', 'Leave requests are not configured on this environment.');
+  end if;
+
+  execute 'select public.student_submit_leave($1,$2,$3,$4,$5)'
+    into v_result
+    using s.enroll_no, to_char(s.dob, 'DDMMYYYY'), p_from_date, p_to_date, p_reason;
+  return coalesce(v_result, jsonb_build_object('success', false, 'message', 'Leave request failed.'));
+end;
+$function$;
+
+revoke all on function public.student_submit_leave_by_session(text,date,date,text) from public;
+grant execute on function public.student_submit_leave_by_session(text,date,date,text) to anon;
