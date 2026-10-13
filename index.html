@@ -4504,7 +4504,8 @@
             type: 'STUDENT',
             studentRecord: bundleData.student,
             portalData: bundleData
-          };          sessionStorage.setItem("aps_student_session_v1", JSON.stringify(restoredStudentUser));
+          };
+          sessionStorage.setItem("aps_student_session_v1", JSON.stringify(restoredStudentUser));
           sessionStorage.setItem(STORAGE_KEY_CURRENT_USER, JSON.stringify(restoredStudentUser));
           sessionStorage.removeItem("aps_login_handoff_v1");
           currentAuthUser = restoredStudentUser;
@@ -4629,7 +4630,7 @@
         sessionStorage.removeItem(STORAGE_KEY_CURRENT_USER);
         if (String(e?.message || '').includes('STUDENT_SESSION_EXPIRED') ||
             String(e?.message || '').includes('STUDENT_SESSION_INVALID')) {
-          try { localStorage.removeItem("aps_student_session_v1"); sessionStorage.removeItem("aps_student_session_v1"); } catch (_) {}
+          try { localStorage.removeItem("aps_student_session_v1"); sessionStorage.removeItem("aps_student_session_v1"); sessionStorage.removeItem("aps_student_session_token_v1"); } catch (_) {}
           try { await window.AshianaNative?.clearStudentSessionToken?.(); } catch (_) {}
         }
         return false;
