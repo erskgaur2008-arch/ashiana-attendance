@@ -42,7 +42,7 @@ begin
        select 1 from public.student_roster s
        where s.id = t.student_id
          and s.school_code = 'ashiana'
-         and s.status = 'ACTIVE'
+         and lower(coalesce(s.status, '')) = 'active'
      )
   returning student_id into v_student_id;
 
@@ -51,6 +51,7 @@ end;
 $function$;
 
 revoke all on function public.student_session_student_id(text) from public, anon, authenticated;
+grant execute on function public.student_session_student_id(text) to service_role;
 
 -- Login exchanges the existing DOB check for a random 30-day session token.
 create or replace function public.student_session_start(
