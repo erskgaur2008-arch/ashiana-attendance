@@ -16,20 +16,27 @@ create index if not exists student_session_tokens_student_active_idx
   on public.student_session_tokens(student_id, expires_at)
   where revoked_at is null;
 
-create table if not exists public.student_leave_requests (
-  id uuid primary key default gen_random_uuid(),
-  school_code text not null default 'ashiana',
-  student_id uuid not null references public.student_roster(id) on delete cascade,
-  enroll_no text not null,
-  from_date date not null,
-  to_date date not null,
-  reason text not null,
-  status text not null default 'PENDING',
-  created_at timestamptz not null default now()
-);
-
-alter table public.student_leave_requests enable row level security;
-revoke all on public.student_leave_requests from public, anon, authenticated;
+-- Create the minimal leave table only on test/legacy schemas that do not
+-- already have the school's leave table. Never alter grants on an existing table.
+do $create_test_leave_table$
+begin
+  if to_regclass('public.student_leave_requests') is null then
+    create table public.student_leave_requests (
+      id uuid primary key default gen_random_uuid(),
+      school_code text not null default 'ashiana',
+      student_id uuid not null references public.student_roster(id) on delete cascade,
+      enroll_no text not null,
+      from_date date not null,
+      to_date date not null,
+      reason text not null,
+      status text not null default 'PENDING',
+      created_at timestamptz not null default now()
+    );
+    alter table public.student_leave_requests enable row level security;
+    revoke all on public.student_leave_requests from public, anon, authenticated;
+  end if;
+end;
+$create_test_leave_table$;
 
 alter table public.student_session_tokens enable row level security;
 revoke all on public.student_session_tokens from public, anon, authenticated;
