@@ -1211,6 +1211,11 @@
             <i data-lucide="log-in" class="w-4 h-4"></i>
             <span>Sign In to Staff App</span>
           </button>
+          <button type="button" id="staff-biometric-login-button" onclick="window.__ashianaBiometricStaffLogin()" style="display:none" class="w-full py-2.5 mt-1 bg-emerald-50 hover:bg-emerald-100 border border-emerald-200 text-emerald-800 font-bold rounded-xl text-xs flex items-center justify-center space-x-2 active:scale-[0.99] transition-all">
+            <i data-lucide="fingerprint" class="w-4 h-4"></i>
+            <span>Sign In with Fingerprint</span>
+          </button>
+          <button type="button" id="staff-biometric-disable-button" onclick="window.__ashianaDisableStaffBiometric()" style="display:none" class="w-full py-1.5 text-[10px] font-semibold text-slate-500 hover:text-red-600">Remove fingerprint login from this phone</button>
           <button type="button" onclick="openStaffPinResetModal()" class="w-full py-2.5 mt-1 bg-red-50 hover:bg-red-100 border border-red-200 text-red-600 hover:text-red-700 font-bold rounded-xl text-xs flex items-center justify-center space-x-2 active:scale-[0.99] transition-all">
             <i data-lucide="key-round" class="w-4 h-4"></i>
             <span>Reset PIN</span>
@@ -1537,6 +1542,26 @@
               } else {
                 throw new Error("Staff authentication returned no secure session.");
               }
+              window.__ashianaBiometricLoginPending = false;
+
+              // Offer optional biometric enrollment only after the server has
+              // accepted the current PIN and issued a valid staff session.
+              // Enrollment failures never block the existing PIN login.
+              try {
+                if (window.AshianaNative?.isAndroid?.() && await window.AshianaNative.staffBiometricAvailable()) {
+                  await window.AshianaNative.prepareStaffBiometricAccount(loginResult.staff.id);
+                  var enrolled = await window.AshianaNative.hasStaffBiometricEnrollment(loginResult.staff.id);
+                  if (!enrolled && window.confirm("Enable fingerprint sign-in for this staff account on this phone? Your current PIN will remain available as a fallback.")) {
+                    await window.AshianaNative.enableStaffBiometric({
+                      staffId: loginResult.staff.id,
+                      loginId: loginId,
+                      pin: pin
+                    });
+                  }
+                }
+              } catch (biometricEnrollError) {
+                console.warn("Staff biometric enrollment was not completed:", biometricEnrollError?.message || biometricEnrollError);
+              }
 
               var staff = loginResult.staff;
               var pendingStaffUser = {
@@ -1703,7 +1728,18 @@
             throw new Error("Unknown login role.");
           } catch (err) {
             console.error("Ashiana standalone login error:", err);
-            var message = String(err?.message || err || "Login failed.");
+            var biometricAttempt = Boolean(window.__ashianaBiometricLoginPending);
+            window.__ashianaBiometricLoginPending = false;
+            if (biometricAttempt) {
+              try { await window.AshianaNative?.disableStaffBiometric?.(); } catch (_) {}
+              var staleBiometricButton = document.getElementById("staff-biometric-login-button");
+              var staleDisableButton = document.getElementById("staff-biometric-disable-button");
+              if (staleBiometricButton) staleBiometricButton.style.display = "none";
+              if (staleDisableButton) staleDisableButton.style.display = "none";
+            }
+            var message = biometricAttempt
+              ? "Fingerprint sign-in could not verify the saved PIN. Sign in with your current 4-digit PIN and enable fingerprint login again."
+              : String(err?.message || err || "Login failed.");
             if (message.includes("RATE_LIMIT")) {
               message = "Too many PIN attempts. Please wait a few minutes and try again.";
             } else if (message.includes("ID_CARD_EXPIRED")) {
@@ -1736,6 +1772,64 @@
 
         window.__ashianaStandaloneLogin = ashianaStandaloneLogin;
 
+        window.__ashianaBiometricStaffLogin = async function () {
+          var button = document.getElementById("staff-biometric-login-button");
+          if (window.__ashianaLoginBusy) return false;
+          try {
+            if (!window.AshianaNative?.isAndroid?.()) throw new Error("Fingerprint sign-in is available only in the Android app.");
+            if (button) { button.disabled = true; button.style.opacity = "0.65"; }
+            var credentials = await window.AshianaNative.getStaffBiometricCredentials();
+            window.__ashianaBiometricLoginPending = true;
+            var idInput = document.getElementById("teacher-login-id");
+            var pinInput = document.getElementById("teacher-login-pin");
+            if (!idInput || !pinInput) throw new Error("Staff login form is unavailable.");
+            idInput.value = credentials.loginId;
+            pinInput.value = credentials.pin;
+            var form = document.getElementById("teacher-login-form");
+            if (!form) throw new Error("Staff login form is unavailable.");
+            if (typeof form.requestSubmit === "function") form.requestSubmit();
+            else form.dispatchEvent(new Event("submit", { bubbles: true, cancelable: true }));
+          } catch (error) {
+            ashianaLoginMessage(error?.message || "Fingerprint sign-in failed. Please use your 4-digit PIN.", "error");
+          } finally {
+            if (button) { button.disabled = false; button.style.opacity = ""; }
+          }
+          return false;
+        };
+
+        window.__ashianaDisableStaffBiometric = async function () {
+          try {
+            if (window.confirm("Remove fingerprint sign-in saved for this staff account on this phone? Your PIN will continue to work.")) {
+              await window.AshianaNative?.disableStaffBiometric?.();
+              var biometricButton = document.getElementById("staff-biometric-login-button");
+              var disableButton = document.getElementById("staff-biometric-disable-button");
+              if (biometricButton) biometricButton.style.display = "none";
+              if (disableButton) disableButton.style.display = "none";
+              ashianaLoginMessage("Fingerprint sign-in removed. You can still sign in with your PIN.", "info");
+            }
+          } catch (error) {
+            ashianaLoginMessage(error?.message || "Could not remove fingerprint sign-in.", "error");
+          }
+          return false;
+        };
+
+        async function updateAshianaBiometricLoginButtons() {
+          var biometricButton = document.getElementById("staff-biometric-login-button");
+          var disableButton = document.getElementById("staff-biometric-disable-button");
+          if (!biometricButton || !window.AshianaNative?.isAndroid?.()) return;
+          try {
+            var available = await window.AshianaNative.staffBiometricAvailable();
+            var enrolled = available && await window.AshianaNative.hasStaffBiometricEnrollment();
+            biometricButton.style.display = enrolled ? "flex" : "none";
+            if (disableButton) disableButton.style.display = enrolled ? "block" : "none";
+          } catch (_) {}
+        }
+        if (document.readyState === "loading") {
+          document.addEventListener("DOMContentLoaded", updateAshianaBiometricLoginButtons, { once: true });
+        } else {
+          updateAshianaBiometricLoginButtons();
+        }
+        window.addEventListener("pageshow", updateAshianaBiometricLoginButtons);
 
         function bindAshianaLoginRole() {
           var selector = document.getElementById("login-role-select");
