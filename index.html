@@ -11934,8 +11934,8 @@ function addMessage(text,type){
   async function registerStudentPush(options){
     const client=options?.client;
     const admissionNo=String(options?.admissionNo||'').trim().toUpperCase();
-    const dobPassword=String(options?.dobPassword||'').replace(/\\D/g,'');
-    if(!client?.functions?.invoke||!admissionNo||!/^\\d{8}$/.test(dobPassword))return;
+    const dobPassword=String(options?.dobPassword||'').replace(/\D/g,'');
+    if(!client?.functions?.invoke||!admissionNo||!/^\d{8}$/.test(dobPassword))return;
     const native=Boolean(window.AshianaNative?.isAndroid?.());
     if(native){
       if(!window.AshianaNative?.registerPushNotifications)return;
