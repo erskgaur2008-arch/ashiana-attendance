@@ -43,21 +43,17 @@ jobs:
           cp sw.js mobile/www/
           cp "logo 2.png" mobile/www/
           cp -R assets/vendor/. mobile/www/assets/vendor
-          python3 - <<'PY'
+          cat > /tmp/prepare_test_admin.py <<'PYTHON_SCRIPT'
           import os
           from pathlib import Path
-
           path = Path("mobile/www/index.html")
           html = path.read_text()
           role = os.environ["APP_ROLE"]
           anchor = '  <script src="./assets/vendor/supabase.js"></script>'
           if html.count(anchor) != 1:
               raise SystemExit("Could not find expected Supabase script insertion point")
-          additions = anchor + '\n  <script>try{const u=new URL(window.location.href);u.searchParams.set("login","' + role + '");history.replaceState(null,"",u.toString());}catch(e){}</script>'
+          additions = anchor + '\\n  <script>try{const u=new URL(window.location.href);u.searchParams.set("login","' + role + '");history.replaceState(null,"",u.toString());}catch(e){}</script>'
           html = html.replace(anchor, additions, 1)
-
-          # Replace every known production Supabase endpoint/key in this build copy only.
-          # Rewrite known production backend identifiers only in this generated build copy.
           html = html.replace("https://oalfzgluqroqbbrulhpr.supabase.co", os.environ["TEST_SUPABASE_URL"])
           html = html.replace("sb_publishable_PND9f9FKbNrxlEakSgLKYA_5EsqLHkg", os.environ["TEST_SUPABASE_ANON_KEY"])
           html = html.replace("sb-oalfzgluqroqbbrulhpr-auth-token", "sb-goztsnvscanozcfjzwxy-auth-token")
@@ -70,11 +66,12 @@ jobs:
               raise SystemExit("Safety check failed: EduPunch-Test Supabase configuration was not injected")
           if "sb-goztsnvscanozcfjzwxy-auth-token" not in html:
               raise SystemExit("Safety check failed: test-specific auth storage key was not injected")
+          if not Path("mobile/www/assets/vendor/supabase.js").is_file():
+              raise SystemExit("Supabase client bundle is missing")
           path.write_text(html)
-          print("Safety check passed: generated admin bundle uses EduPunch-Test URL, key and auth storage namespace.")
-          PY
-          test -s mobile/www/assets/vendor/supabase.js
-
+          print("Safety check passed: EduPunch-Test backend and auth namespace configured.")
+          PYTHON_SCRIPT
+          python3 /tmp/prepare_test_admin.py
       - name: Install dependencies
         shell: bash
         run: |
