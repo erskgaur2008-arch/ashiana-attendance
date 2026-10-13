@@ -72,6 +72,7 @@ jobs:
               raise SystemExit("Safety check failed: test-specific auth storage key was not injected")
           path.write_text(html)
           print("Safety check passed: generated admin bundle uses EduPunch-Test URL, key and auth storage namespace.")
+          PY
           test -s mobile/www/assets/vendor/supabase.js
 
       - name: Install dependencies
