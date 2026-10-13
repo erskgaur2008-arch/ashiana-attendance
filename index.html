@@ -1783,7 +1783,7 @@
           var pin = String(document.getElementById("teacher-login-pin")?.value || "").trim();
           try {
             if (!window.AshianaNative?.isAndroid?.()) throw new Error("Fingerprint registration is available only in the installed Android APK.");
-            if (!loginId || !/^\\d{4}$/.test(pin)) throw new Error("Enter your staff Employee ID/email and current 4-digit PIN first.");
+            if (!loginId || !/^\d{4}$/.test(pin)) throw new Error("Enter your staff Employee ID/email and current 4-digit PIN first.");
             if (!await window.AshianaNative.staffBiometricAvailable()) throw new Error("No device biometric is available. First register a fingerprint or supported biometric in Android Settings.");
             if (button) { button.disabled = true; button.style.opacity = "0.65"; button.querySelector("span").textContent = "Verifying staff account…"; }
 
@@ -1882,7 +1882,9 @@
           }
           try {
             var available = await window.AshianaNative.staffBiometricAvailable();
-            if (registerButton) registerButton.style.display = available ? "flex" : "none";
+            // Always expose registration on Android so staff can see a helpful
+            // message if they have not enrolled a fingerprint in Android Settings yet.
+            if (registerButton) registerButton.style.display = "flex";
             var enrolled = available && await window.AshianaNative.hasStaffBiometricEnrollment();
             if (biometricButton) biometricButton.style.display = enrolled ? "flex" : "none";
             if (disableButton) disableButton.style.display = enrolled ? "block" : "none";
