@@ -23,26 +23,21 @@ jobs:
     env:
       TEST_SUPABASE_URL: https://goztsnvscanozcfjzwxy.supabase.co
       TEST_SUPABASE_ANON_KEY: sb_publishable_bLByB1N3ESh_5ncJ-yh3_Q_DkBpoGHh
-      TEST_SESSION_TOKEN: ${{ secrets.EDUPUNCH_TEST_STUDENT_SESSION_TOKEN }}
+      TEST_SCHOOL_CODE: ${{ secrets.EDUPUNCH_TEST_SCHOOL_CODE }}
+      TEST_ENROLL_NO: ${{ secrets.EDUPUNCH_TEST_STUDENT_ENROLL_NO }}
+      TEST_DOB_PASSWORD: ${{ secrets.EDUPUNCH_TEST_STUDENT_DOB_PASSWORD }}
       FROM_DATE: ${{ inputs.from_date }}
       TO_DATE: ${{ inputs.to_date }}
     steps:
-      - name: Validate test-only target, session, and dates
+      - name: Validate test-only target and test credentials
         shell: bash
         run: |
           set -euo pipefail
-          if [[ "$TEST_SUPABASE_URL" != "https://goztsnvscanozcfjzwxy.supabase.co" ]]; then
-            echo "::error::Safety check failed: endpoint is not EduPunch-Test."
+          [[ "$TEST_SUPABASE_URL" == "https://goztsnvscanozcfjzwxy.supabase.co" ]] || { echo "::error::Not EduPunch-Test."; exit 1; }
+          [[ -n "$TEST_SCHOOL_CODE" && -n "$TEST_ENROLL_NO" && -n "$TEST_DOB_PASSWORD" ]] || {
+            echo "::error::Missing one or more repository Actions secrets: EDUPUNCH_TEST_SCHOOL_CODE, EDUPUNCH_TEST_STUDENT_ENROLL_NO, EDUPUNCH_TEST_STUDENT_DOB_PASSWORD. Use a dedicated test student only. Never place credentials in workflow code or chat."
             exit 1
-          fi
-          if [[ -z "$TEST_SESSION_TOKEN" ]]; then
-            echo "::error::Missing repository Actions secret EDUPUNCH_TEST_STUDENT_SESSION_TOKEN. Add a valid session token from EduPunch-Test in Settings > Secrets and variables > Actions. Do not put it in code or logs."
-            exit 1
-          fi
-          if ! [[ "$TEST_SESSION_TOKEN" =~ ^[a-fA-F0-9]{64}$ ]]; then
-            echo "::error::The configured test session token does not match the expected 64-character hex format. Refresh the test student's session and update the secret securely."
-            exit 1
-          fi
+          }
           python3 - <<'PY'
           import os
           from datetime import date
@@ -50,16 +45,45 @@ jobs:
           end = date.fromisoformat(os.environ["TO_DATE"])
           if start > end:
               raise SystemExit("Start date must be on or before end date.")
-          print("Dates are valid. Target is EduPunch-Test only.")
+          print("Date format and order valid; target is EduPunch-Test.")
           PY
-          echo "Session secret is present; its value will not be printed."
+
+      - name: Start a temporary test student session
+        shell: bash
+        run: |
+          set -euo pipefail
+          workdir="$(mktemp -d)"
+          trap 'rm -rf "$workdir"' EXIT
+          payload="$(jq -cn --arg school "$TEST_SCHOOL_CODE" --arg enroll "$TEST_ENROLL_NO" --arg dob "$TEST_DOB_PASSWORD" '{p_school_code:$school,p_enroll_no:$enroll,p_dob_password:$dob}')"
+          code="$(curl --silent --show-error --output "$workdir/login.json" --write-out '%{http_code}'             --request POST             --url "$TEST_SUPABASE_URL/rest/v1/rpc/student_session_start"             --header "apikey: $TEST_SUPABASE_ANON_KEY"             --header "Authorization: Bearer $TEST_SUPABASE_ANON_KEY"             --header "Content-Type: application/json"             --data "$payload")"
+          if [[ "$code" != "200" ]]; then
+            echo "::error::Test student login RPC failed with HTTP $code."
+            exit 1
+          fi
+          token="$(jq -er 'select(.success == true) | .session_token' "$workdir/login.json")" || {
+            echo "::error::Test student login did not return a session. Check the dedicated EduPunch-Test account and credentials."
+            exit 1
+          }
+          if ! [[ "$token" =~ ^[a-fA-F0-9]{64}$ ]]; then
+            echo "::error::Unexpected session token format; refusing to continue."
+            exit 1
+          fi
+          echo "::add-mask::$token"
+          echo "TEST_SESSION_TOKEN=$token" >> "$GITHUB_ENV"
+          echo "Temporary test session created. Token value not printed."
 
       - name: Send two leave requests concurrently
         shell: bash
         run: |
           set -euo pipefail
           workdir="$(mktemp -d)"
-          trap 'rm -rf "$workdir"' EXIT
+          cleanup() {
+            if [[ -n "${TEST_SESSION_TOKEN:-}" ]]; then
+              curl --silent --show-error --max-time 10                 --request POST                 --url "$TEST_SUPABASE_URL/rest/v1/rpc/student_session_revoke"                 --header "apikey: $TEST_SUPABASE_ANON_KEY"                 --header "Authorization: Bearer $TEST_SUPABASE_ANON_KEY"                 --header "Content-Type: application/json"                 --data "$(jq -cn --arg token "$TEST_SESSION_TOKEN" '{p_token:$token}')"                 >/dev/null || true
+            fi
+            rm -rf "$workdir"
+          }
+          trap cleanup EXIT
 
           send_request() {
             local output="$1"
@@ -67,7 +91,7 @@ jobs:
             curl --silent --show-error               --output "$output.json"               --write-out '%{http_code}'               --request POST               --url "$TEST_SUPABASE_URL/rest/v1/rpc/student_submit_leave_by_session"               --header "apikey: $TEST_SUPABASE_ANON_KEY"               --header "Authorization: Bearer $TEST_SUPABASE_ANON_KEY"               --header "Content-Type: application/json"               --data "$(jq -cn --arg token "$TEST_SESSION_TOKEN" --arg from "$FROM_DATE" --arg to "$TO_DATE" --arg reason "$reason" '{p_token:$token,p_from_date:$from,p_to_date:$to,p_reason:$reason}')"               > "$output.status"
           }
 
-          # Launch both HTTP calls before waiting for either to finish.
+          # Start both requests before waiting for either one.
           send_request "$workdir/a" "Automated concurrency test A" &
           pid_a=$!
           send_request "$workdir/b" "Automated concurrency test B" &
@@ -79,7 +103,6 @@ jobs:
           status_b="$(cat "$workdir/b.status")"
           success_a="$(jq -r 'if type == "object" then (.success // false) else false end' "$workdir/a.json")"
           success_b="$(jq -r 'if type == "object" then (.success // false) else false end' "$workdir/b.json")"
-
           echo "HTTP status A: $status_a; success A: $success_a"
           echo "HTTP status B: $status_b; success B: $success_b"
           echo "Response A: $(jq -c 'if type == "object" then {success:(.success // false),code:(.code // null),message:(.message // null)} else {response_type:(type)} end' "$workdir/a.json")"
@@ -88,9 +111,10 @@ jobs:
           if [[ "$success_a" == "true" && "$success_b" == "false" ]] || [[ "$success_a" == "false" && "$success_b" == "true" ]]; then
             echo "PASS: exactly one concurrent request succeeded and one was rejected."
           else
-            echo "::error::FAIL: expected exactly one success and one rejection. Do not rerun on the same dates until the test records have been inspected."
+            echo "::error::FAIL: expected exactly one success and one rejection. Inspect test records before retrying; the accepted request may already be saved."
             exit 1
           fi
 
-      - name: Reminder to verify saved row count
-        run: echo "Before marking the test fully passed, verify in EduPunch-Test that exactly one pending row exists for this student and the selected date range."
+      - name: Row-count verification reminder
+        if: always()
+        run: echo "Before declaring full PASS, verify in EduPunch-Test that exactly one pending request exists for the test student and date range. The temporary session is revoked by the test step cleanup."
