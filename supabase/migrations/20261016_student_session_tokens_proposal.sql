@@ -115,7 +115,7 @@ begin
 end;
 $function$;
 
-revoke all on function public.student_session_start(text,text,text) from public;
+revoke all on function public.student_session_start(text,text,text) from public, authenticated;
 grant execute on function public.student_session_start(text,text,text) to anon;
 
 create or replace function public.student_session_revoke(p_token text)
@@ -136,7 +136,7 @@ begin
 end;
 $function$;
 
-revoke all on function public.student_session_revoke(text) from public;
+revoke all on function public.student_session_revoke(text) from public, authenticated;
 grant execute on function public.student_session_revoke(text) to anon;
 
 -- Return the established portal bundle after validating the opaque session token.
@@ -185,7 +185,7 @@ begin
 end;
 $function$;
 
-revoke all on function public.student_portal_bundle_by_session(text) from public;
+revoke all on function public.student_portal_bundle_by_session(text) from public, authenticated;
 grant execute on function public.student_portal_bundle_by_session(text) to anon;
 
 -- Reuse the existing, production-tested leave function when it exists. The
@@ -242,5 +242,5 @@ begin
 end;
 $function$;
 
-revoke all on function public.student_submit_leave_by_session(text,date,date,text) from public;
+revoke all on function public.student_submit_leave_by_session(text,date,date,text) from public, authenticated;
 grant execute on function public.student_submit_leave_by_session(text,date,date,text) to anon;
