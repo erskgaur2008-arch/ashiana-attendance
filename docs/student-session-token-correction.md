@@ -9,7 +9,7 @@ This branch is isolated from production. The token migration and updated `studen
 - Session restore, portal bundle, leave submission, photo access, and logout use the session token.
 - Token validation rejects malformed, expired, revoked, and inactive-student sessions.
 
-## User-confirmed Android regression results (2026-10-14)
+## User-confirmed Android regression results (2026-10-14; latest APK build from commit `00185aa`)
 - Student login: **PASS**
 - Fully close/reopen app and restore Dashboard: **PASS**
 - Dashboard refresh: **PASS**
@@ -17,6 +17,8 @@ This branch is isolated from production. The token migration and updated `studen
 - Student photo and ID card load: **PASS**
 - Logout and fresh login: **PASS**
 - Push notifications: **PASS**
+- Fresh APK build for current head commit `00185aa185e0352e371d04d9f3e73a3a227ff3ea`: **PASS** (GitHub Actions run #24; one artifact; user installed and tested this APK)
+- Latest APK re-test: **ALL PASS** — session persistence, dashboard refresh, leave submission and overlap rejection, student photo/ID card, push notifications, logout/login.
 
 ## EduPunch-Test database security results (2026-10-14)
 - Valid session restore and leave submission: **PASS**
