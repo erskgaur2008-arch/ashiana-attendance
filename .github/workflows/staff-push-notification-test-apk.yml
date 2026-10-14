@@ -107,8 +107,8 @@ jobs:
           from pathlib import Path
           path = Path("capacitor.config.ts")
           source = path.read_text()
-          old = 'student: { appId: "com.ashianapublicschool.attendance.student", appName: "Ashiana Student" }'
-          new = 'student: { appId: "com.ashianapublicschool.attendance.staff.test", appName: "Ashiana Staff Test" }'
+          old = 'staff: { appId: "com.ashianapublicschool.attendance.staff", appName: "Ashiana Staff" }'
+          new = 'staff: { appId: "com.ashianapublicschool.attendance.staff.test", appName: "Ashiana Staff Test" }'
           if source.count(old) != 1:
               raise SystemExit("Expected staff app ID mapping was not found exactly once")
           path.write_text(source.replace(old, new, 1))
@@ -140,7 +140,7 @@ jobs:
           if not project_id:
               raise SystemExit("Firebase config is missing project_info.project_id")
           if "com.ashianapublicschool.attendance.staff.test" not in package_names:
-              raise SystemExit("Firebase config does not include the test student APK package name")
+              raise SystemExit("Firebase config does not include the test staff APK package name")
           print("Firebase config validated for the staff package.")
           PY
           python3 - <<'PY'
