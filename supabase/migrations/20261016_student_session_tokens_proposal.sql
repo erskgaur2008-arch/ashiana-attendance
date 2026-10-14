@@ -188,9 +188,10 @@ $function$;
 revoke all on function public.student_portal_bundle_by_session(text) from public, authenticated;
 grant execute on function public.student_portal_bundle_by_session(text) to anon;
 
--- Reuse the existing, production-tested leave function when it exists. The
--- test project may not have that feature installed yet, so the migration still
--- installs safely there without referencing a missing function at creation time.
+-- Reuse the existing leave function when present, but serialize session-based
+-- submissions and check for overlaps first. Keep this lock here as well because
+-- this migration sorts after 20261014_student_leave_overlap_lock.sql; otherwise
+-- a fresh migration run would overwrite the concurrency protection.
 create or replace function public.student_submit_leave_by_session(
   p_token text,
   p_from_date date,
@@ -211,25 +212,38 @@ begin
   if v_student_id is null then
     return jsonb_build_object('success', false, 'code', 'STUDENT_SESSION_EXPIRED', 'message', 'Please sign in again.');
   end if;
+
   select * into s from public.student_roster
    where id = v_student_id and school_code = 'ashiana'
      and lower(coalesce(status, '')) = 'active';
   if not found then
     return jsonb_build_object('success', false, 'code', 'STUDENT_SESSION_EXPIRED', 'message', 'Please sign in again.');
   end if;
+
   if p_from_date is null or p_to_date is null or p_from_date > p_to_date
      or nullif(btrim(p_reason), '') is null then
     return jsonb_build_object('success', false, 'message', 'Please provide valid leave dates and reason.');
   end if;
 
+  -- Serialize overlap-check plus insert/delegation for this student.
+  perform pg_catalog.pg_advisory_xact_lock(
+    pg_catalog.hashtextextended(s.id::text, 0)
+  );
+
+  if exists (
+    select 1 from public.student_leave_requests l
+     where l.student_id = s.id
+       and upper(coalesce(l.status, '')) = 'PENDING'
+       and l.from_date <= p_to_date
+       and l.to_date >= p_from_date
+  ) then
+    return jsonb_build_object(
+      'success', false,
+      'message', 'A leave request for these dates is already pending.'
+    );
+  end if;
+
   if to_regprocedure('public.student_submit_leave(text,text,date,date,text)') is null then
-    if exists (
-      select 1 from public.student_leave_requests l
-       where l.student_id = s.id and l.status = 'PENDING'
-         and l.from_date <= p_to_date and l.to_date >= p_from_date
-    ) then
-      return jsonb_build_object('success', false, 'message', 'A leave request for these dates is already pending.');
-    end if;
     insert into public.student_leave_requests(school_code, student_id, enroll_no, from_date, to_date, reason, status)
     values ('ashiana', s.id, s.enroll_no, p_from_date, p_to_date, btrim(p_reason), 'PENDING');
     return jsonb_build_object('success', true, 'message', 'Leave request submitted.');
