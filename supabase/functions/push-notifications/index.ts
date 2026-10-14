@@ -257,7 +257,9 @@ Deno.serve(async (req: Request) => {
         .select("email").eq("status", "ACTIVE").ilike("email", callerEmail).limit(1);
       isActiveStaff = !staffError && Boolean(staffRows?.length);
     }
-    if (!isAdmin && !isActiveStaff) return json({ error: "ADMIN_OR_ACTIVE_STAFF_REQUIRED" }, 403);
+    if (!isAdmin && (!isActiveStaff || action !== "send-school-notice")) {
+      return json({ error: "ADMIN_OR_AUTHORIZED_STAFF_REQUIRED" }, 403);
+    }
 
     const category = String(body.category || (action === "send-school-notice" ? "school_notice" : ""));
     const title = String(body.title || "").trim().slice(0, 120);
