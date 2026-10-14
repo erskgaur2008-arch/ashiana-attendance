@@ -1,0 +1,35 @@
+
+name: Student Leave Concurrency Test
+
+on:
+  workflow_dispatch:
+    inputs:
+      from_date:
+        description: "Unused test start date (YYYY-MM-DD)"
+        required: true
+        type: string
+      to_date:
+        description: "Unused test end date (YYYY-MM-DD)"
+        required: true
+        type: string
+
+permissions:
+  contents: read
+
+jobs:
+  validate-test-configuration:
+    runs-on: ubuntu-latest
+    steps:
+      - name: Validate test inputs and test-only target
+        env:
+          TEST_URL: https://goztsnvscanozcfjzwxy.supabase.co
+          FROM_DATE: ${{ inputs.from_date }}
+          TO_DATE: ${{ inputs.to_date }}
+        run: |
+          set -euo pipefail
+          [[ "$TEST_URL" == "https://goztsnvscanozcfjzwxy.supabase.co" ]]
+          [[ "$FROM_DATE" =~ ^[0-9]{4}-[0-9]{2}-[0-9]{2}$ ]]
+          [[ "$TO_DATE" =~ ^[0-9]{4}-[0-9]{2}-[0-9]{2}$ ]]
+          [[ "$FROM_DATE" < "$TO_DATE" || "$FROM_DATE" == "$TO_DATE" ]]
+          echo "Input validation passed. Target is EduPunch-Test only."
+          echo "This workflow does not submit leave requests yet."
