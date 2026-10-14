@@ -1,15 +1,14 @@
-
 name: Student Leave Concurrency Test
 
 on:
   workflow_dispatch:
     inputs:
       from_date:
-        description: "Unused test start date (YYYY-MM-DD)"
+        description: "Unused start date in EduPunch-Test (YYYY-MM-DD)"
         required: true
         type: string
       to_date:
-        description: "Unused test end date (YYYY-MM-DD)"
+        description: "Unused end date in EduPunch-Test (YYYY-MM-DD)"
         required: true
         type: string
 
@@ -17,19 +16,81 @@ permissions:
   contents: read
 
 jobs:
-  validate-test-configuration:
+  concurrent-leave-test:
+    name: Send two overlapping requests concurrently to EduPunch-Test
     runs-on: ubuntu-latest
+    timeout-minutes: 5
+    env:
+      TEST_SUPABASE_URL: https://goztsnvscanozcfjzwxy.supabase.co
+      TEST_SUPABASE_ANON_KEY: sb_publishable_bLByB1N3ESh_5ncJ-yh3_Q_DkBpoGHh
+      TEST_SESSION_TOKEN: ${{ secrets.EDUPUNCH_TEST_STUDENT_SESSION_TOKEN }}
+      FROM_DATE: ${{ inputs.from_date }}
+      TO_DATE: ${{ inputs.to_date }}
     steps:
-      - name: Validate test inputs and test-only target
-        env:
-          TEST_URL: https://goztsnvscanozcfjzwxy.supabase.co
-          FROM_DATE: ${{ inputs.from_date }}
-          TO_DATE: ${{ inputs.to_date }}
+      - name: Validate test-only target, session, and dates
+        shell: bash
         run: |
           set -euo pipefail
-          [[ "$TEST_URL" == "https://goztsnvscanozcfjzwxy.supabase.co" ]]
-          [[ "$FROM_DATE" =~ ^[0-9]{4}-[0-9]{2}-[0-9]{2}$ ]]
-          [[ "$TO_DATE" =~ ^[0-9]{4}-[0-9]{2}-[0-9]{2}$ ]]
-          [[ "$FROM_DATE" < "$TO_DATE" || "$FROM_DATE" == "$TO_DATE" ]]
-          echo "Input validation passed. Target is EduPunch-Test only."
-          echo "This workflow does not submit leave requests yet."
+          if [[ "$TEST_SUPABASE_URL" != "https://goztsnvscanozcfjzwxy.supabase.co" ]]; then
+            echo "::error::Safety check failed: endpoint is not EduPunch-Test."
+            exit 1
+          fi
+          if [[ -z "$TEST_SESSION_TOKEN" ]]; then
+            echo "::error::Missing repository Actions secret EDUPUNCH_TEST_STUDENT_SESSION_TOKEN. Add a valid session token from EduPunch-Test in Settings > Secrets and variables > Actions. Do not put it in code or logs."
+            exit 1
+          fi
+          if ! [[ "$TEST_SESSION_TOKEN" =~ ^[a-fA-F0-9]{64}$ ]]; then
+            echo "::error::The configured test session token does not match the expected 64-character hex format. Refresh the test student's session and update the secret securely."
+            exit 1
+          fi
+          python3 - <<'PY'
+          import os
+          from datetime import date
+          start = date.fromisoformat(os.environ["FROM_DATE"])
+          end = date.fromisoformat(os.environ["TO_DATE"])
+          if start > end:
+              raise SystemExit("Start date must be on or before end date.")
+          print("Dates are valid. Target is EduPunch-Test only.")
+          PY
+          echo "Session secret is present; its value will not be printed."
+
+      - name: Send two leave requests concurrently
+        shell: bash
+        run: |
+          set -euo pipefail
+          workdir="$(mktemp -d)"
+          trap 'rm -rf "$workdir"' EXIT
+
+          send_request() {
+            local output="$1"
+            local reason="$2"
+            curl --silent --show-error               --output "$output.json"               --write-out '%{http_code}'               --request POST               --url "$TEST_SUPABASE_URL/rest/v1/rpc/student_submit_leave_by_session"               --header "apikey: $TEST_SUPABASE_ANON_KEY"               --header "Authorization: Bearer $TEST_SUPABASE_ANON_KEY"               --header "Content-Type: application/json"               --data "$(jq -cn --arg token "$TEST_SESSION_TOKEN" --arg from "$FROM_DATE" --arg to "$TO_DATE" --arg reason "$reason" '{p_token:$token,p_from_date:$from,p_to_date:$to,p_reason:$reason}')"               > "$output.status"
+          }
+
+          # Launch both HTTP calls before waiting for either to finish.
+          send_request "$workdir/a" "Automated concurrency test A" &
+          pid_a=$!
+          send_request "$workdir/b" "Automated concurrency test B" &
+          pid_b=$!
+          wait "$pid_a"
+          wait "$pid_b"
+
+          status_a="$(cat "$workdir/a.status")"
+          status_b="$(cat "$workdir/b.status")"
+          success_a="$(jq -r 'if type == "object" then (.success // false) else false end' "$workdir/a.json")"
+          success_b="$(jq -r 'if type == "object" then (.success // false) else false end' "$workdir/b.json")"
+
+          echo "HTTP status A: $status_a; success A: $success_a"
+          echo "HTTP status B: $status_b; success B: $success_b"
+          echo "Response A: $(jq -c 'if type == "object" then {success:(.success // false),code:(.code // null),message:(.message // null)} else {response_type:(type)} end' "$workdir/a.json")"
+          echo "Response B: $(jq -c 'if type == "object" then {success:(.success // false),code:(.code // null),message:(.message // null)} else {response_type:(type)} end' "$workdir/b.json")"
+
+          if [[ "$success_a" == "true" && "$success_b" == "false" ]] || [[ "$success_a" == "false" && "$success_b" == "true" ]]; then
+            echo "PASS: exactly one concurrent request succeeded and one was rejected."
+          else
+            echo "::error::FAIL: expected exactly one success and one rejection. Do not rerun on the same dates until the test records have been inspected."
+            exit 1
+          fi
+
+      - name: Reminder to verify saved row count
+        run: echo "Before marking the test fully passed, verify in EduPunch-Test that exactly one pending row exists for this student and the selected date range."
