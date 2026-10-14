@@ -5715,16 +5715,16 @@ async function studentDashboardSection(type){
   if(loading)loading.classList.remove("hidden");
   if(window.lucide)lucide.createIcons();
 
-  // Refresh from the same secure portal bundle used by the student login.
-  // This keeps teacher/admin changes visible without requiring logout/login.
+  // Refresh with the opaque student session token only; never reconstruct DOB credentials.
   try{
-    const s=currentAuthUser?.studentRecord;
-    if(s?.enroll_no&&s?.dob&&supabaseClient){
-      const dt=String(s.dob).slice(0,10).split("-");
-      const dobPassword=dt.length===3?dt[2]+dt[1]+dt[0]:"";
-      if(/^\d{8}$/.test(dobPassword)){
-        const {data}=await supabaseClient.rpc("student_portal_bundle",{p_enroll_no:s.enroll_no,p_dob_password:dobPassword});
-        if(data?.success){currentAuthUser.portalData=data;}
+    const token=String(await window.AshianaNative?.getStudentSessionToken?.() || sessionStorage.getItem("aps_student_session_token_v1") || "");
+    if(/^[a-f0-9]{64}$/i.test(token)&&supabaseClient){
+      const {data,error}=await supabaseClient.rpc("student_portal_bundle_by_session",{p_token:token});
+      if(!error&&data?.success&&data?.student){
+        currentAuthUser.portalData=data;
+        currentAuthUser.studentRecord=data.student;
+      }else if(error){
+        console.warn("Student portal refresh failed:",error.message||error);
       }
     }
   }catch(e){console.warn("Student portal refresh failed:",e);}
