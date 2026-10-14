@@ -68,45 +68,51 @@ async function registerPushNotifications() {
 }
 
 
-const STUDENT_SESSION_STORAGE_KEY = "credentials";
-const STUDENT_SESSION_STORAGE_PREFIX = "ashiana_student_session_v1_";
+const STUDENT_SESSION_STORAGE_KEY = "session_token";
+const STUDENT_SESSION_STORAGE_PREFIX = "ashiana_student_session_v2_";
 
 async function setStudentSessionStoragePrefix() {
   await SecureStorage.setKeyPrefix(STUDENT_SESSION_STORAGE_PREFIX);
 }
 
-async function saveStudentSessionCredentials({ admissionNo, dobPassword }) {
+async function saveStudentSessionToken(token) {
   if (!isNativeAndroid()) throw new Error("Secure student session storage is available only in the Android app.");
-  const admission = String(admissionNo || "").trim().toUpperCase();
-  const dob = String(dobPassword || "").trim();
-  if (!admission || !/^\\d{8}$/.test(dob)) throw new Error("Student session credentials are invalid.");
+  const value = String(token || "").trim();
+  if (!/^[a-f0-9]{64}$/i.test(value)) throw new Error("Student session token is invalid.");
   await setStudentSessionStoragePrefix();
-  await SecureStorage.set(STUDENT_SESSION_STORAGE_KEY, {
-    admissionNo: admission,
-    dobPassword: dob,
-    savedAt: Date.now()
-  });
+  await SecureStorage.set(STUDENT_SESSION_STORAGE_KEY, value);
+  try {
+    await SecureStorage.setKeyPrefix("ashiana_student_session_v1_");
+    await SecureStorage.remove("credentials");
+  } catch (_) {}
   return true;
 }
 
-async function getStudentSessionCredentials() {
+async function getStudentSessionToken() {
   if (!isNativeAndroid()) return null;
+  // One-time cleanup for installs that used the old DOB-credential implementation.
+  try {
+    await SecureStorage.setKeyPrefix("ashiana_student_session_v1_");
+    await SecureStorage.remove("credentials");
+  } catch (_) {}
   await setStudentSessionStoragePrefix();
   const stored = await SecureStorage.get(STUDENT_SESSION_STORAGE_KEY);
-  if (!stored || typeof stored !== "object") return null;
-  const admissionNo = String(stored.admissionNo || "").trim().toUpperCase();
-  const dobPassword = String(stored.dobPassword || "").trim();
-  if (!admissionNo || !/^\\d{8}$/.test(dobPassword)) {
-    await SecureStorage.remove(STUDENT_SESSION_STORAGE_KEY);
+  const token = typeof stored === "string" ? stored.trim() : "";
+  if (!/^[a-f0-9]{64}$/i.test(token)) {
+    if (stored) await SecureStorage.remove(STUDENT_SESSION_STORAGE_KEY);
     return null;
   }
-  return { admissionNo, dobPassword };
+  return token;
 }
 
-async function clearStudentSessionCredentials() {
+async function clearStudentSessionToken() {
   if (!isNativeAndroid()) return false;
   await setStudentSessionStoragePrefix();
   await SecureStorage.remove(STUDENT_SESSION_STORAGE_KEY);
+  try {
+    await SecureStorage.setKeyPrefix("ashiana_student_session_v1_");
+    await SecureStorage.remove("credentials");
+  } catch (_) {}
   return true;
 }
 
@@ -230,7 +236,7 @@ window.AshianaNative = Object.freeze({
   prepareStaffBiometricAccount,
   getStaffBiometricCredentials,
   disableStaffBiometric,
-  saveStudentSessionCredentials,
-  getStudentSessionCredentials,
-  clearStudentSessionCredentials
+  saveStudentSessionToken,
+  getStudentSessionToken,
+  clearStudentSessionToken
 });

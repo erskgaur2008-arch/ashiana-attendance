@@ -46,8 +46,9 @@ Deno.serve(async (req: Request) => {
     const b = await req.json().catch(() => ({}));
     const e = String(b?.enroll_no ?? "").trim();
     const d = String(b?.dob_password ?? "").trim();
+    const token = String(b?.session_token ?? "").trim();
 
-    if (!ENROLL_RE.test(e) || !/^[0-9]{8}$/.test(d)) {
+    if (!ENROLL_RE.test(e) || (token ? !/^[a-f0-9]{64}$/i.test(token) : !/^[0-9]{8}$/.test(d))) {
       return json({ success: false }, 400);
     }
 
@@ -89,29 +90,42 @@ Deno.serve(async (req: Request) => {
       return json({ success: false, code: "RATE_LIMIT", retry_after_seconds: Number(rate.data?.retry_after_seconds || 600) }, 429);
     }
 
-    const day = +d.slice(0, 2);
-    const month = +d.slice(2, 4);
-    const year = +d.slice(4, 8);
-    const dt = new Date(Date.UTC(year, month - 1, day));
-    if (dt.getUTCFullYear() !== year || dt.getUTCMonth() !== month - 1 || dt.getUTCDate() !== day) {
-      return json({ success: false }, 401);
+    let studentRecord: { id: string; enroll_no: string; dob?: string; status: string; photo_path: string | null } | null = null;
+    if (token) {
+      // Server-side validation checks the hash, expiry, revocation, and active roster status.
+      const checked = await sb.rpc("student_session_student_id", { p_token: token });
+      if (checked.error || !checked.data) return json({ success: false, code: "STUDENT_SESSION_EXPIRED" }, 401);
+      const { data: rows, error } = await sb
+        .from("student_roster")
+        .select("id,enroll_no,dob,status,photo_path")
+        .eq("id", checked.data)
+        .eq("school_code", "ashiana")
+        .ilike("enroll_no", escapeLike(e))
+        .limit(2);
+      if (error || !rows || rows.length !== 1) return json({ success: false }, 401);
+      studentRecord = rows[0];
+    } else {
+      const day = +d.slice(0, 2);
+      const month = +d.slice(2, 4);
+      const year = +d.slice(4, 8);
+      const dt = new Date(Date.UTC(year, month - 1, day));
+      if (dt.getUTCFullYear() !== year || dt.getUTCMonth() !== month - 1 || dt.getUTCDate() !== day) {
+        return json({ success: false }, 401);
+      }
+      const iso = year + "-" + String(month).padStart(2, "0") + "-" + String(day).padStart(2, "0");
+      // Legacy callers remain supported; new Student app requests use the session token.
+      const { data: rows, error } = await sb
+        .from("student_roster")
+        .select("id,enroll_no,dob,status,photo_path")
+        .eq("school_code", "ashiana")
+        .ilike("enroll_no", escapeLike(e))
+        .eq("status", "ACTIVE")
+        .eq("dob", iso)
+        .limit(2);
+      if (error || !rows || rows.length !== 1) return json({ success: false }, 401);
+      studentRecord = rows[0];
     }
-    const iso = year + "-" + String(month).padStart(2, "0") + "-" + String(day).padStart(2, "0");
-
-    // Case-insensitive EXACT match (wildcards escaped); must match exactly one row.
-    const { data: rows, error } = await sb
-      .from("student_roster")
-      .select("id,enroll_no,dob,status,photo_path")
-      .eq("school_code", "ashiana")
-      .ilike("enroll_no", escapeLike(e))
-      .eq("status", "ACTIVE")
-      .eq("dob", iso)
-      .limit(2);
-
-    if (error || !rows || rows.length !== 1) {
-      return json({ success: false }, 401);
-    }
-    const s = rows[0];
+    const s = studentRecord;
 
     await sb.rpc("clear_student_login_attempt", { p_login_key: key });
 

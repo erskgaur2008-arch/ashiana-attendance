@@ -1674,7 +1674,7 @@
               }
 
               var studentClient = await ashianaGetStudentLoginClient();
-              var studentLogin = await studentClient.rpc("student_login", {
+              var studentLogin = await studentClient.rpc("student_session_start", {
                 p_school_code: "ashiana",
                 p_enroll_no: admission,
                 p_dob_password: dob
@@ -1687,9 +1687,12 @@
                 throw new Error("Incorrect Admission No. or DOB password.");
               }
 
-              var bundle = await studentClient.rpc("student_portal_bundle", {
-                p_enroll_no: admission,
-                p_dob_password: dob
+              var studentSessionToken = String(studentLogin.data?.session_token || "");
+              if (!/^[a-f0-9]{64}$/i.test(studentSessionToken)) {
+                throw new Error("Student session could not be created. Please try signing in again.");
+              }
+              var bundle = await studentClient.rpc("student_portal_bundle_by_session", {
+                p_token: studentSessionToken
               });
               if (bundle.error) throw new Error(bundle.error.message || "Student portal data could not be loaded.");
               if (bundle.data?.code === "RATE_LIMIT") {
@@ -1709,16 +1712,13 @@
               await ashianaClearMainAuthStorage();
               var pendingStudentUser = {
                 type: "STUDENT",
-                studentRecord: studentLogin.data.student,
+                studentRecord: bundle.data?.student || studentLogin.data.student,
                 portalData: bundle.data || {}
               };
-              // On Android, persist only the credentials needed for server-side revalidation
-              // using Android Keystore-backed storage. Never put the DOB password in localStorage.
+              // Persist only the opaque, revocable token; never save the DOB password.
+              sessionStorage.setItem("aps_student_session_token_v1", studentSessionToken);
               if (window.AshianaNative?.isAndroid?.()) {
-                await window.AshianaNative.saveStudentSessionCredentials({
-                  admissionNo: admission,
-                  dobPassword: dob
-                });
+                await window.AshianaNative.saveStudentSessionToken(studentSessionToken);
               }
               // Keep the in-memory-tab handoff for web/PWA navigation and immediate UI setup.
               sessionStorage.setItem("aps_student_session_v1", JSON.stringify(pendingStudentUser));
@@ -4451,14 +4451,17 @@
         const savedStudentRaw = sessionStorage.getItem("aps_student_session_v1");
         const loginHandoff = sessionStorage.getItem("aps_login_handoff_v1");
         let savedUser = null;
-        let secureStudentCredentials = null;
+        let secureStudentToken = "";
         try {
           if (window.AshianaNative?.isAndroid?.() &&
-              typeof window.AshianaNative.getStudentSessionCredentials === "function") {
-            secureStudentCredentials = await window.AshianaNative.getStudentSessionCredentials();
+              typeof window.AshianaNative.getStudentSessionToken === "function") {
+            secureStudentToken = String(await window.AshianaNative.getStudentSessionToken() || "");
           }
         } catch (secureStorageError) {
           console.warn("Secure Student session could not be read:", secureStorageError);
+        }
+        if (!secureStudentToken) {
+          try { secureStudentToken = String(sessionStorage.getItem("aps_student_session_token_v1") || ""); } catch (_) {}
         }
         try {
           savedUser = savedRaw ? JSON.parse(savedRaw) : null;
@@ -4466,12 +4469,11 @@
         } catch (_) {
           savedUser = null;
         }
-        // Native Android secure credentials survive WebView destruction. They are
-        // still revalidated with student_login before the portal can open.
-        if (secureStudentCredentials?.admissionNo && secureStudentCredentials?.dobPassword) {
+        // The opaque native token survives Android WebView destruction.
+        if (/^[a-f0-9]{64}$/i.test(secureStudentToken)) {
           savedUser = savedUser?.type === 'STUDENT' ? savedUser : {
             type: 'STUDENT',
-            studentRecord: { enroll_no: secureStudentCredentials.admissionNo }
+            studentRecord: {}
           };
         }
 
@@ -4482,42 +4484,26 @@
           // refresh persistence without trusting a client-editable role alone.
           try { await supabaseClient.auth.signOut({ scope: 'local' }); } catch (_) {}
 
-          const student = savedUser.studentRecord || {};
-          const enrollNo = String(secureStudentCredentials?.admissionNo || student.enroll_no || '').trim().toUpperCase();
-          const dobRaw = String(student.dob || '').slice(0, 10);
-          const dobParts = dobRaw.split('-');
-          const dobPassword = String(secureStudentCredentials?.dobPassword || (
-            dobParts.length === 3 ? (dobParts[2] + dobParts[1] + dobParts[0]) : ''
-          ));
+          const studentToken = String(secureStudentToken || "");
+          if (!/^[a-f0-9]{64}$/i.test(studentToken)) throw new Error('STUDENT_SESSION_INVALID');
 
-          if (!enrollNo || !/^\d{8}$/.test(dobPassword)) {
-            throw new Error('STUDENT_SESSION_INVALID');
-          }
-
-          const { data: loginCheck, error: loginCheckError } = await supabaseClient.rpc('student_login', {
-            p_school_code: APS_STUDENT_SCHOOL,
-            p_enroll_no: enrollNo,
-            p_dob_password: dobPassword
+          const { data: bundleData, error: bundleError } = await supabaseClient.rpc('student_portal_bundle_by_session', {
+            p_token: studentToken
           });
-          if (loginCheckError) throw loginCheckError;
-          if (!loginCheck?.success || !loginCheck?.student) {
+          if (bundleError) throw bundleError;
+          if (!bundleData?.success || !bundleData?.student) {
             localStorage.removeItem("aps_student_session_v1"); sessionStorage.removeItem("aps_student_session_v1");
+            sessionStorage.removeItem("aps_student_session_token_v1");
             sessionStorage.removeItem(STORAGE_KEY_CURRENT_USER);
             sessionStorage.removeItem("aps_login_handoff_v1");
-            try { await window.AshianaNative?.clearStudentSessionCredentials?.(); } catch (_) {}
+            try { await window.AshianaNative?.clearStudentSessionToken?.(); } catch (_) {}
             throw new Error('STUDENT_SESSION_EXPIRED');
           }
 
-          const { data: bundleData, error: bundleError } = await supabaseClient.rpc('student_portal_bundle', {
-            p_enroll_no: enrollNo,
-            p_dob_password: dobPassword
-          });
-          if (bundleError) throw bundleError;
-
           const restoredStudentUser = {
             type: 'STUDENT',
-            studentRecord: loginCheck.student,
-            portalData: bundleData || {}
+            studentRecord: bundleData.student,
+            portalData: bundleData
           };
           sessionStorage.setItem("aps_student_session_v1", JSON.stringify(restoredStudentUser));
           sessionStorage.setItem(STORAGE_KEY_CURRENT_USER, JSON.stringify(restoredStudentUser));
@@ -4644,8 +4630,8 @@
         sessionStorage.removeItem(STORAGE_KEY_CURRENT_USER);
         if (String(e?.message || '').includes('STUDENT_SESSION_EXPIRED') ||
             String(e?.message || '').includes('STUDENT_SESSION_INVALID')) {
-          try { localStorage.removeItem("aps_student_session_v1"); sessionStorage.removeItem("aps_student_session_v1"); } catch (_) {}
-          try { await window.AshianaNative?.clearStudentSessionCredentials?.(); } catch (_) {}
+          try { localStorage.removeItem("aps_student_session_v1"); sessionStorage.removeItem("aps_student_session_v1"); sessionStorage.removeItem("aps_student_session_token_v1"); } catch (_) {}
+          try { await window.AshianaNative?.clearStudentSessionToken?.(); } catch (_) {}
         }
         return false;
       }
@@ -5768,7 +5754,7 @@ async function studentDashboardSection(type){
     const days=["","Monday","Tuesday","Wednesday","Thursday","Friday","Saturday","Sunday"];
     host.innerHTML=(fresh.timetable||[]).map(x=>'<div class="flex items-start gap-3 bg-white border rounded-xl px-4 py-3"><b class="w-20 shrink-0">'+days[x.day_of_week]+'</b><div class="min-w-0 flex-1"><div>Period '+x.period_no+' · '+studentEscape(x.subject_name)+' · '+studentEscape(x.teacher_name||"")+' '+studentEscape(x.room||"")+'</div>'+(x.attachment_path?'<a href="'+studentEscape(teacherPortalPdfUrl(x.attachment_path))+'" target="_blank" rel="noopener" class="mt-2 inline-flex items-center gap-2 px-3 py-2 rounded-xl bg-rose-50 text-rose-700 border border-rose-200 text-xs font-bold"><i data-lucide="file-text" class="w-4 h-4"></i><span>View PDF'+(x.attachment_name?' • '+studentEscape(x.attachment_name):'')+'</span></a>':'')+'</div></div>').join("")||'<div class="p-6 bg-white border rounded-2xl text-center text-slate-400">No timetable published.</div>';
   }else if(type==="leave"){
-    host.innerHTML='<form onsubmit="submitStudentLeave(event)" class="space-y-3 bg-white border rounded-2xl p-4"><div class="grid grid-cols-2 gap-2"><input id="student-leave-from" type="date" required class="p-3 border rounded-xl"><input id="student-leave-to" type="date" required class="p-3 border rounded-xl"></div><textarea id="student-leave-reason" required rows="3" placeholder="Reason" class="w-full p-3 border rounded-xl"></textarea><input id="student-leave-dob" required maxlength="8" pattern="[0-9]{8}" placeholder="DOB password DDMMYYYY" class="w-full p-3 border rounded-xl"><button class="w-full p-3 bg-rose-700 text-white rounded-xl font-bold">Submit Leave Request</button></form><div class="pt-2">'+(fresh.leave_requests||[]).map(x=>'<div class="p-4 bg-white border rounded-2xl mb-2"><b>'+studentEscape(x.from_date)+' → '+studentEscape(x.to_date)+'</b><div class="mt-1">'+studentEscape(x.reason)+'</div><span class="font-bold mt-1 inline-block">'+studentEscape(x.status)+'</span></div>').join("")+'</div>';
+    host.innerHTML='<form onsubmit="submitStudentLeave(event)" class="space-y-3 bg-white border rounded-2xl p-4"><div class="grid grid-cols-2 gap-2"><input id="student-leave-from" type="date" required class="p-3 border rounded-xl"><input id="student-leave-to" type="date" required class="p-3 border rounded-xl"></div><textarea id="student-leave-reason" required rows="3" placeholder="Reason" class="w-full p-3 border rounded-xl"></textarea><div id="student-leave-feedback" role="alert" aria-live="polite" class="hidden p-3 rounded-xl text-sm font-semibold"></div><button class="w-full p-3 bg-rose-700 text-white rounded-xl font-bold">Submit Leave Request</button></form><div class="pt-2">'+(fresh.leave_requests||[]).map(x=>'<div class="p-4 bg-white border rounded-2xl mb-2"><b>'+studentEscape(x.from_date)+' → '+studentEscape(x.to_date)+'</b><div class="mt-1">'+studentEscape(x.reason)+'</div><span class="font-bold mt-1 inline-block">'+studentEscape(x.status)+'</span></div>').join("")+'</div>';
   }else if(type==="report"){
     host.innerHTML=(fresh.report_cards||[]).map(x=>'<div class="p-4 bg-white border rounded-2xl"><b class="text-sm">'+studentEscape(x.academic_year)+' · '+studentEscape(x.term)+' · '+studentEscape(x.overall_grade||"")+'</b><div class="mt-3 space-y-1">'+(Array.isArray(x.subjects)?x.subjects.map(s=>'<div class="flex justify-between border-b py-2"><span>'+studentEscape(s.subject||"")+'</span><b>'+studentEscape(s.grade||s.marks||"")+'</b></div>').join(""):studentEscape(JSON.stringify(x.subjects)))+'</div><p class="mt-2 text-slate-500">'+studentEscape(x.remarks||"")+'</p></div>').join("")||'<div class="p-6 bg-white border rounded-2xl text-center text-slate-400">No report card published.</div>';
   }else if(type==="calendar"){
@@ -5788,47 +5774,75 @@ async function submitStudentLeave(event){
   if(form?.dataset.submitting==="1")return false;
   const s=currentAuthUser?.studentRecord;
   if(!s||!supabaseClient)return false;
+  const feedback=form?.querySelector("#student-leave-feedback");
+  const setFeedback=(message,type="error")=>{
+    if(feedback){
+      feedback.textContent=message;
+      feedback.className="p-3 rounded-xl text-sm font-semibold "+(type==="success"?"bg-emerald-50 text-emerald-800 border border-emerald-200":"bg-rose-50 text-rose-800 border border-rose-200");
+    }
+    showToast(message,type);
+  };
   const from=document.getElementById("student-leave-from")?.value||"";
   const to=document.getElementById("student-leave-to")?.value||"";
   const reason=(document.getElementById("student-leave-reason")?.value||"").trim();
-  const dob=document.getElementById("student-leave-dob")?.value||"";
-  if(!from||!to||!reason||!/^[0-9]{8}$/.test(dob)){showToast("Please complete all leave details.","error");return false;}
-  if(from>to){showToast("From date cannot be after To date.","error");return false;}
+  const studentToken=String(await window.AshianaNative?.getStudentSessionToken?.() || sessionStorage.getItem("aps_student_session_token_v1") || "");
+  if(!from||!to||!reason||!/^[a-f0-9]{64}$/i.test(studentToken)){setFeedback("Your student session has expired. Please sign in again.");return false;}
+  if(from>to){setFeedback("From date cannot be after To date.");return false;}
+
+  // Fetch the authoritative session-based bundle before checking the visible pending requests.
+  // The legacy refresh path can omit leave_requests, so do not rely only on cached portalData.
+  try{
+    const {data,error}=await supabaseClient.rpc("student_portal_bundle_by_session",{p_token:studentToken});
+    if(!error&&data?.success){
+      currentAuthUser.portalData=data;
+      currentAuthUser.studentRecord=data.student||currentAuthUser.studentRecord;
+    }
+  }catch(e){console.warn("Unable to refresh leave requests before submission:",e);}
+
+  const pendingOverlap=(currentAuthUser?.portalData?.leave_requests||[]).some(req=>{
+    const status=String(req?.status||"PENDING").trim().toUpperCase();
+    if(["APPROVED","REJECTED","CANCELLED","WITHDRAWN"].includes(status))return false;
+    const existingFrom=String(req?.from_date||"").slice(0,10),existingTo=String(req?.to_date||"").slice(0,10);
+    return existingFrom&&existingTo&&from<=existingTo&&to>=existingFrom;
+  });
+  if(pendingOverlap){setFeedback("Duplicate leave request: these dates overlap an existing pending request.");return false;}
+
   form.dataset.submitting="1";
   const btn=event.submitter||form.querySelector('button[type="submit"]');
   if(btn){btn.disabled=true;btn.dataset.originalText=btn.textContent;btn.textContent="Submitting…";}
+  if(feedback){feedback.textContent="";feedback.className="hidden";}
   try{
-    const {data,error}=await supabaseClient.rpc("student_submit_leave",{
-      p_enroll_no:s.enroll_no,p_dob_password:dob,p_from_date:from,p_to_date:to,p_reason:reason
+    const {data,error}=await supabaseClient.rpc("student_submit_leave_by_session",{
+      p_token:studentToken,p_from_date:from,p_to_date:to,p_reason:reason
     });
     if(error||!data?.success){
       const msg=String(data?.message||error?.message||"Leave request failed.");
-      if(String(error?.code)==="23505" || /duplicate|already.*pending|already.*request/i.test(msg)){
-        showToast("A leave request for these dates is already pending.","error");
+      if(String(error?.code)==="23505" || /duplicate|already.*pending|already.*request|overlap/i.test(msg)){
+        setFeedback("Duplicate leave request: these dates overlap an existing pending request.");
       }else{
-        showToast(msg,"error");
+        setFeedback(msg);
       }
       return false;
     }
-    showToast("Leave request submitted.","success");
-    await refreshStudentPortalData(dob);
+    setFeedback("Leave request submitted successfully.","success");
+    await refreshStudentPortalData();
     await studentDashboardSection("leave");
     return false;
   }catch(err){
-    showToast(err?.message||"Leave request failed.","error");
+    setFeedback(err?.message||"Leave request failed.");
     return false;
   }finally{
     if(form?.isConnected)form.dataset.submitting="0";
     if(btn?.isConnected){btn.disabled=false;btn.textContent=btn.dataset.originalText||"Submit Leave Request";}
   }
 }
-async function refreshStudentPortalData(dobOverride){
+async function refreshStudentPortalData(){
   const s=currentAuthUser?.studentRecord;
   if(!s||!supabaseClient)return;
-  const dob=dobOverride||document.getElementById("student-leave-dob")?.value||"";
-  if(!/^[0-9]{8}$/.test(dob))return;
-  const {data}=await supabaseClient.rpc("student_portal_bundle",{p_enroll_no:s.enroll_no,p_dob_password:dob});
-  if(data?.success){currentAuthUser.portalData=data;populateStudentPortal(s);}
+  const token=String(await window.AshianaNative?.getStudentSessionToken?.() || sessionStorage.getItem("aps_student_session_token_v1") || "");
+  if(!/^[a-f0-9]{64}$/i.test(token))return;
+  const {data,error}=await supabaseClient.rpc("student_portal_bundle_by_session",{p_token:token});
+  if(!error&&data?.success){currentAuthUser.portalData=data;currentAuthUser.studentRecord=data.student||s;populateStudentPortal(currentAuthUser.studentRecord);}
 }
 
     function scaleStudentIdCardPreview(){
@@ -5888,10 +5902,9 @@ async function refreshStudentPortalData(dobOverride){
         const own=currentAuthUser?.portalData?.student;
         if(own?.photo_path){
           try{
-            const dt=String(s.dob).slice(0,10).split('-');
-            const dobPassword=dt.length===3?dt[2]+dt[1]+dt[0]:'';
-            if(/^\d{8}$/.test(dobPassword)){
-              const {data}=await supabaseClient.functions.invoke('student-photo-url',{body:{enroll_no:String(s.enroll_no),dob_password:dobPassword}});
+            const token=String(await window.AshianaNative?.getStudentSessionToken?.() || sessionStorage.getItem("aps_student_session_token_v1") || "");
+            if(/^[a-f0-9]{64}$/i.test(token)){
+              const {data}=await supabaseClient.functions.invoke('student-photo-url',{body:{enroll_no:String(s.enroll_no),session_token:token}});
               photoUrl=data?.success?String(data.photo_url||''):'';
             }
           }catch(e){console.warn('Own student ID photo retry failed:',e);}
@@ -5942,9 +5955,16 @@ async function refreshStudentPortalData(dobOverride){
       sessionStorage.removeItem("aps_admin_login_handoff_v1");
       sessionStorage.removeItem("aps_login_handoff_v1");
       localStorage.removeItem("aps_student_session_v1"); sessionStorage.removeItem("aps_student_session_v1");
-      try { await window.AshianaNative?.clearStudentSessionCredentials?.(); } catch (e) {
+      try {
+        const token = String(await window.AshianaNative?.getStudentSessionToken?.() || sessionStorage.getItem("aps_student_session_token_v1") || "");
+        if (/^[a-f0-9]{64}$/i.test(token) && supabaseClient) {
+          await supabaseClient.rpc("student_session_revoke", { p_token: token });
+        }
+      } catch (e) { console.warn("Student session revoke failed:", e); }
+      try { await window.AshianaNative?.clearStudentSessionToken?.(); } catch (e) {
         console.warn("Secure Student session cleanup failed:", e);
       }
+      sessionStorage.removeItem("aps_student_session_token_v1");
       try { localStorage.removeItem("sb-oalfzgluqroqbbrulhpr-auth-token"); } catch (_) {}
       try { localStorage.removeItem("aps_student_session_expiry_v1"); } catch (_) {}
       try { sessionStorage.removeItem("aps_student_session_expiry_v1"); } catch (_) {}
@@ -6979,8 +6999,15 @@ async function loadAdminStudents(){
           if(!error&&data?.signedUrl)return data.signedUrl;
         }catch(e){console.warn('Admin student photo URL failed:',e);}
       }
-      if(!s?.dob)return '';
       try{
+        if(currentAuthUser?.type==='STUDENT'){
+          const token=String(await window.AshianaNative?.getStudentSessionToken?.() || sessionStorage.getItem("aps_student_session_token_v1") || "");
+          if(!/^[a-f0-9]{64}$/i.test(token))return '';
+          const {data,error}=await supabaseClient.functions.invoke('student-photo-url',{body:{enroll_no:String(s.enroll_no),session_token:token}});
+          if(error)throw error;
+          return data?.success&&data?.photo_url?data.photo_url:'';
+        }
+        if(!s?.dob)return '';
         const iso=String(s.dob).slice(0,10),dt=iso.split('-');
         const dobPassword=dt.length===3?dt[2]+dt[1]+dt[0]:'';
         if(!/^\d{8}$/.test(dobPassword))return '';
