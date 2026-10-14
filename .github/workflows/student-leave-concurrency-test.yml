@@ -1,9 +1,21 @@
 name: Student Leave Concurrency Test
 
 on:
+  push:
+    branches:
+      - fix/student-session-token-correction
+    paths:
+      - '.github/workflows/student-leave-concurrency-test.yml'
   workflow_dispatch:
     inputs:
       from_date:
+        description: "Unused test start date (YYYY-MM-DD)"
+        required: true
+        type: string
+      to_date:
+        description: "Unused test end date (YYYY-MM-DD)"
+        required: true
+        type: string
         description: "Unused start date in EduPunch-Test (YYYY-MM-DD)"
         required: true
         type: string
