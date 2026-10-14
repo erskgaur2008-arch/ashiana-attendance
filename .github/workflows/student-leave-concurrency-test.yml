@@ -9,18 +9,11 @@ on:
   workflow_dispatch:
     inputs:
       from_date:
-        description: "Unused test start date (YYYY-MM-DD)"
+        description: "Unused test start date in EduPunch-Test (YYYY-MM-DD)"
         required: true
         type: string
       to_date:
-        description: "Unused test end date (YYYY-MM-DD)"
-        required: true
-        type: string
-        description: "Unused start date in EduPunch-Test (YYYY-MM-DD)"
-        required: true
-        type: string
-      to_date:
-        description: "Unused end date in EduPunch-Test (YYYY-MM-DD)"
+        description: "Unused test end date in EduPunch-Test (YYYY-MM-DD)"
         required: true
         type: string
 
@@ -29,6 +22,7 @@ permissions:
 
 jobs:
   concurrent-leave-test:
+    if: github.event_name == 'workflow_dispatch'
     name: Send two overlapping requests concurrently to EduPunch-Test
     runs-on: ubuntu-latest
     timeout-minutes: 5
