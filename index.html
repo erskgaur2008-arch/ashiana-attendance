@@ -5754,7 +5754,7 @@ async function studentDashboardSection(type){
     const days=["","Monday","Tuesday","Wednesday","Thursday","Friday","Saturday","Sunday"];
     host.innerHTML=(fresh.timetable||[]).map(x=>'<div class="flex items-start gap-3 bg-white border rounded-xl px-4 py-3"><b class="w-20 shrink-0">'+days[x.day_of_week]+'</b><div class="min-w-0 flex-1"><div>Period '+x.period_no+' · '+studentEscape(x.subject_name)+' · '+studentEscape(x.teacher_name||"")+' '+studentEscape(x.room||"")+'</div>'+(x.attachment_path?'<a href="'+studentEscape(teacherPortalPdfUrl(x.attachment_path))+'" target="_blank" rel="noopener" class="mt-2 inline-flex items-center gap-2 px-3 py-2 rounded-xl bg-rose-50 text-rose-700 border border-rose-200 text-xs font-bold"><i data-lucide="file-text" class="w-4 h-4"></i><span>View PDF'+(x.attachment_name?' • '+studentEscape(x.attachment_name):'')+'</span></a>':'')+'</div></div>').join("")||'<div class="p-6 bg-white border rounded-2xl text-center text-slate-400">No timetable published.</div>';
   }else if(type==="leave"){
-    host.innerHTML='<form onsubmit="submitStudentLeave(event)" class="space-y-3 bg-white border rounded-2xl p-4"><div class="grid grid-cols-2 gap-2"><input id="student-leave-from" type="date" required class="p-3 border rounded-xl"><input id="student-leave-to" type="date" required class="p-3 border rounded-xl"></div><textarea id="student-leave-reason" required rows="3" placeholder="Reason" class="w-full p-3 border rounded-xl"></textarea><button class="w-full p-3 bg-rose-700 text-white rounded-xl font-bold">Submit Leave Request</button></form><div class="pt-2">'+(fresh.leave_requests||[]).map(x=>'<div class="p-4 bg-white border rounded-2xl mb-2"><b>'+studentEscape(x.from_date)+' → '+studentEscape(x.to_date)+'</b><div class="mt-1">'+studentEscape(x.reason)+'</div><span class="font-bold mt-1 inline-block">'+studentEscape(x.status)+'</span></div>').join("")+'</div>';
+    host.innerHTML='<form onsubmit="submitStudentLeave(event)" class="space-y-3 bg-white border rounded-2xl p-4"><div class="grid grid-cols-2 gap-2"><input id="student-leave-from" type="date" required class="p-3 border rounded-xl"><input id="student-leave-to" type="date" required class="p-3 border rounded-xl"></div><textarea id="student-leave-reason" required rows="3" placeholder="Reason" class="w-full p-3 border rounded-xl"></textarea><div id="student-leave-feedback" role="alert" aria-live="polite" class="hidden p-3 rounded-xl text-sm font-semibold"></div><button class="w-full p-3 bg-rose-700 text-white rounded-xl font-bold">Submit Leave Request</button></form><div class="pt-2">'+(fresh.leave_requests||[]).map(x=>'<div class="p-4 bg-white border rounded-2xl mb-2"><b>'+studentEscape(x.from_date)+' → '+studentEscape(x.to_date)+'</b><div class="mt-1">'+studentEscape(x.reason)+'</div><span class="font-bold mt-1 inline-block">'+studentEscape(x.status)+'</span></div>').join("")+'</div>';
   }else if(type==="report"){
     host.innerHTML=(fresh.report_cards||[]).map(x=>'<div class="p-4 bg-white border rounded-2xl"><b class="text-sm">'+studentEscape(x.academic_year)+' · '+studentEscape(x.term)+' · '+studentEscape(x.overall_grade||"")+'</b><div class="mt-3 space-y-1">'+(Array.isArray(x.subjects)?x.subjects.map(s=>'<div class="flex justify-between border-b py-2"><span>'+studentEscape(s.subject||"")+'</span><b>'+studentEscape(s.grade||s.marks||"")+'</b></div>').join(""):studentEscape(JSON.stringify(x.subjects)))+'</div><p class="mt-2 text-slate-500">'+studentEscape(x.remarks||"")+'</p></div>').join("")||'<div class="p-6 bg-white border rounded-2xl text-center text-slate-400">No report card published.</div>';
   }else if(type==="calendar"){
@@ -5774,43 +5774,62 @@ async function submitStudentLeave(event){
   if(form?.dataset.submitting==="1")return false;
   const s=currentAuthUser?.studentRecord;
   if(!s||!supabaseClient)return false;
+  const feedback=form?.querySelector("#student-leave-feedback");
+  const setFeedback=(message,type="error")=>{
+    if(feedback){
+      feedback.textContent=message;
+      feedback.className="p-3 rounded-xl text-sm font-semibold "+(type==="success"?"bg-emerald-50 text-emerald-800 border border-emerald-200":"bg-rose-50 text-rose-800 border border-rose-200");
+    }
+    showToast(message,type);
+  };
   const from=document.getElementById("student-leave-from")?.value||"";
   const to=document.getElementById("student-leave-to")?.value||"";
   const reason=(document.getElementById("student-leave-reason")?.value||"").trim();
   const studentToken=String(await window.AshianaNative?.getStudentSessionToken?.() || sessionStorage.getItem("aps_student_session_token_v1") || "");
-  if(!from||!to||!reason||!/^[a-f0-9]{64}$/i.test(studentToken)){showToast("Your student session has expired. Please sign in again.","error");return false;}
-  if(from>to){showToast("From date cannot be after To date.","error");return false;}
-  // Give immediate feedback for a pending duplicate/overlapping request already loaded in the portal.
-  // The session RPC remains authoritative and rejects overlaps even if this client data is stale.
+  if(!from||!to||!reason||!/^[a-f0-9]{64}$/i.test(studentToken)){setFeedback("Your student session has expired. Please sign in again.");return false;}
+  if(from>to){setFeedback("From date cannot be after To date.");return false;}
+
+  // Fetch the authoritative session-based bundle before checking the visible pending requests.
+  // The legacy refresh path can omit leave_requests, so do not rely only on cached portalData.
+  try{
+    const {data,error}=await supabaseClient.rpc("student_portal_bundle_by_session",{p_token:studentToken});
+    if(!error&&data?.success){
+      currentAuthUser.portalData=data;
+      currentAuthUser.studentRecord=data.student||currentAuthUser.studentRecord;
+    }
+  }catch(e){console.warn("Unable to refresh leave requests before submission:",e);}
+
   const pendingOverlap=(currentAuthUser?.portalData?.leave_requests||[]).some(req=>{
     const status=String(req?.status||"PENDING").trim().toUpperCase();
     if(["APPROVED","REJECTED","CANCELLED","WITHDRAWN"].includes(status))return false;
     const existingFrom=String(req?.from_date||"").slice(0,10),existingTo=String(req?.to_date||"").slice(0,10);
     return existingFrom&&existingTo&&from<=existingTo&&to>=existingFrom;
   });
-  if(pendingOverlap){showToast("A leave request for these dates overlaps an existing pending request.","error");return false;}
+  if(pendingOverlap){setFeedback("Duplicate leave request: these dates overlap an existing pending request.");return false;}
+
   form.dataset.submitting="1";
   const btn=event.submitter||form.querySelector('button[type="submit"]');
   if(btn){btn.disabled=true;btn.dataset.originalText=btn.textContent;btn.textContent="Submitting…";}
+  if(feedback){feedback.textContent="";feedback.className="hidden";}
   try{
     const {data,error}=await supabaseClient.rpc("student_submit_leave_by_session",{
       p_token:studentToken,p_from_date:from,p_to_date:to,p_reason:reason
     });
     if(error||!data?.success){
       const msg=String(data?.message||error?.message||"Leave request failed.");
-      if(String(error?.code)==="23505" || /duplicate|already.*pending|already.*request/i.test(msg)){
-        showToast("A leave request for these dates is already pending.","error");
+      if(String(error?.code)==="23505" || /duplicate|already.*pending|already.*request|overlap/i.test(msg)){
+        setFeedback("Duplicate leave request: these dates overlap an existing pending request.");
       }else{
-        showToast(msg,"error");
+        setFeedback(msg);
       }
       return false;
     }
-    showToast("Leave request submitted.","success");
+    setFeedback("Leave request submitted successfully.","success");
     await refreshStudentPortalData();
     await studentDashboardSection("leave");
     return false;
   }catch(err){
-    showToast(err?.message||"Leave request failed.","error");
+    setFeedback(err?.message||"Leave request failed.");
     return false;
   }finally{
     if(form?.isConnected)form.dataset.submitting="0";
