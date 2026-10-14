@@ -5780,6 +5780,15 @@ async function submitStudentLeave(event){
   const studentToken=String(await window.AshianaNative?.getStudentSessionToken?.() || sessionStorage.getItem("aps_student_session_token_v1") || "");
   if(!from||!to||!reason||!/^[a-f0-9]{64}$/i.test(studentToken)){showToast("Your student session has expired. Please sign in again.","error");return false;}
   if(from>to){showToast("From date cannot be after To date.","error");return false;}
+  // Give immediate feedback for a pending duplicate/overlapping request already loaded in the portal.
+  // The session RPC remains authoritative and rejects overlaps even if this client data is stale.
+  const pendingOverlap=(currentAuthUser?.portalData?.leave_requests||[]).some(req=>{
+    const status=String(req?.status||"PENDING").trim().toUpperCase();
+    if(["APPROVED","REJECTED","CANCELLED","WITHDRAWN"].includes(status))return false;
+    const existingFrom=String(req?.from_date||"").slice(0,10),existingTo=String(req?.to_date||"").slice(0,10);
+    return existingFrom&&existingTo&&from<=existingTo&&to>=existingFrom;
+  });
+  if(pendingOverlap){showToast("A leave request for these dates overlaps an existing pending request.","error");return false;}
   form.dataset.submitting="1";
   const btn=event.submitter||form.querySelector('button[type="submit"]');
   if(btn){btn.disabled=true;btn.dataset.originalText=btn.textContent;btn.textContent="Submitting…";}
