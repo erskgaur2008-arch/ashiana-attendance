@@ -246,9 +246,20 @@ Deno.serve(async (req: Request) => {
   }
 
   if (action === "send-school-notice" || action === "send") {
+    const callerEmail = String(userData.user.email || "").trim().toLowerCase();
+    if (!callerEmail) return json({ error: "AUTH_REQUIRED" }, 401);
     const { data: admins, error: adminError } = await service.from("admin_users")
-      .select("email").eq("active", true).ilike("email", userData.user.email || "");
-    if (adminError || !admins?.length) return json({ error: "ADMIN_ONLY" }, 403);
+      .select("email").eq("active", true).ilike("email", callerEmail);
+    const isAdmin = !adminError && Boolean(admins?.length);
+    let isActiveStaff = false;
+    if (!isAdmin) {
+      const { data: staffRows, error: staffError } = await service.from("staff")
+        .select("email").eq("status", "ACTIVE").ilike("email", callerEmail).limit(1);
+      isActiveStaff = !staffError && Boolean(staffRows?.length);
+    }
+    if (!isAdmin && (!isActiveStaff || action !== "send-school-notice")) {
+      return json({ error: "ADMIN_OR_AUTHORIZED_STAFF_REQUIRED" }, 403);
+    }
 
     const category = String(body.category || (action === "send-school-notice" ? "school_notice" : ""));
     const title = String(body.title || "").trim().slice(0, 120);
@@ -263,6 +274,20 @@ Deno.serve(async (req: Request) => {
         section: String((scope as Record<string, unknown>)?.section || "").trim(),
       })).filter((scope) => scope.class_name && scope.section) : [];
       if (schoolCode !== "ashiana" || (!allStudents && !targetScopes.length)) return json({ error: "INVALID_NOTICE_TARGET" }, 400);
+      // Non-admin staff may only notify class/sections for a notice they just
+      // published under their own email. School-wide pushes remain admin-only.
+      if (!isAdmin) {
+        if (allStudents || !targetScopes.length) return json({ error: "STAFF_NOTICE_TARGET_REQUIRED" }, 403);
+        const { data: authoredNotices, error: noticeError } = await service.from("student_notices")
+          .select("class_name,section,title,body,published_by")
+          .eq("school_code", schoolCode).ilike("published_by", callerEmail)
+          .eq("title", title).eq("body", message);
+        if (noticeError || !authoredNotices?.length) return json({ error: "STAFF_NOTICE_NOT_FOUND" }, 403);
+        const permitted = targetScopes.every((scope) => authoredNotices.some((notice) =>
+          String(notice.class_name || "").trim() === scope.class_name &&
+          String(notice.section || "").trim().toLowerCase() === scope.section.toLowerCase()));
+        if (!permitted) return json({ error: "STAFF_NOTICE_TARGET_MISMATCH" }, 403);
+      }
 
       const rows: StudentPushRow[] = [];
       for (let offset = 0; ; offset += 1000) {

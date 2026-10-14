@@ -5601,11 +5601,25 @@ async function saveTeacherNotice(){
       if(String(error.code)==='23505')return showToast('This notice already exists for the selected class.','error');
       throw error;
     }
+    // Notice persistence is authoritative: a push failure must never undo it.
+    let pushResult=null;
+    try{
+      const {data,error:pushError}=await supabaseClient.functions.invoke('push-notifications',{body:{
+        action:'send-school-notice',schoolCode:APS_STUDENT_SCHOOL,title,message:body,category:'school_notice',
+        allStudents:false,targetScopes:[{class_name:a.class_name,section:a.section}]
+      }});
+      if(pushError)throw pushError;
+      pushResult=data||null;
+    }catch(pushError){
+      console.warn('Staff notice published, but push delivery could not start:',pushError?.message||pushError);
+    }
     if(document.getElementById('tp-title'))document.getElementById('tp-title').value='';
     if(document.getElementById('tp-body'))document.getElementById('tp-body').value='';
     if(document.getElementById('tp-attachment'))document.getElementById('tp-attachment').value='';
     if(document.getElementById('tp-attachment-name'))document.getElementById('tp-attachment-name').textContent='Optional • PDF up to 10 MB';
-    showToast('Notice published.','success');
+    if(!pushResult)showToast('Notice published, but push delivery could not start. Check notification setup.','error');
+    else if(Number(pushResult.sent)>0)showToast('Notice published. Push sent to '+pushResult.sent+' student device(s).','success');
+    else showToast('Notice published. '+(pushResult.message||'No registered student devices received a push notification.'),'error');
     await loadTeacherPortalContentItems('notice');
   }catch(e){showToast(e.message||'Unable to publish notice.','error');}
   finally{if(btn)btn.disabled=false;}
