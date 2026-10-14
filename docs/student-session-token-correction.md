@@ -28,7 +28,7 @@ This branch is isolated from production. The token migration and updated `studen
 - `student_session_student_id(text)` executable by service_role only: **PASS**
 - New client RPCs (`student_session_start`, `student_session_revoke`, `student_portal_bundle_by_session`, `student_submit_leave_by_session`) executable by anon and not authenticated: **PASS**
 - Temporary test tokens cleaned up; test student restored to ACTIVE: **PASS**
-- Duplicate/overlapping pending leave-request runtime test: **NOT YET VERIFIED**. A direct test-data mutation attempt was blocked; no pass is claimed.
+- Duplicate/overlapping pending leave-request runtime test: **PASS**. Two PowerShell jobs submitted overlapping dates concurrently through `student_submit_leave_by_session`; one returned success and the other returned `A leave request for these dates is already pending.` A read-only query confirmed exactly one pending matching row. The temporary session was revoked afterward. This proves serialization for concurrent calls through the session RPC, not for callers that bypass this RPC and invoke the legacy leave RPC directly.
 
 ## Read-only production compatibility review
 - Production `student_login(p_school_code text, p_enroll_no text, p_dob_password text)` returns the student UUID at `student.id`.
@@ -46,13 +46,20 @@ References:
 - [Authenticated can execute SECURITY DEFINER](https://supabase.com/docs/guides/database/database-linter?lint=0029_authenticated_security_definer_function_executable)
 - [Leaked password protection](https://supabase.com/docs/guides/auth/password-security#password-strength-and-leaked-password-protection)
 
-## Release gates
-1. Run a duplicate/overlapping leave-request test using an approved isolated test method.
-2. Review push registration and student leave display paths to confirm they no longer depend on a stored DOB credential.
-3. Confirm the latest PR CI/build checks are green and generate a fresh isolated test APK from the current PR head.
-4. Before rollout, re-check production schema/function owners, extension schema, grants, and migration privileges read-only.
-5. Take/verify a restorable production backup and record the current app/deployment revision before any approved rollout.
-6. Only after explicit approval: apply the reviewed database migration first, deploy the matching edge function if required, then perform a controlled production regression.
+## Final review update (2026-10-14)
+- Corrected `20261016_student_session_tokens_proposal.sql` to retain the per-student advisory transaction lock and overlap check, preventing the later migration from overwriting the earlier lock-protected function.
+- Applied the corrected session-token migration to **EduPunch-Test only** using the isolated migration runner: **PASS**.
+- Read-back verification confirms `student_submit_leave_by_session` contains `pg_advisory_xact_lock`; it remains `SECURITY DEFINER` with an empty search path; anon can execute the student-facing RPC while authenticated cannot.
+- Read-back verification confirms `student_session_tokens` has RLS enabled and anon/authenticated do not have direct SELECT permission.
+- Read-only query confirms exactly one pending TEST0001 row overlaps 2026-10-28–29 after the concurrent submission test.
+- Latest GitHub commit status and PR-triggered workflow wrappers returned no status entries/runs. This is **not evidence that CI passed**. User-confirmed Android tests passed on the previously built test APK; no new APK build was verified for commit `81acc253cbeaad2f8147265210e60dfcb8e0f568`.
+
+## Remaining release gates
+1. Obtain an explicit CI result or run the relevant checks for the current PR head; do not infer green from missing status data.
+2. Review push registration and student leave display paths for token-only session compatibility.
+3. Before rollout, re-check production schema/function owners, extension schema, grants, and migration privileges read-only.
+4. Take/verify a restorable production backup and record the current app/deployment revision before any approved rollout.
+5. Only after explicit approval: apply the reviewed database migration first, deploy the matching edge function if required, then perform a controlled production regression.
 
 ## Rollback principles
 - Keep the last known-good app/edge revision available.
