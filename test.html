@@ -10387,7 +10387,14 @@ window.addEventListener('load',async function(){
       }
 
       try {
-        const result = await invokeAdminFunction('reset-staff-pin', { staff_id: staff.id, pin: newPin });
+        if (!supabaseClient) throw new Error("Test database session is unavailable. Please sign in again.");
+        // Use the existing public RPC, which enforces the signed-in admin/staff identity.
+        const { data, error } = await supabaseClient.rpc('set_staff_pin', {
+          p_staff_id: staff.id,
+          p_pin: newPin
+        });
+        if (error) throw error;
+        if (data !== true) throw new Error("PIN reset was not authorized for this account.");
         staff.pinHash = "";
         savePersistedData();
         recordAuditLog("ADMIN_PIN_RESET", staff.name, `Administrator reset PIN for ${staff.empId}`);
