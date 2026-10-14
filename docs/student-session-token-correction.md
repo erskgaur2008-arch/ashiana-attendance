@@ -15,10 +15,18 @@ The earlier Student session branch stored the admission number and DOB-derived p
 ## Important status
 The SQL migration `supabase/migrations/20261016_student_session_tokens_proposal.sql` has been applied to EduPunch-Test only. It has not been applied to production. The `student-photo-url` function was also deployed to EduPunch-Test only.
 
-## Required before a test APK is approved
-1. Review the token-only client integration for login, restoration, refresh, logout, leave submission, and student-photo authorization.
-2. Ensure existing student push registration continues to work without persisting DOB/password.
-3. Verify RPC grants and behavior under the actual Supabase test project.
-4. Add automated checks for invalid, expired, revoked, and inactive-student sessions.
-5. Build and test the isolated APK against EduPunch-Test.
-6. Regression-test Admin/Staff login, student portal pages, logout, and live push configuration.
+## Test results (2026-10-14)
+- Android app completely closed and reopened: **PASS** (user-confirmed; Student Dashboard restored).
+- Student Dashboard refresh: **PASS** (user-confirmed).
+- Test leave request submission: **PASS** (user-confirmed).
+- Student photo / ID card preview: **PASS** (user-confirmed).
+- Logout and fresh login: **PASS** (user-confirmed).
+- Push notifications: **PASS** (user-confirmed).
+- Android test APK build on the latest branch commit: **PASS**.
+- Database token flow: valid token restore, leave submission, invalid token rejection, and revoked-token rejection were checked in EduPunch-Test.
+
+## Before production rollout
+1. Review this PR against the current `main` branch (main contains the prior PR #164 merge; this branch is one commit behind).
+2. Review production schema/function compatibility and permissions; do not apply the migration to production yet.
+3. Keep the production Supabase project and production deployment unchanged until the code review and rollout plan are approved.
+4. After explicit approval, schedule the production migration/deployment and a post-deployment regression test.
