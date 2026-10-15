@@ -9763,7 +9763,7 @@ window.addEventListener('load',async function(){
     // =========================================================================
     // 💾 EXCEL & CSV EXPORT HANDLERS (USING SHEETJS)
     // =========================================================================
-    function exportCurrentReportToExcel() {
+    async function exportCurrentReportToExcel() {
       if (!lastGeneratedReportData || lastGeneratedReportData.length === 0) {
         showToast("No data to export. Please generate a report first.", "error");
         return;
@@ -9828,58 +9828,76 @@ window.addEventListener('load',async function(){
           const ws = XLSX.utils.json_to_sheet(exportData);
           const wb = XLSX.utils.book_new();
           XLSX.utils.book_append_sheet(wb, ws, "Attendance Report");
-          XLSX.writeFile(wb, filename);
+          if (isAshianaNativeAndroid()) {
+            const bytes = XLSX.write(wb, { bookType: "xlsx", type: "array" });
+            const blob = new Blob([bytes], { type: "application/vnd.openxmlformats-officedocument.spreadsheetml.sheet" });
+            await shareGeneratedIdCardFile(blob, filename, "application/vnd.openxmlformats-officedocument.spreadsheetml.sheet");
+          } else {
+            XLSX.writeFile(wb, filename);
+          }
           playTone('SUCCESS');
           showToast(`Report exported to ${filename}!`, "success");
         } else {
           // Fallback to CSV if XLSX is unavailable
-          exportCurrentReportToCSV();
+          await exportCurrentReportToCSV();
         }
       } catch (err) {
-        showToast("Export failed: " + err.message, "error");
+        console.error("Report Excel export failed:", err);
+        showToast("Export failed: " + (err?.message || err), "error");
       }
     }
 
-    function exportCurrentReportToCSV() {
+    async function exportCurrentReportToCSV() {
       if (!lastGeneratedReportData || lastGeneratedReportData.length === 0) {
         showToast("No data to export.", "error");
         return;
       }
 
-      let csvContent = "";
-      let filename = "";
+      try {
+        let csvContent = "";
+        let filename = "";
 
-      if (currentReportType === 'daily') {
-        const date = document.getElementById("report-date-input").value;
-        filename = `Ashiana_Daily_Attendance_${date}.csv`;
-        csvContent = "S.No,Employee ID,Faculty Name,Department,Designation,First IN,Last OUT,Punches,Work Duration,Late Mins,Status\n";
-        lastGeneratedReportData.forEach((r, i) => {
-          csvContent += `"${i + 1}","${r.empId}","${r.name}","${r.department}","${r.role}","${r.firstIn}","${r.lastOut}",${r.punchCount},"${r.workTimeStr}",${r.lateMins},"${r.status}"\n`;
-        });
-      } else if (currentReportType === 'monthly') {
-        const month = document.getElementById("report-month-input").value;
-        filename = `Ashiana_Monthly_Muster_Roll_${month}.csv`;
-        csvContent = "S.No,Employee ID,Faculty Name,Department,Working Days,Present,Absent,Leaves,Late Days,Total Work,Avg/Day,Attendance %\n";
-        lastGeneratedReportData.forEach((r, i) => {
-          csvContent += `"${i + 1}","${r.empId}","${r.name}","${r.department}",${r.workingDays},${r.presentDays},${r.absentDays},${r.leaveDays},${r.lateDays},"${r.totalWorkStr}","${r.avgDayStr}","${r.attendanceRate}%"\n`;
-        });
-      } else if (currentReportType === 'faculty') {
-        const selStaff = staffDatabase.find(s => s.id === document.getElementById("report-faculty-select").value) || staffDatabase[0];
-        const month = document.getElementById("report-month-input").value;
-        filename = `Ashiana_Faculty_Dossier_${selStaff.empId}_${month}.csv`;
-        csvContent = "Date,Day,First IN,Last OUT,Punches,Work Duration,Late Mins,Status,Remarks\n";
-        lastGeneratedReportData.forEach(r => {
-          csvContent += `"${r.date}","${r.dayOfWeek}","${r.firstIn}","${r.lastOut}",${r.punchCount},"${r.workTimeStr}",${r.lateMins},"${r.status}","${r.details}"\n`;
-        });
+        if (currentReportType === 'daily') {
+          const date = document.getElementById("report-date-input").value;
+          filename = `Ashiana_Daily_Attendance_${date}.csv`;
+          csvContent = "S.No,Employee ID,Faculty Name,Department,Designation,First IN,Last OUT,Punches,Work Duration,Late Mins,Status\n";
+          lastGeneratedReportData.forEach((r, i) => {
+            csvContent += `"${i + 1}","${r.empId}","${r.name}","${r.department}","${r.role}","${r.firstIn}","${r.lastOut}",${r.punchCount},"${r.workTimeStr}",${r.lateMins},"${r.status}"\n`;
+          });
+        } else if (currentReportType === 'monthly') {
+          const month = document.getElementById("report-month-input").value;
+          filename = `Ashiana_Monthly_Muster_Roll_${month}.csv`;
+          csvContent = "S.No,Employee ID,Faculty Name,Department,Working Days,Present,Absent,Leaves,Late Days,Total Work,Avg/Day,Attendance %\n";
+          lastGeneratedReportData.forEach((r, i) => {
+            csvContent += `"${i + 1}","${r.empId}","${r.name}","${r.department}",${r.workingDays},${r.presentDays},${r.absentDays},${r.leaveDays},${r.lateDays},"${r.totalWorkStr}","${r.avgDayStr}","${r.attendanceRate}%"\n`;
+          });
+        } else if (currentReportType === 'faculty') {
+          const selStaff = staffDatabase.find(s => s.id === document.getElementById("report-faculty-select").value) || staffDatabase[0];
+          const month = document.getElementById("report-month-input").value;
+          filename = `Ashiana_Faculty_Dossier_${selStaff.empId}_${month}.csv`;
+          csvContent = "Date,Day,First IN,Last OUT,Punches,Work Duration,Late Mins,Status,Remarks\n";
+          lastGeneratedReportData.forEach(r => {
+            csvContent += `"${r.date}","${r.dayOfWeek}","${r.firstIn}","${r.lastOut}",${r.punchCount},"${r.workTimeStr}",${r.lateMins},"${r.status}","${r.details}"\n`;
+          });
+        }
+
+        const blob = new Blob([csvContent], { type: "text/csv;charset=utf-8;" });
+        if (isAshianaNativeAndroid()) {
+          await shareGeneratedIdCardFile(blob, filename, "text/csv;charset=utf-8;");
+        } else {
+          const url = URL.createObjectURL(blob);
+          const a = document.createElement("a");
+          a.href = url;
+          a.download = filename;
+          a.click();
+          setTimeout(() => URL.revokeObjectURL(url), 1000);
+        }
+        playTone('SUCCESS');
+        showToast(`CSV file ${filename} downloaded!`, "success");
+      } catch (err) {
+        console.error("Report CSV export failed:", err);
+        showToast("Export failed: " + (err?.message || err), "error");
       }
-
-      const blob = new Blob([csvContent], { type: "text/csv;charset=utf-8;" });
-      const a = document.createElement("a");
-      a.href = URL.createObjectURL(blob);
-      a.download = filename;
-      a.click();
-      playTone('SUCCESS');
-      showToast(`CSV file ${filename} downloaded!`, "success");
     }
 
     // Print / PDF View Handler
