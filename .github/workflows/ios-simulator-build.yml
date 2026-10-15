@@ -1,0 +1,117 @@
+name: Build Ashiana Attendance iOS Simulator Apps
+
+on:
+  workflow_dispatch:
+
+permissions:
+  contents: read
+
+jobs:
+  build-ios:
+    name: Build ${{ matrix.role }} iOS simulator app
+    runs-on: macos-15
+    strategy:
+      fail-fast: false
+      matrix:
+        include:
+          - role: admin
+            label: Ashiana-Admin-iOS
+          - role: staff
+            label: Ashiana-Staff-iOS
+          - role: student
+            label: Ashiana-Student-iOS
+    env:
+      APP_ROLE: ${{ matrix.role }}
+    steps:
+      - name: Checkout
+        uses: actions/checkout@v7
+
+      - name: Setup Node.js
+        uses: actions/setup-node@v7
+        with:
+          node-version: 22
+
+      - name: Prepare role-specific web bundle
+        shell: bash
+        run: |
+          set -e
+          rm -rf mobile/www
+          mkdir -p mobile/www/assets/vendor
+          cp index.html mobile/www/
+          cp manifest.webmanifest mobile/www/
+          cp sw.js mobile/www/
+          cp "logo 2.png" mobile/www/
+          cp -R assets/vendor/. mobile/www/assets/vendor
+          python3 - <<'PY'
+          import os
+          from pathlib import Path
+          path = Path("mobile/www/index.html")
+          html = path.read_text()
+          role = os.environ["APP_ROLE"]
+          anchor = '  <script src="./assets/vendor/supabase.js"></script>'
+          if html.count(anchor) != 1:
+              raise SystemExit("Could not find expected Supabase script insertion point")
+          additions = anchor + '\n  <script>try{const u=new URL(window.location.href);u.searchParams.set("login","' + role + '");history.replaceState(null,"",u.toString());}catch(e){}</script>'
+          path.write_text(html.replace(anchor, additions, 1))
+          PY
+          test -s mobile/www/assets/vendor/supabase.js
+
+      - name: Install dependencies
+        shell: bash
+        run: |
+          set -e
+          if [ ! -f package-lock.json ]; then
+            npm install --package-lock-only --ignore-scripts --no-audit --no-fund
+          fi
+          npm ci --no-audit --no-fund
+
+      - name: Bundle shared native bridge
+        shell: bash
+        run: |
+          set -e
+          npx esbuild mobile/native-bridge.js --bundle --format=iife --platform=browser --target=es2020 --outfile=mobile/www/assets/vendor/ashiana-native-bridge.js
+          python3 - <<'PY'
+          from pathlib import Path
+          path = Path("mobile/www/index.html")
+          html = path.read_text()
+          anchor = '  <script src="./assets/vendor/supabase.js"></script>'
+          bridge = '  <script src="./assets/vendor/ashiana-native-bridge.js"></script>'
+          if html.count(anchor) != 1:
+              raise SystemExit("Could not find expected script insertion point")
+          path.write_text(html.replace(anchor, anchor + '\n' + bridge, 1))
+          PY
+
+      - name: Verify Capacitor environment
+        run: npx cap doctor
+
+      - name: Add iOS platform
+        run: npx cap add ios
+
+      - name: Sync iOS project
+        run: npx cap sync ios
+
+      - name: Build unsigned iOS Simulator app
+        run: |
+          set -e
+          xcodebuild -project ios/App/App.xcodeproj \
+            -scheme App \
+            -sdk iphonesimulator \
+            -configuration Debug \
+            -derivedDataPath "$RUNNER_TEMP/ashiana-ios-build" \
+            CODE_SIGNING_ALLOWED=NO \
+            build
+
+      - name: Package simulator app
+        run: |
+          set -e
+          APP_PATH="$RUNNER_TEMP/ashiana-ios-build/Build/Products/Debug-iphonesimulator/App.app"
+          test -d "$APP_PATH"
+          ditto -c -k --sequesterRsrc --keepParent "$APP_PATH" "${{ matrix.label }}-Simulator.zip"
+
+      - name: Upload simulator build
+        uses: actions/upload-artifact@v6
+        with:
+          name: ${{ matrix.label }}-Simulator
+          path: ${{ matrix.label }}-Simulator.zip
+          if-no-files-found: error
+          retention-days: 30
