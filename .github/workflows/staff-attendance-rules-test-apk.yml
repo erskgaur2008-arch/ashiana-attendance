@@ -59,6 +59,14 @@ jobs:
           # Override production backend settings in the generated bundle only.
           html = html.replace("https://oalfzgluqroqbbrulhpr.supabase.co", os.environ["TEST_SUPABASE_URL"])
           html = html.replace("sb_publishable_PND9f9FKbNrxlEakSgLKYA_5EsqLHkg", os.environ["TEST_SUPABASE_ANON_KEY"])
+          # Staff dashboard must render the authenticated staff record, never the first local demo row.
+          old_staff_lookup = 'const staff = staffDatabase.find(s => s.id === currentStaffId) || staffDatabase[0];'
+          new_staff_lookup = 'const staff = (currentAuthUser?.type === "STAFF" && currentAuthUser?.staffRecord) ? currentAuthUser.staffRecord : (staffDatabase.find(s => s.id === currentStaffId) || staffDatabase[0]);'
+          if html.count(old_staff_lookup) != 1:
+              raise SystemExit("Safety check failed: expected single staff dashboard identity lookup")
+          html = html.replace(old_staff_lookup, new_staff_lookup, 1)
+          if new_staff_lookup not in html:
+              raise SystemExit("Safety check failed: authenticated staff identity mapping patch missing")
           # This test build must never inherit the previous live/stale staff session.
           # Clear only app identity/session handoff keys before the login UI initializes.
           reset = '''  <script>
