@@ -9234,6 +9234,12 @@ window.addEventListener('load',async function(){
       if (!rules.start || !rules.end || rules.start >= rules.end) errors.push("Scheduled end must be later than scheduled start.");
       if (!Number.isInteger(rules.grace) || rules.grace < 0 || rules.grace > 180) errors.push("Grace period must be a whole number from 0 to 180 minutes.");
       if (!rules.lateAfter) errors.push("Select the late-arrival threshold.");
+      else {
+        const [sh, sm] = rules.start.split(':').map(Number);
+        const expected = sh * 60 + sm + (Number.isFinite(rules.grace) ? rules.grace : 0);
+        const expectedText = expected < 24 * 60 ? String(Math.floor(expected / 60)).padStart(2, '0') + ':' + String(expected % 60).padStart(2, '0') : '';
+        if (!expectedText || rules.lateAfter !== expectedText) errors.push("Late-after must equal scheduled start plus the grace period (currently " + (expectedText || 'outside the same day') + ").");
+      }
       if (Number.isNaN(rules.fullDayHours) || rules.fullDayHours < 0 || rules.fullDayHours > 24) errors.push("Full-day minimum must be between 0 and 24 hours.");
       return errors;
     }
@@ -9485,6 +9491,24 @@ window.addEventListener('load',async function(){
     }
 
     // Helper to calculate attendance stats for a specific date
+    const DEFAULT_STAFF_ATTENDANCE_RULES = { schoolScheduleStart: '07:40', schoolScheduleEnd: '14:30', lateGraceMinutes: 10, lateAfter: '07:50', attendanceDenominator: 'working_days', approvedLeaveTreatment: 'separate', fullDayMinimumHours: 0 };
+    let activeStaffAttendanceRules = { ...DEFAULT_STAFF_ATTENDANCE_RULES };
+    let staffAttendanceRulesFetchPromise = null;
+
+    async function ensureStaffAttendanceRulesLoaded() {
+      if (staffAttendanceRulesFetchPromise) return staffAttendanceRulesFetchPromise;
+      if (!supabaseClient || currentAuthUser?.type !== 'ADMIN') return activeStaffAttendanceRules;
+      staffAttendanceRulesFetchPromise = (async () => {
+        try {
+          const { data, error } = await supabaseClient.from('staff_attendance_rules').select('rules').eq('id', 'default').maybeSingle();
+          if (error) throw error;
+          if (data?.rules && typeof data.rules === 'object') activeStaffAttendanceRules = { ...DEFAULT_STAFF_ATTENDANCE_RULES, ...data.rules };
+        } catch (err) { console.warn('Staff attendance rules unavailable; preserving legacy defaults:', err?.message || err); }
+        return activeStaffAttendanceRules;
+      })().finally(() => { staffAttendanceRulesFetchPromise = null; });
+      return staffAttendanceRulesFetchPromise;
+    }
+
     function calculateAttendanceForDate(staffId, dateStr) {
       const punches = punchLedger
         .filter(p => p.staffId === staffId && p.attendanceDate === dateStr)
@@ -9516,11 +9540,10 @@ window.addEventListener('load',async function(){
 
       if (punches.length > 0) {
         currentStatus = punches[punches.length - 1].type === 'IN' ? 'WORKING' : 'COMPLETED';
-        const startMins = toMins(systemConfig.schoolScheduleStart);
+        const startMins = toMins(activeStaffAttendanceRules.schoolScheduleStart || systemConfig.schoolScheduleStart);
+        const lateThreshold = toMins(activeStaffAttendanceRules.lateAfter || (startMins + Number(activeStaffAttendanceRules.lateGraceMinutes ?? systemConfig.lateGraceMinutes)));
         const arrival = toMins(firstIn);
-        if (arrival > startMins + systemConfig.lateGraceMinutes) {
-          lateMinutes = arrival - startMins;
-        }
+        if (arrival > lateThreshold) lateMinutes = Math.max(0, arrival - startMins);
       }
 
       const leave = leaveRequests.find(l => 
@@ -9537,7 +9560,8 @@ window.addEventListener('load',async function(){
     }
 
     // Main Report Generation Router
-    function runAdminReportGeneration() {
+    async function runAdminReportGeneration() {
+      await ensureStaffAttendanceRulesLoaded();
       // Initialize inputs if empty
       const dateInp = document.getElementById("report-date-input");
       const monthInp = document.getElementById("report-month-input");
@@ -9734,7 +9758,9 @@ window.addEventListener('load',async function(){
         });
 
         const absentDays = Math.max(0, totalSchoolWorkingDays - presentDays - leaveDays);
-        const attendanceRate = totalSchoolWorkingDays > 0 ? Math.round((presentDays / totalSchoolWorkingDays) * 100) : 0;
+        const excludeLeaveFromDenominator = activeStaffAttendanceRules.attendanceDenominator === 'working_days_minus_leave' || activeStaffAttendanceRules.approvedLeaveTreatment === 'exclude_denominator';
+        const attendanceDenominator = Math.max(0, totalSchoolWorkingDays - (excludeLeaveFromDenominator ? leaveDays : 0));
+        const attendanceRate = attendanceDenominator > 0 ? Math.round((presentDays / attendanceDenominator) * 100) : 0;
         const avgMinutesPerPresentDay = presentDays > 0 ? Math.round(totalMinutes / presentDays) : 0;
 
         // Apply status filter
@@ -9772,7 +9798,9 @@ window.addEventListener('load',async function(){
       document.getElementById("kpi-report-label-1").innerText = "Total Faculty";
       document.getElementById("kpi-rep-total").innerText = staffList.length;
       document.getElementById("kpi-report-label-2").innerText = "Avg Attendance %";
-      const avgRate = staffList.length > 0 ? Math.round((grandTotalPresentDays / (staffList.length * totalSchoolWorkingDays)) * 100) : 0;
+      const excludeLeaveFromDenominator = activeStaffAttendanceRules.attendanceDenominator === 'working_days_minus_leave' || activeStaffAttendanceRules.approvedLeaveTreatment === 'exclude_denominator';
+      const totalAttendanceDenominator = records.reduce((sum, record) => sum + Math.max(0, record.workingDays - (excludeLeaveFromDenominator ? record.leaveDays : 0)), 0);
+      const avgRate = totalAttendanceDenominator > 0 ? Math.round((grandTotalPresentDays / totalAttendanceDenominator) * 100) : 0;
       document.getElementById("kpi-rep-present").innerText = `${avgRate}%`;
       document.getElementById("kpi-rep-present-sub").innerText = `${grandTotalPresentDays} Total Attended Days`;
       document.getElementById("kpi-rep-late").innerText = grandTotalLateDays;
