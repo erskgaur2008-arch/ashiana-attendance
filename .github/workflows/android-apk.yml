@@ -40,7 +40,12 @@ jobs:
           set -e
           rm -rf mobile/www
           mkdir -p mobile/www/assets/vendor
-          cp index.html mobile/www/
+          if [ "$GITHUB_REF_NAME" = "fix/test-apk-staff-pin" ] || [ "$GITHUB_REF_NAME" = "fix/test-supabase-isolation" ]; then
+            cp test.html mobile/www/index.html
+            echo "Building isolated EduPunch-Test APK from test.html"
+          else
+            cp index.html mobile/www/index.html
+          fi
           cp manifest.webmanifest mobile/www/
           cp sw.js mobile/www/
           cp "logo 2.png" mobile/www/
