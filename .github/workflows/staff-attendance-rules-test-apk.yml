@@ -1,0 +1,155 @@
+name: Staff Attendance Rules Test APK
+
+on:
+  workflow_dispatch:
+  push:
+    branches:
+      - test/staff-attendance-rules
+
+permissions:
+  contents: read
+
+jobs:
+  build-edupunch-test-staff:
+    name: Build isolated Staff attendance test APK
+    runs-on: ubuntu-latest
+    env:
+      APP_ROLE: staff
+      TEST_SUPABASE_URL: https://goztsnvscanozcfjzwxy.supabase.co
+      TEST_SUPABASE_ANON_KEY: sb_publishable_bLByB1N3ESh_5ncJ-yh3_Q_DkBpoGHh
+    steps:
+      - name: Checkout test branch
+        uses: actions/checkout@v7
+
+      - name: Setup Node.js
+        uses: actions/setup-node@v7
+        with:
+          node-version: 22
+
+      - name: Setup Java 21
+        uses: actions/setup-java@v5
+        with:
+          distribution: temurin
+          java-version: "21"
+
+      - name: Prepare staff-only web bundle and force EduPunch-Test backend
+        shell: bash
+        run: |
+          set -euo pipefail
+          rm -rf mobile/www
+          mkdir -p mobile/www/assets/vendor
+          cp index.html mobile/www/
+          cp manifest.webmanifest mobile/www/
+          cp sw.js mobile/www/
+          cp "logo 2.png" mobile/www/
+          cp -R assets/vendor/. mobile/www/assets/vendor
+          python3 - <<'PY'
+          import os
+          from pathlib import Path
+
+          path = Path("mobile/www/index.html")
+          html = path.read_text()
+          role = os.environ["APP_ROLE"]
+          anchor = '  <script src="./assets/vendor/supabase.js"></script>'
+          if html.count(anchor) != 1:
+              raise SystemExit("Could not find expected Supabase script insertion point")
+          additions = anchor + '\\n  <script>try{const u=new URL(window.location.href);u.searchParams.set("login","' + role + '");history.replaceState(null,"",u.toString());}catch(e){}</script>'
+          html = html.replace(anchor, additions, 1)
+
+          # Override production backend settings in the generated bundle only.
+          html = html.replace("https://oalfzgluqroqbbrulhpr.supabase.co", os.environ["TEST_SUPABASE_URL"])
+          html = html.replace("sb_publishable_PND9f9FKbNrxlEakSgLKYA_5EsqLHkg", os.environ["TEST_SUPABASE_ANON_KEY"])
+          if "oalfzgluqroqbbrulhpr.supabase.co" in html or "sb_publishable_PND9f9FKbNrxlEakSgLKYA_5EsqLHkg" in html:
+              raise SystemExit("Safety check failed: production Supabase configuration remains in the test APK bundle")
+          if os.environ["TEST_SUPABASE_URL"] not in html or os.environ["TEST_SUPABASE_ANON_KEY"] not in html:
+              raise SystemExit("Safety check failed: EduPunch-Test configuration was not injected")
+          path.write_text(html)
+          print("Safety check passed: staff APK targets EduPunch-Test only.")
+          PY
+          test -s mobile/www/assets/vendor/supabase.js
+
+      - name: Install dependencies
+        shell: bash
+        run: |
+          set -euo pipefail
+          if [ ! -f package-lock.json ]; then
+            npm install --package-lock-only --ignore-scripts --no-audit --no-fund
+          fi
+          npm ci --no-audit --no-fund
+
+      - name: Bundle Android native bridge
+        shell: bash
+        run: |
+          set -euo pipefail
+          npx esbuild mobile/native-bridge.js --bundle --format=iife --platform=browser --target=es2020 --outfile=mobile/www/assets/vendor/ashiana-native-bridge.js
+          python3 - <<'PY'
+          from pathlib import Path
+          path = Path("mobile/www/index.html")
+          html = path.read_text()
+          anchor = '  <script src="./assets/vendor/supabase.js"></script>'
+          bridge = '  <script src="./assets/vendor/ashiana-native-bridge.js"></script>'
+          if html.count(anchor) != 1:
+              raise SystemExit("Could not find expected script insertion point")
+          path.write_text(html.replace(anchor, anchor + '\\n' + bridge, 1))
+          PY
+
+      - name: Verify Capacitor environment
+        run: npx cap doctor
+
+      - name: Add Android platform
+        run: npx cap add android
+
+      - name: Set unique test-only Android application ID
+        shell: bash
+        run: |
+          set -euo pipefail
+          python3 - <<'PY'
+          from pathlib import Path
+          path = Path("capacitor.config.ts")
+          source = path.read_text()
+          old = 'staff: { appId: "com.ashianapublicschool.attendance.staff", appName: "Ashiana Staff" }'
+          new = 'staff: { appId: "com.ashianapublicschool.attendance.staff.test", appName: "Ashiana Staff Test" }'
+          if source.count(old) != 1:
+              raise SystemExit("Expected staff app ID mapping was not found exactly once")
+          path.write_text(source.replace(old, new, 1))
+          if "com.ashianapublicschool.attendance.staff.test" not in path.read_text():
+              raise SystemExit("Test package ID was not applied")
+          print("Configured unique test-only package ID.")
+          PY
+
+      - name: Sync Android project
+        run: npx cap sync android
+
+      - name: Declare Android camera permission
+        shell: bash
+        run: |
+          set -euo pipefail
+          python3 - <<'PY'
+          from pathlib import Path
+          import re
+          path = Path("android/app/src/main/AndroidManifest.xml")
+          xml = path.read_text()
+          if "android.permission.CAMERA" not in xml:
+              match = re.search(r'<manifest\\b[^>]*>', xml)
+              if not match:
+                  raise SystemExit("Could not locate manifest root element")
+              xml = xml[:match.end()] + '\\n    <uses-permission android:name="android.permission.CAMERA" />' + xml[match.end():]
+              path.write_text(xml)
+          if "android.permission.CAMERA" not in path.read_text():
+              raise SystemExit("Camera permission missing")
+          PY
+
+      - name: Build debug APK
+        working-directory: android
+        run: ./gradlew assembleDebug --no-daemon --stacktrace
+
+      - name: Rename test APK
+        run: cp android/app/build/outputs/apk/debug/app-debug.apk EduPunch-Test-Staff-Attendance-APK.apk
+
+      - name: Upload test APK
+        uses: actions/upload-artifact@v6
+        with:
+          name: EduPunch-Test-Staff-Attendance-APK
+          path: EduPunch-Test-Staff-Attendance-APK.apk
+          if-no-files-found: error
+          retention-days: 7
