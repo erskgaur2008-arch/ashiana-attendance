@@ -41,6 +41,7 @@ jobs:
           rm -rf mobile/www
           mkdir -p mobile/www/assets/vendor
           cp index.html mobile/www/
+          cp ios-pwa.css mobile/www/
           cp manifest.webmanifest mobile/www/
           cp sw.js mobile/www/
           cp "logo 2.png" mobile/www/
