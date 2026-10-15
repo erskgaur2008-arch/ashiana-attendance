@@ -9929,6 +9929,30 @@ window.addEventListener('load',async function(){
         if (isAshianaNativeAndroid()) {
           const printable = container.cloneNode(true);
           printable.classList.remove("hidden");
+
+          // Native print HTML is rendered in a separate document, so relative image
+          // paths such as "logo 2.png" are not resolved against the app page.
+          // Embed the already-loaded school logo to make it available to the print plugin.
+          const logo = printable.querySelector("img");
+          if (logo) {
+            try {
+              const logoUrl = document.querySelector('#print-report-container img')?.src || logo.src;
+              const response = await fetch(logoUrl);
+              if (!response.ok) throw new Error("Logo request failed");
+              const logoBlob = await response.blob();
+              const logoDataUrl = await new Promise((resolve, reject) => {
+                const reader = new FileReader();
+                reader.onload = () => resolve(reader.result);
+                reader.onerror = () => reject(new Error("Could not prepare school logo for printing"));
+                reader.readAsDataURL(logoBlob);
+              });
+              logo.src = logoDataUrl;
+              logo.removeAttribute("onerror");
+            } catch (logoError) {
+              console.warn("Could not embed school logo in native print:", logoError);
+            }
+          }
+
           const html = `<!doctype html><html><head><meta charset="utf-8"><meta name="viewport" content="width=device-width,initial-scale=1"><title>${reportTitle.replace(/[&<>"]/g, ch => ({"&":"&amp;","<":"&lt;",">":"&gt;",'"':"&quot;"}[ch]))}</title><style>
             @page { size: A4 landscape; margin: 12mm; }
             * { box-sizing: border-box; } body { font-family: Arial, sans-serif; color: #1e293b; font-size: 10px; }
