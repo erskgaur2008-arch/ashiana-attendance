@@ -2684,6 +2684,7 @@
         <button type="button" onclick="window.switchAdminTab('live')"><i data-lucide="radio"></i><span>Live Attendance</span></button>
         <button type="button" onclick="window.switchAdminTab('qr')"><i data-lucide="qr-code"></i><span>Daily QR</span></button>
         <button type="button" id="admin-nav-reports" onclick="window.switchAdminTab('reports')"><i data-lucide="file-spreadsheet"></i><span>Report</span></button>
+        <button type="button" id="admin-nav-attendance-rules" onclick="window.switchAdminTab('attendance-rules')" title="Manage staff attendance calculation rules"><i data-lucide="sliders-horizontal"></i><span>Attendance Rules</span></button>
         <button type="button" id="admin-nav-leave" onclick="window.switchAdminTab('leave')" title="Faculty Leave Applications"><i data-lucide="calendar-check"></i><span>Leaves</span></button>
         <button type="button" id="admin-nav-corrections" onclick="window.switchAdminTab('corrections')" title="Manual Attendance Corrections"><i data-lucide="file-pen"></i><span>Corrections</span></button>
       </div>
@@ -3271,6 +3272,54 @@
           </div>
           <div class="bg-white rounded-2xl border p-4 sm:p-5"><div class="flex justify-between"><h4 class="text-sm font-extrabold">Report Cards</h4><button type="button" onclick="loadAdminStudentPortalReports()" class="text-[10px] font-extrabold text-emerald-700">Refresh</button></div><div id="admin-student-portal-report-list" class="mt-3 space-y-2"></div></div>
         </div>
+      </div>
+
+      <div id="admin-tab-attendance-rules" class="hidden space-y-4">
+        <section class="bg-white rounded-2xl border border-slate-200 shadow-sm p-4 sm:p-5">
+          <div class="flex flex-col gap-2 border-b border-slate-100 pb-4 mb-4">
+            <h3 class="text-base font-extrabold text-slate-900 flex items-center gap-2"><i data-lucide="sliders-horizontal" class="w-5 h-5 text-ashiana-green"></i> Staff Attendance Calculation Rules</h3>
+            <p class="text-xs text-slate-500">Review and preview staff attendance rules. Current defaults are preserved; shared saving is pending an approved database migration.</p>
+            <div class="rounded-xl border border-amber-200 bg-amber-50 p-3 text-xs text-amber-900"><strong>Draft mode:</strong> Changes on this page are for preview only. They are not saved or applied to attendance reports.</div>
+          </div>
+          <div class="grid grid-cols-1 sm:grid-cols-2 gap-4">
+            <label class="block text-xs font-bold text-slate-700">Scheduled start
+              <input id="attendance-rule-start" type="time" value="07:40" class="mt-1 w-full rounded-xl border border-slate-200 bg-slate-50 p-3 text-sm">
+            </label>
+            <label class="block text-xs font-bold text-slate-700">Scheduled end
+              <input id="attendance-rule-end" type="time" value="14:30" class="mt-1 w-full rounded-xl border border-slate-200 bg-slate-50 p-3 text-sm">
+            </label>
+            <label class="block text-xs font-bold text-slate-700">Late grace period (minutes)
+              <input id="attendance-rule-grace" type="number" min="0" max="180" step="1" value="10" class="mt-1 w-full rounded-xl border border-slate-200 bg-slate-50 p-3 text-sm">
+            </label>
+            <label class="block text-xs font-bold text-slate-700">Late after
+              <input id="attendance-rule-late-after" type="time" value="07:50" class="mt-1 w-full rounded-xl border border-slate-200 bg-slate-50 p-3 text-sm">
+              <span class="mt-1 block font-normal text-slate-500">Current report reference: 7:50 AM.</span>
+            </label>
+            <label class="block text-xs font-bold text-slate-700">Attendance percentage denominator
+              <select id="attendance-rule-denominator" class="mt-1 w-full rounded-xl border border-slate-200 bg-slate-50 p-3 text-sm">
+                <option value="working_days">All school working days (current behavior)</option>
+                <option value="working_days_minus_leave">Working days excluding approved leave</option>
+              </select>
+            </label>
+            <label class="block text-xs font-bold text-slate-700">Approved leave treatment
+              <select id="attendance-rule-leave" class="mt-1 w-full rounded-xl border border-slate-200 bg-slate-50 p-3 text-sm">
+                <option value="separate">Count separately; subtract from absence (current behavior)</option>
+                <option value="exclude_denominator">Exclude approved leave from denominator</option>
+              </select>
+            </label>
+            <label class="block text-xs font-bold text-slate-700 sm:col-span-2">Full-day minimum work hours (preview-only option)
+              <input id="attendance-rule-full-day-hours" type="number" min="0" max="24" step="0.5" value="0" class="mt-1 w-full rounded-xl border border-slate-200 bg-slate-50 p-3 text-sm">
+              <span class="mt-1 block font-normal text-slate-500">0 means do not classify by hours (current behavior; any valid punch makes the day present).</span>
+            </label>
+          </div>
+          <div class="mt-5 flex flex-wrap gap-2">
+            <button type="button" onclick="previewStaffAttendanceRules()" class="rounded-xl bg-ashiana-green px-4 py-2.5 text-sm font-bold text-white">Preview calculation</button>
+            <button type="button" onclick="resetStaffAttendanceRulesDraft()" class="rounded-xl border border-slate-200 px-4 py-2.5 text-sm font-bold text-slate-700">Reset to current defaults</button>
+            <button type="button" onclick="requestSaveStaffAttendanceRules()" class="rounded-xl border border-amber-300 bg-amber-50 px-4 py-2.5 text-sm font-bold text-amber-900">Save shared rules…</button>
+          </div>
+          <div id="attendance-rule-validation" class="hidden mt-4 rounded-xl border border-rose-200 bg-rose-50 p-3 text-sm text-rose-800" role="alert"></div>
+          <div id="attendance-rule-preview" class="hidden mt-4 rounded-xl border border-slate-200 bg-slate-50 p-4" aria-live="polite"></div>
+        </section>
       </div>
 
       <div id="admin-tab-reports" class="hidden space-y-4">
@@ -9168,8 +9217,75 @@ window.addEventListener('load',async function(){
       if (event.key === "Escape") closeAdminDailyQRPreview();
     });
 
+    function getStaffAttendanceRulesDraft() {
+      return {
+        start: document.getElementById("attendance-rule-start")?.value || "07:40",
+        end: document.getElementById("attendance-rule-end")?.value || "14:30",
+        grace: Number(document.getElementById("attendance-rule-grace")?.value),
+        lateAfter: document.getElementById("attendance-rule-late-after")?.value || "07:50",
+        denominator: document.getElementById("attendance-rule-denominator")?.value || "working_days",
+        leaveTreatment: document.getElementById("attendance-rule-leave")?.value || "separate",
+        fullDayHours: Number(document.getElementById("attendance-rule-full-day-hours")?.value)
+      };
+    }
+
+    function validateStaffAttendanceRulesDraft(rules) {
+      const errors = [];
+      if (!rules.start || !rules.end || rules.start >= rules.end) errors.push("Scheduled end must be later than scheduled start.");
+      if (!Number.isInteger(rules.grace) || rules.grace < 0 || rules.grace > 180) errors.push("Grace period must be a whole number from 0 to 180 minutes.");
+      if (!rules.lateAfter) errors.push("Select the late-arrival threshold.");
+      if (Number.isNaN(rules.fullDayHours) || rules.fullDayHours < 0 || rules.fullDayHours > 24) errors.push("Full-day minimum must be between 0 and 24 hours.");
+      return errors;
+    }
+
+    function previewStaffAttendanceRules() {
+      const rules = getStaffAttendanceRulesDraft();
+      const errors = validateStaffAttendanceRulesDraft(rules);
+      const validation = document.getElementById("attendance-rule-validation");
+      const preview = document.getElementById("attendance-rule-preview");
+      validation.classList.toggle("hidden", errors.length === 0);
+      validation.textContent = errors.join(" ");
+      if (errors.length) { preview.classList.add("hidden"); return; }
+      const denominator = rules.denominator === "working_days_minus_leave" ? "working days minus approved leave" : "all school working days";
+      const leaveText = rules.leaveTreatment === "exclude_denominator" ? "Approved leave excluded from the attendance percentage denominator." : "Approved leave remains separate and reduces absent days.";
+      const samplePresent = 18, sampleLeave = 2, sampleWorking = 22;
+      const sampleDenominator = rules.denominator === "working_days_minus_leave" ? sampleWorking - sampleLeave : sampleWorking;
+      const sampleRate = sampleDenominator > 0 ? Math.round(samplePresent / sampleDenominator * 100) : 0;
+      preview.innerHTML = '<h4 class="font-extrabold text-slate-900 mb-2">Calculation preview (illustrative)</h4>' +
+        '<p class="text-sm text-slate-700">Schedule: <strong>' + rules.start + '–' + rules.end + '</strong>; grace: <strong>' + rules.grace + ' min</strong>; late threshold: <strong>' + rules.lateAfter + '</strong>.</p>' +
+        '<p class="text-sm text-slate-700 mt-1">Percentage denominator: <strong>' + denominator + '</strong>. ' + leaveText + '</p>' +
+        '<div class="grid grid-cols-2 sm:grid-cols-4 gap-2 mt-3">' +
+        '<div class="rounded-lg bg-white border p-3"><span class="text-xs text-slate-500">Present</span><p class="text-lg font-black">18</p></div>' +
+        '<div class="rounded-lg bg-white border p-3"><span class="text-xs text-slate-500">Approved leave</span><p class="text-lg font-black">2</p></div>' +
+        '<div class="rounded-lg bg-white border p-3"><span class="text-xs text-slate-500">Working days</span><p class="text-lg font-black">22</p></div>' +
+        '<div class="rounded-lg bg-white border p-3"><span class="text-xs text-slate-500">Attendance</span><p class="text-lg font-black text-emerald-700">' + sampleRate + '%</p></div></div>' +
+        '<p class="text-xs text-slate-500 mt-2">Illustrative values only; no real staff records were changed. Hour-based classification remains disabled when set to 0.</p>';
+      preview.classList.remove("hidden");
+    }
+
+    function resetStaffAttendanceRulesDraft() {
+      document.getElementById("attendance-rule-start").value = "07:40";
+      document.getElementById("attendance-rule-end").value = "14:30";
+      document.getElementById("attendance-rule-grace").value = "10";
+      document.getElementById("attendance-rule-late-after").value = "07:50";
+      document.getElementById("attendance-rule-denominator").value = "working_days";
+      document.getElementById("attendance-rule-leave").value = "separate";
+      document.getElementById("attendance-rule-full-day-hours").value = "0";
+      document.getElementById("attendance-rule-validation").classList.add("hidden");
+      document.getElementById("attendance-rule-preview").classList.add("hidden");
+    }
+
+    function requestSaveStaffAttendanceRules() {
+      const errors = validateStaffAttendanceRulesDraft(getStaffAttendanceRulesDraft());
+      const validation = document.getElementById("attendance-rule-validation");
+      validation.classList.toggle("hidden", errors.length === 0);
+      validation.textContent = errors.join(" ");
+      if (errors.length) return;
+      alert("Shared saving is not enabled yet. A database migration and admin-only RLS policy must be reviewed and explicitly approved before rules can be saved. Your draft has not been saved or applied.");
+    }
+
     function switchAdminTab(tab) {
-      const allowedTabs = ['live', 'qr', 'directory', 'corrections', 'leave', 'audit', 'reports', 'students', 'student-portal'];
+      const allowedTabs = ['live', 'qr', 'directory', 'corrections', 'leave', 'audit', 'reports', 'attendance-rules', 'students', 'student-portal'];
       if (!allowedTabs.includes(tab)) return;
 
       const dailyQrTab = document.getElementById("admin-tab-qr");
@@ -9194,7 +9310,7 @@ window.addEventListener('load',async function(){
       });
 
       // Keep the selected quick-action visibly active.
-      ["reports","leave","corrections","student-portal"].forEach(t => {
+      ["reports","leave","corrections","student-portal","attendance-rules"].forEach(t => {
         const quickBtn = document.getElementById(`admin-nav-${t}`);
         if (quickBtn) {
           quickBtn.style.borderColor = t === tab ? "#0A7E46" : "";
