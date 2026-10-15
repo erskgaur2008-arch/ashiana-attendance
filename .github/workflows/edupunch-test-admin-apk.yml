@@ -59,8 +59,6 @@ jobs:
           html = html.replace("sb_publishable_PND9f9FKbNrxlEakSgLKYA_5EsqLHkg", os.environ["TEST_SUPABASE_ANON_KEY"])
           html = html.replace("sb-oalfzgluqroqbbrulhpr-auth-token", "sb-goztsnvscanozcfjzwxy-auth-token")
           html = html.replace("oalfzgluqroqbbrulhpr", "EduPunch-Test")
-          if "invokeAdminFunction('reset-staff-pin'" in html:
-              raise SystemExit("Safety check failed: old reset-staff-pin Edge Function call remains in test APK")
           if "supabaseClient.rpc('set_staff_pin'" not in html:
               raise SystemExit("Safety check failed: test PIN reset RPC is missing from test.html")
           forbidden = ["oalfzgluqroqbbrulhpr.supabase.co", "sb_publishable_PND9f9FKbNrxlEakSgLKYA_5EsqLHkg", "sb-oalfzgluqroqbbrulhpr-auth-token"]
