@@ -3279,7 +3279,7 @@
           <div class="flex flex-col gap-2 border-b border-slate-100 pb-4 mb-4">
             <h3 class="text-base font-extrabold text-slate-900 flex items-center gap-2"><i data-lucide="sliders-horizontal" class="w-5 h-5 text-ashiana-green"></i> Staff Attendance Calculation Rules</h3>
             <p class="text-xs text-slate-500">Review and preview staff attendance rules. Current defaults are preserved; shared saving is pending an approved database migration.</p>
-            <div class="rounded-xl border border-amber-200 bg-amber-50 p-3 text-xs text-amber-900"><strong>Draft mode:</strong> Changes on this page are for preview only. They are not saved or applied to attendance reports.</div>
+            <div id="attendance-rule-status" class="rounded-xl border border-slate-200 bg-slate-50 p-3 text-xs text-slate-700" role="status">Loading shared rules when you open this page.</div>
           </div>
           <div class="grid grid-cols-1 sm:grid-cols-2 gap-4">
             <label class="block text-xs font-bold text-slate-700">Scheduled start
@@ -9275,18 +9275,96 @@ window.addEventListener('load',async function(){
       document.getElementById("attendance-rule-preview").classList.add("hidden");
     }
 
-    function requestSaveStaffAttendanceRules() {
-      const errors = validateStaffAttendanceRulesDraft(getStaffAttendanceRulesDraft());
+    let staffAttendanceRulesLoadedVersion = null;
+    let staffAttendanceRulesLoadedRules = null;
+
+    function applyStaffAttendanceRulesToForm(rules) {
+      document.getElementById("attendance-rule-start").value = rules.schoolScheduleStart || "07:40";
+      document.getElementById("attendance-rule-end").value = rules.schoolScheduleEnd || "14:30";
+      document.getElementById("attendance-rule-grace").value = String(rules.lateGraceMinutes ?? 10);
+      document.getElementById("attendance-rule-late-after").value = rules.lateAfter || "07:50";
+      document.getElementById("attendance-rule-denominator").value = rules.attendanceDenominator || "working_days";
+      document.getElementById("attendance-rule-leave").value = rules.approvedLeaveTreatment || "separate";
+      document.getElementById("attendance-rule-full-day-hours").value = String(rules.fullDayMinimumHours ?? 0);
+    }
+
+    async function loadStaffAttendanceRules() {
+      const status = document.getElementById("attendance-rule-status");
+      if (!supabaseClient || currentAuthUser?.type !== "ADMIN") {
+        if (status) status.textContent = "Sign in as an Admin to load shared rules.";
+        return;
+      }
+      if (status) status.textContent = "Loading shared rules…";
+      try {
+        const { data, error } = await supabaseClient.from("staff_attendance_rules")
+          .select("id,rules,version,updated_at,updated_by").eq("id","default").maybeSingle();
+        if (error) throw error;
+        if (!data) throw new Error("No shared rules record exists in this database. Apply the reviewed test migration first.");
+        staffAttendanceRulesLoadedVersion = data.version;
+        staffAttendanceRulesLoadedRules = data.rules;
+        applyStaffAttendanceRulesToForm(data.rules || {});
+        if (status) status.textContent = "Shared rules loaded • version " + data.version + " • updated " + new Date(data.updated_at).toLocaleString();
+      } catch (err) {
+        console.error("Could not load staff attendance rules:", err);
+        if (status) status.textContent = "Could not load shared rules: " + (err?.message || err);
+      }
+    }
+
+    async function requestSaveStaffAttendanceRules() {
+      const rules = getStaffAttendanceRulesDraft();
+      const errors = validateStaffAttendanceRulesDraft(rules);
       const validation = document.getElementById("attendance-rule-validation");
       validation.classList.toggle("hidden", errors.length === 0);
       validation.textContent = errors.join(" ");
       if (errors.length) return;
-      alert("Shared saving is not enabled yet. A database migration and admin-only RLS policy must be reviewed and explicitly approved before rules can be saved. Your draft has not been saved or applied.");
+      if (!supabaseClient || currentAuthUser?.type !== "ADMIN") {
+        alert("Only a signed-in Admin can save shared rules.");
+        return;
+      }
+      if (staffAttendanceRulesLoadedVersion == null || !staffAttendanceRulesLoadedRules) {
+        alert("Load the current shared rules successfully before saving. No changes were saved.");
+        return;
+      }
+      const payload = {
+        schoolScheduleStart: rules.start,
+        schoolScheduleEnd: rules.end,
+        lateGraceMinutes: rules.grace,
+        lateAfter: rules.lateAfter,
+        attendanceDenominator: rules.denominator,
+        approvedLeaveTreatment: rules.leaveTreatment,
+        fullDayMinimumHours: rules.fullDayHours
+      };
+      const changedBy = currentAuthUser?.email || null;
+      const confirmText = "Save these staff attendance rules for all Admin devices? This updates shared settings only. It does not recalculate historical reports. Continue?";
+      if (!window.confirm(confirmText)) return;
+      const status = document.getElementById("attendance-rule-status");
+      if (status) status.textContent = "Saving shared rules…";
+      try {
+        const nextVersion = staffAttendanceRulesLoadedVersion + 1;
+        const { error: historyError } = await supabaseClient.from("staff_attendance_rules_history")
+          .insert({ rule_version: nextVersion, rules: payload, changed_by: changedBy });
+        if (historyError) throw historyError;
+        const { data, error } = await supabaseClient.from("staff_attendance_rules")
+          .update({ rules: payload, version: nextVersion, updated_at: new Date().toISOString(), updated_by: changedBy })
+          .eq("id","default").eq("version",staffAttendanceRulesLoadedVersion)
+          .select("version,rules,updated_at,updated_by").maybeSingle();
+        if (error) throw error;
+        if (!data) throw new Error("Rules changed elsewhere or the update was not authorized. Reload the shared rules and try again.");
+        staffAttendanceRulesLoadedVersion = data.version;
+        staffAttendanceRulesLoadedRules = data.rules;
+        if (status) status.textContent = "Saved shared rules • version " + data.version + " • " + new Date(data.updated_at).toLocaleString();
+        showToast("Staff attendance rules saved. Existing attendance records were not recalculated.", "success");
+      } catch (err) {
+        console.error("Could not save staff attendance rules:", err);
+        if (status) status.textContent = "Save failed: " + (err?.message || err);
+        alert("Rules were not confirmed as saved: " + (err?.message || err) + ". Reload shared rules before retrying.");
+      }
     }
 
     function switchAdminTab(tab) {
       const allowedTabs = ['live', 'qr', 'directory', 'corrections', 'leave', 'audit', 'reports', 'attendance-rules', 'students', 'student-portal'];
       if (!allowedTabs.includes(tab)) return;
+      if (tab === "attendance-rules") loadStaffAttendanceRules();
 
       const dailyQrTab = document.getElementById("admin-tab-qr");
       if (dailyQrTab) dailyQrTab.classList.toggle("admin-qr-page-active", tab === "qr");
