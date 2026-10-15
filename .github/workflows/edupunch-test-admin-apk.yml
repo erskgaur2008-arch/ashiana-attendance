@@ -59,7 +59,8 @@ jobs:
           html = html.replace("sb_publishable_PND9f9FKbNrxlEakSgLKYA_5EsqLHkg", os.environ["TEST_SUPABASE_ANON_KEY"])
           html = html.replace("sb-oalfzgluqroqbbrulhpr-auth-token", "sb-goztsnvscanozcfjzwxy-auth-token")
           html = html.replace("oalfzgluqroqbbrulhpr", "EduPunch-Test")
-          old_pin_call = "        const result = await invokeAdminFunction('reset-staff-pin', { staff_id: staff.id, pin: newPin });"
+          import re
+          old_pin_pattern = r"(?m)^[ \\t]*const result = await invokeAdminFunction\\('reset-staff-pin', \\{ staff_id: staff\\.id, pin: newPin \\}\\);"
           new_pin_call = """        if (!supabaseClient) throw new Error("Test database session is unavailable. Please sign in again.");
                 const { data, error } = await supabaseClient.rpc('set_staff_pin', {
                   p_staff_id: staff.id,
@@ -67,9 +68,9 @@ jobs:
                 });
                 if (error) throw error;
                 if (data !== true) throw new Error("PIN reset was not authorized for this account.");"""
-          if html.count(old_pin_call) != 1:
-              raise SystemExit("Safety check failed: expected admin PIN reset Edge Function call was not found exactly once")
-          html = html.replace(old_pin_call, new_pin_call, 1)
+          html, pin_call_count = re.subn(old_pin_pattern, lambda match: new_pin_call, html)
+          if pin_call_count != 1:
+              raise SystemExit(f"Safety check failed: expected one admin PIN reset Edge Function call, found {pin_call_count}")
           if "invokeAdminFunction('reset-staff-pin'" in html:
               raise SystemExit("Safety check failed: old reset-staff-pin Edge Function call remains in test APK")
           if "supabaseClient.rpc('set_staff_pin'" not in html:
