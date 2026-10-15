@@ -7873,7 +7873,18 @@ async function loadAdminStudentAttendance(){
     function refreshStaffUI() {
       applyStaffRoleAccess();
       if (!currentStaffId) return;
-      const staff = staffDatabase.find(s => s.id === currentStaffId) || staffDatabase[0];
+      // The authenticated identity is authoritative. Never substitute the first
+      // cached roster entry when the signed-in staff ID is absent from the roster.
+      const signedInStaff = currentAuthUser?.type === "STAFF" ? currentAuthUser.staffRecord : null;
+      if (signedInStaff?.id) currentStaffId = signedInStaff.id;
+      const rosterStaff = staffDatabase.find(s => String(s.id) === String(currentStaffId));
+      const staff = signedInStaff?.id
+        ? { ...(rosterStaff || {}), ...signedInStaff }
+        : rosterStaff;
+      if (!staff?.id) {
+        console.error("Staff dashboard blocked: no verified staff identity is available; refusing to show a fallback employee.");
+        return;
+      }
       const stats = calculateAttendance(staff.id);
 
       document.getElementById("staff-header-name").innerText = staff.name;
