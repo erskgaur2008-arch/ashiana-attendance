@@ -9763,7 +9763,7 @@ window.addEventListener('load',async function(){
     // =========================================================================
     // 💾 EXCEL & CSV EXPORT HANDLERS (USING SHEETJS)
     // =========================================================================
-    function exportCurrentReportToExcel() {
+    async function exportCurrentReportToExcel() {
       if (!lastGeneratedReportData || lastGeneratedReportData.length === 0) {
         showToast("No data to export. Please generate a report first.", "error");
         return;
@@ -9828,86 +9828,155 @@ window.addEventListener('load',async function(){
           const ws = XLSX.utils.json_to_sheet(exportData);
           const wb = XLSX.utils.book_new();
           XLSX.utils.book_append_sheet(wb, ws, "Attendance Report");
-          XLSX.writeFile(wb, filename);
+          if (isAshianaNativeAndroid()) {
+            const bytes = XLSX.write(wb, { bookType: "xlsx", type: "array" });
+            const blob = new Blob([bytes], { type: "application/vnd.openxmlformats-officedocument.spreadsheetml.sheet" });
+            await shareGeneratedIdCardFile(blob, filename, "application/vnd.openxmlformats-officedocument.spreadsheetml.sheet");
+          } else {
+            XLSX.writeFile(wb, filename);
+          }
           playTone('SUCCESS');
           showToast(`Report exported to ${filename}!`, "success");
         } else {
           // Fallback to CSV if XLSX is unavailable
-          exportCurrentReportToCSV();
+          await exportCurrentReportToCSV();
         }
       } catch (err) {
-        showToast("Export failed: " + err.message, "error");
+        console.error("Report Excel export failed:", err);
+        showToast("Export failed: " + (err?.message || err), "error");
       }
     }
 
-    function exportCurrentReportToCSV() {
+    async function exportCurrentReportToCSV() {
       if (!lastGeneratedReportData || lastGeneratedReportData.length === 0) {
         showToast("No data to export.", "error");
         return;
       }
 
-      let csvContent = "";
-      let filename = "";
+      try {
+        let csvContent = "";
+        let filename = "";
 
-      if (currentReportType === 'daily') {
-        const date = document.getElementById("report-date-input").value;
-        filename = `Ashiana_Daily_Attendance_${date}.csv`;
-        csvContent = "S.No,Employee ID,Faculty Name,Department,Designation,First IN,Last OUT,Punches,Work Duration,Late Mins,Status\n";
-        lastGeneratedReportData.forEach((r, i) => {
-          csvContent += `"${i + 1}","${r.empId}","${r.name}","${r.department}","${r.role}","${r.firstIn}","${r.lastOut}",${r.punchCount},"${r.workTimeStr}",${r.lateMins},"${r.status}"\n`;
-        });
-      } else if (currentReportType === 'monthly') {
-        const month = document.getElementById("report-month-input").value;
-        filename = `Ashiana_Monthly_Muster_Roll_${month}.csv`;
-        csvContent = "S.No,Employee ID,Faculty Name,Department,Working Days,Present,Absent,Leaves,Late Days,Total Work,Avg/Day,Attendance %\n";
-        lastGeneratedReportData.forEach((r, i) => {
-          csvContent += `"${i + 1}","${r.empId}","${r.name}","${r.department}",${r.workingDays},${r.presentDays},${r.absentDays},${r.leaveDays},${r.lateDays},"${r.totalWorkStr}","${r.avgDayStr}","${r.attendanceRate}%"\n`;
-        });
-      } else if (currentReportType === 'faculty') {
-        const selStaff = staffDatabase.find(s => s.id === document.getElementById("report-faculty-select").value) || staffDatabase[0];
-        const month = document.getElementById("report-month-input").value;
-        filename = `Ashiana_Faculty_Dossier_${selStaff.empId}_${month}.csv`;
-        csvContent = "Date,Day,First IN,Last OUT,Punches,Work Duration,Late Mins,Status,Remarks\n";
-        lastGeneratedReportData.forEach(r => {
-          csvContent += `"${r.date}","${r.dayOfWeek}","${r.firstIn}","${r.lastOut}",${r.punchCount},"${r.workTimeStr}",${r.lateMins},"${r.status}","${r.details}"\n`;
-        });
+        if (currentReportType === 'daily') {
+          const date = document.getElementById("report-date-input").value;
+          filename = `Ashiana_Daily_Attendance_${date}.csv`;
+          csvContent = "S.No,Employee ID,Faculty Name,Department,Designation,First IN,Last OUT,Punches,Work Duration,Late Mins,Status\n";
+          lastGeneratedReportData.forEach((r, i) => {
+            csvContent += `"${i + 1}","${r.empId}","${r.name}","${r.department}","${r.role}","${r.firstIn}","${r.lastOut}",${r.punchCount},"${r.workTimeStr}",${r.lateMins},"${r.status}"\n`;
+          });
+        } else if (currentReportType === 'monthly') {
+          const month = document.getElementById("report-month-input").value;
+          filename = `Ashiana_Monthly_Muster_Roll_${month}.csv`;
+          csvContent = "S.No,Employee ID,Faculty Name,Department,Working Days,Present,Absent,Leaves,Late Days,Total Work,Avg/Day,Attendance %\n";
+          lastGeneratedReportData.forEach((r, i) => {
+            csvContent += `"${i + 1}","${r.empId}","${r.name}","${r.department}",${r.workingDays},${r.presentDays},${r.absentDays},${r.leaveDays},${r.lateDays},"${r.totalWorkStr}","${r.avgDayStr}","${r.attendanceRate}%"\n`;
+          });
+        } else if (currentReportType === 'faculty') {
+          const selStaff = staffDatabase.find(s => s.id === document.getElementById("report-faculty-select").value) || staffDatabase[0];
+          const month = document.getElementById("report-month-input").value;
+          filename = `Ashiana_Faculty_Dossier_${selStaff.empId}_${month}.csv`;
+          csvContent = "Date,Day,First IN,Last OUT,Punches,Work Duration,Late Mins,Status,Remarks\n";
+          lastGeneratedReportData.forEach(r => {
+            csvContent += `"${r.date}","${r.dayOfWeek}","${r.firstIn}","${r.lastOut}",${r.punchCount},"${r.workTimeStr}",${r.lateMins},"${r.status}","${r.details}"\n`;
+          });
+        }
+
+        const blob = new Blob([csvContent], { type: "text/csv;charset=utf-8;" });
+        if (isAshianaNativeAndroid()) {
+          await shareGeneratedIdCardFile(blob, filename, "text/csv;charset=utf-8;");
+        } else {
+          const url = URL.createObjectURL(blob);
+          const a = document.createElement("a");
+          a.href = url;
+          a.download = filename;
+          a.click();
+          setTimeout(() => URL.revokeObjectURL(url), 1000);
+        }
+        playTone('SUCCESS');
+        showToast(`CSV file ${filename} downloaded!`, "success");
+      } catch (err) {
+        console.error("Report CSV export failed:", err);
+        showToast("Export failed: " + (err?.message || err), "error");
       }
-
-      const blob = new Blob([csvContent], { type: "text/csv;charset=utf-8;" });
-      const a = document.createElement("a");
-      a.href = URL.createObjectURL(blob);
-      a.download = filename;
-      a.click();
-      playTone('SUCCESS');
-      showToast(`CSV file ${filename} downloaded!`, "success");
     }
 
     // Print / PDF View Handler
-    function printCurrentReport() {
+    async function printCurrentReport() {
       const container = document.getElementById("print-report-container");
       const tableWrapper = document.getElementById("print-table-wrapper");
-      if (!container || !tableWrapper) return;
+      if (!container || !tableWrapper) {
+        showToast("Print report is not available on this screen.", "error");
+        return;
+      }
 
-      // Populate print header details
-      const reportTitle = document.getElementById("report-active-title").innerText;
-      const reportSubtitle = document.getElementById("report-active-subtitle").innerText;
+      try {
+        const reportTitle = document.getElementById("report-active-title")?.innerText || "Attendance Report";
+        const reportSubtitle = document.getElementById("report-active-subtitle")?.innerText || "";
+        document.getElementById("print-header-report-type").innerText = reportTitle;
+        document.getElementById("print-header-date-range").innerText = reportSubtitle;
+        document.getElementById("print-header-generated-time").innerText = "Printed on: " + new Date().toLocaleString();
 
-      document.getElementById("print-header-report-type").innerText = reportTitle;
-      document.getElementById("print-header-date-range").innerText = reportSubtitle;
-      document.getElementById("print-header-generated-time").innerText = "Printed on: " + new Date().toLocaleString();
+        document.getElementById("print-metric-total").innerText = document.getElementById("kpi-rep-total")?.innerText || "0";
+        document.getElementById("print-metric-present").innerText = document.getElementById("kpi-rep-present")?.innerText || "0";
+        document.getElementById("print-metric-late").innerText = document.getElementById("kpi-rep-late")?.innerText || "0";
+        document.getElementById("print-metric-leave").innerText = document.getElementById("kpi-rep-leave")?.innerText || "0";
+        document.getElementById("print-metric-hours").innerText = document.getElementById("kpi-rep-hours")?.innerText || "0h 00m";
 
-      document.getElementById("print-metric-total").innerText = document.getElementById("kpi-rep-total").innerText;
-      document.getElementById("print-metric-present").innerText = document.getElementById("kpi-rep-present").innerText;
-      document.getElementById("print-metric-late").innerText = document.getElementById("kpi-rep-late").innerText;
-      document.getElementById("print-metric-leave").innerText = document.getElementById("kpi-rep-leave").innerText;
-      document.getElementById("print-metric-hours").innerText = document.getElementById("kpi-rep-hours").innerText;
+        const mainTable = document.getElementById("report-main-table");
+        if (!mainTable) throw new Error("Attendance report table was not found.");
+        tableWrapper.innerHTML = `<table class="w-full text-left text-xs border-collapse border border-slate-300">${mainTable.innerHTML}</table>`;
 
-      // Clone table into print container
-      const mainTable = document.getElementById("report-main-table");
-      tableWrapper.innerHTML = `<table class="w-full text-left text-xs border-collapse border border-slate-300">${mainTable.innerHTML}</table>`;
+        if (isAshianaNativeAndroid()) {
+          const printable = container.cloneNode(true);
+          printable.classList.remove("hidden");
 
-      // Trigger standard browser print window
-      window.print();
+          // Native print HTML is rendered in a separate document, so relative image
+          // paths such as "logo 2.png" are not resolved against the app page.
+          // Embed the already-loaded school logo to make it available to the print plugin.
+          const logo = printable.querySelector("img");
+          if (logo) {
+            try {
+              const logoUrl = document.querySelector('#print-report-container img')?.src || logo.src;
+              const response = await fetch(logoUrl);
+              if (!response.ok) throw new Error("Logo request failed");
+              const logoBlob = await response.blob();
+              const logoDataUrl = await new Promise((resolve, reject) => {
+                const reader = new FileReader();
+                reader.onload = () => resolve(reader.result);
+                reader.onerror = () => reject(new Error("Could not prepare school logo for printing"));
+                reader.readAsDataURL(logoBlob);
+              });
+              logo.src = logoDataUrl;
+              logo.removeAttribute("onerror");
+            } catch (logoError) {
+              console.warn("Could not embed school logo in native print:", logoError);
+            }
+          }
+
+          const html = `<!doctype html><html><head><meta charset="utf-8"><meta name="viewport" content="width=device-width,initial-scale=1"><title>${reportTitle.replace(/[&<>"]/g, ch => ({"&":"&amp;","<":"&lt;",">":"&gt;",'"':"&quot;"}[ch]))}</title><style>
+            @page { size: A4 landscape; margin: 12mm; }
+            * { box-sizing: border-box; } body { font-family: Arial, sans-serif; color: #1e293b; font-size: 10px; }
+            h1 { font-size: 18px; margin: 0 0 5px; } p { margin: 3px 0; }
+            table { width: 100%; border-collapse: collapse; font-size: 9px; margin-top: 8px; }
+            th, td { border: 1px solid #cbd5e1; padding: 4px; text-align: left; overflow-wrap: anywhere; }
+            th { background: #f1f5f9; font-weight: bold; } img { max-width: 56px; max-height: 56px; }
+            .hidden { display: block !important; } .grid { display: flex; gap: 8px; }
+            .border-b-2 { border-bottom: 2px solid #065f46; } .border-t { border-top: 1px solid #cbd5e1; }
+            .text-right { text-align: right; } .text-center { text-align: center; }
+            .text-emerald-800 { color: #065f46; } .text-rose-800 { color: #9f1239; } .text-purple-800 { color: #6b21a8; }
+            .mt-10 { margin-top: 24px; } .pt-6 { padding-top: 16px; } .mb-4 { margin-bottom: 16px; } .pb-3 { padding-bottom: 12px; }
+          </style></head><body>${printable.outerHTML}</body></html>`;
+          await window.AshianaNative.printHtml(html, reportTitle || "Ashiana Attendance Report");
+          playTone("SUCCESS");
+          showToast("Print dialog opened for " + reportTitle + ".", "success");
+          return;
+        }
+
+        window.print();
+      } catch (err) {
+        console.error("Report print/PDF failed:", err);
+        showToast("Print/PDF failed: " + (err?.message || err), "error");
+      }
     }
 
 
