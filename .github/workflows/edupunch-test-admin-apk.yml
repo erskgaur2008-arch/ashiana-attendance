@@ -1,4 +1,5 @@
 name: EduPunch-Test Admin APK
+# Test-only workflow: changes on this branch trigger an isolated EduPunch-Test build.
 
 on:
   workflow_dispatch:
