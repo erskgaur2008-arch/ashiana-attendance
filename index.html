@@ -49,7 +49,7 @@
   <!-- Inter, Cinzel & Mono Fonts -->
   <link rel="preconnect" href="https://fonts.googleapis.com">
   <link rel="preconnect" href="https://fonts.gstatic.com">
-  <link rel="preconnect" href="https://oalfzgluqroqbbrulhpr.supabase.co" crossorigin>
+  <link rel="preconnect" href="https://goztsnvscanozcfjzwxy.supabase.co" crossorigin>
   <link href="https://fonts.googleapis.com/css2?family=Cinzel:wght@600;700;800&family=Inter:wght@300;400;500;600;700;800&family=JetBrains+Mono:wght@400;600;700&display=swap" rel="stylesheet">
   
   <!-- Tailwind CSS CDN -->
@@ -1386,8 +1386,8 @@
           if (window.__ashianaMainSupabaseClient) return window.__ashianaMainSupabaseClient;
           if (!window.supabase?.createClient) throw new Error("Supabase client library is unavailable.");
           window.__ashianaMainSupabaseClient = window.supabase.createClient(
-            "https://oalfzgluqroqbbrulhpr.supabase.co",
-            "sb_publishable_PND9f9FKbNrxlEakSgLKYA_5EsqLHkg",
+            "https://goztsnvscanozcfjzwxy.supabase.co",
+            "sb_publishable_bLByB1N3ESh_5ncJ-yh3_Q_DkBpoGHh",
             { auth: { persistSession: true, autoRefreshToken: true, detectSessionInUrl: false } }
           );
           return window.__ashianaMainSupabaseClient;
@@ -1396,7 +1396,7 @@
         // Student auth is RPC-based. This helper is the fallback storage
         // cleanup used after a local Auth sign-out when switching roles.
         async function ashianaClearMainAuthStorage() {
-          const storageKey = "sb-oalfzgluqroqbbrulhpr-auth-token";
+          const storageKey = "sb-goztsnvscanozcfjzwxy-auth-token";
           try { window.localStorage.removeItem(storageKey); } catch (_) {}
           try { window.sessionStorage.removeItem(storageKey); } catch (_) {}
         }
@@ -1431,8 +1431,8 @@
           if (window.__ashianaStudentLoginClient) return window.__ashianaStudentLoginClient;
           await ashianaEnsureSupabaseForLogin();
           window.__ashianaStudentLoginClient = window.supabase.createClient(
-            "https://oalfzgluqroqbbrulhpr.supabase.co",
-            "sb_publishable_PND9f9FKbNrxlEakSgLKYA_5EsqLHkg",
+            "https://goztsnvscanozcfjzwxy.supabase.co",
+            "sb_publishable_bLByB1N3ESh_5ncJ-yh3_Q_DkBpoGHh",
             { auth: { persistSession: false, autoRefreshToken: false, detectSessionInUrl: false } }
           );
           return window.__ashianaStudentLoginClient;
@@ -1444,8 +1444,8 @@
           if (window.__ashianaTeacherLoginClient) return window.__ashianaTeacherLoginClient;
           await ashianaEnsureSupabaseForLogin();
           window.__ashianaTeacherLoginClient = window.supabase.createClient(
-            "https://oalfzgluqroqbbrulhpr.supabase.co",
-            "sb_publishable_PND9f9FKbNrxlEakSgLKYA_5EsqLHkg",
+            "https://goztsnvscanozcfjzwxy.supabase.co",
+            "sb_publishable_bLByB1N3ESh_5ncJ-yh3_Q_DkBpoGHh",
             { auth: { persistSession: false, autoRefreshToken: false, detectSessionInUrl: false } }
           );
           return window.__ashianaTeacherLoginClient;
@@ -1458,8 +1458,8 @@
           if (window.__ashianaAdminLoginClient) return window.__ashianaAdminLoginClient;
           await ashianaEnsureSupabaseForLogin();
           window.__ashianaAdminLoginClient = window.supabase.createClient(
-            "https://oalfzgluqroqbbrulhpr.supabase.co",
-            "sb_publishable_PND9f9FKbNrxlEakSgLKYA_5EsqLHkg",
+            "https://goztsnvscanozcfjzwxy.supabase.co",
+            "sb_publishable_bLByB1N3ESh_5ncJ-yh3_Q_DkBpoGHh",
             { auth: { persistSession: false, autoRefreshToken: false, detectSessionInUrl: false } }
           );
           return window.__ashianaAdminLoginClient;
@@ -1935,8 +1935,8 @@
 
       <script>
       (function(){
-        const SUPABASE_URL = "https://oalfzgluqroqbbrulhpr.supabase.co";
-        const SUPABASE_KEY = "sb_publishable_PND9f9FKbNrxlEakSgLKYA_5EsqLHkg";
+        const SUPABASE_URL = "https://goztsnvscanozcfjzwxy.supabase.co";
+        const SUPABASE_KEY = "sb_publishable_bLByB1N3ESh_5ncJ-yh3_Q_DkBpoGHh";
         let publicClient = null;
 
         function getPublicClient(){
@@ -3164,7 +3164,7 @@
                   <span>Dual Real-Time Auto Sync Active</span>
                 </span>
               </div>
-              <h4 class="text-sm font-bold text-white mt-1">Database Project: oalfzgluqroqbbrulhpr</h4>
+              <h4 class="text-sm font-bold text-white mt-1">Database Project: goztsnvscanozcfjzwxy</h4>
               <p class="text-[11px] text-emerald-200">Punches made on any teacher's smartphone synchronize to this dashboard within seconds.</p>
             </div>
             <div class="flex items-center space-x-2">
@@ -4241,8 +4241,8 @@
     // =========================================================================
     // ⚙️ LIVE SUPABASE POSTGRESQL CREDENTIALS (EMBEDDED)
     // =========================================================================
-    const DEFAULT_SUPABASE_URL = "https://oalfzgluqroqbbrulhpr.supabase.co";
-    const DEFAULT_SUPABASE_ANON_KEY = "sb_publishable_PND9f9FKbNrxlEakSgLKYA_5EsqLHkg";
+    const DEFAULT_SUPABASE_URL = "https://goztsnvscanozcfjzwxy.supabase.co";
+    const DEFAULT_SUPABASE_ANON_KEY = "sb_publishable_bLByB1N3ESh_5ncJ-yh3_Q_DkBpoGHh";
 
     // System Attendance Parameters
     const systemConfig = {
@@ -6031,10 +6031,10 @@ async function refreshStudentPortalData(){
         console.warn("Secure Student session cleanup failed:", e);
       }
       sessionStorage.removeItem("aps_student_session_token_v1");
-      try { localStorage.removeItem("sb-oalfzgluqroqbbrulhpr-auth-token"); } catch (_) {}
+      try { localStorage.removeItem("sb-goztsnvscanozcfjzwxy-auth-token"); } catch (_) {}
       try { localStorage.removeItem("aps_student_session_expiry_v1"); } catch (_) {}
       try { sessionStorage.removeItem("aps_student_session_expiry_v1"); } catch (_) {}
-      try { sessionStorage.removeItem("sb-oalfzgluqroqbbrulhpr-auth-token"); } catch (_) {}
+      try { sessionStorage.removeItem("sb-goztsnvscanozcfjzwxy-auth-token"); } catch (_) {}
       showToast("Signed out safely.", "info");
       applyAuthenticatedUI();
     }
