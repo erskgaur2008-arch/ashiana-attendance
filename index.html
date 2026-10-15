@@ -9308,6 +9308,7 @@ window.addEventListener('load',async function(){
         if (!data) throw new Error("No shared rules record exists in this database. Apply the reviewed test migration first.");
         staffAttendanceRulesLoadedVersion = data.version;
         staffAttendanceRulesLoadedRules = data.rules;
+        activeStaffAttendanceRules = { ...DEFAULT_STAFF_ATTENDANCE_RULES, ...(data.rules || {}) };
         applyStaffAttendanceRulesToForm(data.rules || {});
         if (status) status.textContent = "Shared rules loaded • version " + data.version + " • updated " + new Date(data.updated_at).toLocaleString();
       } catch (err) {
@@ -9358,6 +9359,7 @@ window.addEventListener('load',async function(){
         if (!data) throw new Error("Rules changed elsewhere or the update was not authorized. Reload the shared rules and try again.");
         staffAttendanceRulesLoadedVersion = data.version;
         staffAttendanceRulesLoadedRules = data.rules;
+        activeStaffAttendanceRules = { ...DEFAULT_STAFF_ATTENDANCE_RULES, ...(data.rules || {}) };
         if (status) status.textContent = "Saved shared rules • version " + data.version + " • " + new Date(data.updated_at).toLocaleString();
         showToast("Staff attendance rules saved. Existing attendance records were not recalculated.", "success");
       } catch (err) {
@@ -9591,7 +9593,7 @@ window.addEventListener('load',async function(){
     // 1. Daily Report Generator
     function generateDailyReport(selectedDate, deptFilter, statusFilter, searchQuery) {
       document.getElementById("report-active-title").innerText = `Daily Attendance Roster`;
-      document.getElementById("report-active-subtitle").innerText = `Date: ${selectedDate} • Shift 07:40 AM – 02:30 PM (Grace: 10m)`;
+      document.getElementById("report-active-subtitle").innerText = `Date: ${selectedDate} • Shift ${activeStaffAttendanceRules.schoolScheduleStart || systemConfig.schoolScheduleStart} – ${activeStaffAttendanceRules.schoolScheduleEnd || systemConfig.schoolScheduleEnd} (Grace: ${activeStaffAttendanceRules.lateGraceMinutes ?? systemConfig.lateGraceMinutes}m)`;
 
       // Filter staff
       let staffList = staffDatabase.filter(s => {
