@@ -63,7 +63,7 @@ Deno.serve(async (req: Request) => {
       original_punch_snapshot: punches || [], proposed_change: proposed,
       evidence_reference: evidence, reviewer_reason: reason, requested_by_email: email
     }).select("*").single();
-    if (error) return reply(500, { error: "Could not create correction request" });
+    if (error) return reply(error.code === "23505" ? 409 : 500, { error: error.code === "23505" ? "A pending correction request already exists for this employee and date" : "Could not create correction request" });
     return reply(201, { request: data, message: "Request recorded. No attendance punch was changed." });
   }
   if (action === "approve" || action === "reject") {
