@@ -16,7 +16,7 @@ Deno.serve(async (req: Request) => {
   const url = Deno.env.get("SUPABASE_URL");
   const anonKey = Deno.env.get("SUPABASE_ANON_KEY");
   const serviceKey = Deno.env.get("SUPABASE_SERVICE_ROLE_KEY");
-  const token = (req.headers.get("Authorization") || "").replace(/^Bearer\\s+/i, "");
+  const token = (req.headers.get("Authorization") || "").replace(/^Bearer\s+/i, "");
   if (!url || !anonKey || !serviceKey || !token) return reply(401, { error: "Authentication required" });
   const authClient = createClient(url, anonKey, { auth: { persistSession: false, autoRefreshToken: false } });
   const { data: authData, error: authError } = await authClient.auth.getUser(token);
@@ -45,7 +45,7 @@ Deno.serve(async (req: Request) => {
     const evidence = String(input.evidence_reference || "").trim();
     const reason = String(input.reviewer_reason || "").trim();
     const proposed = input.proposed_change;
-    if (!staffId || !/^\\d{4}-\\d{2}-\\d{2}$/.test(date) || !evidence || !reason ||
+    if (!staffId || !/^\d{4}-\d{2}-\d{2}$/.test(date) || !evidence || !reason ||
         !proposed || typeof proposed !== "object" || Array.isArray(proposed))
       return reply(400, { error: "Staff, date, evidence, reason and proposed change are required" });
     const { data: staff, error: staffError } = await db.from("staff").select("id,emp_id,name").eq("id", staffId).maybeSingle();
