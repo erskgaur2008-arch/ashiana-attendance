@@ -3278,7 +3278,7 @@
         <section class="bg-white rounded-2xl border border-slate-200 shadow-sm p-4 sm:p-5">
           <div class="flex flex-col gap-2 border-b border-slate-100 pb-4 mb-4">
             <h3 class="text-base font-extrabold text-slate-900 flex items-center gap-2"><i data-lucide="sliders-horizontal" class="w-5 h-5 text-ashiana-green"></i> Staff Attendance Calculation Rules</h3>
-            <p class="text-xs text-slate-500">Review and preview staff attendance rules. Current defaults are preserved; shared saving is pending an approved database migration.</p>
+            <p class="text-xs text-slate-500">Configure shared staff attendance rules for the Admin web app. Saving requires an authorized Admin session and the rules table; existing attendance records are not recalculated.</p>
             <div id="attendance-rule-status" class="rounded-xl border border-slate-200 bg-slate-50 p-3 text-xs text-slate-700" role="status">Loading shared rules when you open this page.</div>
           </div>
           <div class="grid grid-cols-1 sm:grid-cols-2 gap-4">
@@ -9287,6 +9287,8 @@ window.addEventListener('load',async function(){
         '<div class="rounded-lg bg-white border p-3"><span class="text-xs text-slate-500">Working days</span><p class="text-lg font-black">22</p></div>' +
         '<div class="rounded-lg bg-white border p-3"><span class="text-xs text-slate-500">Attendance</span><p class="text-lg font-black text-emerald-700">' + sampleRate + '%</p></div></div>' +
         '<p class="text-xs text-slate-500 mt-2">Illustrative values only; no real staff records were changed. Hour-based classification remains disabled when set to 0.</p>';
+      preview.innerHTML += '<p class="text-sm text-slate-700 mt-3">Full day: <strong>' + rules.fullDayHours + ' hours</strong>; half day: <strong>' + rules.halfDayHours + ' to less than ' + rules.fullDayHours + ' hours</strong>; short day: <strong>less than ' + rules.halfDayHours + ' hours</strong>.</p>' +
+        '<p class="text-sm text-slate-700 mt-1">Punches after <strong>' + rules.latePunchAfter + '</strong> count as a short leave. Every <strong>' + rules.shortDaysPerFullDay + ' short days</strong> make one full-day equivalent; every <strong>' + rules.shortLeavesPerFullAbsent + ' late short leaves</strong> make one full absent.</p>';
       preview.classList.remove("hidden");
     }
 
