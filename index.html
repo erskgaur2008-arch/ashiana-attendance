@@ -3307,9 +3307,22 @@
                 <option value="exclude_denominator">Exclude approved leave from denominator</option>
               </select>
             </label>
-            <label class="block text-xs font-bold text-slate-700 sm:col-span-2">Full-day minimum work hours (preview-only option)
-              <input id="attendance-rule-full-day-hours" type="number" min="0" max="24" step="0.5" value="0" class="mt-1 w-full rounded-xl border border-slate-200 bg-slate-50 p-3 text-sm">
-              <span class="mt-1 block font-normal text-slate-500">0 means do not classify by hours (current behavior; any valid punch makes the day present).</span>
+            <label class="block text-xs font-bold text-slate-700">Full-day minimum work hours
+              <input id="attendance-rule-full-day-hours" type="number" min="0" max="24" step="0.016667" value="6.833333" class="mt-1 w-full rounded-xl border border-slate-200 bg-slate-50 p-3 text-sm">
+              <span class="mt-1 block font-normal text-slate-500">6.833333 hours = 6 hours 50 minutes.</span>
+            </label>
+            <label class="block text-xs font-bold text-slate-700">Half-day minimum work hours
+              <input id="attendance-rule-half-day-hours" type="number" min="0" max="24" step="0.25" value="3" class="mt-1 w-full rounded-xl border border-slate-200 bg-slate-50 p-3 text-sm">
+            </label>
+            <label class="block text-xs font-bold text-slate-700">Late punch-in threshold
+              <input id="attendance-rule-late-punch-after" type="time" value="09:30" class="mt-1 w-full rounded-xl border border-slate-200 bg-slate-50 p-3 text-sm">
+              <span class="mt-1 block font-normal text-slate-500">Punches after this time count as a short leave.</span>
+            </label>
+            <label class="block text-xs font-bold text-slate-700">Short days per full-day equivalent
+              <input id="attendance-rule-short-days" type="number" min="1" max="20" step="1" value="4" class="mt-1 w-full rounded-xl border border-slate-200 bg-slate-50 p-3 text-sm">
+            </label>
+            <label class="block text-xs font-bold text-slate-700">Late short leaves per full absent
+              <input id="attendance-rule-short-leaves" type="number" min="1" max="20" step="1" value="4" class="mt-1 w-full rounded-xl border border-slate-200 bg-slate-50 p-3 text-sm">
             </label>
           </div>
           <div class="mt-5 flex flex-wrap gap-2">
@@ -9225,7 +9238,11 @@ window.addEventListener('load',async function(){
         lateAfter: document.getElementById("attendance-rule-late-after")?.value || "07:50",
         denominator: document.getElementById("attendance-rule-denominator")?.value || "working_days",
         leaveTreatment: document.getElementById("attendance-rule-leave")?.value || "separate",
-        fullDayHours: Number(document.getElementById("attendance-rule-full-day-hours")?.value)
+        fullDayHours: Number(document.getElementById("attendance-rule-full-day-hours")?.value),
+        halfDayHours: Number(document.getElementById("attendance-rule-half-day-hours")?.value),
+        latePunchAfter: document.getElementById("attendance-rule-late-punch-after")?.value || "09:30",
+        shortDaysPerFullDay: Number(document.getElementById("attendance-rule-short-days")?.value),
+        shortLeavesPerFullAbsent: Number(document.getElementById("attendance-rule-short-leaves")?.value)
       };
     }
 
@@ -9240,7 +9257,11 @@ window.addEventListener('load',async function(){
         const expectedText = expected < 24 * 60 ? String(Math.floor(expected / 60)).padStart(2, '0') + ':' + String(expected % 60).padStart(2, '0') : '';
         if (!expectedText || rules.lateAfter !== expectedText) errors.push("Late-after must equal scheduled start plus the grace period (currently " + (expectedText || 'outside the same day') + ").");
       }
-      if (Number.isNaN(rules.fullDayHours) || rules.fullDayHours < 0 || rules.fullDayHours > 24) errors.push("Full-day minimum must be between 0 and 24 hours.");
+      if (!Number.isFinite(rules.fullDayHours) || rules.fullDayHours < 0 || rules.fullDayHours > 24) errors.push("Full-day minimum must be between 0 and 24 hours.");
+      if (!Number.isFinite(rules.halfDayHours) || rules.halfDayHours < 0 || rules.halfDayHours >= rules.fullDayHours) errors.push("Half-day minimum must be at least 0 and less than the full-day minimum.");
+      if (!rules.latePunchAfter) errors.push("Select the late punch-in threshold.");
+      if (!Number.isInteger(rules.shortDaysPerFullDay) || rules.shortDaysPerFullDay < 1 || rules.shortDaysPerFullDay > 20) errors.push("Short days per full-day equivalent must be from 1 to 20.");
+      if (!Number.isInteger(rules.shortLeavesPerFullAbsent) || rules.shortLeavesPerFullAbsent < 1 || rules.shortLeavesPerFullAbsent > 20) errors.push("Late short leaves per full absent must be from 1 to 20.");
       return errors;
     }
 
@@ -9276,7 +9297,11 @@ window.addEventListener('load',async function(){
       document.getElementById("attendance-rule-late-after").value = "07:50";
       document.getElementById("attendance-rule-denominator").value = "working_days";
       document.getElementById("attendance-rule-leave").value = "separate";
-      document.getElementById("attendance-rule-full-day-hours").value = "0";
+      document.getElementById("attendance-rule-full-day-hours").value = "6.833333";
+      document.getElementById("attendance-rule-half-day-hours").value = "3";
+      document.getElementById("attendance-rule-late-punch-after").value = "09:30";
+      document.getElementById("attendance-rule-short-days").value = "4";
+      document.getElementById("attendance-rule-short-leaves").value = "4";
       document.getElementById("attendance-rule-validation").classList.add("hidden");
       document.getElementById("attendance-rule-preview").classList.add("hidden");
     }
@@ -9291,7 +9316,11 @@ window.addEventListener('load',async function(){
       document.getElementById("attendance-rule-late-after").value = rules.lateAfter || "07:50";
       document.getElementById("attendance-rule-denominator").value = rules.attendanceDenominator || "working_days";
       document.getElementById("attendance-rule-leave").value = rules.approvedLeaveTreatment || "separate";
-      document.getElementById("attendance-rule-full-day-hours").value = String(rules.fullDayMinimumHours ?? 0);
+      document.getElementById("attendance-rule-full-day-hours").value = String(rules.fullDayMinimumHours ?? 6.833333);
+      document.getElementById("attendance-rule-half-day-hours").value = String(rules.halfDayMinimumHours ?? 3);
+      document.getElementById("attendance-rule-late-punch-after").value = rules.latePunchAfterTime || "09:30";
+      document.getElementById("attendance-rule-short-days").value = String(rules.shortDaysPerFullDay ?? 4);
+      document.getElementById("attendance-rule-short-leaves").value = String(rules.shortLeavesPerFullAbsent ?? 4);
     }
 
     async function loadStaffAttendanceRules() {
@@ -9339,7 +9368,13 @@ window.addEventListener('load',async function(){
         lateAfter: rules.lateAfter,
         attendanceDenominator: rules.denominator,
         approvedLeaveTreatment: rules.leaveTreatment,
-        fullDayMinimumHours: rules.fullDayHours
+        fullDayMinimumHours: rules.fullDayHours,
+        halfDayMinimumHours: rules.halfDayHours,
+        latePunchAfterTime: rules.latePunchAfter,
+        latePunchTreatment: "short_leave",
+        shortDayMaximumHours: rules.halfDayHours,
+        shortDaysPerFullDay: rules.shortDaysPerFullDay,
+        shortLeavesPerFullAbsent: rules.shortLeavesPerFullAbsent
       };
       const changedBy = currentAuthUser?.email || null;
       const confirmText = "Save these staff attendance rules for all Admin devices? This updates shared settings only. It does not recalculate historical reports. Continue?";
@@ -9493,7 +9528,7 @@ window.addEventListener('load',async function(){
     }
 
     // Helper to calculate attendance stats for a specific date
-    const DEFAULT_STAFF_ATTENDANCE_RULES = { schoolScheduleStart: '07:40', schoolScheduleEnd: '14:30', lateGraceMinutes: 10, lateAfter: '07:50', attendanceDenominator: 'working_days', approvedLeaveTreatment: 'separate', fullDayMinimumHours: 0 };
+    const DEFAULT_STAFF_ATTENDANCE_RULES = { schoolScheduleStart: '07:40', schoolScheduleEnd: '14:30', lateGraceMinutes: 10, lateAfter: '07:50', attendanceDenominator: 'working_days', approvedLeaveTreatment: 'separate', fullDayMinimumHours: 6.833333, halfDayMinimumHours: 3, latePunchAfterTime: '09:30', latePunchTreatment: 'short_leave', shortDayMaximumHours: 3, shortDaysPerFullDay: 4, shortLeavesPerFullAbsent: 4 };
     let activeStaffAttendanceRules = { ...DEFAULT_STAFF_ATTENDANCE_RULES };
     let staffAttendanceRulesFetchPromise = null;
 
