@@ -2684,6 +2684,7 @@
         <button type="button" onclick="window.switchAdminTab('live')"><i data-lucide="radio"></i><span>Live Attendance</span></button>
         <button type="button" onclick="window.switchAdminTab('qr')"><i data-lucide="qr-code"></i><span>Daily QR</span></button>
         <button type="button" id="admin-nav-reports" onclick="window.switchAdminTab('reports')"><i data-lucide="file-spreadsheet"></i><span>Report</span></button>
+        <button type="button" id="admin-nav-attendance-rules" onclick="window.switchAdminTab('attendance-rules')" title="Manage staff attendance calculation rules"><i data-lucide="sliders-horizontal"></i><span>Attendance Rules</span></button>
         <button type="button" id="admin-nav-leave" onclick="window.switchAdminTab('leave')" title="Faculty Leave Applications"><i data-lucide="calendar-check"></i><span>Leaves</span></button>
         <button type="button" id="admin-nav-corrections" onclick="window.switchAdminTab('corrections')" title="Manual Attendance Corrections"><i data-lucide="file-pen"></i><span>Corrections</span></button>
       </div>
@@ -3271,6 +3272,67 @@
           </div>
           <div class="bg-white rounded-2xl border p-4 sm:p-5"><div class="flex justify-between"><h4 class="text-sm font-extrabold">Report Cards</h4><button type="button" onclick="loadAdminStudentPortalReports()" class="text-[10px] font-extrabold text-emerald-700">Refresh</button></div><div id="admin-student-portal-report-list" class="mt-3 space-y-2"></div></div>
         </div>
+      </div>
+
+      <div id="admin-tab-attendance-rules" class="hidden space-y-4">
+        <section class="bg-white rounded-2xl border border-slate-200 shadow-sm p-4 sm:p-5">
+          <div class="flex flex-col gap-2 border-b border-slate-100 pb-4 mb-4">
+            <h3 class="text-base font-extrabold text-slate-900 flex items-center gap-2"><i data-lucide="sliders-horizontal" class="w-5 h-5 text-ashiana-green"></i> Staff Attendance Calculation Rules</h3>
+            <p class="text-xs text-slate-500">Configure shared staff attendance rules for the Admin web app. Saving requires an authorized Admin session and the rules table; existing attendance records are not recalculated.</p>
+            <div id="attendance-rule-status" class="rounded-xl border border-slate-200 bg-slate-50 p-3 text-xs text-slate-700" role="status">Loading shared rules when you open this page.</div>
+          </div>
+          <div class="grid grid-cols-1 sm:grid-cols-2 gap-4">
+            <label class="block text-xs font-bold text-slate-700">Scheduled start
+              <input id="attendance-rule-start" type="time" value="07:40" class="mt-1 w-full rounded-xl border border-slate-200 bg-slate-50 p-3 text-sm">
+            </label>
+            <label class="block text-xs font-bold text-slate-700">Scheduled end
+              <input id="attendance-rule-end" type="time" value="14:30" class="mt-1 w-full rounded-xl border border-slate-200 bg-slate-50 p-3 text-sm">
+            </label>
+            <label class="block text-xs font-bold text-slate-700">Late grace period (minutes)
+              <input id="attendance-rule-grace" type="number" min="0" max="180" step="1" value="10" class="mt-1 w-full rounded-xl border border-slate-200 bg-slate-50 p-3 text-sm">
+            </label>
+            <label class="block text-xs font-bold text-slate-700">Late after
+              <input id="attendance-rule-late-after" type="time" value="07:50" class="mt-1 w-full rounded-xl border border-slate-200 bg-slate-50 p-3 text-sm">
+              <span class="mt-1 block font-normal text-slate-500">Current report reference: 7:50 AM.</span>
+            </label>
+            <label class="block text-xs font-bold text-slate-700">Attendance percentage denominator
+              <select id="attendance-rule-denominator" class="mt-1 w-full rounded-xl border border-slate-200 bg-slate-50 p-3 text-sm">
+                <option value="working_days">All school working days (current behavior)</option>
+                <option value="working_days_minus_leave">Working days excluding approved leave</option>
+              </select>
+            </label>
+            <label class="block text-xs font-bold text-slate-700">Approved leave treatment
+              <select id="attendance-rule-leave" class="mt-1 w-full rounded-xl border border-slate-200 bg-slate-50 p-3 text-sm">
+                <option value="separate">Count separately; subtract from absence (current behavior)</option>
+                <option value="exclude_denominator">Exclude approved leave from denominator</option>
+              </select>
+            </label>
+            <label class="block text-xs font-bold text-slate-700">Full-day minimum work hours
+              <input id="attendance-rule-full-day-hours" type="number" min="0" max="24" step="0.016667" value="6.833333" class="mt-1 w-full rounded-xl border border-slate-200 bg-slate-50 p-3 text-sm">
+              <span class="mt-1 block font-normal text-slate-500">6.833333 hours = 6 hours 50 minutes.</span>
+            </label>
+            <label class="block text-xs font-bold text-slate-700">Half-day minimum work hours
+              <input id="attendance-rule-half-day-hours" type="number" min="0" max="24" step="0.25" value="3" class="mt-1 w-full rounded-xl border border-slate-200 bg-slate-50 p-3 text-sm">
+            </label>
+            <label class="block text-xs font-bold text-slate-700">Late punch-in threshold
+              <input id="attendance-rule-late-punch-after" type="time" value="09:30" class="mt-1 w-full rounded-xl border border-slate-200 bg-slate-50 p-3 text-sm">
+              <span class="mt-1 block font-normal text-slate-500">Punches after this time count as a short leave.</span>
+            </label>
+            <label class="block text-xs font-bold text-slate-700">Short days per full-day equivalent
+              <input id="attendance-rule-short-days" type="number" min="1" max="20" step="1" value="4" class="mt-1 w-full rounded-xl border border-slate-200 bg-slate-50 p-3 text-sm">
+            </label>
+            <label class="block text-xs font-bold text-slate-700">Late short leaves per full absent
+              <input id="attendance-rule-short-leaves" type="number" min="1" max="20" step="1" value="4" class="mt-1 w-full rounded-xl border border-slate-200 bg-slate-50 p-3 text-sm">
+            </label>
+          </div>
+          <div class="mt-5 flex flex-wrap gap-2">
+            <button type="button" onclick="previewStaffAttendanceRules()" class="rounded-xl bg-ashiana-green px-4 py-2.5 text-sm font-bold text-white">Preview calculation</button>
+            <button type="button" onclick="resetStaffAttendanceRulesDraft()" class="rounded-xl border border-slate-200 px-4 py-2.5 text-sm font-bold text-slate-700">Reset to current defaults</button>
+            <button type="button" onclick="requestSaveStaffAttendanceRules()" class="rounded-xl border border-amber-300 bg-amber-50 px-4 py-2.5 text-sm font-bold text-amber-900">Save shared rules…</button>
+          </div>
+          <div id="attendance-rule-validation" class="hidden mt-4 rounded-xl border border-rose-200 bg-rose-50 p-3 text-sm text-rose-800" role="alert"></div>
+          <div id="attendance-rule-preview" class="hidden mt-4 rounded-xl border border-slate-200 bg-slate-50 p-4" aria-live="polite"></div>
+        </section>
       </div>
 
       <div id="admin-tab-reports" class="hidden space-y-4">
@@ -9168,9 +9230,186 @@ window.addEventListener('load',async function(){
       if (event.key === "Escape") closeAdminDailyQRPreview();
     });
 
+    function getStaffAttendanceRulesDraft() {
+      return {
+        start: document.getElementById("attendance-rule-start")?.value || "07:40",
+        end: document.getElementById("attendance-rule-end")?.value || "14:30",
+        grace: Number(document.getElementById("attendance-rule-grace")?.value),
+        lateAfter: document.getElementById("attendance-rule-late-after")?.value || "07:50",
+        denominator: document.getElementById("attendance-rule-denominator")?.value || "working_days",
+        leaveTreatment: document.getElementById("attendance-rule-leave")?.value || "separate",
+        fullDayHours: Number(document.getElementById("attendance-rule-full-day-hours")?.value),
+        halfDayHours: Number(document.getElementById("attendance-rule-half-day-hours")?.value),
+        latePunchAfter: document.getElementById("attendance-rule-late-punch-after")?.value || "09:30",
+        shortDaysPerFullDay: Number(document.getElementById("attendance-rule-short-days")?.value),
+        shortLeavesPerFullAbsent: Number(document.getElementById("attendance-rule-short-leaves")?.value)
+      };
+    }
+
+    function validateStaffAttendanceRulesDraft(rules) {
+      const errors = [];
+      if (!rules.start || !rules.end || rules.start >= rules.end) errors.push("Scheduled end must be later than scheduled start.");
+      if (!Number.isInteger(rules.grace) || rules.grace < 0 || rules.grace > 180) errors.push("Grace period must be a whole number from 0 to 180 minutes.");
+      if (!rules.lateAfter) errors.push("Select the late-arrival threshold.");
+      else {
+        const [sh, sm] = rules.start.split(':').map(Number);
+        const expected = sh * 60 + sm + (Number.isFinite(rules.grace) ? rules.grace : 0);
+        const expectedText = expected < 24 * 60 ? String(Math.floor(expected / 60)).padStart(2, '0') + ':' + String(expected % 60).padStart(2, '0') : '';
+        if (!expectedText || rules.lateAfter !== expectedText) errors.push("Late-after must equal scheduled start plus the grace period (currently " + (expectedText || 'outside the same day') + ").");
+      }
+      if (!Number.isFinite(rules.fullDayHours) || rules.fullDayHours < 0 || rules.fullDayHours > 24) errors.push("Full-day minimum must be between 0 and 24 hours.");
+      if (!Number.isFinite(rules.halfDayHours) || rules.halfDayHours < 0 || rules.halfDayHours >= rules.fullDayHours) errors.push("Half-day minimum must be at least 0 and less than the full-day minimum.");
+      if (!rules.latePunchAfter) errors.push("Select the late punch-in threshold.");
+      if (!Number.isInteger(rules.shortDaysPerFullDay) || rules.shortDaysPerFullDay < 1 || rules.shortDaysPerFullDay > 20) errors.push("Short days per full-day equivalent must be from 1 to 20.");
+      if (!Number.isInteger(rules.shortLeavesPerFullAbsent) || rules.shortLeavesPerFullAbsent < 1 || rules.shortLeavesPerFullAbsent > 20) errors.push("Late short leaves per full absent must be from 1 to 20.");
+      return errors;
+    }
+
+    function previewStaffAttendanceRules() {
+      const rules = getStaffAttendanceRulesDraft();
+      const errors = validateStaffAttendanceRulesDraft(rules);
+      const validation = document.getElementById("attendance-rule-validation");
+      const preview = document.getElementById("attendance-rule-preview");
+      validation.classList.toggle("hidden", errors.length === 0);
+      validation.textContent = errors.join(" ");
+      if (errors.length) { preview.classList.add("hidden"); return; }
+      const denominator = rules.denominator === "working_days_minus_leave" ? "working days minus approved leave" : "all school working days";
+      const leaveText = rules.leaveTreatment === "exclude_denominator" ? "Approved leave excluded from the attendance percentage denominator." : "Approved leave remains separate and reduces absent days.";
+      const samplePresent = 18, sampleLeave = 2, sampleWorking = 22;
+      const sampleDenominator = rules.denominator === "working_days_minus_leave" ? sampleWorking - sampleLeave : sampleWorking;
+      const sampleRate = sampleDenominator > 0 ? Math.round(samplePresent / sampleDenominator * 100) : 0;
+      preview.innerHTML = '<h4 class="font-extrabold text-slate-900 mb-2">Calculation preview (illustrative)</h4>' +
+        '<p class="text-sm text-slate-700">Schedule: <strong>' + rules.start + '–' + rules.end + '</strong>; grace: <strong>' + rules.grace + ' min</strong>; late threshold: <strong>' + rules.lateAfter + '</strong>.</p>' +
+        '<p class="text-sm text-slate-700 mt-1">Percentage denominator: <strong>' + denominator + '</strong>. ' + leaveText + '</p>' +
+        '<div class="grid grid-cols-2 sm:grid-cols-4 gap-2 mt-3">' +
+        '<div class="rounded-lg bg-white border p-3"><span class="text-xs text-slate-500">Present</span><p class="text-lg font-black">18</p></div>' +
+        '<div class="rounded-lg bg-white border p-3"><span class="text-xs text-slate-500">Approved leave</span><p class="text-lg font-black">2</p></div>' +
+        '<div class="rounded-lg bg-white border p-3"><span class="text-xs text-slate-500">Working days</span><p class="text-lg font-black">22</p></div>' +
+        '<div class="rounded-lg bg-white border p-3"><span class="text-xs text-slate-500">Attendance</span><p class="text-lg font-black text-emerald-700">' + sampleRate + '%</p></div></div>' +
+        '<p class="text-xs text-slate-500 mt-2">Illustrative values only; no real staff records were changed. Hour-based classification remains disabled when set to 0.</p>';
+      preview.innerHTML += '<p class="text-sm text-slate-700 mt-3">Full day: <strong>' + rules.fullDayHours + ' hours</strong>; half day: <strong>' + rules.halfDayHours + ' to less than ' + rules.fullDayHours + ' hours</strong>; short day: <strong>less than ' + rules.halfDayHours + ' hours</strong>.</p>' +
+        '<p class="text-sm text-slate-700 mt-1">Punches after <strong>' + rules.latePunchAfter + '</strong> count as a short leave. Every <strong>' + rules.shortDaysPerFullDay + ' short days</strong> make one full-day equivalent; every <strong>' + rules.shortLeavesPerFullAbsent + ' late short leaves</strong> make one full absent.</p>';
+      preview.classList.remove("hidden");
+    }
+
+    function resetStaffAttendanceRulesDraft() {
+      document.getElementById("attendance-rule-start").value = "07:40";
+      document.getElementById("attendance-rule-end").value = "14:30";
+      document.getElementById("attendance-rule-grace").value = "10";
+      document.getElementById("attendance-rule-late-after").value = "07:50";
+      document.getElementById("attendance-rule-denominator").value = "working_days";
+      document.getElementById("attendance-rule-leave").value = "separate";
+      document.getElementById("attendance-rule-full-day-hours").value = "6.833333";
+      document.getElementById("attendance-rule-half-day-hours").value = "3";
+      document.getElementById("attendance-rule-late-punch-after").value = "09:30";
+      document.getElementById("attendance-rule-short-days").value = "4";
+      document.getElementById("attendance-rule-short-leaves").value = "4";
+      document.getElementById("attendance-rule-validation").classList.add("hidden");
+      document.getElementById("attendance-rule-preview").classList.add("hidden");
+    }
+
+    let staffAttendanceRulesLoadedVersion = null;
+    let staffAttendanceRulesLoadedRules = null;
+
+    function applyStaffAttendanceRulesToForm(rules) {
+      document.getElementById("attendance-rule-start").value = rules.schoolScheduleStart || "07:40";
+      document.getElementById("attendance-rule-end").value = rules.schoolScheduleEnd || "14:30";
+      document.getElementById("attendance-rule-grace").value = String(rules.lateGraceMinutes ?? 10);
+      document.getElementById("attendance-rule-late-after").value = rules.lateAfter || "07:50";
+      document.getElementById("attendance-rule-denominator").value = rules.attendanceDenominator || "working_days";
+      document.getElementById("attendance-rule-leave").value = rules.approvedLeaveTreatment || "separate";
+      document.getElementById("attendance-rule-full-day-hours").value = String(rules.fullDayMinimumHours ?? 6.833333);
+      document.getElementById("attendance-rule-half-day-hours").value = String(rules.halfDayMinimumHours ?? 3);
+      document.getElementById("attendance-rule-late-punch-after").value = rules.latePunchAfterTime || "09:30";
+      document.getElementById("attendance-rule-short-days").value = String(rules.shortDaysPerFullDay ?? 4);
+      document.getElementById("attendance-rule-short-leaves").value = String(rules.shortLeavesPerFullAbsent ?? 4);
+    }
+
+    async function loadStaffAttendanceRules() {
+      const status = document.getElementById("attendance-rule-status");
+      if (!supabaseClient || currentAuthUser?.type !== "ADMIN") {
+        if (status) status.textContent = "Sign in as an Admin to load shared rules.";
+        return;
+      }
+      if (status) status.textContent = "Loading shared rules…";
+      try {
+        const { data, error } = await supabaseClient.from("staff_attendance_rules")
+          .select("id,rules,version,updated_at,updated_by").eq("id","default").maybeSingle();
+        if (error) throw error;
+        if (!data) throw new Error("No shared rules record exists in this database. Apply the reviewed test migration first.");
+        staffAttendanceRulesLoadedVersion = data.version;
+        staffAttendanceRulesLoadedRules = data.rules;
+        activeStaffAttendanceRules = { ...DEFAULT_STAFF_ATTENDANCE_RULES, ...(data.rules || {}) };
+        applyStaffAttendanceRulesToForm(data.rules || {});
+        if (status) status.textContent = "Shared rules loaded • version " + data.version + " • updated " + new Date(data.updated_at).toLocaleString();
+      } catch (err) {
+        console.error("Could not load staff attendance rules:", err);
+        if (status) status.textContent = "Could not load shared rules: " + (err?.message || err);
+      }
+    }
+
+    async function requestSaveStaffAttendanceRules() {
+      const rules = getStaffAttendanceRulesDraft();
+      const errors = validateStaffAttendanceRulesDraft(rules);
+      const validation = document.getElementById("attendance-rule-validation");
+      validation.classList.toggle("hidden", errors.length === 0);
+      validation.textContent = errors.join(" ");
+      if (errors.length) return;
+      if (!supabaseClient || currentAuthUser?.type !== "ADMIN") {
+        alert("Only a signed-in Admin can save shared rules.");
+        return;
+      }
+      if (staffAttendanceRulesLoadedVersion == null || !staffAttendanceRulesLoadedRules) {
+        alert("Load the current shared rules successfully before saving. No changes were saved.");
+        return;
+      }
+      const payload = {
+        schoolScheduleStart: rules.start,
+        schoolScheduleEnd: rules.end,
+        lateGraceMinutes: rules.grace,
+        lateAfter: rules.lateAfter,
+        attendanceDenominator: rules.denominator,
+        approvedLeaveTreatment: rules.leaveTreatment,
+        fullDayMinimumHours: rules.fullDayHours,
+        halfDayMinimumHours: rules.halfDayHours,
+        latePunchAfterTime: rules.latePunchAfter,
+        latePunchTreatment: "short_leave",
+        shortDayMaximumHours: rules.halfDayHours,
+        shortDaysPerFullDay: rules.shortDaysPerFullDay,
+        shortLeavesPerFullAbsent: rules.shortLeavesPerFullAbsent
+      };
+      const changedBy = currentAuthUser?.email || null;
+      const confirmText = "Save these staff attendance rules for all Admin devices? This updates shared settings only. It does not recalculate historical reports. Continue?";
+      if (!window.confirm(confirmText)) return;
+      const status = document.getElementById("attendance-rule-status");
+      if (status) status.textContent = "Saving shared rules…";
+      try {
+        const nextVersion = staffAttendanceRulesLoadedVersion + 1;
+        const { error: historyError } = await supabaseClient.from("staff_attendance_rules_history")
+          .insert({ rule_version: nextVersion, rules: payload, changed_by: changedBy });
+        if (historyError) throw historyError;
+        const { data, error } = await supabaseClient.from("staff_attendance_rules")
+          .update({ rules: payload, version: nextVersion, updated_at: new Date().toISOString(), updated_by: changedBy })
+          .eq("id","default").eq("version",staffAttendanceRulesLoadedVersion)
+          .select("version,rules,updated_at,updated_by").maybeSingle();
+        if (error) throw error;
+        if (!data) throw new Error("Rules changed elsewhere or the update was not authorized. Reload the shared rules and try again.");
+        staffAttendanceRulesLoadedVersion = data.version;
+        staffAttendanceRulesLoadedRules = data.rules;
+        activeStaffAttendanceRules = { ...DEFAULT_STAFF_ATTENDANCE_RULES, ...(data.rules || {}) };
+        if (status) status.textContent = "Saved shared rules • version " + data.version + " • " + new Date(data.updated_at).toLocaleString();
+        showToast("Staff attendance rules saved. Existing attendance records were not recalculated.", "success");
+      } catch (err) {
+        console.error("Could not save staff attendance rules:", err);
+        if (status) status.textContent = "Save failed: " + (err?.message || err);
+        alert("Rules were not confirmed as saved: " + (err?.message || err) + ". Reload shared rules before retrying.");
+      }
+    }
+
     function switchAdminTab(tab) {
-      const allowedTabs = ['live', 'qr', 'directory', 'corrections', 'leave', 'audit', 'reports', 'students', 'student-portal'];
+      const allowedTabs = ['live', 'qr', 'directory', 'corrections', 'leave', 'audit', 'reports', 'attendance-rules', 'students', 'student-portal'];
       if (!allowedTabs.includes(tab)) return;
+      if (tab === "attendance-rules") loadStaffAttendanceRules();
 
       const dailyQrTab = document.getElementById("admin-tab-qr");
       if (dailyQrTab) dailyQrTab.classList.toggle("admin-qr-page-active", tab === "qr");
@@ -9194,7 +9433,7 @@ window.addEventListener('load',async function(){
       });
 
       // Keep the selected quick-action visibly active.
-      ["reports","leave","corrections","student-portal"].forEach(t => {
+      ["reports","leave","corrections","student-portal","attendance-rules"].forEach(t => {
         const quickBtn = document.getElementById(`admin-nav-${t}`);
         if (quickBtn) {
           quickBtn.style.borderColor = t === tab ? "#0A7E46" : "";
@@ -9291,6 +9530,24 @@ window.addEventListener('load',async function(){
     }
 
     // Helper to calculate attendance stats for a specific date
+    const DEFAULT_STAFF_ATTENDANCE_RULES = { schoolScheduleStart: '07:40', schoolScheduleEnd: '14:30', lateGraceMinutes: 10, lateAfter: '07:50', attendanceDenominator: 'working_days', approvedLeaveTreatment: 'separate', fullDayMinimumHours: 6.833333, halfDayMinimumHours: 3, latePunchAfterTime: '09:30', latePunchTreatment: 'short_leave', shortDayMaximumHours: 3, shortDaysPerFullDay: 4, shortLeavesPerFullAbsent: 4 };
+    let activeStaffAttendanceRules = { ...DEFAULT_STAFF_ATTENDANCE_RULES };
+    let staffAttendanceRulesFetchPromise = null;
+
+    async function ensureStaffAttendanceRulesLoaded() {
+      if (staffAttendanceRulesFetchPromise) return staffAttendanceRulesFetchPromise;
+      if (!supabaseClient || currentAuthUser?.type !== 'ADMIN') return activeStaffAttendanceRules;
+      staffAttendanceRulesFetchPromise = (async () => {
+        try {
+          const { data, error } = await supabaseClient.from('staff_attendance_rules').select('rules').eq('id', 'default').maybeSingle();
+          if (error) throw error;
+          if (data?.rules && typeof data.rules === 'object') activeStaffAttendanceRules = { ...DEFAULT_STAFF_ATTENDANCE_RULES, ...data.rules };
+        } catch (err) { console.warn('Staff attendance rules unavailable; preserving legacy defaults:', err?.message || err); }
+        return activeStaffAttendanceRules;
+      })().finally(() => { staffAttendanceRulesFetchPromise = null; });
+      return staffAttendanceRulesFetchPromise;
+    }
+
     function calculateAttendanceForDate(staffId, dateStr) {
       const punches = punchLedger
         .filter(p => p.staffId === staffId && p.attendanceDate === dateStr)
@@ -9322,11 +9579,10 @@ window.addEventListener('load',async function(){
 
       if (punches.length > 0) {
         currentStatus = punches[punches.length - 1].type === 'IN' ? 'WORKING' : 'COMPLETED';
-        const startMins = toMins(systemConfig.schoolScheduleStart);
+        const startMins = toMins(activeStaffAttendanceRules.schoolScheduleStart || systemConfig.schoolScheduleStart);
+        const lateThreshold = toMins(activeStaffAttendanceRules.lateAfter || (startMins + Number(activeStaffAttendanceRules.lateGraceMinutes ?? systemConfig.lateGraceMinutes)));
         const arrival = toMins(firstIn);
-        if (arrival > startMins + systemConfig.lateGraceMinutes) {
-          lateMinutes = arrival - startMins;
-        }
+        if (arrival > lateThreshold) lateMinutes = Math.max(0, arrival - startMins);
       }
 
       const leave = leaveRequests.find(l => 
@@ -9343,7 +9599,8 @@ window.addEventListener('load',async function(){
     }
 
     // Main Report Generation Router
-    function runAdminReportGeneration() {
+    async function runAdminReportGeneration() {
+      await ensureStaffAttendanceRulesLoaded();
       // Initialize inputs if empty
       const dateInp = document.getElementById("report-date-input");
       const monthInp = document.getElementById("report-month-input");
@@ -9373,7 +9630,7 @@ window.addEventListener('load',async function(){
     // 1. Daily Report Generator
     function generateDailyReport(selectedDate, deptFilter, statusFilter, searchQuery) {
       document.getElementById("report-active-title").innerText = `Daily Attendance Roster`;
-      document.getElementById("report-active-subtitle").innerText = `Date: ${selectedDate} • Shift 07:40 AM – 02:30 PM (Grace: 10m)`;
+      document.getElementById("report-active-subtitle").innerText = `Date: ${selectedDate} • Shift ${activeStaffAttendanceRules.schoolScheduleStart || systemConfig.schoolScheduleStart} – ${activeStaffAttendanceRules.schoolScheduleEnd || systemConfig.schoolScheduleEnd} (Grace: ${activeStaffAttendanceRules.lateGraceMinutes ?? systemConfig.lateGraceMinutes}m)`;
 
       // Filter staff
       let staffList = staffDatabase.filter(s => {
@@ -9540,7 +9797,9 @@ window.addEventListener('load',async function(){
         });
 
         const absentDays = Math.max(0, totalSchoolWorkingDays - presentDays - leaveDays);
-        const attendanceRate = totalSchoolWorkingDays > 0 ? Math.round((presentDays / totalSchoolWorkingDays) * 100) : 0;
+        const excludeLeaveFromDenominator = activeStaffAttendanceRules.attendanceDenominator === 'working_days_minus_leave' || activeStaffAttendanceRules.approvedLeaveTreatment === 'exclude_denominator';
+        const attendanceDenominator = Math.max(0, totalSchoolWorkingDays - (excludeLeaveFromDenominator ? leaveDays : 0));
+        const attendanceRate = attendanceDenominator > 0 ? Math.round((presentDays / attendanceDenominator) * 100) : 0;
         const avgMinutesPerPresentDay = presentDays > 0 ? Math.round(totalMinutes / presentDays) : 0;
 
         // Apply status filter
@@ -9578,7 +9837,9 @@ window.addEventListener('load',async function(){
       document.getElementById("kpi-report-label-1").innerText = "Total Faculty";
       document.getElementById("kpi-rep-total").innerText = staffList.length;
       document.getElementById("kpi-report-label-2").innerText = "Avg Attendance %";
-      const avgRate = staffList.length > 0 ? Math.round((grandTotalPresentDays / (staffList.length * totalSchoolWorkingDays)) * 100) : 0;
+      const excludeLeaveFromDenominator = activeStaffAttendanceRules.attendanceDenominator === 'working_days_minus_leave' || activeStaffAttendanceRules.approvedLeaveTreatment === 'exclude_denominator';
+      const totalAttendanceDenominator = records.reduce((sum, record) => sum + Math.max(0, record.workingDays - (excludeLeaveFromDenominator ? record.leaveDays : 0)), 0);
+      const avgRate = totalAttendanceDenominator > 0 ? Math.round((grandTotalPresentDays / totalAttendanceDenominator) * 100) : 0;
       document.getElementById("kpi-rep-present").innerText = `${avgRate}%`;
       document.getElementById("kpi-rep-present-sub").innerText = `${grandTotalPresentDays} Total Attended Days`;
       document.getElementById("kpi-rep-late").innerText = grandTotalLateDays;
