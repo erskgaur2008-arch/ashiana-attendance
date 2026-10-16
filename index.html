@@ -9703,6 +9703,46 @@ window.addEventListener('load',async function(){
       };
     }
 
+      function buildDateWiseMusterPreview(state) {
+        if (currentReportType !== 'monthly' || !Array.isArray(lastGeneratedReportData)) return '';
+        const records = lastGeneratedReportData.map(row => ({ row, staff: staffDatabase.find(s => s.id === row.staffId) })).filter(x => x.staff);
+        const dateKeys = Object.keys(state.entries).sort();
+        const dayLabel = date => date.slice(-2);
+        const dateStatus = date => state.entries[date]?.status || 'working';
+        const cellFor = (staff, date) => {
+          const calendarStatus = dateStatus(date);
+          if (calendarStatus === 'off') return { code: 'WO', title: 'Weekly off' };
+          if (calendarStatus === 'holiday') return { code: 'H', title: state.entries[date]?.note || 'Holiday' };
+          const stat = calculateAttendanceForDate(staff.id, date);
+          if (stat.punches.length === 0 && stat.currentStatus === 'ON LEAVE') {
+            return { code: 'L', title: 'Approved leave' + (stat.leaveType ? ': ' + stat.leaveType : '') };
+          }
+          if (stat.punches.length === 0) return { code: 'A', title: 'No attendance punch recorded' };
+          const inTime = stat.firstIn ? String(stat.firstIn).slice(11,16) : '—';
+          const outTime = stat.lastOut ? String(stat.lastOut).slice(11,16) : '—';
+          if (stat.punches.length % 2 !== 0) return { code: 'MP', title: 'Missing punch pair · In: ' + inTime + ' · Out: ' + outTime };
+          if (stat.lateMinutes > 0) return { code: 'LT', title: 'Late · In: ' + inTime + ' · Out: ' + outTime + ' · Late minutes: ' + stat.lateMinutes };
+          return { code: 'P', title: 'Present · In: ' + inTime + ' · Out: ' + outTime + ' · Punches: ' + stat.punches.length };
+        };
+        const legend = '<div class="mt-3 rounded-lg border border-indigo-200 bg-indigo-50 p-3">' +
+          '<div class="font-extrabold text-sm">Date-wise muster roll preview</div>' +
+          '<div class="mt-1">Rows: <strong>' + records.length + '</strong> · Dates: <strong>' + dateKeys.length + '</strong>. Tap/hover a status cell for punch details.</div>' +
+          '<div class="mt-2 flex flex-wrap gap-2 text-[11px]">' +
+          '<span class="rounded bg-emerald-100 px-2 py-1">P Present</span><span class="rounded bg-amber-100 px-2 py-1">LT Late</span><span class="rounded bg-rose-100 px-2 py-1">MP Missing punch</span><span class="rounded bg-slate-100 px-2 py-1">A Absent</span><span class="rounded bg-blue-100 px-2 py-1">L Approved leave</span><span class="rounded bg-gray-200 px-2 py-1">WO Weekly off</span><span class="rounded bg-yellow-100 px-2 py-1">H Holiday</span></div>' +
+          '<div class="mt-2 max-h-96 overflow-auto rounded-lg border border-indigo-100 bg-white"><table class="text-xs whitespace-nowrap"><thead class="sticky top-0 z-10 bg-slate-100"><tr><th class="sticky left-0 z-20 bg-slate-100 p-2 text-left">Employee</th>' +
+          dateKeys.map(date => '<th class="p-2 text-center"><div>' + dayLabel(date) + '</div><div class="text-[9px] font-normal">' + (dateStatus(date) === 'holiday' ? 'H' : dateStatus(date) === 'off' ? 'WO' : 'W') + '</div></th>').join('') +
+          '</tr></thead><tbody>' +
+          records.map(({row,staff}) => '<tr class="border-t border-slate-100"><td class="sticky left-0 z-[1] bg-white p-2"><div class="font-bold">' + safe(row.empId) + '</div><div>' + safe(row.name) + '</div></td>' +
+            dateKeys.map(date => {
+              const cell = cellFor(staff, date);
+              const color = cell.code === 'P' ? 'bg-emerald-100 text-emerald-900' : cell.code === 'LT' ? 'bg-amber-100 text-amber-900' : cell.code === 'MP' ? 'bg-rose-100 text-rose-900' : cell.code === 'A' ? 'bg-slate-100 text-slate-700' : cell.code === 'L' ? 'bg-blue-100 text-blue-900' : cell.code === 'WO' ? 'bg-gray-200 text-gray-700' : cell.code === 'H' ? 'bg-yellow-100 text-yellow-900' : 'bg-white';
+              return '<td title="' + safe(cell.title) + '" class="p-1 text-center"><span class="inline-block min-w-7 rounded px-1 py-1 font-bold ' + color + '">' + cell.code + '</span></td>';
+            }).join('') + '</tr>').join('') +
+          '</tbody></table></div>' +
+          '<div class="mt-2 text-[11px] text-slate-600">Preview uses existing punch records and approved leave requests. It does not save or modify attendance data, and calendar-adjusted totals remain separate from the official report.</div></div>';
+        return legend;
+      }
+
       let comparisonHtml = '';
       if (currentReportType === 'monthly') {
         const comparison = calculateCalendarAdjustedMusterPreview(state);
@@ -9720,6 +9760,7 @@ window.addEventListener('load',async function(){
             '<td class="p-2 text-right">' + r.currentRate + '%</td><td class="p-2 text-right font-bold">' + r.proposedRate + '%</td>' +
             '</tr>').join('') + '</tbody></table></div></div>';
         }
+        comparisonHtml += buildDateWiseMusterPreview(state);
       }
       panel.innerHTML = '<div class="font-extrabold text-sm mb-1">Working-day calendar impact preview</div>' +
         '<div>Calendar source: <strong>' + safe(state.source) + '</strong></div>' +
