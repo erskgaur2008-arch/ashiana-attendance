@@ -521,6 +521,7 @@
         visibility: visible;
       }
       #print-report-container {
+        display: block !important;
         position: absolute;
         left: 0;
         top: 0;
@@ -12028,7 +12029,8 @@ function addMessage(text,type){
     requestAnimationFrame(function(){messages.scrollTo({top:messages.scrollHeight,behavior:"smooth"});});
   }
   function openAi(){
-    if(!signedStaffUser()) return;
+    // The AI Assistant is Admin-only; use the same role check as launcher visibility.
+    if(!signedAdminUser()) return;
     modal.classList.add("open");
     setTimeout(function(){input.focus();},50);
   }
