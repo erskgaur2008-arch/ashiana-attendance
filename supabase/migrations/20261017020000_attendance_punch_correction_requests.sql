@@ -27,3 +27,7 @@ create index if not exists idx_punch_correction_staff_date
 alter table public.attendance_punch_correction_requests enable row level security;
 revoke all on public.attendance_punch_correction_requests from anon, authenticated;
 grant all on public.attendance_punch_correction_requests to service_role;
+
+create unique index if not exists uq_punch_correction_pending_staff_date
+  on public.attendance_punch_correction_requests(staff_id, attendance_date)
+  where status = 'PENDING';
