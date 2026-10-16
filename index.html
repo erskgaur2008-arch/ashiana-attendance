@@ -9548,6 +9548,19 @@ window.addEventListener('load',async function(){
       return staffAttendanceRulesFetchPromise;
     }
 
+    // Report-only classification derived from punches; does not rewrite stored attendance.
+    function classifyStaffAttendanceDay(stat) {
+      const rules = activeStaffAttendanceRules || DEFAULT_STAFF_ATTENDANCE_RULES;
+      const minutes = Math.max(0, Number(stat?.totalWorkMinutes || 0));
+      const full = Number(rules.fullDayMinimumHours ?? 6.833333) * 60;
+      const half = Number(rules.halfDayMinimumHours ?? 3) * 60;
+      const arrival = stat?.firstIn ? toMins(stat.firstIn) : null;
+      const lateShortLeave = arrival !== null && arrival > toMins(rules.latePunchAfterTime || '09:30');
+      let dayClass = 'ABSENT';
+      if (stat?.currentStatus === 'ON LEAVE' && !stat?.punches?.length) dayClass = 'APPROVED_LEAVE';
+      else if (stat?.punches?.length) dayClass = lateShortLeave ? 'SHORT_LEAVE' : minutes >= full ? 'FULL_DAY' : minutes >= half ? 'HALF_DAY' : 'SHORT_DAY';
+      return { dayClass, lateShortLeave, workMinutes: minutes };
+    }
     function calculateAttendanceForDate(staffId, dateStr) {
       const punches = punchLedger
         .filter(p => p.staffId === staffId && p.attendanceDate === dateStr)
@@ -9595,7 +9608,8 @@ window.addEventListener('load',async function(){
         currentStatus = "ON LEAVE";
       }
 
-      return { punches, firstIn, lastOut, totalWorkMinutes, totalBreakMinutes, lateMinutes, currentStatus, leaveType: leave?.type || null };
+      const result = { punches, firstIn, lastOut, totalWorkMinutes, totalBreakMinutes, lateMinutes, currentStatus, leaveType: leave?.type || null };
+      return { ...result, ...classifyStaffAttendanceDay(result) };
     }
 
     // Main Report Generation Router
