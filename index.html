@@ -5958,39 +5958,20 @@ async function refreshStudentPortalData(){
 
 
     async function createStudentPortalIdCard(){
-      // Student ID card must use the student's own portal record, never staff/teacher data.
+      // Use only the authenticated student's own roster record.
       const s=currentAuthUser?.portalData?.student||currentAuthUser?.studentRecord;
       if(!s){showToast("Student profile is not loaded. Please sign in again.","error");return;}
       const modal=document.getElementById("student-id-card-preview-modal");
       const preview=document.getElementById("student-id-card-preview");
       if(!modal||!preview){showToast("ID card preview is unavailable.","error");return;}
       currentStudentIdCardId=s.id;
-      // Detach the modal from any hidden portal container so it always renders above the student dashboard.
       if(modal.parentElement!==document.body)document.body.appendChild(modal);
       modal.classList.remove("hidden");modal.classList.add("flex");document.body.classList.add("overflow-hidden");
-      preview.innerHTML='<div class="w-[54mm] h-[85.6mm] flex items-center justify-center bg-white text-slate-500 text-xs">Preparing ID card…</div>';
-      // Render the card immediately; photo loading must never block opening the modal.
-      let photoUrl="";
-      try{photoUrl=await Promise.race([
-        getStudentPhotoUrl(s),
-        new Promise(resolve=>setTimeout(()=>resolve(""),2500))
-      ]);}catch(_){}
-      // Student ID-card photo is resolved only from the authenticated student's
-      // own roster record. Never use teacher/staff photo data here.
-      if(!photoUrl && currentAuthUser?.type==='STUDENT'){
-        const own=currentAuthUser?.portalData?.student;
-        if(own?.photo_path){
-          try{
-            const token=String(await window.AshianaNative?.getStudentSessionToken?.() || sessionStorage.getItem("aps_student_session_token_v1") || "");
-            if(/^[a-f0-9]{64}$/i.test(token)){
-              const {data}=await supabaseClient.functions.invoke('student-photo-url',{body:{enroll_no:String(s.enroll_no),session_token:token}});
-              photoUrl=data?.success?String(data.photo_url||''):'';
-            }
-          }catch(e){console.warn('Own student ID photo retry failed:',e);}
-        }
-      }
-      preview.innerHTML=makeStudentIdCardHtml(s,photoUrl);
-      // QR is optional enhancement. Never wait for the external QR library before showing the card.
+
+      // Show the card immediately with its initials fallback. Resolve the private
+      // photo asynchronously so a slow native secure-storage/Edge Function call
+      // cannot time out and permanently leave the card without its photo.
+      preview.innerHTML=makeStudentIdCardHtml(s,"");
       const qrHost=preview.querySelector("[data-student-qr]");
       renderStudentCardQr(qrHost,s);
       if(typeof QRCode==="undefined"){
@@ -5998,6 +5979,23 @@ async function refreshStudentPortalData(){
       }
       requestAnimationFrame(scaleStudentIdCardPreview);
       window.setTimeout(scaleStudentIdCardPreview,120);
+
+      try{
+        const photoUrl=await getStudentPhotoUrl(s);
+        // The modal may have been closed or another card opened while the URL
+        // was resolving. Update only this student's still-visible card.
+        if(!photoUrl||!preview.isConnected||modal.classList.contains("hidden"))return;
+        if(String(currentStudentIdCardId)!==String(s.id))return;
+        const photoWrap=preview.querySelector(".sid-photo-wrap");
+        if(!photoWrap)return;
+        const img=document.createElement("img");
+        img.alt="Student Photo";
+        img.src=photoUrl;
+        img.onerror=()=>{img.remove();if(!photoWrap.querySelector(".sid-photo-fallback")){const fallback=document.createElement("div");fallback.className="sid-photo-fallback";fallback.textContent=studentIdInitials(s);photoWrap.appendChild(fallback);}};
+        photoWrap.replaceChildren(img);
+        requestAnimationFrame(scaleStudentIdCardPreview);
+        window.setTimeout(scaleStudentIdCardPreview,120);
+      }catch(e){console.warn("Student ID-card photo load failed:",e);}
     }
 
     async function requestAdminPasswordReset() {
