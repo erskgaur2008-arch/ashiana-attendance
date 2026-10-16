@@ -7079,10 +7079,14 @@ async function loadAdminStudents(){
       try{
         if(currentAuthUser?.type==='STUDENT'){
           const token=String(await window.AshianaNative?.getStudentSessionToken?.() || sessionStorage.getItem("aps_student_session_token_v1") || "");
-          if(!/^[a-f0-9]{64}$/i.test(token))return '';
-          const {data,error}=await supabaseClient.functions.invoke('student-photo-url',{body:{enroll_no:String(s.enroll_no),session_token:token}});
-          if(error)throw error;
-          return data?.success&&data?.photo_url?data.photo_url:'';
+          // Android uses the secure native session token. Browser/PWA sessions may
+          // not have that native token, so try it when available and otherwise
+          // continue to the existing DOB-verified web fallback below.
+          if(/^[a-f0-9]{64}$/i.test(token)){
+            const {data,error}=await supabaseClient.functions.invoke('student-photo-url',{body:{enroll_no:String(s.enroll_no),session_token:token}});
+            if(error)throw error;
+            if(data?.success&&data?.photo_url)return data.photo_url;
+          }
         }
         if(!s?.dob)return '';
         const iso=String(s.dob).slice(0,10),dt=iso.split('-');
