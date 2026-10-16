@@ -9799,7 +9799,7 @@ window.addEventListener('load',async function(){
         const absentDays = Math.max(0, totalSchoolWorkingDays - presentDays - leaveDays);
         const excludeLeaveFromDenominator = activeStaffAttendanceRules.attendanceDenominator === 'working_days_minus_leave' || activeStaffAttendanceRules.approvedLeaveTreatment === 'exclude_denominator';
         const attendanceDenominator = Math.max(0, totalSchoolWorkingDays - (excludeLeaveFromDenominator ? leaveDays : 0));
-        const attendanceRate = attendanceDenominator > 0 ? Math.round((presentDays / attendanceDenominator) * 100) : 0;
+        const attendanceRate = attendanceDenominator > 0 ? Math.round((attendanceDaysEquivalent / attendanceDenominator) * 100) : 0;
         const avgMinutesPerPresentDay = presentDays > 0 ? Math.round(totalMinutes / presentDays) : 0;
 
         // Apply status filter
@@ -9821,6 +9821,7 @@ window.addEventListener('load',async function(){
           role: s.role,
           workingDays: totalSchoolWorkingDays,
           presentDays,
+          attendanceDaysEquivalent,
           absentDays,
           leaveDays,
           lateDays,
@@ -9870,7 +9871,7 @@ window.addEventListener('load',async function(){
       // Render Table Body
       const tbody = document.getElementById("report-table-tbody");
       if (records.length === 0) {
-        tbody.innerHTML = `<tr><td colspan="12" class="text-center py-8 text-slate-400 text-xs italic">No records found for ${monthName}. Tap "Seed Sample Month Punches" to preview populated data.</td></tr>`;
+        tbody.innerHTML = `<tr><td colspan="16" class="text-center py-8 text-slate-400 text-xs italic">No records found for ${monthName}. Tap "Seed Sample Month Punches" to preview populated data.</td></tr>`;
         return;
       }
 
@@ -10061,6 +10062,13 @@ window.addEventListener('load',async function(){
             "Designation": r.role,
             "Working Days": r.workingDays,
             "Present Days": r.presentDays,
+            "Attendance-Day Equivalent": r.attendanceDaysEquivalent,
+            "Full Days": r.fullDays,
+            "Half Days": r.halfDays,
+            "Short Days": r.shortDays,
+            "Late Short Leaves": r.lateShortLeaves,
+            "Short-Day Full-Day Equivalents": r.shortDayEquivalents,
+            "Converted Late-Short-Leave Absences": r.convertedLateAbsences,
             "Absent Days": r.absentDays,
             "Approved Leaves": r.leaveDays,
             "Late Arrivals": r.lateDays,
@@ -10122,7 +10130,7 @@ window.addEventListener('load',async function(){
         filename = `Ashiana_Monthly_Muster_Roll_${month}.csv`;
         csvContent = "S.No,Employee ID,Faculty Name,Department,Working Days,Present,Absent,Leaves,Late Days,Total Work,Avg/Day,Attendance %\n";
         lastGeneratedReportData.forEach((r, i) => {
-          csvContent += `"${i + 1}","${r.empId}","${r.name}","${r.department}",${r.workingDays},${r.presentDays},${r.absentDays},${r.leaveDays},${r.lateDays},"${r.totalWorkStr}","${r.avgDayStr}","${r.attendanceRate}%"\n`;
+          csvContent += `"${i + 1}","${r.empId}","${r.name}","${r.department}",${r.workingDays},${r.presentDays},${r.attendanceDaysEquivalent},${r.fullDays},${r.halfDays},${r.shortDays},${r.lateShortLeaves},${r.shortDayEquivalents},${r.convertedLateAbsences},${r.absentDays},${r.leaveDays},${r.lateDays},"${r.totalWorkStr}","${r.avgDayStr}","${r.attendanceRate}%"\n`;
         });
       } else if (currentReportType === 'faculty') {
         const selStaff = staffDatabase.find(s => s.id === document.getElementById("report-faculty-select").value) || staffDatabase[0];
