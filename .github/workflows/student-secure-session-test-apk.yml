@@ -6,6 +6,7 @@ on:
     branches:
       - fix/student-secure-session-persistence
       - fix/student-session-token-correction
+      - fix/student-portal-id-card-photo
 
 permissions:
   contents: read
