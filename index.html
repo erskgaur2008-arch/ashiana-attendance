@@ -9703,6 +9703,38 @@ window.addEventListener('load',async function(){
       };
     }
 
+      function buildMusterPunchExceptionSummary(state) {
+        if (currentReportType !== 'monthly' || !Array.isArray(lastGeneratedReportData)) return '';
+        const monthDates = Object.keys(state.entries).sort();
+        const exceptions = [];
+        lastGeneratedReportData.forEach(row => {
+          const staff = staffDatabase.find(s => s.id === row.staffId);
+          if (!staff) return;
+          monthDates.forEach(date => {
+            const day = state.entries[date];
+            if (!day || day.status === 'off' || day.status === 'holiday') return;
+            const stat = calculateAttendanceForDate(staff.id, date);
+            const punches = Array.isArray(stat.punches) ? stat.punches : [];
+            const ins = punches.filter(p => String(p.type || '').toUpperCase() === 'IN').length;
+            const outs = punches.filter(p => String(p.type || '').toUpperCase() === 'OUT').length;
+            if (punches.length && (ins !== outs || punches.length % 2 !== 0)) {
+              exceptions.push({
+                empId: row.empId, name: row.name, date, count: punches.length,
+                ins, outs, issue: ins > outs ? 'Missing OUT punch' : outs > ins ? 'Missing IN punch' : 'Unbalanced punch sequence'
+              });
+            }
+          });
+        });
+        const safeText = value => String(value ?? '').replace(/&/g,'&amp;').replace(/</g,'&lt;').replace(/>/g,'&gt;').replace(/"/g,'&quot;').replace(/'/g,'&#39;');
+        return '<div class="mt-3 rounded-lg border border-rose-200 bg-rose-50 p-3">' +
+          '<div class="font-extrabold text-sm">Punch exception review (read-only)</div>' +
+          '<div class="mt-1">Unbalanced staff-date records: <strong>' + exceptions.length + '</strong>. No punches have been edited.</div>' +
+          (exceptions.length ? '<div class="mt-2 max-h-64 overflow-auto rounded-lg border border-rose-100 bg-white"><table class="w-full text-xs"><thead class="sticky top-0 bg-slate-100"><tr><th class="p-2 text-left">Employee</th><th class="p-2 text-left">Date</th><th class="p-2 text-right">IN</th><th class="p-2 text-right">OUT</th><th class="p-2 text-left">Exception</th></tr></thead><tbody>' +
+            exceptions.map(x => '<tr class="border-t border-slate-100"><td class="p-2"><strong>' + safeText(x.empId) + '</strong><div>' + safeText(x.name) + '</div></td><td class="p-2">' + safeText(x.date) + '</td><td class="p-2 text-right">' + x.ins + '</td><td class="p-2 text-right">' + x.outs + '</td><td class="p-2">' + safeText(x.issue) + '</td></tr>').join('') +
+            '</tbody></table></div>' : '<div class="mt-2">No unbalanced punch pairs found on working dates for the selected month.</div>') +
+          '<div class="mt-2 text-[11px] text-slate-600">Read-only diagnostic. Confirm each item against source records before making any correction. Official attendance and working-hour calculations remain unchanged.</div></div>';
+      }
+
       function buildDateWiseMusterPreview(state) {
         if (currentReportType !== 'monthly' || !Array.isArray(lastGeneratedReportData)) return '';
         const records = lastGeneratedReportData.map(row => ({ row, staff: staffDatabase.find(s => s.id === row.staffId) })).filter(x => x.staff);
@@ -9761,6 +9793,7 @@ window.addEventListener('load',async function(){
             '</tr>').join('') + '</tbody></table></div></div>';
         }
         comparisonHtml += buildDateWiseMusterPreview(state);
+        comparisonHtml += buildMusterPunchExceptionSummary(state);
       }
       panel.innerHTML = '<div class="font-extrabold text-sm mb-1">Working-day calendar impact preview</div>' +
         '<div>Calendar source: <strong>' + safe(state.source) + '</strong></div>' +
