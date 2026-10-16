@@ -3494,6 +3494,7 @@
             <div>
               <h4 id="report-active-title" class="text-sm font-bold text-slate-800">Daily Attendance Record</h4>
               <p id="report-active-subtitle" class="text-[11px] text-slate-500 font-mono">Date: 2026-09-23 • Shift: 07:40 AM - 02:30 PM</p>
+          <div id="muster-calendar-impact-preview" class="hidden mb-3 rounded-xl border border-sky-200 bg-sky-50 p-3 text-xs text-sky-950" aria-live="polite"></div>
             </div>
             <span id="report-record-count-badge" class="px-2.5 py-1 rounded-full text-[10px] font-bold bg-slate-100 text-slate-600 self-start sm:self-auto">
               Showing 0 records
@@ -9602,6 +9603,74 @@ window.addEventListener('load',async function(){
       return { punches, firstIn, lastOut, totalWorkMinutes, totalBreakMinutes, lateMinutes, currentStatus, leaveType: leave?.type || null };
     }
 
+    // Calendar-impact preview only: does not alter existing report calculations.
+    let musterCalendarPreviewState = null;
+    async function loadMusterCalendarPreview(monthKey) {
+      const [year, month] = monthKey.split('-').map(Number);
+      const daysInMonth = new Date(year, month, 0).getDate();
+      const entries = {};
+      for (let day = 1; day <= daysInMonth; day++) {
+        const date = new Date(year, month - 1, day);
+        let status = 'working';
+        if (date.getDay() === 0) status = 'off';
+        else if (date.getDay() === 6) {
+          let ordinal = 0;
+          for (let d = day; d > 0; d--) if (new Date(year, month - 1, d).getDay() === 6) ordinal++;
+          if (ordinal === 2 || ordinal === 4) status = 'off';
+        }
+        entries[monthKey + '-' + String(day).padStart(2, '0')] = { status, note: '' };
+      }
+      let source = 'default rules only';
+      try {
+        if (!supabaseClient || currentAuthUser?.type !== 'ADMIN') throw new Error('Admin database session unavailable');
+        const { data, error } = await supabaseClient.from('monthly_working_day_calendars')
+          .select('calendar,version,updated_at').eq('month_key', monthKey + '-01').maybeSingle();
+        if (error) throw error;
+        if (data?.calendar && typeof data.calendar === 'object') {
+          Object.keys(entries).forEach(key => {
+            const saved = data.calendar[key];
+            if (saved && ['working','off','holiday','custom'].includes(saved.status)) {
+              entries[key] = { status: saved.status, note: String(saved.note || '').slice(0,100) };
+            }
+          });
+          source = 'saved calendar v' + (data.version || 1);
+        }
+      } catch (err) {
+        source = 'calendar unavailable: ' + String(err?.message || err);
+      }
+      const workingDates = Object.entries(entries).filter(([,v]) => v.status === 'working' || v.status === 'custom').map(([date]) => date);
+      const excludedDates = Object.entries(entries).filter(([,v]) => v.status === 'off' || v.status === 'holiday').map(([date,v]) => ({date,status:v.status,note:v.note}));
+      let legacyWorkingDays = 0;
+      for (let day = 1; day <= daysInMonth; day++) if (new Date(year, month - 1, day).getDay() !== 0) legacyWorkingDays++;
+      musterCalendarPreviewState = { monthKey, entries, source, workingDates, excludedDates, legacyWorkingDays };
+      return musterCalendarPreviewState;
+    }
+
+    function renderMusterCalendarImpactPreview(monthKey) {
+      const panel = document.getElementById('muster-calendar-impact-preview');
+      if (!panel) return;
+      const show = currentReportType === 'monthly' || currentReportType === 'faculty';
+      panel.classList.toggle('hidden', !show);
+      if (!show) return;
+      const state = musterCalendarPreviewState;
+      if (!state || state.monthKey !== monthKey) {
+        panel.innerHTML = '<strong>Calendar preview:</strong> Calendar impact could not be loaded. Existing report calculations are unchanged.';
+        return;
+      }
+      const holidays = state.excludedDates.filter(x => x.status === 'holiday');
+      const offDays = state.excludedDates.filter(x => x.status === 'off');
+      const safe = s => String(s || '').replace(/&/g,'&amp;').replace(/</g,'&lt;').replace(/>/g,'&gt;').replace(/"/g,'&quot;');
+      const holidayList = holidays.length ? holidays.map(x => safe(x.date.slice(-2) + ' ' + x.note)).join(', ') : 'None saved';
+      panel.innerHTML = '<div class="font-extrabold text-sm mb-1">Working-day calendar impact preview</div>' +
+        '<div>Calendar source: <strong>' + safe(state.source) + '</strong></div>' +
+        '<div class="mt-1 grid grid-cols-1 sm:grid-cols-3 gap-2">' +
+          '<div class="rounded-lg bg-white border border-sky-100 p-2">Current report denominator (Sunday-only exclusion): <strong>' + state.legacyWorkingDays + '</strong></div>' +
+          '<div class="rounded-lg bg-white border border-sky-100 p-2">Proposed working days: <strong>' + state.workingDates.length + '</strong></div>' +
+          '<div class="rounded-lg bg-white border border-sky-100 p-2">Difference: <strong>' + (state.workingDates.length - state.legacyWorkingDays) + '</strong></div>' +
+        '</div><div class="mt-2">Weekly offs excluded: ' + offDays.length + ' dates. Holidays excluded: ' + holidays.length + ' dates (' + holidayList + ').</div>' +
+        '<div class="mt-2 font-semibold">Preview only — existing monthly and date-wise attendance calculations have not been changed.</div>';
+    }
+
     // Main Report Generation Router
     async function runAdminReportGeneration() {
       await ensureStaffAttendanceRulesLoaded();
@@ -9620,6 +9689,10 @@ window.addEventListener('load',async function(){
       const statusFilter = document.getElementById("report-status-filter")?.value || "ALL";
       const searchQuery = (document.getElementById("report-search-query")?.value || "").toLowerCase().trim();
 
+      if (currentReportType === 'monthly' || currentReportType === 'faculty') {
+        await loadMusterCalendarPreview(monthInp.value);
+      }
+
       if (currentReportType === 'daily') {
         generateDailyReport(dateInp.value, deptFilter, statusFilter, searchQuery);
       } else if (currentReportType === 'monthly') {
@@ -9628,6 +9701,7 @@ window.addEventListener('load',async function(){
         const facultyId = document.getElementById("report-faculty-select")?.value || staffDatabase[0]?.id;
         generateFacultyReport(facultyId, monthInp.value, statusFilter);
       }
+      renderMusterCalendarImpactPreview(monthInp.value);
       if (window.lucide) lucide.createIcons();
     }
 
