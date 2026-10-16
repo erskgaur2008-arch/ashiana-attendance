@@ -9548,6 +9548,19 @@ window.addEventListener('load',async function(){
       return staffAttendanceRulesFetchPromise;
     }
 
+    // Report-only classification derived from punch history; it does not mutate saved attendance.
+    function classifyStaffAttendanceDay(stat) {
+      const rules = activeStaffAttendanceRules || DEFAULT_STAFF_ATTENDANCE_RULES;
+      const minutes = Math.max(0, Number(stat?.totalWorkMinutes || 0));
+      const fullMinutes = Number(rules.fullDayMinimumHours ?? 6.833333) * 60;
+      const halfMinutes = Number(rules.halfDayMinimumHours ?? 3) * 60;
+      const arrival = stat?.firstIn ? toMins(stat.firstIn) : null;
+      const lateShortLeave = arrival !== null && arrival > toMins(rules.latePunchAfterTime || '09:30');
+      let dayClass = 'ABSENT';
+      if (stat?.currentStatus === 'ON LEAVE' && !stat?.punches?.length) dayClass = 'APPROVED_LEAVE';
+      else if (stat?.punches?.length) dayClass = lateShortLeave ? 'SHORT_LEAVE' : minutes >= fullMinutes ? 'FULL_DAY' : minutes >= halfMinutes ? 'HALF_DAY' : 'SHORT_DAY';
+      return { dayClass, lateShortLeave, workMinutes: minutes };
+    }
     function calculateAttendanceForDate(staffId, dateStr) {
       const punches = punchLedger
         .filter(p => p.staffId === staffId && p.attendanceDate === dateStr)
@@ -9595,7 +9608,8 @@ window.addEventListener('load',async function(){
         currentStatus = "ON LEAVE";
       }
 
-      return { punches, firstIn, lastOut, totalWorkMinutes, totalBreakMinutes, lateMinutes, currentStatus, leaveType: leave?.type || null };
+      const result = { punches, firstIn, lastOut, totalWorkMinutes, totalBreakMinutes, lateMinutes, currentStatus, leaveType: leave?.type || null };
+      return { ...result, ...classifyStaffAttendanceDay(result) };
     }
 
     // Main Report Generation Router
@@ -9783,6 +9797,10 @@ window.addEventListener('load',async function(){
         let presentDays = 0;
         let lateDays = 0;
         let leaveDays = 0;
+        let fullDays = 0;
+        let halfDays = 0;
+        let shortDays = 0;
+        let lateShortLeaves = 0;
         let totalMinutes = 0;
 
         datesInMonth.forEach(dStr => {
@@ -9791,12 +9809,20 @@ window.addEventListener('load',async function(){
             presentDays++;
             totalMinutes += stat.totalWorkMinutes;
             if (stat.lateMinutes > 0) lateDays++;
+            if (stat.dayClass === 'FULL_DAY') fullDays++;
+            else if (stat.dayClass === 'HALF_DAY') halfDays++;
+            else if (stat.dayClass === 'SHORT_DAY') shortDays++;
+            else if (stat.dayClass === 'SHORT_LEAVE') lateShortLeaves++;
           } else if (stat.currentStatus === 'ON LEAVE') {
             leaveDays++;
           }
         });
 
-        const absentDays = Math.max(0, totalSchoolWorkingDays - presentDays - leaveDays);
+        const shortDaysPerFullDay = Math.max(1, Number(activeStaffAttendanceRules.shortDaysPerFullDay || 4));
+        const shortLeavesPerFullAbsent = Math.max(1, Number(activeStaffAttendanceRules.shortLeavesPerFullAbsent || 4));
+        const shortDayEquivalents = Math.floor(shortDays / shortDaysPerFullDay);
+        const convertedLateAbsences = Math.floor(lateShortLeaves / shortLeavesPerFullAbsent);
+        const absentDays = Math.max(0, totalSchoolWorkingDays - presentDays - leaveDays + convertedLateAbsences);
         const excludeLeaveFromDenominator = activeStaffAttendanceRules.attendanceDenominator === 'working_days_minus_leave' || activeStaffAttendanceRules.approvedLeaveTreatment === 'exclude_denominator';
         const attendanceDenominator = Math.max(0, totalSchoolWorkingDays - (excludeLeaveFromDenominator ? leaveDays : 0));
         const attendanceRate = attendanceDenominator > 0 ? Math.round((presentDays / attendanceDenominator) * 100) : 0;
@@ -9824,6 +9850,12 @@ window.addEventListener('load',async function(){
           absentDays,
           leaveDays,
           lateDays,
+          fullDays,
+          halfDays,
+          shortDays,
+          lateShortLeaves,
+          shortDayEquivalents,
+          convertedLateAbsences,
           totalWorkStr: fmtMins(totalMinutes),
           totalMinutes,
           avgDayStr: fmtMins(avgMinutesPerPresentDay),
