@@ -9893,6 +9893,10 @@ window.addEventListener('load',async function(){
           <th class="py-2.5 px-3 text-center text-rose-800">Absent</th>
           <th class="py-2.5 px-3 text-center text-purple-800">Leaves</th>
           <th class="py-2.5 px-3 text-center text-amber-800">Late Days</th>
+          <th class="py-2.5 px-3 text-center">Full / Half</th>
+          <th class="py-2.5 px-3 text-center">Short Days</th>
+          <th class="py-2.5 px-3 text-center">Late Short Leaves</th>
+          <th class="py-2.5 px-3 text-center">Conversions</th>
           <th class="py-2.5 px-3">Total Work</th>
           <th class="py-2.5 px-3">Avg/Day</th>
           <th class="py-2.5 px-3 text-right">Attendance %</th>
@@ -9920,6 +9924,10 @@ window.addEventListener('load',async function(){
           <td class="py-2.5 px-3 text-center font-mono font-bold ${r.absentDays > 0 ? 'text-rose-600' : 'text-slate-400'}">${r.absentDays}</td>
           <td class="py-2.5 px-3 text-center font-mono font-bold text-purple-700">${r.leaveDays}</td>
           <td class="py-2.5 px-3 text-center font-mono font-bold ${r.lateDays > 0 ? 'text-amber-700' : 'text-slate-400'}">${r.lateDays}</td>
+          <td class="py-2.5 px-3 text-center font-mono">${r.fullDays} / ${r.halfDays}</td>
+          <td class="py-2.5 px-3 text-center font-mono">${r.shortDays}</td>
+          <td class="py-2.5 px-3 text-center font-mono">${r.lateShortLeaves}</td>
+          <td class="py-2.5 px-3 text-center font-mono">${r.shortDayEquivalents} short-day eq. / ${r.convertedLateAbsences} absent</td>
           <td class="py-2.5 px-3 font-mono font-bold text-slate-700">${r.totalWorkStr}</td>
           <td class="py-2.5 px-3 font-mono text-slate-600">${r.avgDayStr}</td>
           <td class="py-2.5 px-3 text-right">
