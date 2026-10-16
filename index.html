@@ -9799,6 +9799,7 @@ window.addEventListener('load',async function(){
         const absentDays = Math.max(0, totalSchoolWorkingDays - presentDays - leaveDays);
         const excludeLeaveFromDenominator = activeStaffAttendanceRules.attendanceDenominator === 'working_days_minus_leave' || activeStaffAttendanceRules.approvedLeaveTreatment === 'exclude_denominator';
         const attendanceDenominator = Math.max(0, totalSchoolWorkingDays - (excludeLeaveFromDenominator ? leaveDays : 0));
+        const attendanceDaysEquivalent = Math.max(0, presentDays - convertedLateAbsences);
         const attendanceRate = attendanceDenominator > 0 ? Math.round((attendanceDaysEquivalent / attendanceDenominator) * 100) : 0;
         const avgMinutesPerPresentDay = presentDays > 0 ? Math.round(totalMinutes / presentDays) : 0;
 
