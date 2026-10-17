@@ -9703,6 +9703,52 @@ window.addEventListener('load',async function(){
       };
     }
 
+      window.ashianaSubmitPunchCorrectionRequest = async function(index) {
+        const card = document.getElementById('punch-review-card-' + index);
+        const staffId = card?.dataset.staffId, empId = card?.dataset.empId, staffName = card?.dataset.staffName, date = card?.dataset.date;
+        const byId = suffix => document.getElementById('punch-review-' + suffix + '-' + index);
+        const evidence = byId('evidence'), proposed = byId('proposal'), reason = byId('reason'), verified = byId('verified'), output = byId('output');
+        if (!output || !verified?.checked || !evidence?.value.trim() || !proposed?.value.trim() || !reason?.value.trim()) {
+          if (output) output.textContent = 'Complete evidence, proposed change, reason and confirmation first.';
+          return;
+        }
+        if (typeof signedAdminUser === 'function' && !signedAdminUser()) { output.textContent = 'Admin access is required.'; return; }
+        output.textContent = 'Submitting request securely…';
+        try {
+          const client = window.__ashianaMainSupabaseClient || await ashianaGetMainSupabaseClient();
+          const { data, error } = await client.functions.invoke('punch-correction-requests', { body: {
+            action:'create', staff_id:staffId, attendance_date:date, evidence_reference:evidence.value.trim(),
+            proposed_change:{description:proposed.value.trim()}, reviewer_reason:reason.value.trim()
+          }});
+          if (error) throw error;
+          if (!data?.request) throw new Error(data?.error || 'Server did not confirm the request.');
+          output.textContent = 'Correction request recorded (' + data.request.id + '). Status: PENDING. No punch was changed.';
+          const btn=output.previousElementSibling; if(btn){btn.disabled=true;btn.textContent='Request submitted';}
+        } catch(error) { output.textContent='Request not submitted: '+String(error?.message||error)+'. No punch was changed.'; }
+      };
+      window.ashianaLoadPunchCorrectionRequests = async function() {
+        const target=document.getElementById('punch-correction-request-queue'); if(!target)return; target.textContent='Loading requests…';
+        try {
+          const client=window.__ashianaMainSupabaseClient||await ashianaGetMainSupabaseClient();
+          const {data,error}=await client.functions.invoke('punch-correction-requests',{body:{action:'list',status:'PENDING'}});
+          if(error)throw error; const requests=Array.isArray(data?.requests)?data.requests:[];
+          const esc=v=>String(v??'').replace(/&/g,'&amp;').replace(/</g,'&lt;').replace(/>/g,'&gt;').replace(/"/g,'&quot;').replace(/'/g,'&#39;');
+          target.innerHTML=requests.length?requests.map(item=>'<details class="mt-2 rounded border border-slate-200 bg-white p-3"><summary class="cursor-pointer font-bold">'+esc(item.emp_id)+' · '+esc(item.attendance_date)+' · '+esc(item.status)+'</summary><div class="mt-2 text-xs">Employee: '+esc(item.staff_name)+'<br>Requester: '+esc(item.requested_by_email)+'<br>Evidence: '+esc(item.evidence_reference)+'<br>Proposal: '+esc(item.proposed_change?.description||'')+'<br>Reason: '+esc(item.reviewer_reason)+'<br>Original punch snapshot: '+esc(JSON.stringify(item.original_punch_snapshot||[]))+'</div><label class="mt-2 block text-xs font-semibold">Reviewer decision note<textarea id="punch-request-review-note-'+esc(item.id)+'" class="mt-1 w-full rounded border p-2" rows="2" placeholder="Explain approval or rejection"></textarea></label><div class="mt-2 flex flex-wrap gap-2"><button type="button" class="rounded bg-emerald-700 px-3 py-2 text-xs font-bold text-white" onclick="window.ashianaReviewPunchCorrectionRequest(\''+esc(item.id)+'\',\'approve\')">Approve request</button><button type="button" class="rounded bg-rose-700 px-3 py-2 text-xs font-bold text-white" onclick="window.ashianaReviewPunchCorrectionRequest(\''+esc(item.id)+'\',\'reject\')">Reject request</button></div><div id="punch-request-review-result-'+esc(item.id)+'" class="mt-2 text-xs" aria-live="polite"></div></details>').join(''):'<p class="mt-2 text-sm">No pending correction requests.</p>';
+        } catch(error) { target.textContent='Could not load requests: '+String(error?.message||error); }
+      };
+      window.ashianaReviewPunchCorrectionRequest = async function(id, decision) {
+        const note=document.getElementById('punch-request-review-note-'+id), result=document.getElementById('punch-request-review-result-'+id);
+        if(!note?.value.trim()){if(result)result.textContent='Enter a reviewer decision note first.';return;}
+        if(!window.confirm('Record '+decision+' decision? This does not change attendance punches.'))return;
+        if(result)result.textContent='Recording review…';
+        try { const client=window.__ashianaMainSupabaseClient||await ashianaGetMainSupabaseClient();
+          const {data,error}=await client.functions.invoke('punch-correction-requests',{body:{action:decision,request_id:id,review_note:note.value.trim()}});
+          if(error)throw error;if(!data?.request)throw new Error(data?.error||'Review was not confirmed.');
+          if(result)result.textContent='Request '+data.request.status+'. Original punches remain unchanged.';
+          await window.ashianaLoadPunchCorrectionRequests();
+        } catch(error){if(result)result.textContent='Review failed: '+String(error?.message||error);}
+      };
+
       function buildPunchCorrectionReviewWorksheet(state) {
         if (currentReportType !== 'monthly' || !Array.isArray(lastGeneratedReportData)) return '';
         const monthDates = Object.keys(state.entries).sort();
@@ -9728,7 +9774,7 @@ window.addEventListener('load',async function(){
           '<div class="font-extrabold text-sm">Punch correction review worksheet</div>' +
           '<p class="mt-1 text-xs text-slate-700">Review only. This worksheet does not save, insert, edit, or delete punches. Verify original evidence before any correction.</p>' +
           (issues.length ? '<div class="mt-2 space-y-3">' + issues.map((x,i) =>
-            '<details class="rounded-lg border border-amber-200 bg-white p-3"><summary class="cursor-pointer font-bold">' + esc(x.empId) + ' · ' + esc(x.date) + ' · ' + esc(x.issue) + '</summary>' +
+            '<details id="punch-review-card-' + i + '" data-staff-id="' + esc(x.staffId) + '" data-emp-id="' + esc(x.empId) + '" data-staff-name="' + esc(x.name) + '" data-date="' + esc(x.date) + '" class="rounded-lg border border-amber-200 bg-white p-3"><summary class="cursor-pointer font-bold">' + esc(x.empId) + ' · ' + esc(x.date) + ' · ' + esc(x.issue) + '</summary>' +
             '<div class="mt-2 text-xs">Employee: <strong>' + esc(x.name) + '</strong><br>Recorded punches: ' + x.punches + ' · IN: ' + x.ins + ' · OUT: ' + x.outs + '</div>' +
             '<label class="mt-2 block text-xs font-semibold" for="punch-review-evidence-' + i + '">Evidence checked / source reference</label>' +
             '<textarea id="punch-review-evidence-' + i + '" class="mt-1 w-full rounded border border-slate-300 p-2 text-sm" rows="2" placeholder="Describe the register, device log, or other evidence checked"></textarea>' +
@@ -9737,10 +9783,10 @@ window.addEventListener('load',async function(){
             '<label class="mt-2 block text-xs font-semibold" for="punch-review-reason-' + i + '">Reason / reviewer note</label>' +
             '<textarea id="punch-review-reason-' + i + '" class="mt-1 w-full rounded border border-slate-300 p-2 text-sm" rows="2" placeholder="Reason for proposed correction or no-change decision"></textarea>' +
             '<label class="mt-2 flex items-start gap-2 text-xs"><input type="checkbox" id="punch-review-verified-' + i + '" class="mt-0.5"><span>I checked the source evidence and this is only a proposed review entry.</span></label>' +
-            '<button type="button" class="mt-2 rounded-lg border border-amber-300 bg-amber-100 px-3 py-2 text-xs font-bold" onclick="(function(){const e=document.getElementById(\'punch-review-evidence-' + i + '\');const p=document.getElementById(\'punch-review-proposal-' + i + '\');const r=document.getElementById(\'punch-review-reason-' + i + '\');const v=document.getElementById(\'punch-review-verified-' + i + '\');const o=document.getElementById(\'punch-review-output-' + i + '\');if(!v.checked||!e.value.trim()||!p.value.trim()||!r.value.trim()){o.textContent=\'Complete evidence, proposal, reason and verification checkbox first.\';return;}o.textContent=\'Review draft prepared on screen only. Nothing was saved. Record these details through the approved school process after authorization.\';})()">Prepare review draft</button>' +
+            '<button type="button" class="mt-2 rounded-lg border border-amber-300 bg-amber-100 px-3 py-2 text-xs font-bold" onclick="window.ashianaSubmitPunchCorrectionRequest(' + i + ')">Submit correction request</button>' +
             '<div id="punch-review-output-' + i + '" class="mt-2 text-xs font-semibold text-slate-700" aria-live="polite"></div></details>'
           ).join('') + '</div>' : '<div class="mt-2 text-sm">No unbalanced punch pairs found for the selected month.</div>') +
-          '<div class="mt-3 text-xs font-semibold text-amber-900">No correction is applied by this worksheet. Official attendance and working-hour calculations remain unchanged.</div></div>';
+          '<div class="mt-3 rounded-lg border border-slate-200 bg-white p-3"><div class="font-extrabold text-sm">Pending correction requests</div><p class="mt-1 text-xs text-slate-600">A different active Admin must approve or reject each request. Approval records the decision only; it does not alter punches.</p><button type="button" class="mt-2 rounded border px-3 py-2 text-xs font-bold" onclick="window.ashianaLoadPunchCorrectionRequests()">Load pending requests</button><div id="punch-correction-request-queue" class="mt-2" aria-live="polite"></div></div><div class="mt-3 text-xs font-semibold text-amber-900">Requests and decisions are audited. No correction is applied automatically; official attendance and working-hour calculations remain unchanged.</div></div>';
       }
 
       function buildMusterPunchExceptionSummary(state) {
