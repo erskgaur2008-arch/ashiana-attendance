@@ -50,7 +50,7 @@ jobs:
           if html.count(anchor) != 1:
               raise SystemExit("Could not find the expected Supabase script anchor")
           role_script = '<script>try{const u=new URL(window.location.href);u.searchParams.set("login","staff");history.replaceState(null,"",u.toString());}catch(e){}</script>'
-          html = html.replace(anchor, anchor + '\\n' + role_script, 1)
+          html = html.replace(anchor, anchor + '\n' + role_script, 1)
           html = html.replace("https://oalfzgluqroqbbrluhpr.supabase.co", os.environ["TEST_SUPABASE_URL"])
           html = html.replace("sb_publishable_PND9f9FKbNrxlEakSgLKYA_5EsqLHkg", os.environ["TEST_SUPABASE_ANON_KEY"])
           if "oalfzgluqroqbbrluhpr.supabase.co" in html or "sb_publishable_PND9f9FKbNrxlEakSgLKYA_5EsqLHkg" in html:
@@ -83,7 +83,7 @@ jobs:
           bridge = '  <script src="./assets/vendor/ashiana-native-bridge.js"></script>'
           if html.count(anchor) != 1:
               raise SystemExit("Could not find the native bridge insertion point")
-          path.write_text(html.replace(anchor, anchor + '\\n' + bridge, 1))
+          path.write_text(html.replace(anchor, anchor + '\n' + bridge, 1))
           PY
 
       - name: Verify Capacitor environment
@@ -130,12 +130,12 @@ jobs:
           root_text = root.read_text()
           if "com.google.gms:google-services" not in root_text:
               import re
-              match = re.search(r"buildscript\\s*\\{[\\s\\S]*?dependencies\\s*\\{", root_text)
+              match = re.search(r"buildscript\s*\{[\s\S]*?dependencies\s*\{", root_text)
               if not match: raise SystemExit("Could not find Android buildscript dependencies block")
-              root.write_text(root_text[:match.end()] + "\\n        classpath 'com.google.gms:google-services:4.4.2'" + root_text[match.end():])
+              root.write_text(root_text[:match.end()] + "\n        classpath 'com.google.gms:google-services:4.4.2'" + root_text[match.end():])
           app_text = app.read_text()
           if "com.google.gms.google-services" not in app_text:
-              app.write_text(app_text.rstrip() + "\\n\\napply plugin: 'com.google.gms.google-services'\\n")
+              app.write_text(app_text.rstrip() + "\n\napply plugin: 'com.google.gms.google-services'\n")
           PY
 
       - name: Sync Android project
