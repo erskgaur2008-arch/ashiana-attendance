@@ -4,6 +4,7 @@ import { Share } from "@capacitor/share";
 import { PushNotifications } from "@capacitor/push-notifications";
 import { NativeBiometric, AccessControl } from "@capgo/capacitor-native-biometric";
 import { SecureStorage } from "@aparajita/capacitor-secure-storage";
+import { Geolocation } from "@capacitor/geolocation";
 
 function isNativeAndroid() {
   return Boolean(window.Capacitor?.isNativePlatform?.() && window.Capacitor?.getPlatform?.() === "android");
@@ -34,6 +35,23 @@ async function saveBlob(blob, fileName, mimeType = "application/octet-stream") {
     title: safeName,
     dialogTitle: "Save or share " + safeName,
     files: [result.uri]
+  });
+}
+
+async function getCurrentPosition(options = {}) {
+  if (!isNativeAndroid()) throw new Error("Native GPS location is available only in the Android app.");
+  let permission = await Geolocation.checkPermissions();
+  if (permission.location !== "granted") {
+    permission = await Geolocation.requestPermissions({ permissions: ["location"] });
+  }
+  if (permission.location !== "granted") {
+    throw new Error("Location permission is required to mark staff attendance.");
+  }
+  return await Geolocation.getCurrentPosition({
+    enableHighAccuracy: true,
+    timeout: 15000,
+    maximumAge: 0,
+    ...options
   });
 }
 
@@ -226,6 +244,7 @@ async function disableStaffBiometric() {
 
 window.AshianaNative = Object.freeze({
   isAndroid: isNativeAndroid,
+  getCurrentPosition,
   printHtml,
   saveBlob,
   registerPushNotifications,
