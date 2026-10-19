@@ -4477,8 +4477,8 @@
       const distance = staffGeofenceDistanceMeters(
         STAFF_GEOFENCE.latitude, STAFF_GEOFENCE.longitude, latitude, longitude
       );
-      // Conservative edge handling: distance plus reported uncertainty must fit inside the fence.
-      if (distance + accuracy > STAFF_GEOFENCE.radiusMeters) {
+      // The measured position must be within 50 m; GPS accuracy is validated separately.
+      if (distance > STAFF_GEOFENCE.radiusMeters) {
         throw new Error("You are outside the 50-metre school attendance zone. Attendance cannot be marked here.");
       }
       return { latitude, longitude, accuracy_m: accuracy, timestamp };
