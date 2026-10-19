@@ -6526,31 +6526,38 @@ async function refreshStudentPortalData(){
       const raw = String(decodedText || '').trim();
       if (!raw) return null;
 
-      // Daily QR payloads are JSON and must identify Ashiana Public School.
-      // Reject another school's QR or a QR from a different attendance date
-      // before asking the staff member for their PIN.
+      // The generator issues APS-DAY-YYYYMMDD-<48 hex chars> tokens.
+      // Keep validation aligned with the server-generated format.
+      const isValidSchoolToken = token =>
+        /^APS-DAY-\d{8}-[a-f0-9]{48}$/i.test(String(token || '').trim());
+
       try {
         const obj = JSON.parse(raw);
         const token = String(obj?.token || '').trim();
         const school = String(obj?.school || '').trim().toUpperCase();
         const date = String(obj?.date || '').trim();
+        const tokenMatch = token.match(/^APS-DAY-(\d{4})(\d{2})(\d{2})-[a-f0-9]{48}$/i);
+        const tokenDate = tokenMatch ? `${tokenMatch[1]}-${tokenMatch[2]}-${tokenMatch[3]}` : '';
 
         if (
           school !== "ASHIANA_PUBLIC_SCHOOL" ||
-          !/^[a-f0-9]{64}$/i.test(token) ||
+          !isValidSchoolToken(token) ||
           !/^\d{4}-\d{2}-\d{2}$/.test(date) ||
-          date !== getIndiaTodayDate()
+          date !== getIndiaTodayDate() ||
+          tokenDate !== date
         ) {
           return null;
         }
-
         return { token, date, school };
       } catch (_) {}
 
-      // Keep support for a raw token only when it is a current-format token.
-      // A raw token has no date, so the server remains the final authority.
-      if (/^[a-f0-9]{64}$/i.test(raw)) {
-        return { token: raw, date: null, school: "ASHIANA_PUBLIC_SCHOOL" };
+      // Support a raw generated token too; the server remains authoritative.
+      if (isValidSchoolToken(raw)) {
+        const match = raw.match(/^APS-DAY-(\d{4})(\d{2})(\d{2})-/i);
+        const date = match ? `${match[1]}-${match[2]}-${match[3]}` : '';
+        if (date === getIndiaTodayDate()) {
+          return { token: raw, date, school: "ASHIANA_PUBLIC_SCHOOL" };
+        }
       }
       return null;
     }
