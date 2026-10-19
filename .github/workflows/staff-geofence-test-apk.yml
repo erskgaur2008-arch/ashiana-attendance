@@ -117,6 +117,34 @@ jobs:
           print("PASS: Android manifest declares camera permission for QR scanning.")
           PY
 
+      - name: Declare Android camera and location permissions
+        shell: bash
+        run: |
+          set -euo pipefail
+          python3 - <<'PY'
+          from pathlib import Path
+          path = Path("android/app/src/main/AndroidManifest.xml")
+          manifest = path.read_text()
+          permissions = [
+              '<uses-permission android:name="android.permission.CAMERA" />',
+              '<uses-permission android:name="android.permission.ACCESS_COARSE_LOCATION" />',
+              '<uses-permission android:name="android.permission.ACCESS_FINE_LOCATION" />',
+          ]
+          marker = '<manifest '
+          if marker not in manifest:
+              raise SystemExit("Could not locate Android manifest root")
+          end = manifest.find('>', manifest.find(marker)) + 1
+          missing = [p for p in permissions if p not in manifest]
+          if missing:
+              manifest = manifest[:end] + '\n    ' + '\n    '.join(missing) + manifest[end:]
+              path.write_text(manifest)
+          actual = path.read_text()
+          absent = [p for p in permissions if p not in actual]
+          if absent:
+              raise SystemExit("Missing Android permissions: " + ", ".join(absent))
+          print("PASS: camera, coarse location, and precise location declared.")
+          PY
+
       - name: Set unique test-only Staff application ID
         shell: bash
         run: |
