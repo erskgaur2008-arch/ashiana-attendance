@@ -54,9 +54,10 @@ jobs:
               raise SystemExit("Could not find the expected Supabase script anchor")
           role_script = '<script>try{const u=new URL(window.location.href);u.searchParams.set("login","staff");history.replaceState(null,"",u.toString());}catch(e){}</script>'
           html = html.replace(anchor, anchor + '\n' + role_script, 1)
+          html = html.replace("https://oalfzgluqroqbbrulhpr.supabase.co", os.environ["TEST_SUPABASE_URL"])
           html = html.replace("https://oalfzgluqroqbbrluhpr.supabase.co", os.environ["TEST_SUPABASE_URL"])
           html = html.replace("sb_publishable_PND9f9FKbNrxlEakSgLKYA_5EsqLHkg", os.environ["TEST_SUPABASE_ANON_KEY"])
-          if "oalfzgluqroqbbrluhpr.supabase.co" in html or "sb_publishable_PND9f9FKbNrxlEakSgLKYA_5EsqLHkg" in html:
+          if "oalfzgluqroqbbrulhpr.supabase.co" in html or "oalfzgluqroqbbrluhpr.supabase.co" in html or "sb_publishable_PND9f9FKbNrxlEakSgLKYA_5EsqLHkg" in html:
               raise SystemExit("Safety failure: production Supabase config remains in test APK")
           if os.environ["TEST_SUPABASE_URL"] not in html or os.environ["TEST_SUPABASE_ANON_KEY"] not in html:
               raise SystemExit("Safety failure: EduPunch-Test config was not injected")
