@@ -96,6 +96,27 @@ jobs:
       - name: Add Android platform
         run: npx cap add android
 
+      - name: Declare Android camera permission for QR scanner
+        shell: bash
+        run: |
+          set -euo pipefail
+          python3 - <<'PY'
+          from pathlib import Path
+          path = Path("android/app/src/main/AndroidManifest.xml")
+          manifest = path.read_text()
+          permission = '<uses-permission android:name="android.permission.CAMERA" />'
+          if permission not in manifest:
+              marker = '<manifest '
+              if marker not in manifest:
+                  raise SystemExit("Could not locate Android manifest root")
+              end = manifest.find('>', manifest.find(marker)) + 1
+              manifest = manifest[:end] + '\n    ' + permission + manifest[end:]
+              path.write_text(manifest)
+          if permission not in path.read_text():
+              raise SystemExit("Camera permission was not added")
+          print("PASS: Android manifest declares camera permission for QR scanning.")
+          PY
+
       - name: Set unique test-only Staff application ID
         shell: bash
         run: |
