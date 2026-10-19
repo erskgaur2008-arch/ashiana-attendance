@@ -4,14 +4,14 @@ on:
   workflow_dispatch:
   push:
     branches:
-      - feature/staff-admin test-50m
+      - feature/staff-geofence-50m
 
 permissions:
   contents: read
 
 jobs:
   build-admin-test:
-    name: Build isolated Staff admin test test APK
+    name: Build isolated Admin test APK
     runs-on: ubuntu-latest
     env:
       APP_ROLE: admin
@@ -153,7 +153,7 @@ jobs:
           from pathlib import Path
           path = Path("capacitor.config.ts")
           source = path.read_text()
-          old = 'admin: { appId: "com.ashianapublicschool.attendance.admin.test", appName: "Ashiana Admin Test" }'
+          old = 'admin: { appId: "com.ashianapublicschool.attendance.admin", appName: "Ashiana Admin" }'
           new = 'staff: { appId: "com.ashianapublicschool.attendance.staff.test", appName: "Ashiana Staff Test" }'
           if source.count(old) != 1:
               raise SystemExit("Expected Admin app ID mapping was not found exactly once")
