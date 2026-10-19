@@ -154,7 +154,7 @@ jobs:
           path = Path("capacitor.config.ts")
           source = path.read_text()
           old = 'admin: { appId: "com.ashianapublicschool.attendance.admin", appName: "Ashiana Admin" }'
-          new = 'staff: { appId: "com.ashianapublicschool.attendance.staff.test", appName: "Ashiana Staff Test" }'
+          new = 'admin: { appId: "com.ashianapublicschool.attendance.admin.test", appName: "Ashiana Admin Test" }'
           if source.count(old) != 1:
               raise SystemExit("Expected Admin app ID mapping was not found exactly once")
           path.write_text(source.replace(old, new, 1))
