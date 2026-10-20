@@ -1,0 +1,29 @@
+/* Conservative iOS/iPadOS PWA enhancements. Kept separate from the existing app styles. */
+:root {
+  -webkit-text-size-adjust: 100%;
+  text-size-adjust: 100%;
+}
+html {
+  min-height: 100%;
+  min-height: 100dvh;
+  -webkit-tap-highlight-color: transparent;
+}
+body {
+  min-height: 100%;
+  min-height: 100dvh;
+}
+img, video, canvas, svg {
+  max-width: 100%;
+}
+input, select, textarea, button {
+  font: inherit;
+}
+@supports (padding: max(0px)) {
+  /* Safe-area values are exposed for screens with rounded corners and home indicators. */
+  :root {
+    --ashiana-safe-top: env(safe-area-inset-top, 0px);
+    --ashiana-safe-right: env(safe-area-inset-right, 0px);
+    --ashiana-safe-bottom: env(safe-area-inset-bottom, 0px);
+    --ashiana-safe-left: env(safe-area-inset-left, 0px);
+  }
+}
