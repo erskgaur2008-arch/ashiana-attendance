@@ -68,6 +68,22 @@ jobs:
           html = html.replace(identity_anchor, identity_guard, 1)
           if 'expected PUSH-TEST-STAFF' not in html:
               raise SystemExit("Safety failure: test-only staff identity guard was not injected")
+          # Reject stale staff sessions restored from WebView storage in this test APK.
+          restore_anchor = '        if (savedUser?.type === \'STUDENT\') {'
+          if html.count(restore_anchor) != 1:
+              raise SystemExit("Could not locate the unique saved-user restoration branch")
+          restore_guard = '\\n'.join([
+              '        if (savedUser?.type === "STAFF" && String(savedUser?.staffRecord?.id || "").trim() !== "PUSH-TEST-STAFF") {',
+              '          sessionStorage.removeItem(STORAGE_KEY_CURRENT_USER);',
+              '          sessionStorage.removeItem("aps_login_handoff_v1");',
+              '          try { await supabaseClient.auth.signOut({ scope: "local" }); } catch (_) {}',
+              '          throw new Error("TEST IDENTITY BLOCKED: expected PUSH-TEST-STAFF; stored staff ID was " + String(savedUser?.staffRecord?.id || "unknown") + ". Sign in with the test staff account.");',
+              '        }',
+              ''
+          ])
+          html = html.replace(restore_anchor, restore_guard + restore_anchor, 1)
+          if 'TEST IDENTITY BLOCKED: expected PUSH-TEST-STAFF' not in html:
+              raise SystemExit("Safety failure: stale-session identity guard was not injected")
           html = html.replace("https://oalfzgluqroqbbrulhpr.supabase.co", os.environ["TEST_SUPABASE_URL"])
           html = html.replace("https://oalfzgluqroqbbrluhpr.supabase.co", os.environ["TEST_SUPABASE_URL"])
           html = html.replace("sb_publishable_PND9f9FKbNrxlEakSgLKYA_5EsqLHkg", os.environ["TEST_SUPABASE_ANON_KEY"])
