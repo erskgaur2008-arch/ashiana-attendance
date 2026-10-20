@@ -1578,8 +1578,8 @@
               var staff = loginResult.staff;
               // Enforce biometric-to-staff identity binding after server-side PIN
               // verification and before creating the app session or opening a dashboard.
-              if (window.__ashianaBiometricLoginPending) {
-                var expectedStaffId = String(window.__ashianaExpectedBiometricStaffId || "").trim();
+              var expectedStaffId = String(window.__ashianaExpectedBiometricStaffId || "").trim();
+              if (expectedStaffId || window.__ashianaBiometricLoginPending) {
                 var authenticatedStaffId = String(staff?.id || "").trim();
                 if (!expectedStaffId || !authenticatedStaffId || expectedStaffId !== authenticatedStaffId) {
                   try { if (typeof mainClient !== "undefined" && mainClient?.auth) await mainClient.auth.signOut({ scope: "local" }); } catch (_) {}
