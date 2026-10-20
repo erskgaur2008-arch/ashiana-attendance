@@ -66,7 +66,7 @@ function isExpired(validThru?: string | null) {
   return new Date(validThru + "T00:00:00Z") < new Date(today + "T00:00:00Z");
 }
 
-type AdminClient = ReturnType<typeof createClient>;
+type AdminClient = any;
 
 async function consume(admin: AdminClient, key: string, max: number, windowSeconds: number) {
   const { data, error } = await admin.rpc("consume_staff_login_attempt", {
