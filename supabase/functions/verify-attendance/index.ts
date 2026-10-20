@@ -3,6 +3,11 @@ import { createClient } from "npm:@supabase/supabase-js@2.45.4";
 const corsHeaders = {"Access-Control-Allow-Origin":"*","Access-Control-Allow-Headers":"authorization, x-client-info, apikey, content-type","Access-Control-Allow-Methods":"POST, OPTIONS"};
 const json=(body:unknown,status=200)=>new Response(JSON.stringify(body),{status,headers:{...corsHeaders,"Content-Type":"application/json","Cache-Control":"no-store"}});
 const PER_STAFF_MAX=6, PER_STAFF_WINDOW=900, PER_IP_MAX=60, PER_IP_WINDOW=600;
+const SCHOOL_GEOFENCE_LAT=30.704607009887695;
+const SCHOOL_GEOFENCE_LON=76.76773834228516;
+const GEOFENCE_RADIUS_METERS=50;
+const MAX_LOCATION_ACCURACY_METERS=25;
+const MAX_LOCATION_AGE_MS=120_000;
 async function sha256Hex(value:string){const bytes=new TextEncoder().encode(value);const digest=await crypto.subtle.digest("SHA-256",bytes);return Array.from(new Uint8Array(digest),(b)=>b.toString(16).padStart(2,"0")).join("");}
 function clientIp(req:Request){const h=req.headers;const direct=h.get("cf-connecting-ip")||h.get("x-real-ip");if(direct)return direct.trim();const xff=(h.get("x-forwarded-for")||"").split(",").map(s=>s.trim()).filter(Boolean);return xff.length?xff[xff.length-1]:"unknown";}
 const escapeLike=(v:string)=>v.replace(/[\\%_]/g,c=> "\\"+c);
@@ -74,20 +79,20 @@ Deno.serve(async(req:Request)=>{
   if(!Number.isFinite(lat)||lat < -90||lat > 90||!Number.isFinite(lon)||lon < -180||lon > 180||!Number.isFinite(accuracy)||!Number.isFinite(capturedAt)){
     return json({error:"GEOFENCE_LOCATION_REQUIRED",message:"Precise location is required to mark staff attendance. Enable location and try again."},403);
   }
-  if(accuracy<=0||accuracy>25){
+  if(accuracy<=0||accuracy>MAX_LOCATION_ACCURACY_METERS){
     return json({error:"GEOFENCE_ACCURACY_TOO_LOW",message:"GPS accuracy must be 25 metres or better. Move outdoors, enable precise location, and try again."},403);
   }
   const locationAge=Date.now()-capturedAt;
-  if(locationAge < -15000||locationAge > 120000){
+  if(locationAge < -15000||locationAge > MAX_LOCATION_AGE_MS){
     return json({error:"GEOFENCE_LOCATION_STALE",message:"Location is out of date. Refresh your location and try again."},403);
   }
   const toRad=(value:number)=>value*Math.PI/180;
-  const dLat=toRad(lat-30.704607009887695),dLon=toRad(lon-76.76773834228516);
-  const h=Math.sin(dLat/2)**2+Math.cos(toRad(30.704607009887695))*Math.cos(toRad(lat))*Math.sin(dLon/2)**2;
+  const dLat=toRad(lat-SCHOOL_GEOFENCE_LAT),dLon=toRad(lon-SCHOOL_GEOFENCE_LON);
+  const h=Math.sin(dLat/2)**2+Math.cos(toRad(SCHOOL_GEOFENCE_LAT))*Math.cos(toRad(lat))*Math.sin(dLon/2)**2;
   const distanceMeters=6371000*2*Math.atan2(Math.sqrt(h),Math.sqrt(1-h));
   // The measured position must be within 50 m; GPS accuracy is validated separately.
-  if(distanceMeters>50){
-    return json({error:"GEOFENCE_OUTSIDE",message:"You are outside the 50-metre school attendance zone. Attendance has not been marked.",distance_m:Math.round(distanceMeters),radius_m:50,accuracy_m:Math.round(accuracy)},403);
+  if(distanceMeters>GEOFENCE_RADIUS_METERS){
+    return json({error:"GEOFENCE_OUTSIDE",message:"You are outside the 50-metre school attendance zone. Attendance has not been marked.",distance_m:Math.round(distanceMeters),radius_m:GEOFENCE_RADIUS_METERS,accuracy_m:Math.round(accuracy)},403);
   }
 
   const now=new Date(),{data:qr,error:qrError}=await admin.from("attendance_qr_sessions").select("id,token,attendance_date,expires_at,active").eq("token",qrToken).eq("active",true).maybeSingle();if(qrError||!qr||new Date(qr.expires_at)<=now)return json({error:"INVALID_OR_EXPIRED_QR"},400);
