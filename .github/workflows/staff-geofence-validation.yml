@@ -1,0 +1,30 @@
+name: Staff geofence validation
+
+on:
+  push:
+    branches:
+      - fix/staff-attendance-geofence-enforcement
+    paths:
+      - "supabase/functions/verify-attendance/**"
+      - ".github/workflows/staff-geofence-validation.yml"
+  pull_request:
+    paths:
+      - "supabase/functions/verify-attendance/**"
+      - ".github/workflows/staff-geofence-validation.yml"
+
+permissions:
+  contents: read
+
+jobs:
+  deno-check:
+    name: Type-check verify-attendance Edge Function
+    runs-on: ubuntu-latest
+    steps:
+      - name: Check out repository
+        uses: actions/checkout@v4
+      - name: Set up Deno
+        uses: denoland/setup-deno@v2
+        with:
+          deno-version: v2.x
+      - name: Type-check Edge Function
+        run: deno check supabase/functions/verify-attendance/index.ts
