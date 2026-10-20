@@ -4325,8 +4325,25 @@
     function getTodayDailyToken(dateStr) {
       const storageKey = 'aps_daily_qr_token_' + dateStr;
       let token = localStorage.getItem(storageKey);
-      if (!token) {
-        token = "APS-DAY-" + dateStr.replace(/-/g, '') + "-" + Math.random().toString(36).substring(2, 8).toUpperCase();
+
+      // Keep locally generated fallback QR tokens in the same format as the
+      // scanner parser: APS-DAY-YYYYMMDD- followed by 48 hexadecimal chars.
+      // Discard old short tokens saved by earlier builds.
+      const expectedPrefix = "APS-DAY-" + String(dateStr || '').replace(/-/g, '') + "-";
+      const validToken = typeof token === "string" &&
+        token.toUpperCase().startsWith(expectedPrefix) &&
+        /^APS-DAY-\d{8}-[a-f0-9]{48}$/i.test(token);
+
+      if (!validToken) {
+        const bytes = new Uint8Array(24);
+        if (globalThis.crypto?.getRandomValues) {
+          globalThis.crypto.getRandomValues(bytes);
+        } else {
+          // Compatibility fallback for older WebViews; server validation is authoritative.
+          for (let i = 0; i < bytes.length; i++) bytes[i] = Math.floor(Math.random() * 256);
+        }
+        const secret = Array.from(bytes, b => b.toString(16).padStart(2, "0")).join("");
+        token = expectedPrefix + secret;
         localStorage.setItem(storageKey, token);
       }
       return token;
