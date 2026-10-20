@@ -26,5 +26,7 @@ jobs:
         uses: denoland/setup-deno@v2
         with:
           deno-version: v2.x
+      - name: Install function dependencies
+        run: deno install --entrypoint supabase/functions/verify-attendance/index.ts
       - name: Type-check Edge Function
-        run: deno check supabase/functions/verify-attendance/index.ts
+        run: deno check --node-modules-dir=auto supabase/functions/verify-attendance/index.ts
