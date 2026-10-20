@@ -68,6 +68,23 @@ jobs:
           html = html.replace(identity_anchor, identity_guard, 1)
           if 'expected PUSH-TEST-STAFF' not in html:
               raise SystemExit("Safety failure: test-only staff identity guard was not injected")
+          # Also guard session restoration, because a stale browser/native session
+          # can reopen a dashboard without passing through the PIN-login handler.
+          restore_anchor = '        // The opaque native token survives Android WebView destruction.'
+          if html.count(restore_anchor) != 1:
+              raise SystemExit("Could not locate unique session restoration guard point")
+          restore_guard = '''        if (savedUser?.type === "STAFF" && String(savedUser?.staffRecord?.id || "").trim() !== "PUSH-TEST-STAFF") {
+          sessionStorage.removeItem(STORAGE_KEY_CURRENT_USER);
+          sessionStorage.removeItem("aps_login_handoff_v1");
+          try { await supabaseClient.auth.signOut({ scope: "local" }); } catch (_) {}
+          currentAuthUser = null;
+          currentStaffId = null;
+          throw new Error("Test APK session blocked: expected PUSH-TEST-STAFF, found " + String(savedUser?.staffRecord?.id || "unknown") + ". Please sign in with the Push Test Staff account.");
+        }
+'''
+          html = html.replace(restore_anchor, restore_guard + restore_anchor, 1)
+          if 'Test APK session blocked: expected PUSH-TEST-STAFF' not in html:
+              raise SystemExit("Safety failure: test-only session restoration guard was not injected")
           html = html.replace("https://oalfzgluqroqbbrulhpr.supabase.co", os.environ["TEST_SUPABASE_URL"])
           html = html.replace("https://oalfzgluqroqbbrluhpr.supabase.co", os.environ["TEST_SUPABASE_URL"])
           html = html.replace("sb_publishable_PND9f9FKbNrxlEakSgLKYA_5EsqLHkg", os.environ["TEST_SUPABASE_ANON_KEY"])
