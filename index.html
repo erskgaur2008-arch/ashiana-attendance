@@ -1576,6 +1576,20 @@
               }
 
               var staff = loginResult.staff;
+              // Enforce biometric-to-staff identity binding after server-side PIN
+              // verification and before creating the app session or opening a dashboard.
+              if (window.__ashianaBiometricLoginPending) {
+                var expectedStaffId = String(window.__ashianaExpectedBiometricStaffId || "").trim();
+                var authenticatedStaffId = String(staff?.id || "").trim();
+                if (!expectedStaffId || !authenticatedStaffId || expectedStaffId !== authenticatedStaffId) {
+                  try { if (typeof mainClient !== "undefined" && mainClient?.auth) await mainClient.auth.signOut({ scope: "local" }); } catch (_) {}
+                  try { await window.AshianaNative?.disableStaffBiometric?.(); } catch (_) {}
+                  window.__ashianaExpectedBiometricStaffId = "";
+                  window.__ashianaBiometricLoginPending = false;
+                  throw new Error("Fingerprint account mismatch. Sign-in was blocked because the saved fingerprint does not match the authenticated staff account. Please contact the administrator.");
+                }
+                window.__ashianaExpectedBiometricStaffId = "";
+              }
               var pendingStaffUser = {
                 type: "STAFF",
                 staffRecord: {
@@ -1863,7 +1877,15 @@
             if (!idInput || !pinInput) throw new Error("Staff login form is unavailable.");
             idInput.value = credentials.loginId;
             pinInput.value = credentials.pin;
+            // Preserve the staff identity bound to the saved biometric credential.
+            // The login response must resolve to the same database staff ID; never
+            // allow a stale or mismapped biometric credential to open another account.
+            var expectedBiometricStaffId = String(credentials.staffId || "").trim();
+            if (!expectedBiometricStaffId) {
+              throw new Error("Fingerprint account identity is missing. Please contact the administrator before signing in.");
+            }
             var form = document.getElementById("teacher-login-form");
+            window.__ashianaExpectedBiometricStaffId = expectedBiometricStaffId;
             if (!form) throw new Error("Staff login form is unavailable.");
             if (typeof form.requestSubmit === "function") form.requestSubmit();
             else form.dispatchEvent(new Event("submit", { bubbles: true, cancelable: true }));
