@@ -72,7 +72,7 @@ jobs:
           restore_anchor = '        if (savedUser?.type === \'STUDENT\') {'
           if html.count(restore_anchor) != 1:
               raise SystemExit("Could not locate the unique saved-user restoration branch")
-          restore_guard = '\\n'.join([
+          restore_guard = '\n'.join([
               '        if (savedUser?.type === "STAFF" && String(savedUser?.staffRecord?.id || "").trim() !== "PUSH-TEST-STAFF") {',
               '          sessionStorage.removeItem(STORAGE_KEY_CURRENT_USER);',
               '          sessionStorage.removeItem("aps_login_handoff_v1");',
