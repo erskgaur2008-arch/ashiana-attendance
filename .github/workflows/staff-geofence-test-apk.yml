@@ -5,6 +5,7 @@ on:
   push:
     branches:
       - feature/staff-geofence-50m
+      - fix/staff-attendance-geofence-enforcement
 
 permissions:
   contents: read
