@@ -1180,6 +1180,30 @@
     }
     @media(prefers-reduced-motion:reduce){#admin-portal-view *,#staff-portal-view *,#teacher-portal-view *{transition:none!important}}
   </style>
+
+  <style id="ashiana-admin-faculty-actions-mobile">
+    /* Keep faculty action controls visible on narrow screens while preserving the full directory table. */
+    #admin-tab-directory .overflow-x-auto{position:relative;max-width:100%;overflow-x:auto!important;overscroll-behavior-x:contain;-webkit-overflow-scrolling:touch}
+    #admin-tab-directory table{min-width:1040px;width:100%;border-collapse:separate;border-spacing:0}
+    #admin-tab-directory thead th:last-child,
+    #admin-tab-directory tbody td:last-child{position:sticky;right:0;min-width:148px;width:148px;text-align:center;background:#fff;z-index:2;box-shadow:-5px 0 9px rgba(15,23,42,.07);white-space:nowrap}
+    #admin-tab-directory thead th:last-child{background:#f8fafc;z-index:4}
+    #admin-tab-directory tbody tr:hover td:last-child{background:#f8fafc}
+    #admin-tab-directory tbody td:last-child>div{display:flex!important;align-items:center;justify-content:center;gap:5px!important;min-width:136px;flex-wrap:nowrap}
+    #admin-tab-directory tbody td:last-child button{display:inline-flex!important;visibility:visible!important;opacity:1!important;align-items:center;justify-content:center;flex:0 0 25px;width:25px;height:30px;padding:4px!important;border:1px solid #d1e7dc;background:#f0fdf4!important;color:#065f46!important;border-radius:7px;position:relative;z-index:5}
+    #admin-tab-directory tbody td:last-child button[title*="Delete"]{background:#fff1f2!important;color:#be123c!important;border-color:#fecdd3}
+    #admin-tab-directory tbody td:last-child button[title*="Reset"]{background:#fffbeb!important;color:#b45309!important;border-color:#fde68a}
+    #admin-tab-directory tbody td:last-child button i{display:block!important;width:14px!important;height:14px!important;min-width:14px}
+    #admin-tab-directory tbody td:last-child button svg{display:block!important;width:14px!important;height:14px!important}
+    #admin-tab-directory tbody td:last-child button:focus-visible{outline:3px solid #34d399;outline-offset:2px}
+    @media(max-width:640px){
+      #admin-tab-directory>div{padding:12px!important}
+      #admin-tab-directory .overflow-x-auto{margin-right:-2px}
+      #admin-tab-directory thead th:last-child,#admin-tab-directory tbody td:last-child{min-width:148px;width:148px}
+      #admin-tab-directory tbody td:last-child button{width:27px;height:32px;flex-basis:27px}
+    }
+  </style>
+
 </head>
 <body class="bg-slate-100 text-slate-800 antialiased min-h-screen min-h-screen-safe flex flex-col selection:bg-emerald-600 selection:text-white">
 
