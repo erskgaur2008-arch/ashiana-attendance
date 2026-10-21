@@ -6549,9 +6549,11 @@ async function refreshStudentPortalData(){
       const raw = String(decodedText || '').trim();
       if (!raw) return null;
 
-      // The deployed generator issues 64 hex chars (32 random bytes); the
-      // local compatibility fallback uses 48 hex chars (24 random bytes).
-      const isValidSchoolToken = token =>
+      // Admin Daily QR currently encodes JSON with a 64-character random hex
+      // token. Older builds used a date-prefixed APS-DAY token; accept both
+      // formats, but require today's date and the expected school in JSON.
+      const isHexToken = token => /^(?:[a-f0-9]{48}|[a-f0-9]{64})$/i.test(String(token || '').trim());
+      const isLegacySchoolToken = token =>
         /^APS-DAY-\d{8}-(?:[a-f0-9]{48}|[a-f0-9]{64})$/i.test(String(token || '').trim());
 
       try {
@@ -6559,23 +6561,22 @@ async function refreshStudentPortalData(){
         const token = String(obj?.token || '').trim();
         const school = String(obj?.school || '').trim().toUpperCase();
         const date = String(obj?.date || '').trim();
-        const tokenMatch = token.match(/^APS-DAY-(\d{4})(\d{2})(\d{2})-(?:[a-f0-9]{48}|[a-f0-9]{64})$/i);
-        const tokenDate = tokenMatch ? `${tokenMatch[1]}-${tokenMatch[2]}-${tokenMatch[3]}` : '';
+        const legacyMatch = token.match(/^APS-DAY-(\d{4})(\d{2})(\d{2})-(?:[a-f0-9]{48}|[a-f0-9]{64})$/i);
+        const tokenDate = legacyMatch ? `${legacyMatch[1]}-${legacyMatch[2]}-${legacyMatch[3]}` : '';
 
         if (
           school !== "ASHIANA_PUBLIC_SCHOOL" ||
-          !isValidSchoolToken(token) ||
+          !(isHexToken(token) || (isLegacySchoolToken(token) && tokenDate === date)) ||
           !/^\d{4}-\d{2}-\d{2}$/.test(date) ||
-          date !== getIndiaTodayDate() ||
-          tokenDate !== date
+          date !== getIndiaTodayDate()
         ) {
           return null;
         }
         return { token, date, school };
       } catch (_) {}
 
-      // Support a raw generated token too; the server remains authoritative.
-      if (isValidSchoolToken(raw)) {
+      // Legacy raw-token compatibility only. The server remains authoritative.
+      if (isLegacySchoolToken(raw)) {
         const match = raw.match(/^APS-DAY-(\d{4})(\d{2})(\d{2})-/i);
         const date = match ? `${match[1]}-${match[2]}-${match[3]}` : '';
         if (date === getIndiaTodayDate()) {
