@@ -2111,7 +2111,20 @@
               </div>
               <div class="p-4 sm:p-6 max-w-3xl mx-auto">
                 <div id="student-dashboard-panel-loading" class="hidden p-4 rounded-2xl bg-white border text-sm text-slate-500 text-center">Loading latest information…</div>
-                <div id="student-dashboard-panel-body" class="space-y-3 text-xs"></div>
+                <div 
+  <style id="ashiana-student-notice-line-spacing">
+    /* Student Portal notice and content cards: tighter readable line spacing. */
+    #student-dashboard-panel-body { line-height: 1.45 !important; }
+    #student-dashboard-panel-body p,
+    #student-dashboard-panel-body li,
+    #student-dashboard-panel-body .notice-content,
+    #student-dashboard-panel-body [class*="whitespace-pre"],
+    #student-dashboard-panel-body [class*="leading-"] { line-height: 1.45 !important; }
+    #student-dashboard-panel-body p { margin-block: .45rem !important; }
+    #student-dashboard-panel-body .space-y-6 > :not([hidden]) ~ :not([hidden]),
+    #student-dashboard-panel-body .space-y-8 > :not([hidden]) ~ :not([hidden]) { margin-top: 1rem !important; }
+  </style>
+id="student-dashboard-panel-body" class="space-y-3 text-xs"></div>
               </div>
             </div>
           </div>
