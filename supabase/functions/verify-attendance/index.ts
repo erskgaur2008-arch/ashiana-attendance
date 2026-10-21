@@ -376,8 +376,8 @@ Deno.serve(async (req: Request) => {
       return json({ error: "GEOFENCE_LOCATION_STALE", message: "Location is out of date. Refresh your location and try again." }, 403);
     }
     const toRad = (value: number) => value * Math.PI / 180;
-    const schoolLat = 30.704607009887695;
-    const schoolLon = 76.76773834228516;
+    const schoolLat = 30.7044541;
+    const schoolLon = 76.7675926;
     const dLat = toRad(lat - schoolLat);
     const dLon = toRad(lon - schoolLon);
     const h = Math.sin(dLat / 2) ** 2 +
