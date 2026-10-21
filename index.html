@@ -2674,7 +2674,57 @@
     </div>
 
     <!-- 3. ADMINISTRATOR PORTAL -->
-    <div id="admin-portal-view" class="hidden flex-col w-full space-y-4 admin-dashboard-shell">
+    <div 
+  <style id="ashiana-all-dashboards-green-v1">
+    /* Unified Ashiana emerald theme for Admin, Teacher/Staff and Student dashboards.
+       Visual-only overrides: do not change IDs, handlers, data, auth, or permissions. */
+    :root{--ashiana-green-950:#022c22;--ashiana-green-900:#064e3b;--ashiana-green-800:#065f46;--ashiana-green-700:#047857;--ashiana-green-600:#059669;--ashiana-mint-100:#d1fae5;--ashiana-mint-50:#f0fdf4}
+    #admin-portal-view,#staff-portal-view,#teacher-portal-view{color:#12352b}
+    #admin-portal-view .admin-dashboard-header,
+    #staff-portal-view .staff-dashboard-header,
+    #teacher-portal-view .teacher-dashboard-header{
+      background:radial-gradient(ellipse at 90% 0%,rgba(52,211,153,.26),transparent 44%),linear-gradient(125deg,#064e3b 0%,#047857 56%,#059669 100%)!important;
+      color:#fff!important;border-bottom-color:#e11d48!important;box-shadow:0 7px 20px rgba(6,78,59,.14)
+    }
+    #admin-portal-view .admin-dashboard-card,
+    #staff-portal-view .staff-dashboard-card,
+    #teacher-portal-view .teacher-dashboard-card{
+      background:#f3faf6!important;border-color:#c8e5d4!important;box-shadow:0 12px 30px rgba(6,78,59,.08)
+    }
+    #admin-portal-view .admin-dashboard-content,
+    #staff-portal-view .staff-dashboard-content,
+    #teacher-portal-view .teacher-dashboard-content{background:linear-gradient(180deg,#fbfffc 0%,#edf8f1 100%)!important}
+    #admin-portal-view .admin-quick-actions button,
+    #staff-portal-view .staff-action-card,
+    #teacher-portal-view .teacher-action-card{
+      border-color:#b8dfcd!important;background:linear-gradient(145deg,#e4f8ec 0%,#f7fdf9 100%)!important;color:#12352b!important;
+      border-radius:16px;box-shadow:0 6px 16px rgba(6,78,59,.07);transition:transform .16s ease,box-shadow .16s ease
+    }
+    #admin-portal-view .admin-quick-actions button svg,
+    #staff-portal-view .staff-action-card svg,
+    #teacher-portal-view .teacher-action-card svg{color:#047857}
+    #admin-portal-view button:not(.bg-red-600):not(.bg-rose-600):not(.bg-amber-600),
+    #staff-portal-view button:not(.bg-red-600):not(.bg-rose-600):not(.bg-amber-600),
+    #teacher-portal-view button:not(.bg-red-600):not(.bg-rose-600):not(.bg-amber-600){
+      --tw-ring-color:#34d399
+    }
+    #admin-portal-view .bg-emerald-50,#staff-portal-view .bg-emerald-50,#teacher-portal-view .bg-emerald-50{background-color:#e4f8ec!important}
+    #admin-portal-view .border-emerald-100,#staff-portal-view .border-emerald-100,#teacher-portal-view .border-emerald-100{border-color:#b8dfcd!important}
+    #admin-portal-view .text-emerald-700,#staff-portal-view .text-emerald-700,#teacher-portal-view .text-emerald-700{color:#047857!important}
+    #admin-portal-view input,#admin-portal-view select,#admin-portal-view textarea,
+    #staff-portal-view input,#staff-portal-view select,#staff-portal-view textarea,
+    #teacher-portal-view input,#teacher-portal-view select,#teacher-portal-view textarea{
+      border-color:#c8dfd2;accent-color:#059669
+    }
+    #admin-portal-view button:focus-visible,#staff-portal-view button:focus-visible,#teacher-portal-view button:focus-visible{outline:3px solid #34d399;outline-offset:3px}
+    @media(hover:hover){
+      #admin-portal-view .admin-quick-actions button:hover,
+      #staff-portal-view .staff-action-card:hover,
+      #teacher-portal-view .teacher-action-card:hover{transform:translateY(-2px);box-shadow:0 10px 20px rgba(6,78,59,.12)}
+    }
+    @media(prefers-reduced-motion:reduce){#admin-portal-view *,#staff-portal-view *,#teacher-portal-view *{transition:none!important}}
+  </style>
+id="admin-portal-view" class="hidden flex-col w-full space-y-4 admin-dashboard-shell">
       
       <!-- Modern Admin Header -->
       <div class="admin-dashboard-header">
