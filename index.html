@@ -955,59 +955,72 @@
 </style>
 
 
-  <style id="ashiana-student-dashboard-polish-v2">
-    /* Premium Modern Student Portal — presentation-only styles. Keep existing actions and IDs intact. */
-    #student-portal-view{color:#102044;max-width:48rem}
-    #student-portal-view>div{border-color:#d8e7e5;border-radius:28px;box-shadow:0 18px 44px rgba(7,46,70,.10);background:#fff}
+  <style id="ashiana-student-dashboard-polish-v3">
+    /* High-contrast premium student dashboard. CSS-only: preserve all existing IDs, handlers, data and app behavior. */
+    #student-portal-view{color:#f8fafc;max-width:48rem}
+    #student-portal-view>div{border:1px solid #087f5b;border-radius:26px;box-shadow:0 18px 46px rgba(0,0,0,.32);background:#031f1c}
     #student-portal-view>div>div:first-child{
       position:relative;isolation:isolate;overflow:hidden;
-      background:linear-gradient(128deg,#022c22 0%,#064e3b 42%,#087443 74%,#10a36b 100%);
-      border-bottom:3px solid #d92d31;
+      background:radial-gradient(ellipse at 85% 5%,rgba(16,185,129,.42),transparent 42%),linear-gradient(128deg,#012b23 0%,#034c39 48%,#00784f 100%);
+      border-bottom:3px solid #ef3340;
     }
     #student-portal-view>div>div:first-child:after{
-      content:"";position:absolute;z-index:-1;width:19rem;height:9rem;right:-5rem;bottom:-6rem;
-      border-radius:50%;background:linear-gradient(120deg,rgba(52,211,153,.28),rgba(16,185,129,.04));
-      box-shadow:-4rem -2rem 0 rgba(167,243,208,.06);pointer-events:none
+      content:"";position:absolute;z-index:-1;width:19rem;height:9rem;right:-5rem;bottom:-6rem;border-radius:50%;
+      background:linear-gradient(120deg,rgba(16,255,165,.34),rgba(16,185,129,.02));box-shadow:-4rem -2rem 0 rgba(52,211,153,.07);pointer-events:none
     }
-    #student-portal-view #student-portal-avatar{flex:0 0 56px;touch-action:manipulation;border-radius:18px;border:2px solid rgba(255,255,255,.7);box-shadow:0 5px 16px rgba(0,0,0,.12)}
-    #student-portal-view #student-portal-name{overflow-wrap:anywhere;letter-spacing:-.025em}
-    #student-portal-view>div>div:nth-child(2){background:linear-gradient(180deg,#fff 0%,#fbfdff 100%)}
+    #student-portal-view #student-portal-avatar{flex:0 0 56px;touch-action:manipulation;border-radius:18px;border:2px solid rgba(255,255,255,.75);box-shadow:0 5px 18px rgba(0,0,0,.28)}
+    #student-portal-view #student-portal-name{overflow-wrap:anywhere;letter-spacing:-.025em;color:#fff}
+    #student-portal-view>div>div:nth-child(2){background:radial-gradient(ellipse at 100% 0%,rgba(0,126,91,.12),transparent 46%),linear-gradient(180deg,#042a25 0%,#021b1b 100%)}
     #student-portal-view>div>div:nth-child(2)>button,
     #student-portal-view>div>div:nth-child(2)>.grid>button{
-      min-width:0;min-height:88px;border-radius:20px;transition:transform .16s ease,box-shadow .16s ease,border-color .16s ease;
-      overflow-wrap:anywhere;touch-action:manipulation;position:relative
+      min-width:0;min-height:88px;border-radius:19px;transition:transform .16s ease,box-shadow .16s ease,filter .16s ease;
+      overflow-wrap:anywhere;touch-action:manipulation;position:relative;color:#fff
     }
     #student-portal-view>div>div:nth-child(2)>button:first-child{
-      min-height:72px;background:linear-gradient(115deg,#fff 0%,#f0fdf8 100%);
-      border-color:#cdeee0;box-shadow:0 5px 15px rgba(6,78,59,.05)
+      min-height:72px;background:linear-gradient(120deg,#064e3b 0%,#022c28 58%,#065f46 100%);
+      border:1px solid #10d99a;box-shadow:inset 0 1px rgba(255,255,255,.1),0 7px 20px rgba(0,0,0,.24)
     }
     #student-portal-view>div>div:nth-child(2)>button:first-child>div>span:first-child{
-      width:48px;height:48px;border-radius:16px;background:linear-gradient(145deg,#d1fae5,#ecfdf5);box-shadow:inset 0 0 0 1px #b6efdb
+      width:48px;height:48px;border-radius:15px;background:linear-gradient(145deg,#10ffc0,#00b86b);
+      box-shadow:0 5px 15px rgba(0,255,160,.22),inset 0 1px rgba(255,255,255,.45)
     }
+    #student-portal-view>div>div:nth-child(2)>button:first-child b{color:#fff}
+    #student-portal-view>div>div:nth-child(2)>button:first-child span{color:#d1fae5}
+    #student-portal-view>div>div:nth-child(2)>button:first-child>span:last-child{background:linear-gradient(145deg,#0e9f6e,#064e3b);border-color:#10d99a}
     #student-portal-view>div>div:nth-child(2)>.grid{gap:10px}
     #student-portal-view>div>div:nth-child(2)>.grid>button{
       display:flex;flex-direction:column;align-items:flex-start;justify-content:flex-start;gap:3px;
-      padding:12px!important;border-color:#e2eaf3;box-shadow:0 5px 14px rgba(15,23,42,.035);
-      background:linear-gradient(135deg,#fff 0%,#f8fbff 100%)
+      padding:12px!important;border-width:1px;box-shadow:inset 0 1px rgba(255,255,255,.16),0 7px 18px rgba(0,0,0,.24);
+      overflow:hidden
     }
-    #student-portal-view>div>div:nth-child(2)>.grid>button:nth-child(6n+1){background:linear-gradient(135deg,#fff 0%,#f3fdf8 100%);border-color:#d3f0e1}
-    #student-portal-view>div>div:nth-child(2)>.grid>button:nth-child(6n+2){background:linear-gradient(135deg,#fff 0%,#f5f2ff 100%);border-color:#e6dcff}
-    #student-portal-view>div>div:nth-child(2)>.grid>button:nth-child(6n+3){background:linear-gradient(135deg,#fff 0%,#fff8ed 100%);border-color:#ffebcc}
-    #student-portal-view>div>div:nth-child(2)>.grid>button:nth-child(6n+4){background:linear-gradient(135deg,#fff 0%,#eefbf5 100%);border-color:#d0f2e1}
-    #student-portal-view>div>div:nth-child(2)>.grid>button:nth-child(6n+5){background:linear-gradient(135deg,#fff 0%,#eff6ff 100%);border-color:#d7e8ff}
-    #student-portal-view>div>div:nth-child(2)>.grid>button:nth-child(6n){background:linear-gradient(135deg,#fff 0%,#fff1f7 100%);border-color:#f9d8e9}
-    #student-portal-view>div>div:nth-child(2)>.grid>button>i{width:23px;height:23px;margin-bottom:5px;filter:drop-shadow(0 2px 3px rgba(15,23,42,.05))}
-    #student-portal-view>div>div:nth-child(2)>.grid>button>b{line-height:1.25;font-size:12px;color:#142744;letter-spacing:-.01em}
-    #student-portal-view>div>div:nth-child(2)>.grid>button>span{line-height:1.4;font-size:10px;color:#64748b}
-    #student-portal-view button:focus-visible{outline:3px solid #34d399;outline-offset:3px}
-    #student-portal-view #student-dashboard-panel{overscroll-behavior:contain;-webkit-overflow-scrolling:touch}
-    #student-portal-view #student-dashboard-panel .sticky{padding-top:calc(.75rem + env(safe-area-inset-top))}
+    #student-portal-view>div>div:nth-child(2)>.grid>button:after{content:"";position:absolute;right:-22px;bottom:-31px;width:115px;height:70px;border-radius:50%;background:rgba(255,255,255,.055);pointer-events:none}
+    #student-portal-view>div>div:nth-child(2)>.grid>button:nth-child(6n+1){background:linear-gradient(135deg,#3b0764 0%,#160c3d 62%,#4c1d95 100%);border-color:#a21cff}
+    #student-portal-view>div>div:nth-child(2)>.grid>button:nth-child(6n+2){background:linear-gradient(135deg,#075985 0%,#08284c 62%,#0369a1 100%);border-color:#00baff}
+    #student-portal-view>div>div:nth-child(2)>.grid>button:nth-child(6n+3){background:linear-gradient(135deg,#78350f 0%,#291707 62%,#92400e 100%);border-color:#ff9d00}
+    #student-portal-view>div>div:nth-child(2)>.grid>button:nth-child(6n+4){background:linear-gradient(135deg,#065f46 0%,#022b28 62%,#047857 100%);border-color:#00e78a}
+    #student-portal-view>div>div:nth-child(2)>.grid>button:nth-child(6n+5){background:linear-gradient(135deg,#075985 0%,#061e48 62%,#1d4ed8 100%);border-color:#00c8ff}
+    #student-portal-view>div>div:nth-child(2)>.grid>button:nth-child(6n){background:linear-gradient(135deg,#831843 0%,#310c2d 62%,#9d174d 100%);border-color:#ff2b99}
+    #student-portal-view>div>div:nth-child(2)>.grid>button>i{width:23px;height:23px;margin-bottom:5px;filter:drop-shadow(0 2px 5px rgba(0,0,0,.28))}
+    #student-portal-view>div>div:nth-child(2)>.grid>button:nth-child(6n+1)>i{color:#d946ff}
+    #student-portal-view>div>div:nth-child(2)>.grid>button:nth-child(6n+2)>i{color:#22d3ee}
+    #student-portal-view>div>div:nth-child(2)>.grid>button:nth-child(6n+3)>i{color:#ffb21a}
+    #student-portal-view>div>div:nth-child(2)>.grid>button:nth-child(6n+4)>i{color:#34f5a1}
+    #student-portal-view>div>div:nth-child(2)>.grid>button:nth-child(6n+5)>i{color:#38bdf8}
+    #student-portal-view>div>div:nth-child(2)>.grid>button:nth-child(6n)>i{color:#ff55b7}
+    #student-portal-view>div>div:nth-child(2)>.grid>button>b{position:relative;z-index:1;line-height:1.25;font-size:12px;color:#fff;letter-spacing:-.01em}
+    #student-portal-view>div>div:nth-child(2)>.grid>button>span{position:relative;z-index:1;line-height:1.4;font-size:10px;color:#e2e8f0}
+    #student-portal-view button:focus-visible{outline:3px solid #5eead4;outline-offset:3px}
+    #student-portal-view #student-dashboard-panel{overscroll-behavior:contain;-webkit-overflow-scrolling:touch;background:#061b1d}
+    #student-portal-view #student-dashboard-panel .sticky{padding-top:calc(.75rem + env(safe-area-inset-top));background:#062c27;color:#fff;border-color:#145e4b}
+    #student-portal-view #student-dashboard-panel .sticky button{background:#104d40;color:#fff}
     #student-portal-view #student-dashboard-panel-body>*{min-width:0;overflow-wrap:anywhere}
-    #student-portal-view .border.rounded-2xl.p-4{border-color:#e0e9e4;background:#fff}
+    #student-portal-view .border.rounded-2xl.p-4{border-color:#24574c;background:#07332c;color:#f8fafc}
     @media(hover:hover){
       #student-portal-view>div>div:nth-child(2)>button:hover,
-      #student-portal-view>div>div:nth-child(2)>.grid>button:hover{transform:translateY(-2px);box-shadow:0 10px 22px rgba(7,46,70,.10);border-color:#9dddc0}
+      #student-portal-view>div>div:nth-child(2)>.grid>button:hover{transform:translateY(-3px);filter:brightness(1.13);box-shadow:0 12px 26px rgba(0,0,0,.36)}
     }
+    #student-portal-view>div>div:nth-child(2)>button:active,
+    #student-portal-view>div>div:nth-child(2)>.grid>button:active{transform:scale(.975);filter:brightness(1.16)}
     @media(max-width:640px){
       #student-portal-view{padding-left:0;padding-right:0;gap:10px!important;padding-bottom:calc(24px + env(safe-area-inset-bottom))!important;scroll-padding-bottom:calc(24px + env(safe-area-inset-bottom))}
       #student-portal-view>div{border-radius:24px;margin-bottom:0}
