@@ -13,6 +13,9 @@ const categories = new Set(["school_notice", "leave_status", "homework_timetable
 const FCM_SCOPE = "https://www.googleapis.com/auth/firebase.messaging";
 const FCM_TOKEN_URL = "https://oauth2.googleapis.com/token";
 
+// Treat identity fields as literal email addresses, never SQL ILIKE patterns.
+const escapeLike = (value: string) => value.replace(/[\\%_]/g, (character) => "\\" + character);
+
 type ServiceAccount = { project_id: string; client_email: string; private_key: string };
 type WebPushSubscription = { endpoint: string; keys: { p256dh: string; auth: string } };
 type StudentPushRow = {
@@ -249,7 +252,7 @@ Deno.serve(async (req: Request) => {
     const callerEmail = String(userData.user.email || "").trim().toLowerCase();
     if (!callerEmail) return json({ error: "AUTH_REQUIRED" }, 401);
     const { data: admins, error: adminError } = await service.from("admin_users")
-      .select("email").eq("active", true).ilike("email", callerEmail);
+      .select("email").eq("active", true).ilike("email", escapeLike(callerEmail));
     const isAdmin = !adminError && Boolean(admins?.length);
     let isActiveStaff = false;
     if (!isAdmin) {
@@ -280,7 +283,7 @@ Deno.serve(async (req: Request) => {
         if (allStudents || !targetScopes.length) return json({ error: "STAFF_NOTICE_TARGET_REQUIRED" }, 403);
         const { data: authoredNotices, error: noticeError } = await service.from("student_notices")
           .select("class_name,section,title,body,published_by")
-          .eq("school_code", schoolCode).ilike("published_by", callerEmail)
+          .eq("school_code", schoolCode).ilike("published_by", escapeLike(callerEmail))
           .eq("title", title).eq("body", message);
         if (noticeError || !authoredNotices?.length) return json({ error: "STAFF_NOTICE_NOT_FOUND" }, 403);
         const permitted = targetScopes.every((scope) => authoredNotices.some((notice) =>
