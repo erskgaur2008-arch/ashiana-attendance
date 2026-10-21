@@ -2075,7 +2075,63 @@
     </section>
 
     <!-- STUDENT PORTAL -->
-    <div id="student-portal-view" class="hidden flex-col w-full max-w-2xl space-y-4 student-dashboard-shell">
+    <div <style id="ashiana-student-dashboard-green-v1">
+    /* Ashiana green identity: clean emerald header, pale green canvas, readable green-tinted cards. CSS-only. */
+    #student-portal-view{color:#12352b;max-width:48rem}
+    #student-portal-view>div{border:1px solid #b8dfcd;border-radius:26px;box-shadow:0 14px 32px rgba(6,78,59,.10);background:#f1faf5}
+    #student-portal-view>div>div:first-child{position:relative;isolation:isolate;overflow:hidden;background:radial-gradient(ellipse at 90% 0%,rgba(52,211,153,.30),transparent 43%),linear-gradient(125deg,#064e3b 0%,#047857 55%,#059669 100%);border-bottom:3px solid #e11d48}
+    #student-portal-view>div>div:first-child:after{content:"";position:absolute;z-index:-1;width:19rem;height:9rem;right:-5rem;bottom:-6rem;border-radius:50%;background:linear-gradient(120deg,rgba(255,255,255,.14),rgba(255,255,255,0));box-shadow:-4rem -2rem 0 rgba(255,255,255,.06);pointer-events:none}
+    #student-portal-view #student-portal-avatar{flex:0 0 56px;touch-action:manipulation;border-radius:18px;border:2px solid rgba(255,255,255,.86);box-shadow:0 5px 16px rgba(6,78,59,.16)}
+    #student-portal-view #student-portal-name{overflow-wrap:anywhere;letter-spacing:-.025em;color:#fff;text-shadow:0 1px 2px rgba(0,0,0,.12)}
+    #student-portal-view>div>div:nth-child(2){background:linear-gradient(180deg,#fbfffc 0%,#edf8f1 100%)}
+    #student-portal-view>div>div:nth-child(2)>button,#student-portal-view>div>div:nth-child(2)>.grid>button{min-width:0;min-height:88px;border-radius:19px;transition:transform .16s ease,box-shadow .16s ease,filter .16s ease;overflow-wrap:anywhere;touch-action:manipulation;position:relative;color:#12352b}
+    #student-portal-view>div>div:nth-child(2)>button:first-child{min-height:72px;background:linear-gradient(120deg,#ffffff 0%,#f4fff8 60%,#e1f8eb 100%);border:1px solid #b8dfcd;box-shadow:inset 0 1px rgba(255,255,255,.98),0 7px 17px rgba(6,78,59,.08)}
+    #student-portal-view>div>div:nth-child(2)>button:first-child>div>span:first-child{width:48px;height:48px;border-radius:15px;background:linear-gradient(145deg,#a7f3d0,#d1fae5);box-shadow:0 4px 12px rgba(5,150,105,.12),inset 0 1px rgba(255,255,255,.9)}
+    #student-portal-view>div>div:nth-child(2)>button:first-child b{color:#12352b}
+    #student-portal-view>div>div:nth-child(2)>button:first-child span{color:#466358}
+    #student-portal-view>div>div:nth-child(2)>.grid{gap:10px}
+    #student-portal-view>div>div:nth-child(2)>.grid>button{display:flex;flex-direction:column;align-items:flex-start;justify-content:flex-start;gap:3px;padding:12px!important;border-width:1px;box-shadow:inset 0 1px rgba(255,255,255,.96),0 6px 14px rgba(6,78,59,.06);overflow:hidden}
+    #student-portal-view>div>div:nth-child(2)>.grid>button:after{content:"";position:absolute;right:-22px;bottom:-31px;width:115px;height:70px;border-radius:50%;background:rgba(255,255,255,.30);pointer-events:none}
+    #student-portal-view>div>div:nth-child(2)>.grid>button:nth-child(6n+1){background:linear-gradient(135deg,#d8f5e5 0%,#f0fcf5 100%);border-color:#8bd5b0}
+    #student-portal-view>div>div:nth-child(2)>.grid>button:nth-child(6n+2){background:linear-gradient(135deg,#dff7ee 0%,#f3fcf8 100%);border-color:#9bd9c6}
+    #student-portal-view>div>div:nth-child(2)>.grid>button:nth-child(6n+3){background:linear-gradient(135deg,#e6f7dc 0%,#f6fcf0 100%);border-color:#b4d99b}
+    #student-portal-view>div>div:nth-child(2)>.grid>button:nth-child(6n+4){background:linear-gradient(135deg,#c9f0dc 0%,#e9faf1 100%);border-color:#78c9a1}
+    #student-portal-view>div>div:nth-child(2)>.grid>button:nth-child(6n+5){background:linear-gradient(135deg,#e1f5e9 0%,#f4fbf6 100%);border-color:#a3d4b5}
+    #student-portal-view>div>div:nth-child(2)>.grid>button:nth-child(6n){background:linear-gradient(135deg,#d7f4eb 0%,#f0fbf7 100%);border-color:#91d5c3}
+    #student-portal-view>div>div:nth-child(2)>.grid>button>i{width:23px;height:23px;margin-bottom:5px;filter:drop-shadow(0 1px 2px rgba(15,23,42,.08))}
+    #student-portal-view>div>div:nth-child(2)>.grid>button:nth-child(6n+1)>i{color:#047857}
+    #student-portal-view>div>div:nth-child(2)>.grid>button:nth-child(6n+2)>i{color:#0f766e}
+    #student-portal-view>div>div:nth-child(2)>.grid>button:nth-child(6n+3)>i{color:#4d7c0f}
+    #student-portal-view>div>div:nth-child(2)>.grid>button:nth-child(6n+4)>i{color:#047857}
+    #student-portal-view>div>div:nth-child(2)>.grid>button:nth-child(6n+5)>i{color:#166534}
+    #student-portal-view>div>div:nth-child(2)>.grid>button:nth-child(6n)>i{color:#0f766e}
+    #student-portal-view>div>div:nth-child(2)>.grid>button>b{position:relative;z-index:1;line-height:1.25;font-size:12px;color:#12352b!important;letter-spacing:-.01em;font-weight:750}
+    #student-portal-view>div>div:nth-child(2)>.grid>button>span{position:relative;z-index:1;line-height:1.4;font-size:10px;color:#466358!important;font-weight:500}
+    #student-portal-view button:focus-visible{outline:3px solid #059669;outline-offset:3px}
+    #student-portal-view #student-dashboard-panel{overscroll-behavior:contain;-webkit-overflow-scrolling:touch;background:#f1faf5;color:#12352b}
+    #student-portal-view #student-dashboard-panel .sticky{padding-top:calc(.75rem + env(safe-area-inset-top));background:#e1f5e9;color:#12352b;border-color:#b8dfcd}
+    #student-portal-view #student-dashboard-panel .sticky button{background:#d1fae5;color:#065f46}
+    #student-portal-view #student-dashboard-panel-body>*{min-width:0;overflow-wrap:anywhere}
+    #student-portal-view .border.rounded-2xl.p-4{border-color:#c8e5d4;background:#fff;color:#12352b}
+    @media(hover:hover){#student-portal-view>div>div:nth-child(2)>button:hover,#student-portal-view>div>div:nth-child(2)>.grid>button:hover{transform:translateY(-2px);filter:saturate(1.04);box-shadow:0 10px 20px rgba(6,78,59,.11)}}
+    #student-portal-view>div>div:nth-child(2)>button:active,#student-portal-view>div>div:nth-child(2)>.grid>button:active{transform:scale(.98)}
+    @media(max-width:640px){
+      #student-portal-view{padding-left:0;padding-right:0;gap:10px!important;padding-bottom:calc(24px + env(safe-area-inset-bottom))!important;scroll-padding-bottom:calc(24px + env(safe-area-inset-bottom))}
+      #student-portal-view>div{border-radius:24px;margin-bottom:0}
+      #student-portal-view>div>div:first-child{padding:15px!important;padding-top:calc(15px + env(safe-area-inset-top))!important;gap:12px!important}
+      #student-portal-view>div>div:nth-child(2){padding:12px!important;gap:10px!important}
+      #student-portal-view>div>div:nth-child(2)>.grid{gap:8px!important;row-gap:8px!important;column-gap:8px!important}
+      #student-portal-view>div>div:nth-child(2)>.grid>button{min-height:92px;padding:10px!important;border-radius:17px}
+      #student-portal-view>div>div:nth-child(2)>.grid>button>i{width:21px;height:21px}
+      #student-portal-view>div>div:nth-child(2)>.grid>button>b{font-size:11px}
+      #student-portal-view>div>div:nth-child(2)>.grid>button>span{font-size:10px}
+      #student-portal-view .border.rounded-2xl.p-4{padding:12px!important}
+      #student-portal-view>div>div:nth-child(2)>button:first-child{min-height:68px}
+    }
+    @media(max-width:360px){#student-portal-view>div>div:nth-child(2)>.grid>button{min-height:88px;padding:9px!important}#student-portal-view>div>div:first-child .text-lg{font-size:15px}#student-portal-view>div>div:nth-child(2)>.grid{gap:7px!important}}
+    @media(prefers-reduced-motion:reduce){#student-portal-view *{transition:none!important;animation:none!important}}
+  </style>
+id="student-portal-view" class="hidden flex-col w-full max-w-2xl space-y-4 student-dashboard-shell">
       <div class="w-full bg-white rounded-3xl border border-slate-200 shadow-xl overflow-hidden">
         <div class="bg-gradient-to-br from-emerald-950 via-[#064E3B] to-[#087443] text-white p-5 border-b-2 border-ashiana-red">
           <div class="flex items-center justify-between gap-3"><div class="flex items-center gap-3"><button type="button" id="student-portal-avatar" onclick="createStudentPortalIdCard()" class="relative w-14 h-14 rounded-2xl bg-white/15 border border-white/20 flex items-center justify-center font-black text-lg overflow-visible focus:outline-none focus:ring-2 focus:ring-emerald-300 cursor-pointer" title="ID Preview" aria-label="Open Student ID Preview">
@@ -2687,7 +2743,57 @@ id="student-dashboard-panel-body" class="space-y-3 text-xs"></div>
     </div>
 
     <!-- 3. ADMINISTRATOR PORTAL -->
-    <div id="admin-portal-view" class="hidden flex-col w-full space-y-4 admin-dashboard-shell">
+    <div 
+  <style id="ashiana-all-dashboards-green-v1">
+    /* Unified Ashiana emerald theme for Admin, Teacher/Staff and Student dashboards.
+       Visual-only overrides: do not change IDs, handlers, data, auth, or permissions. */
+    :root{--ashiana-green-950:#022c22;--ashiana-green-900:#064e3b;--ashiana-green-800:#065f46;--ashiana-green-700:#047857;--ashiana-green-600:#059669;--ashiana-mint-100:#d1fae5;--ashiana-mint-50:#f0fdf4}
+    #admin-portal-view,#staff-portal-view,#teacher-portal-view{color:#12352b}
+    #admin-portal-view .admin-dashboard-header,
+    #staff-portal-view .staff-dashboard-header,
+    #teacher-portal-view .teacher-dashboard-header{
+      background:radial-gradient(ellipse at 90% 0%,rgba(52,211,153,.26),transparent 44%),linear-gradient(125deg,#064e3b 0%,#047857 56%,#059669 100%)!important;
+      color:#fff!important;border-bottom-color:#e11d48!important;box-shadow:0 7px 20px rgba(6,78,59,.14)
+    }
+    #admin-portal-view .admin-dashboard-card,
+    #staff-portal-view .staff-dashboard-card,
+    #teacher-portal-view .teacher-dashboard-card{
+      background:#f3faf6!important;border-color:#c8e5d4!important;box-shadow:0 12px 30px rgba(6,78,59,.08)
+    }
+    #admin-portal-view .admin-dashboard-content,
+    #staff-portal-view .staff-dashboard-content,
+    #teacher-portal-view .teacher-dashboard-content{background:linear-gradient(180deg,#fbfffc 0%,#edf8f1 100%)!important}
+    #admin-portal-view .admin-quick-actions button,
+    #staff-portal-view .staff-action-card,
+    #teacher-portal-view .teacher-action-card{
+      border-color:#b8dfcd!important;background:linear-gradient(145deg,#e4f8ec 0%,#f7fdf9 100%)!important;color:#12352b!important;
+      border-radius:16px;box-shadow:0 6px 16px rgba(6,78,59,.07);transition:transform .16s ease,box-shadow .16s ease
+    }
+    #admin-portal-view .admin-quick-actions button svg,
+    #staff-portal-view .staff-action-card svg,
+    #teacher-portal-view .teacher-action-card svg{color:#047857}
+    #admin-portal-view button:not(.bg-red-600):not(.bg-rose-600):not(.bg-amber-600),
+    #staff-portal-view button:not(.bg-red-600):not(.bg-rose-600):not(.bg-amber-600),
+    #teacher-portal-view button:not(.bg-red-600):not(.bg-rose-600):not(.bg-amber-600){
+      --tw-ring-color:#34d399
+    }
+    #admin-portal-view .bg-emerald-50,#staff-portal-view .bg-emerald-50,#teacher-portal-view .bg-emerald-50{background-color:#e4f8ec!important}
+    #admin-portal-view .border-emerald-100,#staff-portal-view .border-emerald-100,#teacher-portal-view .border-emerald-100{border-color:#b8dfcd!important}
+    #admin-portal-view .text-emerald-700,#staff-portal-view .text-emerald-700,#teacher-portal-view .text-emerald-700{color:#047857!important}
+    #admin-portal-view input,#admin-portal-view select,#admin-portal-view textarea,
+    #staff-portal-view input,#staff-portal-view select,#staff-portal-view textarea,
+    #teacher-portal-view input,#teacher-portal-view select,#teacher-portal-view textarea{
+      border-color:#c8dfd2;accent-color:#059669
+    }
+    #admin-portal-view button:focus-visible,#staff-portal-view button:focus-visible,#teacher-portal-view button:focus-visible{outline:3px solid #34d399;outline-offset:3px}
+    @media(hover:hover){
+      #admin-portal-view .admin-quick-actions button:hover,
+      #staff-portal-view .staff-action-card:hover,
+      #teacher-portal-view .teacher-action-card:hover{transform:translateY(-2px);box-shadow:0 10px 20px rgba(6,78,59,.12)}
+    }
+    @media(prefers-reduced-motion:reduce){#admin-portal-view *,#staff-portal-view *,#teacher-portal-view *{transition:none!important}}
+  </style>
+id="admin-portal-view" class="hidden flex-col w-full space-y-4 admin-dashboard-shell">
       
       <!-- Modern Admin Header -->
       <div class="admin-dashboard-header">
