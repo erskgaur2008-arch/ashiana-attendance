@@ -10714,7 +10714,7 @@ window.addEventListener('load',async function(){
       if (!el) return;
       const avatarUrl = String(staff?.avatarUrl || staff?.avatar_url || '').trim();
       if (avatarUrl) {
-        el.innerHTML = `<img src="${avatarUrl}" alt="Staff profile photo" class="w-full h-full object-cover" loading="eager" referrerpolicy="no-referrer">`;
+        el.innerHTML = `<img src="${studentEscape(avatarUrl)}" alt="Staff profile photo" class="w-full h-full object-cover" loading="eager" referrerpolicy="no-referrer">`;
       } else {
         el.textContent = getStaffInitials(staff?.name);
       }
