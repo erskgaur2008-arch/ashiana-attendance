@@ -10,6 +10,9 @@ const cors = {
 const reply = (status: number, body: Record<string, unknown>) =>
   new Response(JSON.stringify(body), { status, headers: cors });
 
+// Escape SQL LIKE metacharacters before using ILIKE for exact identity matching.
+const escapeLike = (value: string) => value.replace(/[\\%_]/g, (character) => "\\" + character);
+
 Deno.serve(async (req: Request) => {
   if (req.method === "OPTIONS") return new Response("ok", { headers: cors });
   if (req.method !== "POST") return reply(405, { error: "POST required" });
@@ -25,7 +28,7 @@ Deno.serve(async (req: Request) => {
   const db = createClient(url, serviceKey, { auth: { persistSession: false, autoRefreshToken: false } });
   const email = user.email.toLowerCase();
   const { data: admin, error: adminError } = await db.from("admin_users")
-    .select("email,role,active").ilike("email", email).eq("active", true).maybeSingle();
+    .select("email,role,active").ilike("email", escapeLike(email)).eq("active", true).maybeSingle();
   if (adminError || !admin || String(admin.role).toUpperCase() !== "ADMIN")
     return reply(403, { error: "Active Admin access required" });
   let input: Record<string, unknown>;
