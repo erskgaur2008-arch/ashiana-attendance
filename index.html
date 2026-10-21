@@ -2096,6 +2096,8 @@
   <span class="w-9 h-9 rounded-full bg-white border border-emerald-100 flex items-center justify-center"><i data-lucide="chevron-right" class="w-4 h-4 text-emerald-700"></i></span>
 </button>
           <div class="grid grid-cols-2 gap-3">
+            <button onclick="studentDashboardSection('mentor')" class="p-4 rounded-2xl border bg-violet-50 text-left"><i data-lucide="users-round" class="w-5 h-5 text-violet-700"></i><b class="block mt-2 text-sm">Your Mentor</b><span class="text-[10px] text-slate-500">Class & subject teachers</span></button>
+            <button onclick="studentDashboardSection('classmates')" class="p-4 rounded-2xl border bg-cyan-50 text-left"><i data-lucide="contact-round" class="w-5 h-5 text-cyan-700"></i><b class="block mt-2 text-sm">Classmates</b><span class="text-[10px] text-slate-500">Your section students</span></button>
             <button onclick="studentDashboardSection('notice')" class="p-4 rounded-2xl border bg-amber-50 text-left"><i data-lucide="megaphone" class="w-5 h-5 text-amber-700"></i><b class="block mt-2 text-sm">Notice</b><span id="student-count-notices" class="text-[10px] text-slate-500">0 notices</span></button>
             <button onclick="studentDashboardSection('attendance')" class="p-4 rounded-2xl border bg-emerald-50 text-left"><i data-lucide="calendar-check" class="w-5 h-5 text-emerald-700"></i><b class="block mt-2 text-sm">Attendance</b><span id="student-count-attendance" class="text-[10px] text-slate-500">0 records</span></button>
             <button onclick="studentDashboardSection('homework')" class="p-4 rounded-2xl border bg-blue-50 text-left"><i data-lucide="book-open-check" class="w-5 h-5 text-blue-700"></i><b class="block mt-2 text-sm">Homework</b><span id="student-count-homework" class="text-[10px] text-slate-500">0 items</span></button>
@@ -2117,7 +2119,7 @@
               </div>
             </div>
           </div>
-          <div class="border rounded-2xl p-4"><h3 class="font-bold text-sm mb-3">Student Details</h3><div class="grid grid-cols-1 sm:grid-cols-2 gap-2 text-xs"><div><span class="text-slate-500">Date of Birth</span><p id="student-portal-dob" class="font-semibold">—</p></div><div><span class="text-slate-500">Father Name</span><p id="student-portal-father" class="font-semibold">—</p></div><div><span class="text-slate-500">Mother Name</span><p id="student-portal-mother" class="font-semibold">—</p></div><div><span class="text-slate-500">Phone</span><p id="student-portal-phone" class="font-semibold">—</p></div><div class="sm:col-span-2"><span class="text-slate-500">Address</span><p id="student-portal-address" class="font-semibold">—</p></div></div></div>
+
         </div>
       </div>
     </div>
@@ -5888,7 +5890,7 @@ async function studentDashboardSection(type){
     title=document.getElementById("student-dashboard-panel-title"),
     loading=document.getElementById("student-dashboard-panel-loading");
   if(!host||!panel)return;
-  const names={notice:"Notice",attendance:"Attendance",homework:"Homework",timetable:"Timetable",leave:"Leave Request & Status",report:"Report Card",calendar:"School Calendar",profile:"Student Profile"};
+  const names={notice:"Notice",attendance:"Attendance",homework:"Homework",timetable:"Timetable",leave:"Leave Request & Status",report:"Report Card",calendar:"School Calendar",profile:"Student Profile",mentor:"Your Mentor",classmates:"Classmates"};
   title.textContent=names[type]||"Dashboard";
   panel.classList.remove("hidden");
   document.body.classList.add("overflow-hidden");
@@ -5922,6 +5924,37 @@ async function studentDashboardSection(type){
       '<div class="p-3 rounded-xl bg-slate-50 border"><span class="text-[10px] text-slate-500">Mother Name</span><p class="font-semibold mt-1">'+studentEscape(sValue("mother_name"))+'</p></div>'+
       '<div class="p-3 rounded-xl bg-slate-50 border"><span class="text-[10px] text-slate-500">Phone</span><p class="font-semibold mt-1">'+studentEscape(sValue("phone_number"))+'</p></div>'+
       '<div class="sm:col-span-2 p-3 rounded-xl bg-slate-50 border"><span class="text-[10px] text-slate-500">Address</span><p class="font-semibold mt-1">'+studentEscape(sValue("address"))+'</p></div></div></div>';
+  }else if(type==="mentor"){
+    const st=currentAuthUser?.studentRecord||{};
+    const cls=String(st.class_name||'').trim(),sec=String(st.section||'').trim();
+    if(!cls||!sec){host.innerHTML='<div class="p-4 border rounded-xl text-slate-500">Class and section are not available for this student.</div>';}
+    else {
+      try{
+        const [classResult,subjectResult,timetableResult]=await Promise.all([
+          supabaseClient.from('student_class_assignments').select('teacher_email').eq('school_code',APS_STUDENT_SCHOOL).eq('class_name',cls).eq('section',sec).eq('active',true),
+          supabaseClient.from('student_subject_assignments').select('teacher_email,subject_name').eq('school_code',APS_STUDENT_SCHOOL).eq('class_name',cls).eq('section',sec).eq('active',true),
+          supabaseClient.from('student_timetable').select('subject_name,teacher_name').eq('school_code',APS_STUDENT_SCHOOL).eq('class_name',cls).eq('section',sec).eq('active',true)
+        ]);
+        if(classResult.error)throw classResult.error;if(subjectResult.error)throw subjectResult.error;
+        const teachers=new Map();
+        const findName=email=>{const e=String(email||'').trim().toLowerCase();const arr=Array.isArray(staffDatabase)?staffDatabase:[];const found=arr.find(x=>String(x.email||'').trim().toLowerCase()===e);return found?.name||e;};
+        (classResult.data||[]).forEach(x=>{const email=String(x.teacher_email||'').trim();if(email){const name=findName(email);const key=name.toLowerCase();const old=teachers.get(key)||{name,roles:[]};if(!old.roles.includes('Class Teacher'))old.roles.push('Class Teacher');teachers.set(key,old);}});
+        (subjectResult.data||[]).forEach(x=>{const email=String(x.teacher_email||'').trim(),subject=String(x.subject_name||'').trim();if(email){const name=findName(email);const key=name.toLowerCase();const old=teachers.get(key)||{name,roles:[]};const role=subject?'Subject Teacher • '+subject:'Subject Teacher';if(!old.roles.includes(role))old.roles.push(role);teachers.set(key,old);}});
+        if(!timetableResult.error)(timetableResult.data||[]).forEach(x=>{const name=String(x.teacher_name||'').trim(),subject=String(x.subject_name||'').trim();if(name){const key=name.toLowerCase();const old=teachers.get(key)||{name,roles:[]};const role=subject?'Subject Teacher • '+subject:'Teacher';if(!old.roles.some(r=>r.toLowerCase()===role.toLowerCase()))old.roles.push(role);teachers.set(key,old);}});
+        host.innerHTML=[...teachers.values()].map(t=>'<article class="p-4 bg-white border rounded-2xl"><div class="font-bold text-slate-900">'+studentEscape(t.name)+'</div><div class="text-xs text-emerald-700 mt-1">'+studentEscape(t.roles.join(' · '))+'</div></article>').join('')||'<div class="p-5 border rounded-2xl text-center text-slate-500">Teacher assignments have not been published for this section yet.</div>';
+      }catch(e){host.innerHTML='<div class="p-4 border border-rose-200 bg-rose-50 rounded-xl text-rose-800">Unable to load teacher assignments right now. Please try again later.</div>';console.warn('Student mentor list failed:',e);}
+    }
+  }else if(type==="classmates"){
+    const st=currentAuthUser?.studentRecord||{};
+    const cls=String(st.class_name||'').trim(),sec=String(st.section||'').trim();
+    if(!cls||!sec){host.innerHTML='<div class="p-4 border rounded-xl text-slate-500">Class and section are not available for this student.</div>';}
+    else {
+      try{
+        const {data,error}=await supabaseClient.from('student_roster').select('id,student_name,roll_no').eq('school_code',APS_STUDENT_SCHOOL).eq('class_name',cls).eq('section',sec).eq('status','ACTIVE').order('roll_no').order('student_name');
+        if(error)throw error;
+        host.innerHTML=(data||[]).map((x,i)=>'<article class="flex items-center gap-3 p-3 bg-white border rounded-xl"><div class="w-10 h-10 shrink-0 rounded-full bg-emerald-50 text-emerald-800 flex items-center justify-center font-bold">'+studentEscape((x.student_name||'S').split(/\\s+/).map(v=>v[0]).join('').slice(0,2).toUpperCase())+'</div><div class="min-w-0 flex-1"><div class="font-bold text-slate-900">'+studentEscape(x.student_name||'Student')+'</div><div class="text-xs text-slate-500">Roll No. '+studentEscape(x.roll_no||'—')+'</div></div></article>').join('')||'<div class="p-5 border rounded-2xl text-center text-slate-500">No active students found in your section.</div>';
+      }catch(e){host.innerHTML='<div class="p-4 border border-rose-200 bg-rose-50 rounded-xl text-rose-800">Unable to load classmates right now. Please try again later.</div>';console.warn('Student classmates list failed:',e);}
+    }
   }else if(type==="notice"){
     const notices=fresh.notices||[];
     host.innerHTML=notices.map(x=>'<article class="p-4 sm:p-5 bg-white border border-slate-200 rounded-2xl shadow-sm"><div class="flex items-start gap-3"><span class="mt-1 w-2 h-2 rounded-full bg-emerald-600 flex-shrink-0"></span><div class="min-w-0 flex-1"><h4 class="text-base sm:text-lg font-extrabold text-slate-900 break-words leading-snug">'+studentEscape(x.title)+'</h4><div class="mt-3 text-[13px] sm:text-sm text-slate-700 whitespace-pre-wrap break-words leading-7">'+studentEscape(x.body||"")+'</div>'+(x.attachment_path?'<a href="'+studentEscape(teacherPortalPdfUrl(x.attachment_path))+'" target="_blank" rel="noopener" class="mt-3 inline-flex items-center gap-2 px-3 py-2 rounded-xl bg-rose-50 text-rose-700 border border-rose-200 text-xs font-bold"><i data-lucide="file-text" class="w-4 h-4"></i><span>View PDF'+(x.attachment_name?' • '+studentEscape(x.attachment_name):'')+'</span></a>':'')+'<div class="mt-3 pt-2 border-t border-slate-100 text-[10px] text-slate-400">'+studentEscape(formatStudentPortalDate(x.publish_at||x.created_at||""))+'</div></div></div></article>').join("")||'<div class="p-6 bg-white border rounded-2xl text-center text-slate-400">No notices published.</div>';
