@@ -8144,10 +8144,10 @@ async function loadAdminStudentAttendance(){
         return `
           <tr class="hover:bg-slate-50 transition-colors">
             <td class="py-2.5 px-3 font-medium text-slate-900">
-              <div class="font-bold">${s.name}</div>
-              <div class="text-[9px] text-slate-400 font-mono">${s.empId}</div>
+              <div class="font-bold">${studentEscape(s.name)}</div>
+              <div class="text-[9px] text-slate-400 font-mono">${studentEscape(s.empId)}</div>
             </td>
-            <td class="py-2.5 px-3">${s.department}</td>
+            <td class="py-2.5 px-3">${studentEscape(s.department)}</td>
             <td class="py-2.5 px-3 font-mono font-bold ${stats.firstIn ? 'text-ashiana-green' : 'text-slate-400'}">${stats.firstIn || '--:--'}</td>
             <td class="py-2.5 px-3 font-mono font-bold ${stats.lastOut ? 'text-ashiana-green' : 'text-slate-400'}">${stats.lastOut || '--:--'}</td>
             <td class="py-2.5 px-3 font-mono font-bold">${stats.punches.length}</td>
@@ -8171,18 +8171,18 @@ async function loadAdminStudentAttendance(){
             <td class="py-2 px-2 text-center">
               <input type="checkbox" class="staff-id-card-check w-3.5 h-3.5 accent-emerald-700" data-staff-id="${s.id}" onchange="updateBulkIdCardSelection()" title="Select for ID card">
             </td>
-            <td class="py-2 px-3 font-mono font-bold text-ashiana-green text-xs">${s.empId}</td>
+            <td class="py-2 px-3 font-mono font-bold text-ashiana-green text-xs">${studentEscape(s.empId)}</td>
             <td class="py-2 px-3 font-bold text-slate-800">
-              <div>${s.name}</div>
-              <div class="text-[9px] text-slate-400 font-normal sm:hidden">${s.department} • ${s.role}</div>
+              <div>${studentEscape(s.name)}</div>
+              <div class="text-[9px] text-slate-400 font-normal sm:hidden">${studentEscape(s.department)} • ${studentEscape(s.role)}</div>
             </td>
-            <td class="py-2 px-3 text-slate-600">${s.department}</td>
-            <td class="py-2 px-3 text-slate-600">${s.role}</td>
-            <td class="py-2 px-3 font-mono text-[10px] text-slate-500">${s.email}</td>
+            <td class="py-2 px-3 text-slate-600">${studentEscape(s.department)}</td>
+            <td class="py-2 px-3 text-slate-600">${studentEscape(s.role)}</td>
+            <td class="py-2 px-3 font-mono text-[10px] text-slate-500">${studentEscape(s.email)}</td>
             <td class="py-2 px-3 text-slate-600 max-w-[220px] truncate" title="${escapeIdCardHtml(s.address || "")}">${escapeIdCardHtml(s.address || "—")}</td>
             <td class="py-2 px-3 font-mono text-[10px] ${isStaffIdExpired(s) ? 'text-rose-600 font-bold' : 'text-slate-500'}">${escapeIdCardHtml(formatValidThruDate(s.validThru || s.valid_thru) || "—")}</td>
             <td class="py-2 px-3 text-center"><span class="px-1.5 py-0.5 rounded font-mono font-bold text-[10px] bg-emerald-50 text-ashiana-green border border-emerald-300">${s.pinHash ? "••••" : "••••"}</span></td>
-            <td class="py-2 px-3"><span class="px-2 py-0.5 rounded-full text-[9px] font-bold ${s.status === 'ACTIVE' ? 'bg-emerald-100 text-emerald-800' : 'bg-rose-100 text-rose-800'}">${s.status}</span></td>
+            <td class="py-2 px-3"><span class="px-2 py-0.5 rounded-full text-[9px] font-bold ${s.status === 'ACTIVE' ? 'bg-emerald-100 text-emerald-800' : 'bg-rose-100 text-rose-800'}">${studentEscape(s.status)}</span></td>
             <td class="py-2 px-3 text-center">
               <div class="flex items-center justify-center space-x-1.5">
                 <button onclick="printStaffIdCard('${s.id}', { markGenerated: true, autoPrint: true })" title="Generate / Print Staff ID Card" class="p-1 text-blue-600 hover:text-blue-800 hover:bg-blue-50 rounded-lg transition-colors">
@@ -8516,9 +8516,9 @@ window.addEventListener('load',async function(){
             <td class="py-2 px-3 text-center">
               <input type="checkbox" class="rounded text-rose-600 focus:ring-rose-500 cursor-pointer w-4 h-4" ${isChecked ? 'checked' : ''} onchange="toggleModalStaffItem('${s.id}', this.checked)">
             </td>
-            <td class="py-2 px-2 font-mono font-bold text-ashiana-green text-xs">${s.empId}</td>
-            <td class="py-2 px-2 font-bold text-slate-800">${s.name}</td>
-            <td class="py-2 px-2 text-slate-500">${s.department}</td>
+            <td class="py-2 px-2 font-mono font-bold text-ashiana-green text-xs">${studentEscape(s.empId)}</td>
+            <td class="py-2 px-2 font-bold text-slate-800">${studentEscape(s.name)}</td>
+            <td class="py-2 px-2 text-slate-500">${studentEscape(s.department)}</td>
           </tr>
         `;
       }).join('');
@@ -10185,12 +10185,12 @@ window.addEventListener('load',async function(){
         return `
           <tr class="hover:bg-slate-50 transition-colors">
             <td class="py-2.5 px-3 font-mono text-slate-400">${idx + 1}</td>
-            <td class="py-2.5 px-3 font-mono font-bold text-ashiana-green">${r.empId}</td>
+            <td class="py-2.5 px-3 font-mono font-bold text-ashiana-green">${studentEscape(r.empId)}</td>
             <td class="py-2.5 px-3 font-bold text-slate-800">
-              <div>${r.name}</div>
-              <div class="text-[9px] text-slate-400 font-normal">${r.role}</div>
+              <div>${studentEscape(r.name)}</div>
+              <div class="text-[9px] text-slate-400 font-normal">${studentEscape(r.role)}</div>
             </td>
-            <td class="py-2.5 px-3 text-slate-600">${r.department}</td>
+            <td class="py-2.5 px-3 text-slate-600">${studentEscape(r.department)}</td>
             <td class="py-2.5 px-3 font-mono font-bold ${r.firstIn !== '--:--' ? 'text-ashiana-green' : 'text-slate-400'}">${r.firstIn}</td>
             <td class="py-2.5 px-3 font-mono font-bold ${r.lastOut !== '--:--' ? 'text-ashiana-green' : 'text-slate-400'}">${r.lastOut}</td>
             <td class="py-2.5 px-3 font-mono font-bold">${r.punchCount}</td>
@@ -10334,12 +10334,12 @@ window.addEventListener('load',async function(){
       tbody.innerHTML = records.map((r, idx) => `
         <tr class="hover:bg-slate-50 transition-colors">
           <td class="py-2.5 px-3 font-mono text-slate-400">${idx + 1}</td>
-          <td class="py-2.5 px-3 font-mono font-bold text-ashiana-green">${r.empId}</td>
+          <td class="py-2.5 px-3 font-mono font-bold text-ashiana-green">${studentEscape(r.empId)}</td>
           <td class="py-2.5 px-3 font-bold text-slate-800">
-            <div>${r.name}</div>
-            <div class="text-[9px] text-slate-400 font-normal">${r.role}</div>
+            <div>${studentEscape(r.name)}</div>
+            <div class="text-[9px] text-slate-400 font-normal">${studentEscape(r.role)}</div>
           </td>
-          <td class="py-2.5 px-3 text-slate-600">${r.department}</td>
+          <td class="py-2.5 px-3 text-slate-600">${studentEscape(r.department)}</td>
           <td class="py-2.5 px-3 text-center font-mono font-bold">${r.workingDays}</td>
           <td class="py-2.5 px-3 text-center font-mono font-bold text-emerald-700 bg-emerald-50/50">${r.presentDays}</td>
           <td class="py-2.5 px-3 text-center font-mono font-bold ${r.absentDays > 0 ? 'text-rose-600' : 'text-slate-400'}">${r.absentDays}</td>
@@ -10580,14 +10580,14 @@ window.addEventListener('load',async function(){
           filename = `Ashiana_Daily_Attendance_${date}.csv`;
           csvContent = "S.No,Employee ID,Faculty Name,Department,Designation,First IN,Last OUT,Punches,Work Duration,Late Mins,Status\n";
           lastGeneratedReportData.forEach((r, i) => {
-            csvContent += `"${i + 1}","${r.empId}","${r.name}","${r.department}","${r.role}","${r.firstIn}","${r.lastOut}",${r.punchCount},"${r.workTimeStr}",${r.lateMins},"${r.status}"\n`;
+            csvContent += `"${i + 1}","${studentEscape(r.empId)}","${studentEscape(r.name)}","${studentEscape(r.department)}","${studentEscape(r.role)}","${r.firstIn}","${r.lastOut}",${r.punchCount},"${r.workTimeStr}",${r.lateMins},"${r.status}"\n`;
           });
         } else if (currentReportType === 'monthly') {
           const month = document.getElementById("report-month-input").value;
           filename = `Ashiana_Monthly_Muster_Roll_${month}.csv`;
           csvContent = "S.No,Employee ID,Faculty Name,Department,Working Days,Present,Absent,Leaves,Late Days,Total Work,Avg/Day,Attendance %\n";
           lastGeneratedReportData.forEach((r, i) => {
-            csvContent += `"${i + 1}","${r.empId}","${r.name}","${r.department}",${r.workingDays},${r.presentDays},${r.absentDays},${r.leaveDays},${r.lateDays},"${r.totalWorkStr}","${r.avgDayStr}","${r.attendanceRate}%"\n`;
+            csvContent += `"${i + 1}","${studentEscape(r.empId)}","${studentEscape(r.name)}","${studentEscape(r.department)}",${r.workingDays},${r.presentDays},${r.absentDays},${r.leaveDays},${r.lateDays},"${r.totalWorkStr}","${r.avgDayStr}","${r.attendanceRate}%"\n`;
           });
         } else if (currentReportType === 'faculty') {
           const selStaff = staffDatabase.find(s => s.id === document.getElementById("report-faculty-select").value) || staffDatabase[0];
@@ -10714,7 +10714,7 @@ window.addEventListener('load',async function(){
       if (!el) return;
       const avatarUrl = String(staff?.avatarUrl || staff?.avatar_url || '').trim();
       if (avatarUrl) {
-        el.innerHTML = `<img src="${avatarUrl}" alt="Staff profile photo" class="w-full h-full object-cover" loading="eager" referrerpolicy="no-referrer">`;
+        el.innerHTML = `<img src="${studentEscape(avatarUrl)}" alt="Staff profile photo" class="w-full h-full object-cover" loading="eager" referrerpolicy="no-referrer">`;
       } else {
         el.textContent = getStaffInitials(staff?.name);
       }
@@ -11575,11 +11575,11 @@ window.addEventListener('load',async function(){
           if (previewTbody) {
             previewTbody.innerHTML = parsedExcelStaffRows.map(r => `
               <tr class="hover:bg-slate-100">
-                <td class="py-1 px-2 font-bold text-ashiana-green">${r.empId}</td>
-                <td class="py-1 px-2 font-sans font-bold text-slate-800">${r.name}</td>
-                <td class="py-1 px-2 font-sans">${r.department}</td>
-                <td class="py-1 px-2 font-sans">${r.role}</td>
-                <td class="py-1 px-2 text-center">${r.pinHash}</td>
+                <td class="py-1 px-2 font-bold text-ashiana-green">${studentEscape(r.empId)}</td>
+                <td class="py-1 px-2 font-sans font-bold text-slate-800">${studentEscape(r.name)}</td>
+                <td class="py-1 px-2 font-sans">${studentEscape(r.department)}</td>
+                <td class="py-1 px-2 font-sans">${studentEscape(r.role)}</td>
+                <td class="py-1 px-2 text-center">${studentEscape(r.pinHash)}</td>
               </tr>
             `).join('');
           }
@@ -11717,7 +11717,7 @@ window.addEventListener('load',async function(){
       let csv = "Employee ID,Staff Name,Department,First IN,Last OUT,Punches,Work Time,Late Mins,Status\n";
       staffDatabase.forEach(s => {
         const stats = calculateAttendance(s.id);
-        csv += `"${s.empId}","${s.name}","${s.department}","${stats.firstIn || ''}","${stats.lastOut || ''}",${stats.punches.length},"${fmtMins(stats.totalWorkMinutes)}",${stats.lateMinutes},"${stats.currentStatus}"\n`;
+        csv += `"${studentEscape(s.empId)}","${studentEscape(s.name)}","${studentEscape(s.department)}","${stats.firstIn || ''}","${stats.lastOut || ''}",${stats.punches.length},"${fmtMins(stats.totalWorkMinutes)}",${stats.lateMinutes},"${stats.currentStatus}"\n`;
       });
       const blob = new Blob([csv], { type: "text/csv" });
       const a = document.createElement("a");
