@@ -5930,17 +5930,16 @@ async function studentDashboardSection(type){
     if(!cls||!sec){host.innerHTML='<div class="p-4 border rounded-xl text-slate-500">Class and section are not available for this student.</div>';}
     else {
       try{
-        const [classResult,subjectResult,timetableResult]=await Promise.all([
-          supabaseClient.from('student_class_assignments').select('teacher_email').eq('school_code',APS_STUDENT_SCHOOL).eq('class_name',cls).eq('section',sec).eq('active',true),
-          supabaseClient.from('student_subject_assignments').select('teacher_email,subject_name').eq('school_code',APS_STUDENT_SCHOOL).eq('class_name',cls).eq('section',sec).eq('active',true),
-          supabaseClient.from('student_timetable').select('subject_name,teacher_name').eq('school_code',APS_STUDENT_SCHOOL).eq('class_name',cls).eq('section',sec).eq('active',true)
-        ]);
-        if(classResult.error)throw classResult.error;if(subjectResult.error)throw subjectResult.error;
+        const token=String(await window.AshianaNative?.getStudentSessionToken?.() || sessionStorage.getItem("aps_student_session_token_v1") || "");
+        if(!/^[a-f0-9]{64}$/i.test(token))throw Error("Student session expired. Please sign in again.");
+        const {data,error}=await supabaseClient.rpc("student_mentor_list_by_session",{p_token:token});
+        if(error)throw error;
+        if(!data?.success)throw Error(data?.code==="STUDENT_SESSION_EXPIRED"?"Student session expired. Please sign in again.":"Student class or section is unavailable.");
         const teachers=new Map();
-        const findName=email=>{const e=String(email||'').trim().toLowerCase();const arr=Array.isArray(staffDatabase)?staffDatabase:[];const found=arr.find(x=>String(x.email||'').trim().toLowerCase()===e);return found?.name||e;};
-        (classResult.data||[]).forEach(x=>{const email=String(x.teacher_email||'').trim();if(email){const name=findName(email);const key=name.toLowerCase();const old=teachers.get(key)||{name,roles:[]};if(!old.roles.includes('Class Teacher'))old.roles.push('Class Teacher');teachers.set(key,old);}});
-        (subjectResult.data||[]).forEach(x=>{const email=String(x.teacher_email||'').trim(),subject=String(x.subject_name||'').trim();if(email){const name=findName(email);const key=name.toLowerCase();const old=teachers.get(key)||{name,roles:[]};const role=subject?'Subject Teacher • '+subject:'Subject Teacher';if(!old.roles.includes(role))old.roles.push(role);teachers.set(key,old);}});
-        if(!timetableResult.error)(timetableResult.data||[]).forEach(x=>{const name=String(x.teacher_name||'').trim(),subject=String(x.subject_name||'').trim();if(name){const key=name.toLowerCase();const old=teachers.get(key)||{name,roles:[]};const role=subject?'Subject Teacher • '+subject:'Teacher';if(!old.roles.some(r=>r.toLowerCase()===role.toLowerCase()))old.roles.push(role);teachers.set(key,old);}});
+        const findName=email=>{const e=String(email||"").trim().toLowerCase();const arr=Array.isArray(staffDatabase)?staffDatabase:[];const found=arr.find(x=>String(x.email||"").trim().toLowerCase()===e);return found?.name||e;};
+        (data.class_teachers||[]).forEach(x=>{const email=String(x.teacher_email||"").trim();if(email){const name=findName(email),key=name.toLowerCase(),old=teachers.get(key)||{name,roles:[]};if(!old.roles.includes("Class Teacher"))old.roles.push("Class Teacher");teachers.set(key,old);}});
+        (data.subject_teachers||[]).forEach(x=>{const email=String(x.teacher_email||"").trim(),subject=String(x.subject_name||"").trim();if(email){const name=findName(email),key=name.toLowerCase(),old=teachers.get(key)||{name,roles:[]},role=subject?"Subject Teacher • "+subject:"Subject Teacher";if(!old.roles.includes(role))old.roles.push(role);teachers.set(key,old);}});
+        (data.timetable_teachers||[]).forEach(x=>{const name=String(x.teacher_name||"").trim(),subject=String(x.subject_name||"").trim();if(name){const key=name.toLowerCase(),old=teachers.get(key)||{name,roles:[]},role=subject?"Subject Teacher • "+subject:"Teacher";if(!old.roles.some(r=>r.toLowerCase()===role.toLowerCase()))old.roles.push(role);teachers.set(key,old);}});
         host.innerHTML=[...teachers.values()].map(t=>'<article class="p-4 bg-white border rounded-2xl"><div class="font-bold text-slate-900">'+studentEscape(t.name)+'</div><div class="text-xs text-emerald-700 mt-1">'+studentEscape(t.roles.join(' · '))+'</div></article>').join('')||'<div class="p-5 border rounded-2xl text-center text-slate-500">Teacher assignments have not been published for this section yet.</div>';
       }catch(e){host.innerHTML='<div class="p-4 border border-rose-200 bg-rose-50 rounded-xl text-rose-800">Unable to load teacher assignments right now. Please try again later.</div>';console.warn('Student mentor list failed:',e);}
     }
@@ -5950,9 +5949,13 @@ async function studentDashboardSection(type){
     if(!cls||!sec){host.innerHTML='<div class="p-4 border rounded-xl text-slate-500">Class and section are not available for this student.</div>';}
     else {
       try{
-        const {data,error}=await supabaseClient.from('student_roster').select('id,student_name,roll_no').eq('school_code',APS_STUDENT_SCHOOL).eq('class_name',cls).eq('section',sec).eq('status','ACTIVE').order('roll_no').order('student_name');
+        const token=String(await window.AshianaNative?.getStudentSessionToken?.() || sessionStorage.getItem("aps_student_session_token_v1") || "");
+        if(!/^[a-f0-9]{64}$/i.test(token))throw Error("Student session expired. Please sign in again.");
+        const {data,error}=await supabaseClient.rpc("student_classmates_by_session",{p_token:token});
         if(error)throw error;
-        host.innerHTML=(data||[]).map((x,i)=>'<article class="flex items-center gap-3 p-3 bg-white border rounded-xl"><div class="w-10 h-10 shrink-0 rounded-full bg-emerald-50 text-emerald-800 flex items-center justify-center font-bold">'+studentEscape((x.student_name||'S').split(/\\s+/).map(v=>v[0]).join('').slice(0,2).toUpperCase())+'</div><div class="min-w-0 flex-1"><div class="font-bold text-slate-900">'+studentEscape(x.student_name||'Student')+'</div><div class="text-xs text-slate-500">Roll No. '+studentEscape(x.roll_no||'—')+'</div></div></article>').join('')||'<div class="p-5 border rounded-2xl text-center text-slate-500">No active students found in your section.</div>';
+        if(!data?.success)throw Error(data?.code==="STUDENT_SESSION_EXPIRED"?"Student session expired. Please sign in again.":"Student class or section is unavailable.");
+        const rows=data.classmates||[];
+        host.innerHTML=rows.map(x=>'<article class="flex items-center gap-3 p-3 bg-white border rounded-xl"><div class="w-10 h-10 shrink-0 rounded-full bg-emerald-50 text-emerald-800 flex items-center justify-center font-bold">'+studentEscape((x.student_name||'S').split(/\\s+/).map(v=>v[0]).join('').slice(0,2).toUpperCase())+'</div><div class="min-w-0 flex-1"><div class="font-bold text-slate-900">'+studentEscape(x.student_name||'Student')+'</div><div class="text-xs text-slate-500">Roll No. '+studentEscape(x.roll_no||'—')+'</div></div></article>').join('')||'<div class="p-5 border rounded-2xl text-center text-slate-500">No active students found in your section.</div>';
       }catch(e){host.innerHTML='<div class="p-4 border border-rose-200 bg-rose-50 rounded-xl text-rose-800">Unable to load classmates right now. Please try again later.</div>';console.warn('Student classmates list failed:',e);}
     }
   }else if(type==="notice"){
