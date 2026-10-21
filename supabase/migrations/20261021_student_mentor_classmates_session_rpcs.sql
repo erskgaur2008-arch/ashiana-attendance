@@ -54,16 +54,23 @@ begin
      and a.active is true
      and nullif(btrim(a.teacher_email), '') is not null;
 
-  select coalesce(jsonb_agg(jsonb_build_object(
-    'teacher_name', t.teacher_name, 'subject_name', t.subject_name
-  ) order by t.subject_name, t.teacher_name), '[]'::jsonb)
+  -- Timetable is optional in some deployed/test schemas.
+  v_timetable_teachers := '[]'::jsonb;
+  if to_regclass('public.student_timetable') is not null then
+    execute $sql$
+      select coalesce(jsonb_agg(jsonb_build_object(
+        'teacher_name', t.teacher_name, 'subject_name', t.subject_name
+      ) order by t.subject_name, t.teacher_name), '[]'::jsonb)
+      from public.student_timetable t
+      where t.school_code = $1
+        and t.class_name = $2
+        and t.section = $3
+        and t.active is true
+        and nullif(btrim(t.teacher_name), '') is not null
+    $sql$
     into v_timetable_teachers
-    from public.student_timetable t
-   where t.school_code = s.school_code
-     and t.class_name = s.class_name
-     and t.section = s.section
-     and t.active is true
-     and nullif(btrim(t.teacher_name), '') is not null;
+    using s.school_code, s.class_name, s.section;
+  end if;
 
   return jsonb_build_object(
     'success', true,
