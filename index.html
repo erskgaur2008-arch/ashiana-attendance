@@ -3616,6 +3616,18 @@
         </button>
       </div>
 
+      <div id="scanner-geofence-alert" class="hidden mx-3 mt-3 rounded-2xl border border-rose-300 bg-rose-700 text-white p-3.5 shadow-lg" role="alert" aria-live="assertive">
+        <div class="flex items-start gap-2.5">
+          <i data-lucide="alert-circle" class="w-5 h-5 flex-shrink-0 mt-0.5"></i>
+          <div class="min-w-0 flex-1">
+            <div class="font-bold text-sm">Biometric attendance blocked</div>
+            <p id="scanner-geofence-alert-message" class="text-xs mt-1 leading-relaxed">GPS accuracy must be 25 metres or better. Move to an open area and enable precise location, then try again.</p>
+            <p class="text-xs mt-2 font-semibold">Attendance was not marked.</p>
+            <button type="button" onclick="dismissScannerGeofenceAlert()" class="mt-3 w-full rounded-xl border border-emerald-200 bg-white text-emerald-900 font-bold text-sm py-2.5">OK</button>
+          </div>
+        </div>
+      </div>
+
       <div class="p-4 space-y-3">
         <!-- Live Camera Viewfinder -->
         <div class="relative w-full aspect-square bg-black rounded-2xl overflow-hidden shadow-inner flex items-center justify-center border border-slate-300">
@@ -6731,6 +6743,20 @@ async function refreshStudentPortalData(){
     }
 
 
+    function showScannerGeofenceAlert(message) {
+      const alert = document.getElementById('scanner-geofence-alert');
+      const text = document.getElementById('scanner-geofence-alert-message');
+      if (text) text.textContent = message || 'GPS accuracy must be 25 metres or better. Move to an open area, enable precise location, and try again.';
+      if (alert) alert.classList.remove('hidden');
+      const status = document.getElementById('scanner-status-text');
+      if (status) status.textContent = 'Attendance blocked by campus location validation.';
+      if (window.lucide) lucide.createIcons();
+    }
+
+    function dismissScannerGeofenceAlert() {
+      document.getElementById('scanner-geofence-alert')?.classList.add('hidden');
+    }
+
     function openPunchModal() {
       if (!currentStaffId) {
         showToast('Please sign in to your staff account before using attendance scanning.', 'error');
@@ -6738,6 +6764,7 @@ async function refreshStudentPortalData(){
       }
       pendingScannedQR = null;
       smartQrScanLocked = false;
+      dismissScannerGeofenceAlert();
       document.getElementById('scanner-pin-panel')?.classList.add('hidden');
       const smartResult = document.getElementById('scanner-smart-result');
       if (smartResult) { smartResult.className = 'hidden rounded-2xl border p-3 text-left'; smartResult.innerHTML = ''; }
@@ -6801,7 +6828,9 @@ async function refreshStudentPortalData(){
       } catch (e) {
         playTone('ERROR');
         const msg = String(e?.message || e);
-        if (/cancel|cancelled|canceled|user denied|authentication failed/i.test(msg)) {
+        if (/GPS accuracy|GEOFENCE_|location.*(required|stale|accuracy)|outside.*(school|campus|geofence)/i.test(msg)) {
+          showScannerGeofenceAlert(msg.replace(/^GEOFENCE_[A-Z_]+:?\s*/i, '').replace(/_/g, ' ') || 'GPS accuracy must be 25 metres or better. Move to an open area, enable precise location, and try again.');
+        } else if (/cancel|cancelled|canceled|user denied|authentication failed/i.test(msg)) {
           showToast("Biometric verification cancelled or failed. Attendance was not marked. Tap fingerprint verification to try again.", "error");
         } else if (msg.includes('ID_CARD_EXPIRED')) showToast("ID CARD EXPIRED. Your Valid Thru date has passed. Please contact the school administrator for renewal.", "error");
         else if (msg.includes('INVALID_OR_EXPIRED_QR')) showToast("QR expired. Please scan the latest school QR.", "error");
