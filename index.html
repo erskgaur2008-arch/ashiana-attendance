@@ -4535,45 +4535,10 @@ id="admin-portal-view" class="hidden flex-col w-full space-y-4 admin-dashboard-s
       validUntil: "End of Today"
     };
 
-    // Baseline Faculty Data for Ashiana Public School
+    // No staff records are bundled in the public frontend.
+    // Staff directory data must be loaded from Supabase after authorization.
     function getBaselineFacultyData() {
-      const baseline = [
-        { id: "usr_101", empId: "APS-101", name: "Mrs. Monika Sharma", role: "Principal", department: "Administration", email: "principal@ashianapublicschool.com", pinHash: "", status: "ACTIVE" },
-        { id: "usr_102", empId: "APS-102", name: "Ms. Kavita Chhabra", role: "Vice Principal & Coordinator", department: "Administration", email: "kavita.chhabra@ashianapublicschool.com", pinHash: "", status: "ACTIVE" },
-        { id: "usr_103", empId: "APS-103", name: "Ms. Saloni Varma", role: "Office Coordinator", department: "Administration", email: "saloni.varma@ashianapublicschool.com", pinHash: "", status: "ACTIVE" },
-        { id: "usr_104", empId: "APS-104", name: "Ms. Jyotsna Leekha", role: "TGT Science & Mathematics", department: "Science & Mathematics", email: "jyotsna.leekha@ashianapublicschool.com", pinHash: "", status: "ACTIVE" },
-        { id: "usr_105", empId: "APS-105", name: "Ms. Shally Vij", role: "TGT Hindi & Sanskrit", department: "Languages & Literature", email: "shally.vij@ashianapublicschool.com", pinHash: "", status: "ACTIVE" },
-        { id: "usr_106", empId: "APS-106", name: "Ms. Deepali Pathak", role: "TGT Mathematics", department: "Science & Mathematics", email: "deepali.pathak@ashianapublicschool.com", pinHash: "", status: "ACTIVE" },
-        { id: "usr_107", empId: "APS-107", name: "Ms. Ambika Handoo Sharma", role: "PGT Computer Science", department: "Information Technology", email: "ambika.handoo@ashianapublicschool.com", pinHash: "", status: "ACTIVE" },
-        { id: "usr_108", empId: "APS-108", name: "Ms. Ramandeep Kaur", role: "TGT Punjabi", department: "Languages & Literature", email: "ramandeep.kaur@ashianapublicschool.com", pinHash: "", status: "ACTIVE" },
-        { id: "usr_109", empId: "APS-109", name: "Ms. Savleen Chahal", role: "TGT English", department: "Languages & Literature", email: "savleen.chahal@ashianapublicschool.com", pinHash: "", status: "ACTIVE" },
-        { id: "usr_110", empId: "APS-110", name: "Ms. Anita Kashyap", role: "TGT Social Science", department: "Languages & Literature", email: "anita.kashyap@ashianapublicschool.com", pinHash: "", status: "ACTIVE" },
-        { id: "usr_111", empId: "APS-111", name: "Ms. Alka Bhalla", role: "TGT Science", department: "Science & Mathematics", email: "alka.bhalla@ashianapublicschool.com", pinHash: "", status: "ACTIVE" },
-        { id: "usr_112", empId: "APS-112", name: "Ms. Nitika Sihota", role: "PGT Physics", department: "Science & Mathematics", email: "nitika.sihota@ashianapublicschool.com", pinHash: "", status: "ACTIVE" },
-        { id: "usr_113", empId: "APS-113", name: "Ms. Renu Devgun", role: "TGT English", department: "Languages & Literature", email: "renu.devgun@ashianapublicschool.com", pinHash: "", status: "ACTIVE" },
-        { id: "usr_114", empId: "APS-114", name: "Ms. Anupama Rana", role: "TGT Science & Biology", department: "Science & Mathematics", email: "anupama.rana@ashianapublicschool.com", pinHash: "", status: "ACTIVE" },
-        { id: "usr_115", empId: "APS-115", name: "Ms. Shweta Arora", role: "TGT Mathematics", department: "Science & Mathematics", email: "shweta.arora@ashianapublicschool.com", pinHash: "", status: "ACTIVE" },
-        { id: "usr_116", empId: "APS-116", name: "Ms. Dharaa Sharma", role: "PRT English", department: "Primary Wing (PRT)", email: "dharaa.sharma@ashianapublicschool.com", pinHash: "", status: "ACTIVE" },
-        { id: "usr_117", empId: "APS-117", name: "Ms. Shruti Narula", role: "PRT Mathematics", department: "Primary Wing (PRT)", email: "shruti.narula@ashianapublicschool.com", pinHash: "", status: "ACTIVE" },
-        { id: "usr_118", empId: "APS-118", name: "Ms. Harpreet Kaur", role: "PRT Punjabi", department: "Primary Wing (PRT)", email: "harpreet.kaur@ashianapublicschool.com", pinHash: "", status: "ACTIVE" },
-        { id: "usr_119", empId: "APS-119", name: "Ms. Sushma Sajwan", role: "PRT Hindi", department: "Primary Wing (PRT)", email: "sushma.sajwan@ashianapublicschool.com", pinHash: "", status: "ACTIVE" },
-        { id: "usr_120", empId: "APS-120", name: "Ms. Lata Rani", role: "PRT EVS & Science", department: "Primary Wing (PRT)", email: "lata.rani@ashianapublicschool.com", pinHash: "", status: "ACTIVE" },
-        { id: "usr_121", empId: "APS-121", name: "Ms. Upasna Kapuria", role: "PRT Art & Craft", department: "Arts, Music & Dance", email: "upasna.kapuria@ashianapublicschool.com", pinHash: "", status: "ACTIVE" },
-        { id: "usr_122", empId: "APS-122", name: "Ms. Amita Arora", role: "Kindergarten Coordinator", department: "Kindergarten Wing", email: "amita.arora@ashianapublicschool.com", pinHash: "", status: "ACTIVE" },
-        { id: "usr_123", empId: "APS-123", name: "Ms. Shikha Gupta", role: "Pre-Primary Teacher", department: "Kindergarten Wing", email: "shikha.gupta@ashianapublicschool.com", pinHash: "", status: "ACTIVE" },
-        { id: "usr_124", empId: "APS-124", name: "Ms. Artti Prashar", role: "Pre-Primary Teacher", department: "Kindergarten Wing", email: "artti.prashar@ashianapublicschool.com", pinHash: "", status: "ACTIVE" },
-        { id: "usr_125", empId: "APS-125", name: "Ms. Manpreet Kaur", role: "Pre-Primary Teacher", department: "Kindergarten Wing", email: "manpreet.k@ashianapublicschool.com", pinHash: "", status: "ACTIVE" },
-        { id: "usr_126", empId: "APS-126", name: "Ms. Neenu Mahajan", role: "Pre-Primary Teacher", department: "Kindergarten Wing", email: "neenu.mahajan@ashianapublicschool.com", pinHash: "", status: "ACTIVE" },
-        { id: "usr_127", empId: "APS-127", name: "Ms. Abhilasha Gulati", role: "Pre-Primary Teacher", department: "Kindergarten Wing", email: "abhilasha.gulati@ashianapublicschool.com", pinHash: "", status: "ACTIVE" },
-        { id: "usr_128", empId: "APS-128", name: "Ms. Simranjeet Kaur", role: "PRT Social Studies", department: "Primary Wing (PRT)", email: "simranjeet.k@ashianapublicschool.com", pinHash: "", status: "ACTIVE" },
-        { id: "usr_129", empId: "APS-129", name: "Ms. Pooja Mehra", role: "PRT Science", department: "Primary Wing (PRT)", email: "pooja.mehra@ashianapublicschool.com", pinHash: "", status: "ACTIVE" },
-        { id: "usr_130", empId: "APS-130", name: "Ms. Ritu Sharma", role: "PRT Hindi", department: "Primary Wing (PRT)", email: "ritu.sharma@ashianapublicschool.com", pinHash: "", status: "ACTIVE" },
-        { id: "usr_135", empId: "APS-135", name: "Ms. Vandana Thakur", role: "Special Educator & Counsellor", department: "Student Support", email: "vandana.thakur@ashianapublicschool.com", pinHash: "", status: "ACTIVE" },
-        { id: "usr_136", empId: "APS-136", name: "Ms. Sheela Jaswal", role: "Chief Librarian", department: "Administration", email: "sheela.jaswal@ashianapublicschool.com", pinHash: "", status: "ACTIVE" },
-        { id: "usr_137", empId: "APS-137", name: "Mr. Amit Kumar", role: "PET & Sports Head", department: "Physical Education", email: "amit.kumar@ashianapublicschool.com", pinHash: "", status: "ACTIVE" },
-        { id: "usr_138", empId: "APS-138", name: "Mr. Manjeet Singh", role: "Taekwondo Coach", department: "Physical Education", email: "manjeet.singh@ashianapublicschool.com", pinHash: "", status: "ACTIVE" }
-      ];
-      return baseline;
+      return [];
     }
 
     // Check if WebSockets are permitted in the current runtime environment
