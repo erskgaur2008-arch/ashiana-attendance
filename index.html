@@ -1185,9 +1185,10 @@
     /* Keep faculty action controls visible on narrow screens while preserving the full directory table. */
     #admin-tab-directory .overflow-x-auto{position:relative;max-width:100%;overflow-x:auto!important;overscroll-behavior-x:contain;-webkit-overflow-scrolling:touch}
     #admin-tab-directory table{min-width:1040px;width:100%;border-collapse:separate;border-spacing:0}
+    /* Actions should scroll naturally with the directory columns; do not pin/freeze it. */
     #admin-tab-directory thead th:last-child,
-    #admin-tab-directory tbody td:last-child{position:sticky;right:0;min-width:148px;width:148px;text-align:center;background:#fff;z-index:2;box-shadow:-5px 0 9px rgba(15,23,42,.07);white-space:nowrap}
-    #admin-tab-directory thead th:last-child{background:#f8fafc;z-index:4}
+    #admin-tab-directory tbody td:last-child{position:static!important;right:auto!important;min-width:148px;width:148px;text-align:center;background:inherit;z-index:auto;box-shadow:none;white-space:nowrap}
+    #admin-tab-directory thead th:last-child{background:#f8fafc}
     #admin-tab-directory tbody tr:hover td:last-child{background:#f8fafc}
     #admin-tab-directory tbody td:last-child>div{display:flex!important;align-items:center;justify-content:center;gap:5px!important;min-width:136px;flex-wrap:nowrap}
     #admin-tab-directory tbody td:last-child button{display:inline-flex!important;visibility:visible!important;opacity:1!important;align-items:center;justify-content:center;flex:0 0 25px;width:25px;height:30px;padding:4px!important;border:1px solid #d1e7dc;background:#f0fdf4!important;color:#065f46!important;border-radius:7px;position:relative;z-index:5}
