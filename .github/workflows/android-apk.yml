@@ -148,7 +148,7 @@ jobs:
           PY
       - name: Sync Android project
         run: npx cap sync android
-      - name: Declare Android camera permission
+      - name: Declare Android camera and location permissions
         shell: bash
         run: |
           python3 - <<'PY'
@@ -156,14 +156,23 @@ jobs:
           import re
           path = Path("android/app/src/main/AndroidManifest.xml")
           xml = path.read_text()
-          if "android.permission.CAMERA" not in xml:
-              match = re.search(r'<manifest\b[^>]*>', xml)
-              if not match:
-                  raise SystemExit("Could not locate manifest root element")
-              xml = xml[:match.end()] + '\n    <uses-permission android:name="android.permission.CAMERA" />' + xml[match.end():]
+          match = re.search(r'<manifest\b[^>]*>', xml)
+          if not match:
+              raise SystemExit("Could not locate manifest root element")
+          permissions = [
+              "android.permission.CAMERA",
+              "android.permission.ACCESS_COARSE_LOCATION",
+              "android.permission.ACCESS_FINE_LOCATION",
+          ]
+          missing = [p for p in permissions if p not in xml]
+          if missing:
+              declarations = "\n".join(f'    <uses-permission android:name="{p}" />' for p in missing)
+              xml = xml[:match.end()] + "\n" + declarations + xml[match.end():]
               path.write_text(xml)
-          if "android.permission.CAMERA" not in path.read_text():
-              raise SystemExit("Camera permission missing")
+          final_xml = path.read_text()
+          for permission in permissions:
+              if permission not in final_xml:
+                  raise SystemExit(f"Required Android permission missing: {permission}")
           PY
       - name: Build debug APK
         working-directory: android
