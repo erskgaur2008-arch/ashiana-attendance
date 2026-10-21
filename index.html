@@ -8144,10 +8144,10 @@ async function loadAdminStudentAttendance(){
         return `
           <tr class="hover:bg-slate-50 transition-colors">
             <td class="py-2.5 px-3 font-medium text-slate-900">
-              <div class="font-bold">${s.name}</div>
-              <div class="text-[9px] text-slate-400 font-mono">${s.empId}</div>
+              <div class="font-bold">${studentEscape(s.name)}</div>
+              <div class="text-[9px] text-slate-400 font-mono">${studentEscape(s.empId)}</div>
             </td>
-            <td class="py-2.5 px-3">${s.department}</td>
+            <td class="py-2.5 px-3">${studentEscape(s.department)}</td>
             <td class="py-2.5 px-3 font-mono font-bold ${stats.firstIn ? 'text-ashiana-green' : 'text-slate-400'}">${stats.firstIn || '--:--'}</td>
             <td class="py-2.5 px-3 font-mono font-bold ${stats.lastOut ? 'text-ashiana-green' : 'text-slate-400'}">${stats.lastOut || '--:--'}</td>
             <td class="py-2.5 px-3 font-mono font-bold">${stats.punches.length}</td>
@@ -8516,9 +8516,9 @@ window.addEventListener('load',async function(){
             <td class="py-2 px-3 text-center">
               <input type="checkbox" class="rounded text-rose-600 focus:ring-rose-500 cursor-pointer w-4 h-4" ${isChecked ? 'checked' : ''} onchange="toggleModalStaffItem('${s.id}', this.checked)">
             </td>
-            <td class="py-2 px-2 font-mono font-bold text-ashiana-green text-xs">${s.empId}</td>
-            <td class="py-2 px-2 font-bold text-slate-800">${s.name}</td>
-            <td class="py-2 px-2 text-slate-500">${s.department}</td>
+            <td class="py-2 px-2 font-mono font-bold text-ashiana-green text-xs">${studentEscape(s.empId)}</td>
+            <td class="py-2 px-2 font-bold text-slate-800">${studentEscape(s.name)}</td>
+            <td class="py-2 px-2 text-slate-500">${studentEscape(s.department)}</td>
           </tr>
         `;
       }).join('');
@@ -11575,11 +11575,11 @@ window.addEventListener('load',async function(){
           if (previewTbody) {
             previewTbody.innerHTML = parsedExcelStaffRows.map(r => `
               <tr class="hover:bg-slate-100">
-                <td class="py-1 px-2 font-bold text-ashiana-green">${r.empId}</td>
-                <td class="py-1 px-2 font-sans font-bold text-slate-800">${r.name}</td>
-                <td class="py-1 px-2 font-sans">${r.department}</td>
-                <td class="py-1 px-2 font-sans">${r.role}</td>
-                <td class="py-1 px-2 text-center">${r.pinHash}</td>
+                <td class="py-1 px-2 font-bold text-ashiana-green">${studentEscape(r.empId)}</td>
+                <td class="py-1 px-2 font-sans font-bold text-slate-800">${studentEscape(r.name)}</td>
+                <td class="py-1 px-2 font-sans">${studentEscape(r.department)}</td>
+                <td class="py-1 px-2 font-sans">${studentEscape(r.role)}</td>
+                <td class="py-1 px-2 text-center">${studentEscape(r.pinHash)}</td>
               </tr>
             `).join('');
           }
