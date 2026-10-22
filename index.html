@@ -1494,6 +1494,36 @@
     letter-spacing: .045em !important;
   }
 }
+
+/* Larger, high-resolution original school emblem — desktop Admin browser only. */
+@media (min-width: 801px) and (display-mode: browser) {
+  #admin-portal-view .admin-dashboard-logo {
+    width: 112px !important;
+    height: 112px !important;
+    flex: 0 0 112px !important;
+    border-radius: 50% !important;
+    overflow: hidden !important;
+    background: #fff !important;
+    border: 3px solid rgba(255,255,255,.9) !important;
+    box-shadow: 0 0 0 6px rgba(255,255,255,.12), 0 7px 20px rgba(0,0,0,.2) !important;
+  }
+  #admin-portal-view .admin-dashboard-logo img {
+    width: 100% !important;
+    height: 100% !important;
+    object-fit: contain !important;
+    image-rendering: auto !important;
+  }
+  #admin-portal-view .admin-dashboard-brand {
+    gap: 9px !important;
+  }
+  #admin-portal-view .admin-dashboard-brand h1 {
+    font-size: clamp(30px, 2.3vw, 40px) !important;
+  }
+  #admin-portal-view .admin-dashboard-header {
+    min-height: 285px !important;
+    height: 285px !important;
+  }
+}
   </style>
 
 <style id="admin-daily-qr-page-preview">
@@ -3313,7 +3343,7 @@ id="admin-portal-view" class="hidden flex-col w-full space-y-4 admin-dashboard-s
         <img class="admin-desktop-full-banner" src="assets/ashiana-admin-full-banner-hq.webp" alt="Ashiana Public School banner">
         <div class="admin-dashboard-brand">
           <div class="admin-dashboard-logo">
-            <img src="assets/ashiana-dashboard-emblem.webp" alt="Ashiana Public School emblem" onerror="this.style.display='none';this.nextElementSibling.classList.remove('hidden');">
+            <img src="logo%202.png" alt="Ashiana Public School emblem" onerror="this.style.display='none';this.nextElementSibling.classList.remove('hidden');">
             <span class="hidden">A</span>
           </div>
           <div>
