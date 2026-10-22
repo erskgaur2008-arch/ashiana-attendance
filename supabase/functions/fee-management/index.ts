@@ -116,6 +116,14 @@ Deno.serve(async (req) => {
     return reply({ submission_id: data, status: "PENDING_ADMIN" }, 201);
   }
 
+  if (action === "student-submissions") {
+    const token = typeof input.student_session_token === "string" ? input.student_session_token : "";
+    if (token.length < 32 || token.length > 256) return reply({ error: "Invalid student session" }, 400);
+    const { data, error } = await adminClient.rpc("fee_student_submissions_by_session", { p_token: token });
+    if (error) return reply({ error: "Unable to load payment status" }, 403);
+    return reply({ submissions: data ?? [] });
+  }
+
   if (action === "student-receipts") {
     const token = typeof input.student_session_token === "string" ? input.student_session_token : "";
     if (token.length < 32 || token.length > 256) return reply({ error: "Invalid student session" }, 400);
