@@ -6559,13 +6559,16 @@ function renderStudentAttendanceNotifications(){
   configs.forEach(config=>{
     const button=view.querySelector('button[onclick="studentDashboardSection(\''+config.button+'\')"]');
     if(!button)return;
-    button.classList.add("relative");
+    // Keep every update badge pinned to the top-right, independent of utility CSS.
+    button.style.position="relative";
     let badge=document.getElementById("student-update-badge-"+config.section);
     if(!badge){
       badge=document.createElement("span");badge.id="student-update-badge-"+config.section;
-      badge.className="absolute top-2 right-2 min-w-[20px] h-5 px-1 rounded-full bg-rose-500 text-white text-[10px] font-extrabold items-center justify-center border border-white shadow-sm";
+      badge.className="min-w-[20px] h-5 px-1 rounded-full bg-rose-500 text-white text-[10px] font-extrabold items-center justify-center border border-white shadow-sm";
+      badge.setAttribute("aria-label","Unread updates");
       button.appendChild(badge);
     }
+    badge.style.cssText="position:absolute!important;top:8px!important;right:8px!important;left:auto!important;bottom:auto!important;z-index:20;min-width:20px;height:20px;padding:0 5px;border-radius:9999px;background:#f43f5e;color:#fff;font-size:10px;font-weight:800;line-height:20px;text-align:center;box-sizing:border-box;pointer-events:none;"
     const unread=studentUnreadUpdates(config.section,config.items);
     badge.textContent=unread>99?"99+":String(unread);
     badge.classList.toggle("hidden",unread===0);
