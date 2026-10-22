@@ -86,6 +86,27 @@ Deno.serve(async (req) => {
     return respond({ accounts: data ?? [] });
   }
 
+  if (action === "discard-proof-upload") {
+    const token = typeof input.student_session_token === "string" ? input.student_session_token : "";
+    const accountId = typeof input.fee_account_id === "string" ? input.fee_account_id : "";
+    const objectPath = typeof input.proof_object_path === "string" ? input.proof_object_path : "";
+    if (token.length < 32 || token.length > 256 || !UUID_RE.test(accountId) ||
+        !objectPath.startsWith(accountId + "/") || objectPath.includes("..") || objectPath.startsWith("/")) {
+      return respond({ error: "Invalid proof cleanup request" }, 400);
+    }
+    const { data: summary, error: summaryError } = await adminClient.rpc("fee_student_summary_by_session", { p_token: token });
+    if (summaryError || !Array.isArray(summary) || !summary.some((row: { fee_account_id?: string }) => row.fee_account_id === accountId)) {
+      return respond({ error: "Fee account not available for this student session" }, 403);
+    }
+    const { data: linked, error: linkedError } = await adminClient.from("fee_payment_submissions")
+      .select("id").eq("fee_account_id", accountId).eq("proof_object_path", objectPath).limit(1);
+    if (linkedError) return respond({ error: "Unable to verify proof ownership for cleanup" }, 500);
+    if (linked?.length) return respond({ status: "retained_for_payment_review" });
+    const { error: removeError } = await adminClient.storage.from("fee-payment-proofs").remove([objectPath]);
+    if (removeError) return respond({ error: "Unable to clean up unused proof upload" }, 500);
+    return respond({ status: "unused_proof_removed" });
+  }
+
   if (action === "submit-payment") {
     const token = typeof input.student_session_token === "string" ? input.student_session_token : "";
     const accountId = typeof input.fee_account_id === "string" ? input.fee_account_id : "";
