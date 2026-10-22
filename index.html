@@ -11619,15 +11619,14 @@ window.addEventListener('load',async function(){
           applyBlob(await cached.blob());
           return;
         }
-        // Keep the remote URL visible as a fallback while saving a successful fetch.
-        img.src = avatarUrl;
+        // On a cache miss, download once and persist it before displaying the image.
         const response = await fetch(avatarUrl, { mode: "cors" });
         if (!response.ok || !response.type.match(/^(cors|basic)$/)) return;
         await cache.put(avatarUrl, response.clone());
         applyBlob(await response.blob());
       } catch (error) {
         // Private browsing or device storage restrictions should not break the avatar.
-        if (img.isConnected && img.dataset.avatarUrl === avatarUrl && !img.src) img.src = avatarUrl;
+        if (img.isConnected && img.dataset.avatarUrl === avatarUrl) img.src = avatarUrl;
         console.debug("Staff avatar device cache unavailable:", error?.message || error);
       }
     }
