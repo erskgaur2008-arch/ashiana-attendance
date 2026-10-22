@@ -132,6 +132,62 @@ Deno.serve(async (req) => {
     return reply({ submissions: data ?? [] });
   }
 
+  if (action === "admin-save-academic-year") {
+    const label = typeof input.label === "string" ? input.label.trim() : "";
+    const startsOn = typeof input.starts_on === "string" ? input.starts_on : "";
+    const endsOn = typeof input.ends_on === "string" ? input.ends_on : "";
+    if (label.length < 4 || label.length > 40 || !/^\\d{4}-\\d{2}-\\d{2}$/.test(startsOn) || !/^\\d{4}-\\d{2}-\\d{2}$/.test(endsOn) || startsOn > endsOn || typeof input.is_active !== "boolean") {
+      return reply({ error: "Provide a valid academic-year label and date range" }, 400);
+    }
+    const { data, error } = await userClient.rpc("fee_admin_save_academic_year", { p_label: label, p_starts_on: startsOn, p_ends_on: endsOn, p_is_active: input.is_active });
+    if (error) return reply({ error: error.message }, 403);
+    return reply({ academic_year_id: data });
+  }
+
+  if (action === "admin-save-structure") {
+    const yearId = typeof input.academic_year_id === "string" ? input.academic_year_id : "";
+    const className = typeof input.class_name === "string" ? input.class_name.trim() : "";
+    const feeName = typeof input.fee_name === "string" ? input.fee_name.trim() : "";
+    const amountPaise = Number(input.amount_paise);
+    const dueDate = typeof input.due_date === "string" && /^\\d{4}-\\d{2}-\\d{2}$/.test(input.due_date) ? input.due_date : null;
+    if (!UUID_RE.test(yearId) || !className || feeName.length < 2 || feeName.length > 100 || !Number.isSafeInteger(amountPaise) || amountPaise < 0 || typeof input.is_mandatory !== "boolean") {
+      return reply({ error: "Provide a valid academic year, class, fee name and amount" }, 400);
+    }
+    const { data, error } = await userClient.rpc("fee_admin_save_structure", { p_academic_year_id: yearId, p_class_name: className, p_fee_name: feeName, p_amount_paise: amountPaise, p_is_mandatory: input.is_mandatory, p_due_date: dueDate });
+    if (error) return reply({ error: error.message }, 403);
+    return reply({ fee_structure_id: data });
+  }
+
+  if (action === "admin-assign-student-account") {
+    const yearId = typeof input.academic_year_id === "string" ? input.academic_year_id : "";
+    const studentId = typeof input.student_id === "string" ? input.student_id : "";
+    if (!UUID_RE.test(yearId) || !UUID_RE.test(studentId)) return reply({ error: "Valid academic year and student IDs are required" }, 400);
+    const { data, error } = await userClient.rpc("fee_admin_assign_student_account", { p_academic_year_id: yearId, p_student_id: studentId });
+    if (error) return reply({ error: error.message }, 403);
+    return reply({ fee_account_id: data });
+  }
+
+  if (action === "admin-assign-principal-approver") {
+    const userId = typeof input.user_id === "string" ? input.user_id : "";
+    const enabled = input.enabled !== false;
+    if (!UUID_RE.test(userId)) return reply({ error: "A valid Principal user ID is required" }, 400);
+    const { error } = await userClient.rpc("fee_admin_assign_principal_approver", { p_user_id: userId, p_enabled: enabled });
+    if (error) return reply({ error: error.message }, 403);
+    return reply({ status: enabled ? "PRINCIPAL_ENABLED" : "PRINCIPAL_DISABLED" });
+  }
+
+  if (action === "admin-create-discount-request") {
+    const accountId = typeof input.fee_account_id === "string" ? input.fee_account_id : "";
+    const amountPaise = Number(input.amount_paise);
+    const reason = typeof input.reason === "string" ? input.reason.trim() : "";
+    if (!UUID_RE.test(accountId) || !Number.isSafeInteger(amountPaise) || amountPaise <= 0 || reason.length < 3 || reason.length > 1000) {
+      return reply({ error: "Valid fee account, discount amount and reason are required" }, 400);
+    }
+    const { data, error } = await userClient.rpc("fee_admin_create_discount_request", { p_fee_account_id: accountId, p_amount_paise: amountPaise, p_reason: reason });
+    if (error) return reply({ error: error.message }, 403);
+    return reply({ discount_request_id: data, status: "PENDING_REVIEW" });
+  }
+
   if (action === "admin-review-discount") {
     const discountId = typeof input.discount_id === "string" ? input.discount_id : "";
     if (!UUID_RE.test(discountId) || typeof input.approve !== "boolean") return reply({ error: "Invalid discount review request" }, 400);
