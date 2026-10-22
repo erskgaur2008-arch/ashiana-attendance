@@ -67,6 +67,28 @@ begin
     if sqlerrm = 'Duplicate Principal confirmation unexpectedly succeeded' then raise; end if;
   end;
 
+  -- Duplicate UPI references must be rejected, even when the earlier payment is confirmed.
+  begin
+    perform public.fee_submit_payment_by_session(
+      'synthetic-student-session-token-000000000000',v_account,1000,
+      'SYNTHETIC-UPI-REF-001',v_account::text||'/duplicate-proof.png','Duplicate reference test'
+    );
+    raise exception 'Duplicate UPI reference unexpectedly succeeded';
+  exception when others then
+    if sqlerrm = 'Duplicate UPI reference unexpectedly succeeded' then raise; end if;
+  end;
+
+  -- A submission cannot exceed the remaining balance.
+  begin
+    perform public.fee_submit_payment_by_session(
+      'synthetic-student-session-token-000000000000',v_account,6000,
+      'SYNTHETIC-UPI-OVERPAY-001',v_account::text||'/overpay-proof.png','Overpayment test'
+    );
+    raise exception 'Overpayment unexpectedly succeeded';
+  exception when others then
+    if sqlerrm = 'Overpayment unexpectedly succeeded' then raise; end if;
+  end;
+
   -- A rejected payment must not create a ledger entry or a receipt.
   perform set_config('request.jwt.claim.sub','aaaaaaaa-aaaa-4aaa-8aaa-aaaaaaaaaaaa',true);
   perform set_config('request.jwt.claim.fee_admin','true',true);
@@ -82,6 +104,18 @@ begin
   if exists(select 1 from public.fee_ledger_entries where payment_submission_id=v_rejected_submission)
      or exists(select 1 from public.fee_receipts where payment_submission_id=v_rejected_submission) then
     raise exception 'Rejected payment must not create a ledger entry or receipt';
+  end if;
+
+  -- Discount approval must not exceed the remaining fee balance.
+  v_discount := public.fee_admin_create_discount_request(v_account,6000,'Synthetic excessive discount test');
+  begin
+    perform public.fee_admin_review_discount(v_discount,true,'Should exceed balance');
+    raise exception 'Excessive discount unexpectedly succeeded';
+  exception when others then
+    if sqlerrm = 'Excessive discount unexpectedly succeeded' then raise; end if;
+  end;
+  if (select status from public.fee_discount_requests where id=v_discount) <> 'PENDING' then
+    raise exception 'Rejected excessive discount should remain pending for a corrected review';
   end if;
 
   -- A valid discount requires an explicit reason, is audited, and reduces the balance.
