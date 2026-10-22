@@ -163,7 +163,7 @@ returns table (
   amount_paise bigint, issued_at timestamptz
 )
 language plpgsql security definer set search_path = ''
-as $
+as $function$
 declare v_student uuid;
 begin
   v_student := public.student_session_student_id(p_token);
@@ -176,7 +176,7 @@ begin
   where a.student_id=v_student and a.school_code='ashiana'
   order by r.issued_at desc;
 end;
-$;
+$function$;
 
 create or replace function public.fee_admin_payment_queue()
 returns table (
@@ -185,7 +185,7 @@ returns table (
   proof_object_path text, submitted_at timestamptz, status text
 )
 language plpgsql security definer set search_path = ''
-as $
+as $function$
 begin
   if auth.uid() is null or not private.is_admin() then raise exception 'Admin permission required'; end if;
   return query
@@ -197,7 +197,7 @@ begin
   where a.school_code='ashiana' and p.status='PENDING_ADMIN'
   order by p.created_at asc;
 end;
-$;
+$function$;
 
 create or replace function public.fee_principal_payment_queue()
 returns table (
@@ -206,7 +206,7 @@ returns table (
   proof_object_path text, submitted_at timestamptz, admin_reviewed_at timestamptz
 )
 language plpgsql security definer set search_path = ''
-as $
+as $function$
 begin
   if auth.uid() is null or not exists (
     select 1 from public.fee_principal_approvers p
@@ -221,13 +221,13 @@ begin
   where a.school_code='ashiana' and p.status='PENDING_PRINCIPAL'
   order by p.admin_reviewed_at asc;
 end;
-$;
+$function$;
 
 create or replace function public.fee_admin_review_discount(
   p_discount_id uuid, p_approve boolean, p_reason text default null
 ) returns text
 language plpgsql security definer set search_path = ''
-as $
+as $function$
 declare v_actor uuid := auth.uid(); v_status text; v_account uuid;
 begin
   if v_actor is null or not private.is_admin() then raise exception 'Admin permission required'; end if;
@@ -243,7 +243,7 @@ begin
     'fee_discount_request',p_discount_id,jsonb_build_object('fee_account_id',v_account,'review_reason',p_reason));
   return case when p_approve then 'APPROVED' else 'REJECTED' end;
 end;
-$;
+$function$;
 
 revoke all on function public.fee_student_summary_by_session(text) from public, authenticated;
 revoke all on function public.fee_submit_payment_by_session(text,uuid,bigint,text,text,text) from public, authenticated;
