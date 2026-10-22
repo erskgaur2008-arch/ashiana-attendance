@@ -12946,7 +12946,7 @@ window.addEventListener('load',async function(){
           const detail=pushResult?.message||'No registered student devices received a push notification.';
           showToast('Notice published to '+targetLabel+'. '+detail,'error');
         }else{
-          showToast('Notice published to '+targetLabel+'. Push sent to '+pushResult.sent+' device(s).','success');
+          showToast('Notice published to '+targetLabel+'. Push accepted for '+pushResult.sent+' device(s) (Android: '+Number(pushResult.sentAndroid||0)+', web: '+Number(pushResult.sentWeb||0)+', failed: '+Number(pushResult.failed||0)+', skipped: '+Number(pushResult.skipped||0)+').','success');
         }
         await loadAdminStudentPortalNotices();
       }catch(e){
