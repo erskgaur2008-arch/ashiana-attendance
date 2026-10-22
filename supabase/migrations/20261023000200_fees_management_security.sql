@@ -37,7 +37,7 @@ create or replace function public.fee_submit_payment_by_session(
 ) returns uuid
 language plpgsql security definer set search_path = ''
 as $$
-declare v_student uuid; v_submission uuid;
+declare v_student uuid; v_submission uuid; v_balance bigint;
 begin
   v_student := public.student_session_student_id(p_token);
   if v_student is null then raise exception 'Invalid or expired student session'; end if;
@@ -51,10 +51,21 @@ begin
      or p_proof_object_path like '/%' or p_proof_object_path like '%..%' then
     raise exception 'A valid private proof object path is required';
   end if;
-  if not exists (select 1 from public.student_fee_accounts a
-      where a.id=p_fee_account_id and a.student_id=v_student and a.school_code='ashiana') then
-    raise exception 'Fee account not found';
-  end if;
+  -- Lock the account row so two concurrent submissions cannot both exceed the remaining balance.
+  perform 1 from public.student_fee_accounts a
+    where a.id=p_fee_account_id and a.student_id=v_student and a.school_code='ashiana'
+    for update;
+  if not found then raise exception 'Fee account not found'; end if;
+
+  select greatest(0,
+    coalesce((select sum(i.amount_paise) from public.fee_installments i where i.fee_account_id=p_fee_account_id),0)
+    - coalesce((select sum(d.amount_paise) from public.fee_discount_requests d where d.fee_account_id=p_fee_account_id and d.status='APPROVED'),0)
+    - coalesce((select sum(l.amount_paise) from public.fee_ledger_entries l where l.fee_account_id=p_fee_account_id),0)
+    - coalesce((select sum(p.amount_paise) from public.fee_payment_submissions p where p.fee_account_id=p_fee_account_id and p.status in ('PENDING_ADMIN','PENDING_PRINCIPAL')),0)
+  )::bigint into v_balance;
+  if v_balance <= 0 then raise exception 'No outstanding fee balance is available for payment submission'; end if;
+  if p_amount_paise > v_balance then raise exception 'Payment amount exceeds the outstanding balance'; end if;
+
   insert into public.fee_payment_submissions(
     fee_account_id, amount_paise, upi_reference, proof_object_path,
     student_note, submitted_by_student_id
