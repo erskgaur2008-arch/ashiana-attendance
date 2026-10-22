@@ -6860,6 +6860,7 @@ async function submitStudentFeePayment(event){
   if(file.size<=0||file.size>5*1024*1024){show("The proof file must be no larger than 5 MB.");return false;}
   if(!["image/jpeg","image/png","image/webp","application/pdf"].includes(file.type)){show("Use a JPG, PNG, WebP image or PDF proof.");return false;}
   form.dataset.submitting="1";if(button){button.disabled=true;button.textContent="Uploading proof…";}
+  let uploadedProofPath="";
   try{
     const client=typeof supabaseClient!=="undefined"?supabaseClient:window.__ashianaMainSupabaseClient;
     if(!client?.functions?.invoke||!client?.storage)throw new Error("The application client is not ready.");
@@ -6869,6 +6870,7 @@ async function submitStudentFeePayment(event){
     if(!prep.object_path||!prep.upload_token)throw new Error(prep.error||"The private upload link was not returned.");
     const uploaded=await client.storage.from("fee-payment-proofs").uploadToSignedUrl(prep.object_path,prep.upload_token,file,{contentType:file.type,upsert:false});
     if(uploaded.error)throw new Error(uploaded.error.message||"Proof upload failed.");
+    uploadedProofPath=prep.object_path;
     if(button)button.textContent="Submitting…";
     const submitted=await client.functions.invoke("fee-management",{body:{action:"submit-payment",student_session_token:token,fee_account_id:accountId,amount_paise:amountPaise,upi_reference:reference,proof_object_path:prep.object_path,student_note:String(form.elements.student_note?.value||"").trim()}});
     if(submitted.error)throw new Error(submitted.error.message||"Payment submission failed.");
@@ -6877,6 +6879,11 @@ async function submitStudentFeePayment(event){
     if(window.showToast)showToast("Payment details submitted for verification.","success");
     return false;
   }catch(error){
+    if(uploadedProofPath){
+      try{
+        await client.functions.invoke("fee-management",{body:{action:"discard-proof-upload",student_session_token:token,fee_account_id:accountId,proof_object_path:uploadedProofPath}});
+      }catch(_cleanupError){/* Preserve the original payment error; an unused proof can be cleaned up later. */}
+    }
     show(error?.message||"Could not submit payment details. Please try again.");
     if(button){button.disabled=false;button.textContent="Submit for verification";}
     return false;
