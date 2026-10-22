@@ -44,6 +44,8 @@ jobs:
           test -s supabase/migrations/20261023000200_fees_management_security.sql
           test -s supabase/migrations/20261023000300_fees_management_storage.sql
           test -s supabase/migrations/20261023000400_fees_management_admin_setup.sql
+          test -s supabase/config.toml
+          grep -q 'verify_jwt = false' supabase/config.toml
           test -s supabase/tests/fees_management_security.sql
           grep -q "studentDashboardSection('fees')" index.html
           grep -q "submitStudentFeePayment" index.html
