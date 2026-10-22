@@ -36,6 +36,20 @@ jobs:
         run: deno install --entrypoint supabase/functions/fee-management/index.ts
       - name: Type-check Edge Function
         run: deno check --node-modules-dir=auto supabase/functions/fee-management/index.ts
+      - name: Validate SQL statement syntax
+        run: |
+          python -m pip install --disable-pip-version-check pglast
+          python - <<'PY'
+          from pathlib import Path
+          from pglast import parse_sql
+          paths = sorted(Path("supabase/migrations").glob("20261023000*_fees_management_*.sql"))
+          if len(paths) < 4:
+              raise SystemExit(f"Expected all 4 fee migrations, found {len(paths)}")
+          for path in paths:
+              source = path.read_text(encoding="utf-8")
+              parse_sql(source)
+              print(f"SQL syntax OK: {path}")
+          PY
       - name: Check migration and test files exist
         shell: bash
         run: |
