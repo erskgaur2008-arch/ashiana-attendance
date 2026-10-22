@@ -101,8 +101,19 @@ Deno.serve(async (req) => {
       limit: 10,
     });
     const objectName = objectPath.slice(accountId.length + 1);
-    if (objectError || !objects?.some((obj: { name: string }) => obj.name === objectName)) {
+    const uploadedObject = objects?.find((obj: { name: string }) => obj.name === objectName) as
+      | { name: string; metadata?: Record<string, unknown> | null }
+      | undefined;
+    if (objectError || !uploadedObject) {
       return reply({ error: "Upload the required payment screenshot before submitting" }, 400);
+    }
+    // Validate the stored object metadata as well as the browser-declared MIME/size.
+    const metadata = uploadedObject.metadata ?? {};
+    const storedMime = String(metadata.mimetype ?? metadata.contentType ?? "");
+    const storedSize = Number(metadata.size ?? metadata.contentLength ?? 0);
+    if (!ALLOWED_TYPES.has(storedMime) || !Number.isFinite(storedSize) || storedSize <= 0 || storedSize > MAX_BYTES) {
+      await adminClient.storage.from("fee-payment-proofs").remove([objectPath]);
+      return reply({ error: "Stored proof has an unsupported content type or size" }, 400);
     }
     const { data, error } = await adminClient.rpc("fee_submit_payment_by_session", {
       p_token: token,
