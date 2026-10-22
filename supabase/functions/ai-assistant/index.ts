@@ -12,7 +12,7 @@ const MAX_OUTPUT_TOKENS = 800;
 
 // Keep each provider attempt short so a transient Gemini outage does not
 // leave the Staff/Teacher UI stuck on "Thinking..." for a long time.
-const GEMINI_TIMEOUT_MS = 4500;
+const GEMINI_TIMEOUT_MS = 12000;
 const MAX_RETRY_ATTEMPTS = 0;
 
 const corsHeaders = {
@@ -176,17 +176,19 @@ Deno.serve(async (req: Request) => {
     let selectedModel = PRIMARY_MODEL;
     let result = await requestWithRetry(PRIMARY_MODEL, apiKey, prompt);
 
-    if (result.timedOut || isTransientStatus(result.response?.status)) {
+    // Do not chain requests after a timeout: that can exceed the Edge Function
+    // request budget and cause a gateway 504.
+    if (result.timedOut) {
+      console.error(`Gemini ${PRIMARY_MODEL} timed out after ${GEMINI_TIMEOUT_MS}ms; stopping fallback chain`);
+    } else if (isTransientStatus(result.response?.status)) {
       selectedModel = FALLBACK_MODEL;
-      console.error(`Gemini ${PRIMARY_MODEL} unavailable (HTTP ${result.response?.status ?? "timeout"}); trying ${FALLBACK_MODEL}`);
-      await wait(backoffDelay(1));
-      result = await requestWithRetry(FALLBACK_MODEL, apiKey, prompt, false);
+      console.error(`Gemini ${PRIMARY_MODEL} returned HTTP ${result.response?.status}; trying ${FALLBACK_MODEL}`);
+      result = await requestGemini(FALLBACK_MODEL, apiKey, prompt, false);
     }
 
-    if (result.timedOut || isTransientStatus(result.response?.status)) {
+    if (!result.timedOut && isTransientStatus(result.response?.status)) {
       selectedModel = LAST_RESORT_MODEL;
-      console.error(`Gemini ${FALLBACK_MODEL} unavailable (HTTP ${result.response?.status ?? "timeout"}); trying ${LAST_RESORT_MODEL}`);
-      await wait(backoffDelay(2));
+      console.error(`Gemini ${FALLBACK_MODEL} returned HTTP ${result.response?.status}; trying ${LAST_RESORT_MODEL}`);
       result = await requestGemini(LAST_RESORT_MODEL, apiKey, prompt, false);
     }
 
