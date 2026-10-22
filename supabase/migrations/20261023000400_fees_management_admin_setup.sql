@@ -141,6 +141,65 @@ begin
 end;
 $$;
 
+create or replace function public.fee_admin_list_academic_years()
+returns table (academic_year_id uuid, label text, starts_on date, ends_on date, is_active boolean)
+language plpgsql security definer set search_path = ''
+as $function$
+begin
+  if auth.uid() is null or not private.is_admin() then raise exception 'Admin permission required'; end if;
+  return query
+  select y.id,y.label,y.starts_on,y.ends_on,y.is_active
+  from public.fee_academic_years y where y.school_code='ashiana'
+  order by y.starts_on desc limit 50;
+end;
+$function$;
+
+create or replace function public.fee_admin_search_students(p_query text default '')
+returns table (student_id uuid, student_name text, enroll_no text, class_name text, section text)
+language plpgsql security definer set search_path = ''
+as $function$
+declare v_query text := lower(trim(coalesce(p_query,'')));
+begin
+  if auth.uid() is null or not private.is_admin() then raise exception 'Admin permission required'; end if;
+  return query
+  select s.id,s.student_name::text,s.enroll_no::text,s.class_name::text,s.section::text
+  from public.student_roster s
+  where s.school_code='ashiana' and s.status='ACTIVE'
+    and (v_query='' or lower(coalesce(s.student_name,'')) like '%'||v_query||'%'
+      or lower(coalesce(s.enroll_no,'')) like '%'||v_query||'%'
+      or lower(coalesce(s.class_name,'')) like '%'||v_query||'%')
+  order by s.class_name,s.section,s.student_name
+  limit 50;
+end;
+$function$;
+
+create or replace function public.fee_admin_search_fee_accounts(p_query text default '')
+returns table (fee_account_id uuid, student_name text, enroll_no text, class_name text, section text, academic_year_label text)
+language plpgsql security definer set search_path = ''
+as $function$
+declare v_query text := lower(trim(coalesce(p_query,'')));
+begin
+  if auth.uid() is null or not private.is_admin() then raise exception 'Admin permission required'; end if;
+  return query
+  select a.id,s.student_name::text,s.enroll_no::text,s.class_name::text,s.section::text,y.label
+  from public.student_fee_accounts a
+  join public.student_roster s on s.id=a.student_id
+  join public.fee_academic_years y on y.id=a.academic_year_id
+  where a.school_code='ashiana'
+    and (v_query='' or lower(coalesce(s.student_name,'')) like '%'||v_query||'%'
+      or lower(coalesce(s.enroll_no,'')) like '%'||v_query||'%')
+  order by y.starts_on desc,s.class_name,s.section,s.student_name
+  limit 100;
+end;
+$function$;
+
+revoke all on function public.fee_admin_list_academic_years() from public, anon;
+revoke all on function public.fee_admin_search_students(text) from public, anon;
+revoke all on function public.fee_admin_search_fee_accounts(text) from public, anon;
+grant execute on function public.fee_admin_list_academic_years() to authenticated;
+grant execute on function public.fee_admin_search_students(text) to authenticated;
+grant execute on function public.fee_admin_search_fee_accounts(text) to authenticated;
+
 revoke all on function public.fee_admin_save_academic_year(text,date,date,boolean) from public, anon;
 revoke all on function public.fee_admin_save_structure(uuid,text,text,bigint,boolean,date) from public, anon;
 revoke all on function public.fee_admin_assign_student_account(uuid,uuid) from public, anon;
