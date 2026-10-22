@@ -2,6 +2,7 @@ import { Printer } from "@capgo/capacitor-printer";
 import { Directory, Filesystem } from "@capacitor/filesystem";
 import { Share } from "@capacitor/share";
 import { PushNotifications } from "@capacitor/push-notifications";
+import { LocalNotifications } from "@capacitor/local-notifications";
 import { NativeBiometric, AccessControl } from "@capgo/capacitor-native-biometric";
 import { SecureStorage } from "@aparajita/capacitor-secure-storage";
 import { Geolocation } from "@capacitor/geolocation";
@@ -62,11 +63,56 @@ async function requestNotificationPermission() {
   return result.receive === "granted";
 }
 
+let pushListenersRegistered = false;
+
 async function registerPushNotifications() {
   if (!isNativeAndroid()) throw new Error("Native push notifications are available only in the Android app.");
   const permission = await PushNotifications.checkPermissions();
   const result = permission.receive === "granted" ? permission : await PushNotifications.requestPermissions();
   if (result.receive !== "granted") throw new Error("Notification permission was not granted.");
+
+  const localPermission = await LocalNotifications.checkPermissions();
+  const localResult = localPermission.display === "granted" ? localPermission : await LocalNotifications.requestPermissions();
+  if (localResult.display !== "granted") throw new Error("Android display notification permission was not granted.");
+
+  await LocalNotifications.createChannel({
+    id: "school_updates",
+    name: "School Updates",
+    description: "School notices and student updates",
+    importance: 4,
+    sound: "default",
+    vibration: true
+  });
+
+  // Capacitor/FCM does not automatically show a tray notification for a push
+  // received while the app is foregrounded. Surface it locally and to the UI.
+  if (!pushListenersRegistered) {
+    await PushNotifications.addListener("pushNotificationReceived", async notification => {
+      const title = String(notification?.title || "Ashiana Public School").slice(0, 120);
+      const body = String(notification?.body || "").slice(0, 500);
+      const data = notification?.data || {};
+      window.dispatchEvent(new CustomEvent("ashiana:push-received", {
+        detail: { title, body, category: data.category || "school_notice", data }
+      }));
+      if (!body) return;
+      try {
+        await LocalNotifications.schedule({
+          notifications: [{
+            id: Math.floor(Date.now() % 2147483647),
+            title,
+            body,
+            channelId: "school_updates",
+            schedule: { at: new Date(Date.now() + 250) },
+            extra: { category: String(data.category || "school_notice"), url: String(data.url || "/") }
+          }]
+        });
+      } catch (error) {
+        console.warn("Could not display foreground push notification:", error?.message || error);
+      }
+    });
+    pushListenersRegistered = true;
+  }
+
   return await new Promise(async (resolve, reject) => {
     let settled = false;
     const timeout = setTimeout(() => {
