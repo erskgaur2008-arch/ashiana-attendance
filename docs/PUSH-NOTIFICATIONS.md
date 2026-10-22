@@ -8,6 +8,24 @@
 - Admin notice publishing invokes the Edge Function after the notice row is saved. A push delivery failure does not roll back or delete the published notice.
 - Student device subscriptions are stored separately in `student_push_subscriptions`, with RLS enabled and no direct grants to browser/mobile roles. The Edge Function writes and reads these rows using the service role.
 
+## Student attendance notifications (PR under review)
+
+- The teacher attendance-save flow and the student QR attendance flow request a targeted notification only after the database confirms a successful save. The manual save path compares existing statuses first, so saving unchanged values does not create repeated alerts.
+- The existing `push-notifications` Edge Function validates the active admin/staff caller and checks the saved attendance row before creating an in-app notification and sending Web Push/FCM to subscriptions matching that student's admission number.
+- The additive `20261022_student_attendance_notifications.sql` migration creates a private notification table and extends `student_portal_bundle_by_session` to return only the signed-in student's notification history. The Student Portal displays the most recent notifications in its dashboard.
+- Notification delivery is best-effort: a push failure must not undo attendance that has already been saved. Duplicate notifications for the same student/date/status are suppressed.
+- This feature is not active until the migration and updated Edge Function are reviewed, tested, and separately deployed to the intended Supabase project. This PR does not apply migrations, deploy functions, merge, or build an APK.
+
+## Attendance notification verification
+
+1. Apply the migration to an isolated test project first and deploy the updated Edge Function there.
+2. Register a student Android device and/or grant Web Push permission from that student's portal.
+3. Mark a student Present by QR; verify the matching student sees an in-app notification and receives a phone/browser push when delivery is configured.
+4. Mark or change attendance through the Class Teacher's Save Attendance flow; verify only changed records create notifications.
+5. Save the same statuses again; verify duplicate alerts are suppressed.
+6. Verify a different student's device receives nothing, unauthorized staff cannot send notifications, and a failed push does not roll back the saved attendance.
+7. Re-test Student/Admin/Teacher login, refresh/session restore, QR attendance, attendance reports, ID cards, notices, and existing push notifications.
+
 ## Required configuration before real delivery
 
 1. Apply `supabase/migrations/20261015_student_push_subscriptions.sql` to the intended Supabase project only after review. It creates a new table and indexes; it does not modify existing student records.
