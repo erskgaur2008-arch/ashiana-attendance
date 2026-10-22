@@ -6506,6 +6506,19 @@ function formatStudentHomeworkDueDate(value){
   if(Number.isNaN(d.getTime()))return String(value);
   return d.toLocaleDateString("en-IN",{day:"2-digit",month:"short",year:"numeric"});
 }
+async function markStudentAttendanceNotificationsRead(){
+  try{
+    const token=String(await window.AshianaNative?.getStudentSessionToken?.()||sessionStorage.getItem("aps_student_session_token_v1")||"");
+    if(!/^[a-f0-9]{64}$/i.test(token)||!supabaseClient)return;
+    const {error}=await supabaseClient.rpc("student_attendance_notifications_mark_read_by_session",{p_token:token});
+    if(error){console.warn("Could not mark attendance notifications as read:",error.message||error);return;}
+    const {data,error:bundleError}=await supabaseClient.rpc("student_portal_bundle_by_session",{p_token:token});
+    if(bundleError||!data?.success)return;
+    currentAuthUser.portalData=data;
+    try{sessionStorage.setItem(STORAGE_KEY_CURRENT_USER,JSON.stringify(currentAuthUser));sessionStorage.setItem("aps_student_session_v1",JSON.stringify(currentAuthUser));}catch(_){}
+    renderStudentAttendanceNotifications();
+  }catch(error){console.warn("Could not mark attendance notifications as read:",error?.message||error);}
+}
 function renderStudentAttendanceNotifications(){
   const portal=currentAuthUser?.portalData||{},rows=Array.isArray(portal.attendance_notifications)?portal.attendance_notifications:[];
   const view=document.getElementById("student-portal-view"),shell=view?.firstElementChild,header=shell?.firstElementChild;
@@ -6513,7 +6526,7 @@ function renderStudentAttendanceNotifications(){
   const unread=rows.filter(n=>!n.read_at).length;
   let actions=document.getElementById("student-portal-header-actions");
   if(!actions){
-    actions=document.createElement("div");actions.id="student-portal-header-actions";actions.className="flex items-center gap-2 shrink-0";
+    actions=document.createElement("div");actions.id="student-portal-header-actions";actions.className="flex flex-col items-center justify-center gap-2 shrink-0";
     const signOut=header.querySelector('button[onclick="handleLogout()"]');
     if(!signOut)return;
     signOut.parentNode.insertBefore(actions,signOut);actions.appendChild(signOut);
@@ -6522,7 +6535,7 @@ function renderStudentAttendanceNotifications(){
     bell.setAttribute("aria-label","Open attendance notifications");bell.setAttribute("title","Attendance notifications");
     bell.innerHTML='<i data-lucide="bell-ring" class="w-5 h-5"></i><span id="student-attendance-notification-badge" class="hidden absolute -top-1 -right-1 min-w-[18px] h-[18px] px-1 rounded-full bg-rose-500 text-white text-[10px] font-extrabold items-center justify-center border border-white"></span>';
     actions.insertBefore(bell,signOut);
-    bell.addEventListener("click",()=>{const modal=document.getElementById("student-attendance-notification-modal");if(modal)modal.classList.toggle("hidden");});
+    bell.addEventListener("click",async()=>{const modal=document.getElementById("student-attendance-notification-modal");if(!modal)return;modal.classList.remove("hidden");if(rows.some(n=>!n.read_at))await markStudentAttendanceNotificationsRead();});
   }
   const badge=document.getElementById("student-attendance-notification-badge");
   if(badge){badge.textContent=unread>99?"99+":String(unread);badge.classList.toggle("hidden",unread===0);badge.classList.toggle("flex",unread>0);}
