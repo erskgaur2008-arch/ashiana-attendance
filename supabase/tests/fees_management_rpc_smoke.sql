@@ -97,6 +97,6 @@ begin
   if not exists(select 1 from public.fee_audit_log where entity_id=v_discount and action='DISCOUNT_APPROVED') then
     raise exception 'Approved discount audit entry is missing';
   end if;
-end $;
+end $$;
 
 rollback;
