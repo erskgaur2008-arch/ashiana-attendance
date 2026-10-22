@@ -72,6 +72,50 @@ Deno.serve(async (req) => {
     return reply({ object_path: objectPath, signed_url: data.signedUrl, upload_token: data.token, content_type: contentType, expires_in_seconds: 120 });
   }
 
+  if (action === "student-summary") {
+    const token = typeof input.student_session_token === "string" ? input.student_session_token : "";
+    if (token.length < 32 || token.length > 256) return reply({ error: "Invalid student session" }, 400);
+    const { data, error } = await adminClient.rpc("fee_student_summary_by_session", { p_token: token });
+    if (error) return reply({ error: "Unable to load fee summary" }, 403);
+    return reply({ accounts: data ?? [] });
+  }
+
+  if (action === "submit-payment") {
+    const token = typeof input.student_session_token === "string" ? input.student_session_token : "";
+    const accountId = typeof input.fee_account_id === "string" ? input.fee_account_id : "";
+    const objectPath = typeof input.proof_object_path === "string" ? input.proof_object_path : "";
+    const reference = typeof input.upi_reference === "string" ? input.upi_reference.trim() : "";
+    const amount = Number(input.amount_paise);
+    if (token.length < 32 || token.length > 256 || !UUID_RE.test(accountId) ||
+        !Number.isSafeInteger(amount) || amount <= 0 || amount > 1000000000 ||
+        reference.length < 6 || reference.length > 120 ||
+        !objectPath.startsWith(accountId + "/") || objectPath.includes("..") || objectPath.startsWith("/")) {
+      return reply({ error: "Invalid payment submission details" }, 400);
+    }
+    const { data: summary, error: summaryError } = await adminClient.rpc("fee_student_summary_by_session", { p_token: token });
+    if (summaryError || !Array.isArray(summary) || !summary.some((row: { fee_account_id?: string }) => row.fee_account_id === accountId)) {
+      return reply({ error: "Fee account not available for this student session" }, 403);
+    }
+    const { data: objects, error: objectError } = await adminClient.storage.from("fee-payment-proofs").list(accountId, {
+      search: objectPath.slice(accountId.length + 1),
+      limit: 10,
+    });
+    const objectName = objectPath.slice(accountId.length + 1);
+    if (objectError || !objects?.some((obj: { name: string }) => obj.name === objectName)) {
+      return reply({ error: "Upload the required payment screenshot before submitting" }, 400);
+    }
+    const { data, error } = await adminClient.rpc("fee_submit_payment_by_session", {
+      p_token: token,
+      p_fee_account_id: accountId,
+      p_amount_paise: amount,
+      p_upi_reference: reference,
+      p_proof_object_path: objectPath,
+      p_student_note: typeof input.student_note === "string" ? input.student_note.slice(0, 1000) : null,
+    });
+    if (error) return reply({ error: error.message }, 400);
+    return reply({ submission_id: data, status: "PENDING_ADMIN" }, 201);
+  }
+
   if (action === "admin-review-payment") {
     const submissionId = typeof input.submission_id === "string" ? input.submission_id : "";
     if (!UUID_RE.test(submissionId) || typeof input.approve !== "boolean") return reply({ error: "Invalid review request" }, 400);
