@@ -12,7 +12,7 @@ const MAX_OUTPUT_TOKENS = 800;
 
 // Keep each provider attempt short so a transient Gemini outage does not
 // leave the Staff/Teacher UI stuck on "Thinking..." for a long time.
-const GEMINI_TIMEOUT_MS = 4500;
+const GEMINI_TIMEOUT_MS = 12000;
 const MAX_RETRY_ATTEMPTS = 0;
 
 const corsHeaders = {
