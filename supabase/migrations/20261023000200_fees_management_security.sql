@@ -255,6 +255,28 @@ begin
 end;
 $function$;
 
+create or replace function public.fee_admin_discount_queue()
+returns table (
+  discount_id uuid, fee_account_id uuid, student_name text, enroll_no text,
+  class_name text, section text, academic_year_label text, amount_paise bigint,
+  reason text, requested_at timestamptz
+)
+language plpgsql security definer set search_path = ''
+as $function$
+begin
+  if auth.uid() is null or not private.is_admin() then raise exception 'Admin permission required'; end if;
+  return query
+  select d.id,a.id,s.student_name::text,s.enroll_no::text,s.class_name::text,s.section::text,
+    y.label,d.amount_paise,d.reason,d.created_at
+  from public.fee_discount_requests d
+  join public.student_fee_accounts a on a.id=d.fee_account_id
+  join public.student_roster s on s.id=a.student_id
+  join public.fee_academic_years y on y.id=a.academic_year_id
+  where a.school_code='ashiana' and d.status='PENDING'
+  order by d.created_at asc;
+end;
+$function$;
+
 create or replace function public.fee_admin_review_discount(
   p_discount_id uuid, p_approve boolean, p_reason text default null
 ) returns text
@@ -290,6 +312,8 @@ grant execute on function public.fee_student_submissions_by_session(text) to ano
 revoke all on function public.fee_student_receipts_by_session(text) from public, authenticated;
 revoke all on function public.fee_admin_payment_queue() from public, anon;
 revoke all on function public.fee_principal_payment_queue() from public, anon;
+revoke all on function public.fee_admin_discount_queue() from public, anon;
+grant execute on function public.fee_admin_discount_queue() to authenticated;
 revoke all on function public.fee_admin_review_discount(uuid,boolean,text) from public, anon;
 grant execute on function public.fee_student_receipts_by_session(text) to anon;
 grant execute on function public.fee_admin_payment_queue() to authenticated;
