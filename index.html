@@ -6506,7 +6506,37 @@ function formatStudentHomeworkDueDate(value){
   if(Number.isNaN(d.getTime()))return String(value);
   return d.toLocaleDateString("en-IN",{day:"2-digit",month:"short",year:"numeric"});
 }
-function renderStudentAttendanceNotifications(){const portal=currentAuthUser?.portalData||{},rows=Array.isArray(portal.attendance_notifications)?portal.attendance_notifications:[];const view=document.getElementById("student-portal-view"),panel=view?.querySelector(":scope > div > div:nth-child(2)");if(!panel)return;let feed=document.getElementById("student-attendance-notification-feed");if(!feed){feed=document.createElement("section");feed.id="student-attendance-notification-feed";feed.style.cssText="grid-column:1/-1;margin:0 0 10px;padding:12px;border:1px solid #fed7aa;border-radius:16px;background:#fff7ed;text-align:left";panel.prepend(feed);}const unread=rows.filter(n=>!n.read_at).length;feed.innerHTML='<div class="flex items-center justify-between gap-2 mb-2"><div class="font-extrabold text-sm text-slate-800"><i data-lucide="bell-ring" class="inline-block w-4 h-4 mr-1 text-orange-600"></i>Attendance Notifications</div><span class="text-[10px] font-bold rounded-full px-2 py-1 bg-orange-100 text-orange-800">'+unread+' unread</span></div>'+(rows.length?rows.slice(0,5).map(n=>'<div class="py-2 border-t border-orange-100"><div class="font-bold text-xs text-slate-800">'+studentEscape(n.title||"Attendance Marked")+'</div><div class="text-xs text-slate-700 mt-0.5">'+studentEscape(n.message||("Your attendance for "+(n.attendance_date||"")+" has been marked "+(n.status||"")+"."))+'</div><div class="text-[10px] text-slate-500 mt-1">'+studentEscape(n.created_at?new Date(n.created_at).toLocaleString("en-IN",{day:"2-digit",month:"short",hour:"2-digit",minute:"2-digit"}):n.attendance_date||"")+'</div></div>').join(""):'<div class="text-xs text-slate-500 py-2">No attendance notifications yet.</div>');if(window.lucide)window.lucide.createIcons();}
+function renderStudentAttendanceNotifications(){
+  const portal=currentAuthUser?.portalData||{},rows=Array.isArray(portal.attendance_notifications)?portal.attendance_notifications:[];
+  const view=document.getElementById("student-portal-view"),shell=view?.firstElementChild,header=shell?.firstElementChild;
+  if(!view||!header)return;
+  const unread=rows.filter(n=>!n.read_at).length;
+  let actions=document.getElementById("student-portal-header-actions");
+  if(!actions){
+    actions=document.createElement("div");actions.id="student-portal-header-actions";actions.className="flex items-center gap-2 shrink-0";
+    const signOut=header.querySelector('button[onclick="handleLogout()"]');
+    if(!signOut)return;
+    signOut.parentNode.insertBefore(actions,signOut);actions.appendChild(signOut);
+    const bell=document.createElement("button");bell.type="button";bell.id="student-attendance-notification-button";
+    bell.className="relative w-11 h-11 rounded-xl bg-white/15 hover:bg-white/25 border border-white/20 flex items-center justify-center focus:outline-none focus:ring-2 focus:ring-emerald-200";
+    bell.setAttribute("aria-label","Open attendance notifications");bell.setAttribute("title","Attendance notifications");
+    bell.innerHTML='<i data-lucide="bell-ring" class="w-5 h-5"></i><span id="student-attendance-notification-badge" class="hidden absolute -top-1 -right-1 min-w-[18px] h-[18px] px-1 rounded-full bg-rose-500 text-white text-[10px] font-extrabold items-center justify-center border border-white"></span>';
+    actions.insertBefore(bell,signOut);
+    bell.addEventListener("click",()=>{const modal=document.getElementById("student-attendance-notification-modal");if(modal)modal.classList.toggle("hidden");});
+  }
+  const badge=document.getElementById("student-attendance-notification-badge");
+  if(badge){badge.textContent=unread>99?"99+":String(unread);badge.classList.toggle("hidden",unread===0);badge.classList.toggle("flex",unread>0);}
+  let modal=document.getElementById("student-attendance-notification-modal");
+  if(!modal){
+    modal=document.createElement("div");modal.id="student-attendance-notification-modal";
+    modal.className="hidden fixed inset-0 z-[100] bg-slate-950/40 p-4 flex items-center justify-center";
+    modal.addEventListener("click",e=>{if(e.target===modal)modal.classList.add("hidden");});
+    view.appendChild(modal);
+  }
+  modal.innerHTML='<section role="dialog" aria-modal="true" aria-labelledby="student-attendance-notification-title" class="w-full max-w-md max-h-[75vh] overflow-y-auto rounded-2xl border border-orange-200 bg-white shadow-2xl text-left"><div class="sticky top-0 flex items-center justify-between gap-3 p-4 bg-orange-50 border-b border-orange-100"><h3 id="student-attendance-notification-title" class="font-extrabold text-base text-slate-900"><i data-lucide="bell-ring" class="inline-block w-5 h-5 mr-1 text-orange-600"></i>Attendance Notifications</h3><div class="flex items-center gap-2"><span class="text-[10px] font-bold rounded-full px-2 py-1 bg-orange-100 text-orange-800">'+unread+' unread</span><button type="button" id="student-attendance-notification-close" aria-label="Close notifications" class="w-8 h-8 rounded-full hover:bg-orange-100 text-slate-600 text-xl">×</button></div></div><div class="p-4">'+(rows.length?rows.slice(0,10).map(n=>'<div class="py-3 border-b last:border-b-0 border-orange-100"><div class="font-bold text-sm text-slate-800">'+studentEscape(n.title||"Attendance Marked")+'</div><div class="text-sm text-slate-700 mt-1">'+studentEscape(n.message||("Your attendance for "+(n.attendance_date||"")+" has been marked "+(n.status||"")+"."))+'</div><div class="text-xs text-slate-500 mt-1">'+studentEscape(n.created_at?new Date(n.created_at).toLocaleString("en-IN",{day:"2-digit",month:"short",hour:"2-digit",minute:"2-digit"}):n.attendance_date||"")+'</div></div>').join(""):'<div class="py-5 text-center text-sm text-slate-500">No attendance notifications yet.</div>')+'</div></section>';
+  document.getElementById("student-attendance-notification-close")?.addEventListener("click",()=>modal.classList.add("hidden"));
+  if(window.lucide)window.lucide.createIcons();
+}
 
 function populateStudentPortal(s){if(!s)return;const set=(id,v)=>{const e=document.getElementById(id);if(e)e.textContent=v||"—";};set("student-portal-name",s.student_name);set("student-portal-class","Class "+(s.class_name||"—")+" • Section "+(s.section||"—"));set("student-portal-admission",s.enroll_no);set("student-portal-roll",s.roll_no);set("student-portal-section",s.section);set("student-portal-category",s.category);set("student-portal-dob",s.dob?new Date(s.dob+"T00:00:00").toLocaleDateString("en-IN",{day:"2-digit",month:"short",year:"numeric"}):"—");set("student-portal-father",s.father_name);set("student-portal-mother",s.mother_name);set("student-portal-phone",s.phone_number);set("student-portal-address",s.address);const av=document.getElementById("student-portal-avatar-content");if(av){av.textContent=(s.student_name||"ST").split(/\s+/).map(x=>x[0]).join("").slice(0,2).toUpperCase();getStudentPhotoUrl(s).then(url=>{if(url)av.innerHTML='<img src="'+studentEscape(url)+'" class="w-full h-full object-cover" alt="Student photo">';}).catch(()=>{});}const d=currentAuthUser?.portalData||{};document.getElementById("student-count-notices").textContent=(d.notices||[]).length+" notices";document.getElementById("student-count-attendance").textContent=(d.attendance||[]).length+" records";document.getElementById("student-count-homework").textContent=(d.homework||[]).length+" items";document.getElementById("student-count-report").textContent=(d.report_cards||[]).length+" published";renderStudentAttendanceNotifications();}
 
