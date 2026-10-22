@@ -25,7 +25,7 @@
 
 - All 12 inline JavaScript blocks in the current branch's `index.html` parsed successfully in a syntax check.
 - The new fee console inline script parsed successfully.
-- GitHub Actions run **#84 passed** on commit `4dbc21de887efbffc41ef68d5569c13f41b96d43` for the original approval/receipt smoke test. Expanded rejection/discount assertions were added afterward; run #86 exposed a malformed SQL test terminator, which has been corrected. The expanded test must pass in CI before this branch can be considered validated.
+- GitHub Actions run **#91 passed** on commit `45ed35d124a66a3c1c77d60259872c8884a1fd15`. Edge Function type-check, SQL parsing, all four migrations on isolated PostgreSQL 16, security assertions, and expanded synthetic RPC smoke tests passed. The expanded smoke test covers two-step confirmation, duplicate confirmation rejection, rejected-payment no-ledger/no-receipt behavior, discount balance calculation, and discount audit logging. Run #86 had exposed a malformed SQL test terminator; that was fixed before run #91.
 - Edge Function type-check, SQL parser, required-feature checks, and inline JavaScript parsing passed.
 - All four fee migrations applied successfully to an isolated PostgreSQL 16 test database using synthetic Supabase dependencies.
 - The SQL security assertions passed, and the synthetic RPC smoke test passed: create academic year/fee structure/account, load student summary, submit a payment, Admin review, distinct Principal confirmation, one ledger credit/receipt, and duplicate-confirmation rejection.
