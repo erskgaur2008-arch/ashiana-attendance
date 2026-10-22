@@ -1366,6 +1366,47 @@
     display: none !important;
   }
   #admin-portal-view .admin-dashboard-actions .admin-logout-action { margin-left: 0; }
+  #admin-portal-view .admin-desktop-full-banner { display: none; }
+}
+
+/* Full uploaded banner is only used in the desktop browser Admin dashboard. */
+@media (min-width: 801px) and (display-mode: browser) {
+  #admin-portal-view .admin-dashboard-header {
+    display: block !important;
+    position: relative !important;
+    min-height: 0 !important;
+    height: auto !important;
+    padding: 0 !important;
+    overflow: hidden;
+    border-radius: 24px;
+  }
+  #admin-portal-view .admin-desktop-full-banner {
+    display: block !important;
+    width: 100%;
+    height: auto;
+    aspect-ratio: 800 / 155;
+    object-fit: cover;
+  }
+  #admin-portal-view .admin-dashboard-brand { display: none !important; }
+  #admin-portal-view .admin-dashboard-actions {
+    position: absolute !important;
+    top: 6% !important;
+    right: 1.2% !important;
+    z-index: 10;
+    display: flex !important;
+    margin: 0 !important;
+  }
+  #admin-portal-view .admin-dashboard-actions .admin-live-pill,
+  #admin-portal-view .admin-dashboard-actions button[title="Sync now"] {
+    display: none !important;
+  }
+  #admin-portal-view .admin-dashboard-actions .admin-logout-action {
+    margin: 0 !important;
+    background: rgba(0, 92, 69, 0.18) !important;
+    border: 1px solid rgba(255,255,255,0.5) !important;
+    color: #fff !important;
+    box-shadow: none !important;
+  }
 }
   </style>
 
@@ -3183,6 +3224,7 @@ id="admin-portal-view" class="hidden flex-col w-full space-y-4 admin-dashboard-s
       
       <!-- Modern Admin Header -->
       <div class="admin-dashboard-header">
+        <img class="admin-desktop-full-banner" src="assets/ashiana-admin-full-banner.webp" alt="Ashiana Public School banner">
         <div class="admin-dashboard-brand">
           <div class="admin-dashboard-logo">
             <img src="assets/ashiana-dashboard-emblem.webp" alt="Ashiana Public School emblem" onerror="this.style.display='none';this.nextElementSibling.classList.remove('hidden');">
