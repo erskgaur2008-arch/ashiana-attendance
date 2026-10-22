@@ -116,6 +116,53 @@ Deno.serve(async (req) => {
     return reply({ submission_id: data, status: "PENDING_ADMIN" }, 201);
   }
 
+  if (action === "student-receipts") {
+    const token = typeof input.student_session_token === "string" ? input.student_session_token : "";
+    if (token.length < 32 || token.length > 256) return reply({ error: "Invalid student session" }, 400);
+    const { data, error } = await adminClient.rpc("fee_student_receipts_by_session", { p_token: token });
+    if (error) return reply({ error: "Unable to load receipts" }, 403);
+    return reply({ receipts: data ?? [] });
+  }
+
+  if (action === "admin-queue" || action === "principal-queue") {
+    // Authorization is enforced inside the corresponding SECURITY DEFINER RPC.
+    const rpcName = action === "admin-queue" ? "fee_admin_payment_queue" : "fee_principal_payment_queue";
+    const { data, error } = await userClient.rpc(rpcName);
+    if (error) return reply({ error: error.message }, 403);
+    return reply({ submissions: data ?? [] });
+  }
+
+  if (action === "admin-review-discount") {
+    const discountId = typeof input.discount_id === "string" ? input.discount_id : "";
+    if (!UUID_RE.test(discountId) || typeof input.approve !== "boolean") return reply({ error: "Invalid discount review request" }, 400);
+    const { data, error } = await userClient.rpc("fee_admin_review_discount", {
+      p_discount_id: discountId,
+      p_approve: input.approve,
+      p_reason: typeof input.reason === "string" ? input.reason : null,
+    });
+    if (error) return reply({ error: error.message }, 403);
+    return reply({ status: data });
+  }
+
+  if (action === "create-proof-download") {
+    const submissionId = typeof input.submission_id === "string" ? input.submission_id : "";
+    if (!UUID_RE.test(submissionId)) return reply({ error: "Invalid submission ID" }, 400);
+    // Only return a signed proof URL if this caller can see the corresponding review queue.
+    const { data: adminRows } = await userClient.rpc("fee_admin_payment_queue");
+    let allowedRow = Array.isArray(adminRows) ? adminRows.find((row: { submission_id?: string }) => row.submission_id === submissionId) : null;
+    if (!allowedRow) {
+      const { data: principalRows } = await userClient.rpc("fee_principal_payment_queue");
+      allowedRow = Array.isArray(principalRows) ? principalRows.find((row: { submission_id?: string }) => row.submission_id === submissionId) : null;
+    }
+    if (!allowedRow || typeof allowedRow.proof_object_path !== "string") {
+      return reply({ error: "Proof is not available to this reviewer or the submission is no longer pending" }, 403);
+    }
+    const { data, error } = await adminClient.storage.from("fee-payment-proofs")
+      .createSignedUrl(allowedRow.proof_object_path, 90);
+    if (error || !data?.signedUrl) return reply({ error: "Unable to create private proof link" }, 500);
+    return reply({ signed_url: data.signedUrl, expires_in_seconds: 90 });
+  }
+
   if (action === "admin-review-payment") {
     const submissionId = typeof input.submission_id === "string" ? input.submission_id : "";
     if (!UUID_RE.test(submissionId) || typeof input.approve !== "boolean") return reply({ error: "Invalid review request" }, 400);
