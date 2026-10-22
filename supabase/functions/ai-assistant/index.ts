@@ -1,4 +1,3 @@
-import { createSupabaseContext } from "npm:@supabase/server@1";
 import { createClient } from "npm:@supabase/supabase-js@2.45.4";
 
 // Models can be changed from Supabase secrets without redeploying code.
@@ -13,8 +12,8 @@ const MAX_OUTPUT_TOKENS = 800;
 
 // Keep each provider attempt short so a transient Gemini outage does not
 // leave the Staff/Teacher UI stuck on "Thinking..." for a long time.
-const GEMINI_TIMEOUT_MS = 7000;
-const MAX_RETRY_ATTEMPTS = 1;
+const GEMINI_TIMEOUT_MS = 4500;
+const MAX_RETRY_ATTEMPTS = 0;
 
 const corsHeaders = {
   "Access-Control-Allow-Origin": "*",
@@ -96,7 +95,7 @@ async function requestWithRetry(
     }
 
     if (attempt < MAX_RETRY_ATTEMPTS) {
-      console.error(`Gemini ${model} transient failure; retrying with backoff`);
+      console.error(`Gemini ${model} transient HTTP ${lastResult.response?.status ?? "timeout"}; retrying with backoff`);
       await wait(backoffDelay(attempt));
     }
   }
@@ -108,17 +107,29 @@ Deno.serve(async (req: Request) => {
   if (req.method === "OPTIONS") return new Response("ok", { headers: corsHeaders });
   if (req.method !== "POST") return json({ error: "METHOD_NOT_ALLOWED" }, 405);
 
-  const { data: ctx, error: authError } = await createSupabaseContext(req, { auth: "user" });
-  if (authError || !ctx?.userClaims) {
+  // Authenticate the caller directly with Supabase Auth. Avoid @supabase/server
+  // here because its current transitive dependency prevents this function from booting.
+  const authorization = req.headers.get("Authorization") || "";
+  const accessToken = authorization.replace(/^Bearer\s+/i, "").trim();
+  const supabaseUrl = Deno.env.get("SUPABASE_URL");
+  const anonKey = Deno.env.get("SUPABASE_ANON_KEY");
+  if (!supabaseUrl || !anonKey) {
+    return json({ error: "SERVER_CONFIGURATION_ERROR" }, 500);
+  }
+  if (!accessToken) return json({ error: "AUTH_REQUIRED" }, 401);
+
+  const authClient = createClient(supabaseUrl, anonKey, {
+    auth: { autoRefreshToken: false, persistSession: false, detectSessionInUrl: false },
+  });
+  const { data: authData, error: authError } = await authClient.auth.getUser(accessToken);
+  if (authError || !authData.user) {
     return json({ error: "AUTH_REQUIRED" }, 401);
   }
 
   // ---- per-user daily quota ----
-  const userId = String((ctx.userClaims as Record<string, unknown>)?.sub ?? "").trim();
-  if (!userId) return json({ error: "AUTH_REQUIRED" }, 401);
-  const supabaseUrl = Deno.env.get("SUPABASE_URL");
+  const userId = authData.user.id;
   const serviceRoleKey = Deno.env.get("SUPABASE_SERVICE_ROLE_KEY");
-  if (!supabaseUrl || !serviceRoleKey) return json({ error: "SERVER_CONFIGURATION_ERROR" }, 500);
+  if (!serviceRoleKey) return json({ error: "SERVER_CONFIGURATION_ERROR" }, 500);
   const quotaClient = createClient(supabaseUrl, serviceRoleKey, {
     auth: { autoRefreshToken: false, persistSession: false, detectSessionInUrl: false },
   });
@@ -167,14 +178,14 @@ Deno.serve(async (req: Request) => {
 
     if (result.timedOut || isTransientStatus(result.response?.status)) {
       selectedModel = FALLBACK_MODEL;
-      console.error(`Gemini ${PRIMARY_MODEL} unavailable after bounded retry; trying ${FALLBACK_MODEL}`);
+      console.error(`Gemini ${PRIMARY_MODEL} unavailable (HTTP ${result.response?.status ?? "timeout"}); trying ${FALLBACK_MODEL}`);
       await wait(backoffDelay(1));
       result = await requestWithRetry(FALLBACK_MODEL, apiKey, prompt, false);
     }
 
     if (result.timedOut || isTransientStatus(result.response?.status)) {
       selectedModel = LAST_RESORT_MODEL;
-      console.error(`Gemini ${FALLBACK_MODEL} unavailable; trying ${LAST_RESORT_MODEL}`);
+      console.error(`Gemini ${FALLBACK_MODEL} unavailable (HTTP ${result.response?.status ?? "timeout"}); trying ${LAST_RESORT_MODEL}`);
       await wait(backoffDelay(2));
       result = await requestGemini(LAST_RESORT_MODEL, apiKey, prompt, false);
     }
