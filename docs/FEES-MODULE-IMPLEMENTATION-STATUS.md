@@ -13,6 +13,7 @@
 - `supabase/migrations/20261023000300_fees_management_storage.sql`: private payment-evidence bucket.
 - `supabase/migrations/20261023000400_fees_management_admin_setup.sql`: audited Admin setup RPCs plus authorized academic-year listing, active-student search and fee-account search.
 - `supabase/functions/fee-management/index.ts`: gateway for student fee summary, private proof upload/download, payment submission/status/receipts, Admin setup/search/review, discount approval and Principal confirmation. Browser CORS is allowlist-only via `FEE_ALLOWED_ORIGINS`.
+- `supabase/config.toml`: sets `verify_jwt = false` for this one Edge Function because the student portal uses a custom session token in the body; all Admin/Principal operations still require Supabase Auth through server-side RPC checks.
 - `index.html`: Student Portal fee summary, payment reference and proof submission, payment status/rejection reason, receipts, and Admin fee setup/review console with student/account search and discount approval queue.
 - `supabase/tests/fees_management_security.sql`: initial database privilege assertions.
 - `.github/workflows/fees-management-validation.yml`: Edge Function type-check, required-file/feature checks and inline JavaScript syntax validation.
