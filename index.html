@@ -6508,6 +6508,97 @@ function formatStudentHomeworkDueDate(value){
 }
 function populateStudentPortal(s){if(!s)return;const set=(id,v)=>{const e=document.getElementById(id);if(e)e.textContent=v||"—";};set("student-portal-name",s.student_name);set("student-portal-class","Class "+(s.class_name||"—")+" • Section "+(s.section||"—"));set("student-portal-admission",s.enroll_no);set("student-portal-roll",s.roll_no);set("student-portal-section",s.section);set("student-portal-category",s.category);set("student-portal-dob",s.dob?new Date(s.dob+"T00:00:00").toLocaleDateString("en-IN",{day:"2-digit",month:"short",year:"numeric"}):"—");set("student-portal-father",s.father_name);set("student-portal-mother",s.mother_name);set("student-portal-phone",s.phone_number);set("student-portal-address",s.address);const av=document.getElementById("student-portal-avatar-content");if(av){av.textContent=(s.student_name||"ST").split(/\s+/).map(x=>x[0]).join("").slice(0,2).toUpperCase();getStudentPhotoUrl(s).then(url=>{if(url)av.innerHTML='<img src="'+studentEscape(url)+'" class="w-full h-full object-cover" alt="Student photo">';}).catch(()=>{});}const d=currentAuthUser?.portalData||{};document.getElementById("student-count-notices").textContent=(d.notices||[]).length+" notices";document.getElementById("student-count-attendance").textContent=(d.attendance||[]).length+" records";document.getElementById("student-count-homework").textContent=(d.homework||[]).length+" items";document.getElementById("student-count-report").textContent=(d.report_cards||[]).length+" published";}
 
+function studentAttendanceIsNonWorkingDay(date){
+  const d=new Date(date+"T00:00:00");
+  if(Number.isNaN(d.getTime()))return false;
+  if(d.getDay()===0)return true;
+  if(d.getDay()===6){const saturdayOccurrence=Math.ceil(d.getDate()/7);return saturdayOccurrence===2||saturdayOccurrence===4;}
+  return false;
+}
+function studentAttendanceStatusLabel(value){
+  const s=String(value||"").trim().toUpperCase().replace(/[ -]+/g,"_");
+  if(["PRESENT","P"].includes(s))return "PRESENT";
+  if(["ABSENT","A"].includes(s))return "ABSENT";
+  if(["LEAVE","ON_LEAVE","ONLEAVE","L"].includes(s))return "LEAVE";
+  return "";
+}
+function studentAttendanceMonthKey(date){return String(date||"").slice(0,7);}
+function studentAttendanceMonthLabel(key){
+  const parts=String(key||"").split("-").map(Number);
+  if(parts.length!==2||!parts[0]||!parts[1])return key||"";
+  return new Date(parts[0],parts[1]-1,1).toLocaleDateString("en-IN",{month:"short",year:"numeric"});
+}
+function studentAttendanceDateLabel(date){
+  const d=new Date(date+"T00:00:00");
+  return Number.isNaN(d.getTime())?String(date||"—"):d.toLocaleDateString("en-GB",{day:"2-digit",month:"2-digit",year:"numeric"});
+}
+function studentAttendanceBuildMap(attendance){
+  const map=new Map();
+  (Array.isArray(attendance)?attendance:[]).slice().sort((a,b)=>String(a.attendance_date||"").localeCompare(String(b.attendance_date||""))).forEach(row=>{
+    const date=String(row.attendance_date||"").slice(0,10),status=studentAttendanceStatusLabel(row.status);
+    if(date&&status)map.set(date,status);
+  });
+  return map;
+}
+function studentAttendanceGetMonthKeys(attendance){
+  const today=studentDateToday(),current=studentAttendanceMonthKey(today);
+  const dates=(Array.isArray(attendance)?attendance:[]).map(x=>String(x.attendance_date||"").slice(0,10)).filter(x=>/^\\d{4}-\\d{2}-\\d{2}$/.test(x)&&x<=today).sort();
+  const first=dates[0]?studentAttendanceMonthKey(dates[0]):current;
+  const [sy,sm]=first.split("-").map(Number),[ey,em]=current.split("-").map(Number),keys=[];
+  let y=sy,m=sm;
+  while((y<ey||(y===ey&&m<=em))&&keys.length<180){keys.push(y+"-"+String(m).padStart(2,"0"));m++;if(m>12){m=1;y++;}}
+  if(!keys.length)keys.push(current);
+  return keys.reverse();
+}
+function studentAttendanceMonthSummary(key,attendanceMap){
+  const [year,month]=key.split("-").map(Number),days=new Date(year,month,0).getDate(),summary={present:0,absent:0,leave:0,total:0};
+  for(let day=1;day<=days;day++){
+    const date=year+"-"+String(month).padStart(2,"0")+"-"+String(day).padStart(2,"0");
+    if(studentAttendanceIsNonWorkingDay(date))continue;
+    const status=attendanceMap.get(date);
+    if(status==="PRESENT"){summary.present++;summary.total++;}
+    else if(status==="ABSENT"){summary.absent++;summary.total++;}
+    else if(status==="LEAVE"){summary.leave++;summary.total++;}
+  }
+  return summary;
+}
+function renderStudentAttendancePanel(attendance,view="home",monthKey=""){
+  const host=document.getElementById("student-dashboard-panel-body");
+  if(!host)return;
+  const rows=Array.isArray(attendance)?attendance:[],map=studentAttendanceBuildMap(rows),keys=studentAttendanceGetMonthKeys(rows);
+  const overall={present:0,absent:0,leave:0,total:0};
+  keys.forEach(key=>{const x=studentAttendanceMonthSummary(key,map);overall.present+=x.present;overall.absent+=x.absent;overall.leave+=x.leave;overall.total+=x.total;});
+  const metric=(label,value,theme,icon)=>'<div class="rounded-2xl border p-4 '+theme+'"><div class="flex items-center gap-2"><i data-lucide="'+icon+'" class="w-4 h-4"></i><span class="text-xs font-semibold">'+label+'</span></div><div class="text-2xl font-black mt-2">'+value+'</div></div>';
+  if(view==="home"){
+    host.innerHTML='<div class="grid grid-cols-1 sm:grid-cols-2 gap-3">'+
+      '<button type="button" onclick="studentAttendanceShowView(\'overall\')" class="text-left p-4 rounded-2xl border border-emerald-200 bg-white shadow-sm flex items-center gap-3"><span class="w-12 h-12 rounded-xl bg-emerald-50 text-emerald-700 flex items-center justify-center"><i data-lucide="chart-no-axes-combined" class="w-6 h-6"></i></span><span><b class="block text-sm">Overall Attendance</b><span class="text-xs text-slate-500">Present, absent, leave and total classes</span></span><i data-lucide="chevron-right" class="w-4 h-4 ml-auto"></i></button>'+
+      '<button type="button" onclick="studentAttendanceShowView(\'months\')" class="text-left p-4 rounded-2xl border border-sky-200 bg-white shadow-sm flex items-center gap-3"><span class="w-12 h-12 rounded-xl bg-sky-50 text-sky-700 flex items-center justify-center"><i data-lucide="calendar-days" class="w-6 h-6"></i></span><span><b class="block text-sm">Monthly Attendance</b><span class="text-xs text-slate-500">Month-wise summary and day-wise details</span></span><i data-lucide="chevron-right" class="w-4 h-4 ml-auto"></i></button></div>'+
+      '<div class="p-3 rounded-xl bg-emerald-50 border border-emerald-100 text-xs text-emerald-900">Second and fourth Saturdays and every Sunday are Non-Working Days. Working days without a record show Not Marked.</div>';
+  }else if(view==="overall"){
+    host.innerHTML='<button type="button" onclick="studentAttendanceShowView(\'home\')" class="mb-3 px-3 py-2 rounded-xl bg-white border text-xs font-bold inline-flex items-center gap-2"><i data-lucide="arrow-left" class="w-4 h-4"></i> Attendance options</button>'+
+      '<div class="grid grid-cols-2 gap-2">'+metric("Present",overall.present,"border-emerald-200 bg-emerald-50 text-emerald-800","check-circle")+
+      metric("Absent",overall.absent,"border-rose-200 bg-rose-50 text-rose-800","x-circle")+
+      metric("Leave",overall.leave,"border-amber-200 bg-amber-50 text-amber-800","calendar-clock")+
+      metric("Total Classes",overall.total,"border-sky-200 bg-sky-50 text-sky-800","calendar-check")+'</div>'+
+      '<p class="text-xs text-slate-500 px-1">Total Classes counts dates with recorded attendance on working days only. Non-working days and Not Marked dates are excluded.</p>';
+  }else if(view==="months"){
+    const cards=keys.map(key=>{const x=studentAttendanceMonthSummary(key,map);return '<button type="button" onclick="studentAttendanceShowMonth(\''+key+'\')" class="w-full text-left rounded-2xl overflow-hidden border border-slate-200 bg-white shadow-sm"><div class="px-4 py-3 bg-sky-100 flex items-center justify-between"><b class="text-sm">'+studentAttendanceMonthLabel(key)+'</b><i data-lucide="arrow-right-circle" class="w-5 h-5 text-sky-600"></i></div><div class="p-3"><div class="text-center text-sm font-bold text-sky-700 mb-3">Total Classes: '+x.total+'</div><div class="grid grid-cols-3 gap-2 text-center"><div><b class="block text-rose-600">'+x.absent+'</b><span class="text-[10px] font-bold text-rose-600">ABSENT</span></div><div><b class="block text-emerald-600">'+x.present+'</b><span class="text-[10px] font-bold text-emerald-600">PRESENT</span></div><div><b class="block text-amber-500">'+x.leave+'</b><span class="text-[10px] font-bold text-amber-500">LEAVE</span></div></div></div></button>';}).join("");
+    host.innerHTML='<button type="button" onclick="studentAttendanceShowView(\'home\')" class="mb-3 px-3 py-2 rounded-xl bg-white border text-xs font-bold inline-flex items-center gap-2"><i data-lucide="arrow-left" class="w-4 h-4"></i> Attendance options</button><div class="space-y-3">'+cards+'</div>';
+  }else if(view==="days"){
+    const key=monthKey||studentAttendanceMonthKey(studentDateToday()),[year,month]=key.split("-").map(Number),days=new Date(year,month,0).getDate(),dayRows=[];
+    for(let day=1;day<=days;day++){
+      const date=year+"-"+String(month).padStart(2,"0")+"-"+String(day).padStart(2,"0"),d=new Date(year,month-1,day),weekday=d.toLocaleDateString("en-IN",{weekday:"long"});
+      const nonWorking=studentAttendanceIsNonWorkingDay(date),status=nonWorking?"NON-WORKING DAY":(map.get(date)||"NOT MARKED");
+      const color=nonWorking?"text-slate-500 bg-slate-100":status==="PRESENT"?"text-emerald-700":status==="ABSENT"?"text-rose-700":status==="LEAVE"?"text-amber-600":"text-sky-600";
+      dayRows.push('<div class="grid grid-cols-[1.05fr_1fr_1.25fr] items-center gap-2 rounded-xl border border-slate-200 bg-white px-3 py-3"><span class="font-semibold">'+studentAttendanceDateLabel(date)+'</span><span class="text-slate-600">'+weekday+'</span><b class="text-right text-[10px] sm:text-xs '+color+'">'+status+'</b></div>');
+    }
+    host.innerHTML='<button type="button" onclick="studentAttendanceShowView(\'months\')" class="mb-3 px-3 py-2 rounded-xl bg-white border text-xs font-bold inline-flex items-center gap-2"><i data-lucide="arrow-left" class="w-4 h-4"></i> All months</button><div class="rounded-2xl border border-sky-200 bg-sky-100 p-4"><h4 class="font-black text-base">'+studentAttendanceMonthLabel(key)+'</h4><p class="text-xs text-slate-600 mt-1">Day-wise attendance</p></div><div class="grid grid-cols-[1.05fr_1fr_1.25fr] gap-2 px-3 text-[10px] font-black uppercase text-slate-500"><span>Date</span><span>Day</span><span class="text-right">Status</span></div><div class="space-y-1.5">'+dayRows.join("")+'</div>';
+  }
+  if(window.lucide)lucide.createIcons();
+}
+function studentAttendanceShowView(view){window.studentAttendanceView=view;renderStudentAttendancePanel(currentAuthUser?.portalData?.attendance||[] ,view,window.studentAttendanceSelectedMonth||"");}
+function studentAttendanceShowMonth(key){window.studentAttendanceSelectedMonth=key;window.studentAttendanceView="days";renderStudentAttendancePanel(currentAuthUser?.portalData?.attendance||[],"days",key);}
+
 async function studentDashboardSection(type){
   const d=currentAuthUser?.portalData||{},
     host=document.getElementById("student-dashboard-panel-body"),
@@ -6587,8 +6678,8 @@ async function studentDashboardSection(type){
     const notices=fresh.notices||[];
     host.innerHTML=notices.map(x=>'<article class="p-4 sm:p-5 bg-white border border-slate-200 rounded-2xl shadow-sm"><div class="flex items-start gap-3"><span class="mt-1 w-2 h-2 rounded-full bg-emerald-600 flex-shrink-0"></span><div class="min-w-0 flex-1"><h4 class="text-base sm:text-lg font-extrabold text-slate-900 break-words leading-snug">'+studentEscape(x.title)+'</h4><div class="mt-3 text-[13px] sm:text-sm text-slate-700 whitespace-pre-wrap break-words leading-7">'+studentEscape(x.body||"")+'</div>'+(x.attachment_path?'<a href="'+studentEscape(teacherPortalPdfUrl(x.attachment_path))+'" target="_blank" rel="noopener" class="mt-3 inline-flex items-center gap-2 px-3 py-2 rounded-xl bg-rose-50 text-rose-700 border border-rose-200 text-xs font-bold"><i data-lucide="file-text" class="w-4 h-4"></i><span>View PDF'+(x.attachment_name?' • '+studentEscape(x.attachment_name):'')+'</span></a>':'')+'<div class="mt-3 pt-2 border-t border-slate-100 text-[10px] text-slate-400">'+studentEscape(formatStudentPortalDate(x.publish_at||x.created_at||""))+'</div></div></div></article>').join("")||'<div class="p-6 bg-white border rounded-2xl text-center text-slate-400">No notices published.</div>';
   }else if(type==="attendance"){
-    const a=fresh.attendance||[],present=a.filter(x=>x.status==="PRESENT").length,abs=a.filter(x=>x.status==="ABSENT").length,leave=a.filter(x=>x.status==="LEAVE").length;
-    host.innerHTML='<div class="grid grid-cols-3 gap-2"><div class="p-4 bg-emerald-50 rounded-2xl border"><b class="text-lg">'+present+'</b><span class="block text-[10px]">Present</span></div><div class="p-4 bg-rose-50 rounded-2xl border"><b class="text-lg">'+abs+'</b><span class="block text-[10px]">Absent</span></div><div class="p-4 bg-amber-50 rounded-2xl border"><b class="text-lg">'+leave+'</b><span class="block text-[10px]">Leave</span></div></div>'+(a.map(x=>'<div class="flex justify-between bg-white border rounded-xl px-4 py-3"><span>'+studentEscape(x.attendance_date)+'</span><b>'+studentEscape(x.status)+'</b></div>').join("")||'<div class="p-6 bg-white border rounded-2xl text-center text-slate-400">No attendance records.</div>');
+    window.studentAttendanceView="home";window.studentAttendanceSelectedMonth="";
+    renderStudentAttendancePanel(fresh.attendance||[],"home");
   }else if(type==="homework"){
     const homework=fresh.homework||[];
     host.innerHTML=homework.map(x=>'<article class="p-4 sm:p-5 bg-white border border-slate-200 rounded-2xl shadow-sm"><div class="flex items-start justify-between gap-3"><div class="min-w-0 flex-1"><div class="flex flex-wrap items-center gap-2"><span class="px-2 py-1 rounded-lg bg-blue-50 text-blue-700 text-[10px] font-extrabold">'+studentEscape(x.subject_name||"Subject")+'</span><span class="text-[10px] text-slate-400">Due: '+studentEscape(formatStudentHomeworkDueDate(x.due_date||""))+'</span></div><h4 class="mt-2 text-base sm:text-lg font-extrabold text-slate-900 break-words leading-snug">'+studentEscape(x.title)+'</h4><div class="mt-3 text-[13px] sm:text-sm text-slate-700 whitespace-pre-wrap break-words leading-7">'+studentEscape(x.description||"")+'</div>'+(x.attachment_path?'<a href="'+studentEscape(teacherPortalPdfUrl(x.attachment_path))+'" target="_blank" rel="noopener" class="mt-3 inline-flex items-center gap-2 px-3 py-2 rounded-xl bg-rose-50 text-rose-700 border border-rose-200 text-xs font-bold"><i data-lucide="file-text" class="w-4 h-4"></i><span>View PDF'+(x.attachment_name?' • '+studentEscape(x.attachment_name):'')+'</span></a>':'')+'</div></div></article>').join("")||'<div class="p-6 bg-white border rounded-2xl text-center text-slate-400">No homework.</div>';
