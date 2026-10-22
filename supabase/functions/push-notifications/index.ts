@@ -235,7 +235,7 @@ Deno.serve(async (req: Request) => {
     const attendanceDate = String(body.attendanceDate || "");
     const status = String(body.status || "").trim().toUpperCase();
     if (schoolCode !== "ashiana" || !enrollNo ||
-        !/^\\d{4}-\\d{2}-\\d{2}$/.test(attendanceDate) ||
+        !/^\d{4}-\d{2}-\d{2}$/.test(attendanceDate) ||
         !["PRESENT", "ABSENT", "LEAVE"].includes(status)) {
       return json({ error: "INVALID_ATTENDANCE_NOTIFICATION" }, 400);
     }
