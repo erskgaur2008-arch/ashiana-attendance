@@ -3389,6 +3389,7 @@ id="admin-portal-view" class="hidden flex-col w-full space-y-4 admin-dashboard-s
         <button type="button" onclick="window.switchAdminTab('qr')"><i data-lucide="qr-code"></i><span>Daily QR</span></button>
         <button type="button" id="admin-nav-reports" onclick="window.switchAdminTab('reports')"><i data-lucide="file-spreadsheet"></i><span>Report</span></button>
         <button type="button" id="admin-nav-working-days" onclick="openMonthlyWorkingDaysCalendar()" title="Mark working days, weekly offs, and school holidays for a month"><i data-lucide="calendar-days"></i><span>Monthly Working Days</span></button>
+        <button type="button" id="admin-nav-fees" onclick="openFeesAdminConsole()" title="Review fee payments and Principal confirmations"><i data-lucide="wallet"></i><span>Fees Management</span></button>
         <button type="button" id="admin-nav-attendance-rules" onclick="window.switchAdminTab('attendance-rules')" title="Manage staff attendance calculation rules"><i data-lucide="sliders-horizontal"></i><span>Attendance Rules</span></button>
         <button type="button" id="admin-nav-leave" onclick="window.switchAdminTab('leave')" title="Faculty Leave Applications"><i data-lucide="calendar-check"></i><span>Leaves</span></button>
         <button type="button" id="admin-nav-corrections" onclick="window.switchAdminTab('corrections')" title="Manual Attendance Corrections"><i data-lucide="file-pen"></i><span>Corrections</span></button>
@@ -14196,5 +14197,81 @@ function addMessage(text,type){
   #ashiana-ai-launcher span:last-child { display: none !important; }
 }
 </style>
+<!-- Fees Management review console. All actions are routed through fee-management RPC authorization. -->
+<div id="fees-admin-console" class="hidden fixed inset-0 z-[280] bg-slate-950/70 backdrop-blur-sm p-2 sm:p-5 items-center justify-center" role="dialog" aria-modal="true" aria-labelledby="fees-admin-title">
+  <div class="w-full max-w-5xl max-h-[94dvh] overflow-y-auto rounded-2xl bg-slate-50 shadow-2xl">
+    <div class="sticky top-0 z-10 flex items-center justify-between gap-3 border-b bg-white p-4">
+      <div><h2 id="fees-admin-title" class="text-lg font-extrabold text-slate-900">Fees Management</h2><p class="text-xs text-slate-500">Admin review and independent Principal confirmation</p></div>
+      <button type="button" onclick="closeFeesAdminConsole()" class="rounded-xl border px-3 py-2 text-sm font-bold">Close</button>
+    </div>
+    <div class="p-4 space-y-4">
+      <div class="flex flex-wrap gap-2">
+        <button type="button" onclick="loadFeesReviewQueue('admin')" class="rounded-xl bg-emerald-800 px-4 py-2.5 text-xs font-bold text-white">Admin review queue</button>
+        <button type="button" onclick="loadFeesReviewQueue('principal')" class="rounded-xl bg-violet-800 px-4 py-2.5 text-xs font-bold text-white">Principal confirmation queue</button>
+      </div>
+      <div id="fees-admin-status" class="rounded-xl border bg-white p-3 text-xs text-slate-600" role="status">Choose a review queue. Access is checked by the server.</div>
+      <div id="fees-admin-queue" class="space-y-3"></div>
+      <p class="rounded-xl border border-amber-200 bg-amber-50 p-3 text-[11px] leading-relaxed text-amber-900">Verify the UPI/bank transaction against the actual settlement record before approving. A screenshot or reference ID alone is not proof of payment. Principal confirmation must be performed by a separately authorized user.</p>
+    </div>
+  </div>
+</div>
+<script>
+(function(){
+  const $=id=>document.getElementById(id);
+  function escapeHtml(v){return String(v??"").replace(/&/g,"&amp;").replace(/</g,"&lt;").replace(/>/g,"&gt;").replace(/"/g,"&quot;").replace(/'/g,"&#39;");}
+  function money(p){return "₹"+(Number(p||0)/100).toLocaleString("en-IN",{minimumFractionDigits:2,maximumFractionDigits:2});}
+  function setStatus(msg,bad=false){const el=$("fees-admin-status");if(el){el.textContent=msg;el.className="rounded-xl border p-3 text-xs "+(bad?"border-rose-200 bg-rose-50 text-rose-800":"bg-white text-slate-600");}}
+  function getClient(){return (typeof supabaseClient!=="undefined"&&supabaseClient)||window.__ashianaMainSupabaseClient||null;}
+  window.closeFeesAdminConsole=function(){$("fees-admin-console")?.classList.add("hidden");$("fees-admin-console")?.classList.remove("flex");};
+  window.openFeesAdminConsole=function(){
+    const role=String(window.currentAuthUser?.type||"").toUpperCase();
+    if(role!=="ADMIN"){if(window.showToast)showToast("Only an authenticated administrator can open fee review.","error");else alert("Only an authenticated administrator can open fee review.");return;}
+    $("fees-admin-console")?.classList.remove("hidden");$("fees-admin-console")?.classList.add("flex");
+    window.loadFeesReviewQueue("admin");
+  };
+  window.loadFeesReviewQueue=async function(kind){
+    const host=$("fees-admin-queue");if(!host)return;
+    host.innerHTML="";setStatus("Loading "+(kind==="principal"?"Principal confirmation":"Admin review")+" queue…");
+    const client=getClient();if(!client?.functions?.invoke){setStatus("Application client is not ready.",true);return;}
+    try{
+      const action=kind==="principal"?"principal-queue":"admin-queue";
+      const {data,error}=await client.functions.invoke("fee-management",{body:{action}});
+      if(error)throw new Error(error.message||"Queue request failed.");
+      const rows=Array.isArray(data?.submissions)?data.submissions:[];
+      if(!rows.length){setStatus(kind==="principal"?"No payments are awaiting Principal confirmation, or this account is not an assigned Principal.":"No payments are awaiting Admin review.");host.innerHTML='<div class="rounded-2xl border bg-white p-5 text-center text-sm text-slate-500">No queue items returned.</div>';return;}
+      setStatus(rows.length+" payment(s) in the "+(kind==="principal"?"Principal confirmation":"Admin review")+" queue.");
+      host.innerHTML=rows.map(r=>'<article class="rounded-2xl border bg-white p-4 shadow-sm" data-submission="'+escapeHtml(r.submission_id)+'"><div class="flex flex-wrap items-start justify-between gap-3"><div><h3 class="font-extrabold text-slate-900">'+escapeHtml(r.student_name||"Student")+'</h3><p class="mt-1 text-xs text-slate-500">Admission: '+escapeHtml(r.enroll_no||"—")+' · Class '+escapeHtml(r.class_name||"—")+'-'+escapeHtml(r.section||"—")+'</p><p class="mt-2 text-xs text-slate-600">Reference: <b>'+escapeHtml(r.upi_reference||"—")+'</b></p><p class="mt-1 text-xs text-slate-600">Submitted: '+escapeHtml(r.submitted_at||"—")+'</p></div><div class="text-right"><p class="text-xl font-extrabold text-emerald-800">'+money(r.amount_paise)+'</p><span class="text-[10px] font-bold uppercase text-amber-700">'+escapeHtml(r.status||"PENDING")+'</span></div></div><div class="mt-3 flex flex-wrap gap-2"><button type="button" data-fee-proof="'+escapeHtml(r.submission_id)+'" class="rounded-xl border px-3 py-2 text-xs font-bold">View private proof</button>'+(kind==="admin"?'<button type="button" data-fee-approve="'+escapeHtml(r.submission_id)+'" class="rounded-xl bg-emerald-800 px-3 py-2 text-xs font-bold text-white">Approve for Principal</button><button type="button" data-fee-reject="'+escapeHtml(r.submission_id)+'" class="rounded-xl bg-rose-700 px-3 py-2 text-xs font-bold text-white">Reject</button>':'<button type="button" data-fee-confirm="'+escapeHtml(r.submission_id)+'" class="rounded-xl bg-violet-800 px-3 py-2 text-xs font-bold text-white">Confirm payment</button><button type="button" data-fee-principal-reject="'+escapeHtml(r.submission_id)+'" class="rounded-xl bg-rose-700 px-3 py-2 text-xs font-bold text-white">Reject</button>')+'</div><div data-row-status class="hidden mt-3 rounded-xl p-3 text-xs" role="status"></div></article>').join("");
+    }catch(e){setStatus(e?.message||"Could not load the queue.",true);host.innerHTML='<div class="rounded-xl border border-rose-200 bg-rose-50 p-4 text-sm text-rose-800">'+escapeHtml(e?.message||"Could not load queue")+'</div>';}
+  };
+  $("fees-admin-queue")?.addEventListener("click",async ev=>{
+    const b=ev.target.closest("button");if(!b)return;
+    const id=b.dataset.feeProof||b.dataset.feeApprove||b.dataset.feeReject||b.dataset.feeConfirm||b.dataset.feePrincipalReject;
+    if(!id)return;
+    const row=b.closest("article"),client=getClient();
+    const status=row?.querySelector("[data-row-status]");
+    const rowMsg=(msg,ok=false)=>{if(status){status.textContent=msg;status.className="mt-3 rounded-xl border p-3 text-xs "+(ok?"border-emerald-200 bg-emerald-50 text-emerald-800":"border-rose-200 bg-rose-50 text-rose-800");}};
+    b.disabled=true;
+    try{
+      if(b.dataset.feeProof){
+        const {data,error}=await client.functions.invoke("fee-management",{body:{action:"create-proof-download",submission_id:id}});
+        if(error||!data?.signed_url)throw new Error(error?.message||data?.error||"Private proof link unavailable.");
+        window.open(data.signed_url,"_blank","noopener,noreferrer");rowMsg("Private proof link created; it expires shortly.",true);return;
+      }
+      const isReject=Boolean(b.dataset.feeReject||b.dataset.feePrincipalReject);
+      const reason=isReject?prompt("Enter a clear reason for rejection:",""):null;
+      if(isReject&&(reason===null||reason.trim().length<3)){rowMsg("Rejection cancelled. A reason of at least 3 characters is required.");return;}
+      const isAdmin=Boolean(b.dataset.feeApprove||b.dataset.feeReject);
+      const payload=isAdmin?{action:"admin-review-payment",submission_id:id,approve:!isReject,reason:isReject?reason.trim():null}:{action:"principal-confirm-payment",submission_id:id,confirm:!isReject,reason:isReject?reason.trim():null};
+      const {data,error}=await client.functions.invoke("fee-management",{body:payload});
+      if(error)throw new Error(error.message||data?.error||"Review action failed.");
+      rowMsg(isAdmin?(isReject?"Payment rejected.":"Admin review complete; awaiting Principal confirmation."):(isReject?"Payment rejected by Principal.":"Payment confirmed and receipt should now be issued."),true);
+      b.closest("article")?.remove();
+      setStatus("Review action saved. Queue refreshed.");
+    }catch(e){rowMsg(e?.message||"Action failed.");}
+    finally{b.disabled=false;}
+  });
+  document.addEventListener("keydown",e=>{if(e.key==="Escape"&&!$("fees-admin-console")?.classList.contains("hidden"))window.closeFeesAdminConsole();});
+})();
+</script>
 </body>
 </html>
