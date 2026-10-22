@@ -22,8 +22,8 @@
 
 - All 12 inline JavaScript blocks in the current branch's `index.html` parsed successfully in a syntax check.
 - The new fee console inline script parsed successfully.
-- GitHub Actions reported the Edge Function type-check workflow as successful on commit `8f9c395b62c6b08bafa215ba7c17deb3993be33e`.
-- The latest HTML/workflow changes have not yet been confirmed by a completed CI run.
+- GitHub Actions reported the latest Fees Management Draft Validation workflow as successful on commit `7f5b9937374e1795473b6bf20131f4dd3addd7c3`, including the current Edge Function type check, feature-file assertions and inline JavaScript parser.
+- The latest HTML/workflow changes were included in the successful validation run above.
 - SQL has not been applied to a database. The SQL security test has not been run against a database.
 - No end-to-end student/Admin/Principal test has passed yet.
 
