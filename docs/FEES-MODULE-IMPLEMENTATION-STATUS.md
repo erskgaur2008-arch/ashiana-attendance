@@ -11,9 +11,9 @@
 - `supabase/migrations/20261023000100_fees_management_schema.sql`: additive fee tables.
 - `supabase/migrations/20261023000200_fees_management_security.sql`: session-token-scoped student summary, submission, receipt and payment-status RPCs; Admin/Principal review queues; two-step confirmation; discount review; balance/duplicate-reference safeguards.
 - `supabase/migrations/20261023000300_fees_management_storage.sql`: private payment-evidence bucket.
-- `supabase/migrations/20261023000400_fees_management_admin_setup.sql`: audited Admin setup RPCs for academic years, fee structures, student accounts, Principal permission and discount requests.
-- `supabase/functions/fee-management/index.ts`: gateway for student fee summary, private proof upload/download, payment submission/status/receipts, Admin setup and review, and Principal confirmation.
-- `index.html`: Student Portal fee summary, payment reference and proof submission, payment status/rejection reason, receipts, and Admin fee setup/review console.
+- `supabase/migrations/20261023000400_fees_management_admin_setup.sql`: audited Admin setup RPCs plus authorized academic-year listing, active-student search and fee-account search.
+- `supabase/functions/fee-management/index.ts`: gateway for student fee summary, private proof upload/download, payment submission/status/receipts, Admin setup/search/review, discount approval and Principal confirmation.
+- `index.html`: Student Portal fee summary, payment reference and proof submission, payment status/rejection reason, receipts, and Admin fee setup/review console with student/account search and discount approval queue.
 - `supabase/tests/fees_management_security.sql`: initial database privilege assertions.
 - `.github/workflows/fees-management-validation.yml`: Edge Function type-check, required-file/feature checks and inline JavaScript syntax validation.
 - `docs/FEES-MODULE-PLAN.md`: product requirements and release safeguards.
@@ -29,7 +29,7 @@
 
 ## Remaining before production
 
-1. Add friendly Admin search/listing for academic years, students and fee accounts; current setup forms require some UUIDs.
+1. Finish UI usability checks for the new academic-year, student and fee-account search controls; verify the search result labels match the live roster.
 2. Verify proof upload end-to-end, including server-side verification of object metadata/content type after upload.
 3. Verify the exact SQL against the live schema and run migrations only after explicit approval, backup and rollback planning.
 4. Test all state transitions, rejection/resubmission rules, duplicate references, partial payments, discount calculations, receipts and reversals.
