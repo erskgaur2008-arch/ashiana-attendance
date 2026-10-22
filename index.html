@@ -14228,7 +14228,7 @@ function addMessage(text,type){
           </form>
           <form onsubmit="submitFeeSetupForm(event)" data-fee-setup="structure" class="rounded-xl border p-3 space-y-2">
             <h3 class="font-bold text-sm">Add fee structure</h3>
-            <input name="academic_year_id" required placeholder="Academic year UUID" class="w-full rounded-lg border p-2.5 text-xs">
+            <select name="academic_year_id" required class="w-full rounded-lg border p-2.5 text-sm"><option value="">Loading academic years…</option></select>
             <input name="class_name" required placeholder="Class (must match roster, e.g. II)" class="w-full rounded-lg border p-2.5 text-sm">
             <input name="fee_name" required maxlength="100" placeholder="Fee name (e.g. Tuition Fee)" class="w-full rounded-lg border p-2.5 text-sm">
             <input name="amount_rupees" type="number" min="0" step="0.01" required placeholder="Amount in ₹" class="w-full rounded-lg border p-2.5 text-sm">
@@ -14239,7 +14239,8 @@ function addMessage(text,type){
           <form onsubmit="submitFeeSetupForm(event)" data-fee-setup="assign-student" class="rounded-xl border p-3 space-y-2">
             <h3 class="font-bold text-sm">Assign student fee account</h3>
             <input name="academic_year_id" required placeholder="Academic year UUID" class="w-full rounded-lg border p-2.5 text-xs">
-            <input name="student_id" required placeholder="Student roster UUID" class="w-full rounded-lg border p-2.5 text-xs">
+            <div class="flex gap-2"><input name="student_search" placeholder="Search name, admission no. or class" class="min-w-0 flex-1 rounded-lg border p-2.5 text-xs"><button type="button" onclick="searchFeeSetupStudents(event)" class="rounded-lg border px-3 py-2 text-xs font-bold">Find</button></div>
+            <select name="student_id" required class="w-full rounded-lg border p-2.5 text-sm"><option value="">Search and select a student</option></select>
             <button class="rounded-lg bg-emerald-800 px-3 py-2 text-xs font-bold text-white">Assign account</button><p data-setup-result class="hidden break-all text-xs" role="status"></p>
           </form>
           <form onsubmit="submitFeeSetupForm(event)" data-fee-setup="principal" class="rounded-xl border p-3 space-y-2">
@@ -14250,7 +14251,8 @@ function addMessage(text,type){
           </form>
           <form onsubmit="submitFeeSetupForm(event)" data-fee-setup="discount" class="rounded-xl border p-3 space-y-2">
             <h3 class="font-bold text-sm">Request a student discount</h3>
-            <input name="fee_account_id" required placeholder="Student fee account UUID" class="w-full rounded-lg border p-2.5 text-xs">
+            <div class="flex gap-2"><input name="account_search" placeholder="Search student name or admission no." class="min-w-0 flex-1 rounded-lg border p-2.5 text-xs"><button type="button" onclick="searchFeeSetupAccounts(event)" class="rounded-lg border px-3 py-2 text-xs font-bold">Find</button></div>
+            <select name="fee_account_id" required class="w-full rounded-lg border p-2.5 text-sm"><option value="">Search and select a fee account</option></select>
             <input name="amount_rupees" type="number" min="0.01" step="0.01" required placeholder="Discount amount in ₹" class="w-full rounded-lg border p-2.5 text-sm">
             <textarea name="reason" required minlength="3" maxlength="1000" rows="2" placeholder="Reason for discount" class="w-full rounded-lg border p-2.5 text-sm"></textarea>
             <button class="rounded-lg bg-amber-800 px-3 py-2 text-xs font-bold text-white">Create discount request</button><p data-setup-result class="hidden break-all text-xs" role="status"></p>
@@ -14278,7 +14280,45 @@ function addMessage(text,type){
     if(error||!data?.session){alert("Sign in with an authorized school account to access fee review.");return;}
     // The server-side queue/review RPCs enforce the Admin or assigned Principal permission.
     $("fees-admin-console")?.classList.remove("hidden");$("fees-admin-console")?.classList.add("flex");
+    await window.loadFeeSetupOptions();
     await window.loadFeesReviewQueue("admin");
+  };
+  window.loadFeeSetupOptions=async function(){
+    const client=getClient();if(!client?.functions?.invoke)return;
+    try{
+      const {data,error}=await client.functions.invoke("fee-management",{body:{action:"admin-list-years"}});
+      if(error)throw error;
+      const years=Array.isArray(data?.academic_years)?data.academic_years:[];
+      document.querySelectorAll('#fees-admin-console select[name="academic_year_id"]').forEach(select=>{
+        const previous=select.value;
+        select.innerHTML='<option value="">Select academic year</option>'+years.map(y=>'<option value="'+escapeHtml(y.academic_year_id)+'">'+escapeHtml(y.label)+(y.is_active?" (active)":"")+'</option>').join("");
+        if(previous&&years.some(y=>y.academic_year_id===previous))select.value=previous;
+      });
+    }catch(e){setStatus("Could not load academic years: "+(e?.message||"Admin permission required"),true);}
+  };
+  window.searchFeeSetupStudents=async function(event){
+    const form=event.currentTarget.closest("form"),query=String(form?.elements.student_search?.value||"").trim(),select=form?.elements.student_id;
+    if(!form||!select)return;
+    select.innerHTML='<option value="">Searching students…</option>';
+    try{
+      const client=getClient();const {data,error}=await client.functions.invoke("fee-management",{body:{action:"admin-search-students",query}});
+      if(error)throw error;
+      const rows=Array.isArray(data?.students)?data.students:[];
+      select.innerHTML='<option value="">Select student</option>'+rows.map(x=>'<option value="'+escapeHtml(x.student_id)+'">'+escapeHtml(x.student_name)+' · '+escapeHtml(x.enroll_no)+' · '+escapeHtml(x.class_name)+'-'+escapeHtml(x.section)+'</option>').join("");
+      if(!rows.length)select.innerHTML='<option value="">No matching active students</option>';
+    }catch(e){select.innerHTML='<option value="">Search failed</option>';setStatus(e?.message||"Student search failed.",true);}
+  };
+  window.searchFeeSetupAccounts=async function(event){
+    const form=event.currentTarget.closest("form"),query=String(form?.elements.account_search?.value||"").trim(),select=form?.elements.fee_account_id;
+    if(!form||!select)return;
+    select.innerHTML='<option value="">Searching fee accounts…</option>';
+    try{
+      const client=getClient();const {data,error}=await client.functions.invoke("fee-management",{body:{action:"admin-search-fee-accounts",query}});
+      if(error)throw error;
+      const rows=Array.isArray(data?.fee_accounts)?data.fee_accounts:[];
+      select.innerHTML='<option value="">Select fee account</option>'+rows.map(x=>'<option value="'+escapeHtml(x.fee_account_id)+'">'+escapeHtml(x.student_name)+' · '+escapeHtml(x.enroll_no)+' · '+escapeHtml(x.academic_year_label)+'</option>').join("");
+      if(!rows.length)select.innerHTML='<option value="">No matching fee accounts</option>';
+    }catch(e){select.innerHTML='<option value="">Search failed</option>';setStatus(e?.message||"Fee account search failed.",true);}
   };
   window.submitFeeSetupForm=async function(event){
     event.preventDefault();
@@ -14307,9 +14347,8 @@ function addMessage(text,type){
       const id=data?.academic_year_id||data?.fee_structure_id||data?.fee_account_id||data?.discount_request_id||"";
       say((data?.status||"Saved successfully.")+(id?" ID: "+id:""),true);
       if(type==="year"&&id){
-        const structure=form.parentElement?.querySelector('form[data-fee-setup="structure"] input[name="academic_year_id"]');
-        const assignment=form.parentElement?.querySelector('form[data-fee-setup="assign-student"] input[name="academic_year_id"]');
-        if(structure)structure.value=id;if(assignment)assignment.value=id;
+        const selects=form.parentElement?.querySelectorAll('form[data-fee-setup="structure"] select[name="academic_year_id"],form[data-fee-setup="assign-student"] select[name="academic_year_id"]');
+        selects?.forEach(select=>{if(![...select.options].some(option=>option.value===id)){const option=document.createElement("option");option.value=id;option.textContent=values.label;select.appendChild(option);}select.value=id;});
       }
       if(type==="principal"||type==="assign-student"||type==="discount")form.reset();
       return false;
