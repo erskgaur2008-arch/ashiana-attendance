@@ -14270,11 +14270,14 @@ function addMessage(text,type){
   function setStatus(msg,bad=false){const el=$("fees-admin-status");if(el){el.textContent=msg;el.className="rounded-xl border p-3 text-xs "+(bad?"border-rose-200 bg-rose-50 text-rose-800":"bg-white text-slate-600");}}
   function getClient(){return (typeof supabaseClient!=="undefined"&&supabaseClient)||window.__ashianaMainSupabaseClient||null;}
   window.closeFeesAdminConsole=function(){$("fees-admin-console")?.classList.add("hidden");$("fees-admin-console")?.classList.remove("flex");};
-  window.openFeesAdminConsole=function(){
-    const role=String(typeof currentAuthUser!=="undefined" ? currentAuthUser?.type||"" : "").toUpperCase();
-    if(role!=="ADMIN"){if(window.showToast)showToast("Only an authenticated administrator can open fee review.","error");else alert("Only an authenticated administrator can open fee review.");return;}
+  window.openFeesAdminConsole=async function(){
+    const client=getClient();
+    if(!client?.auth?.getSession){alert("Application authentication is not ready.");return;}
+    const {data,error}=await client.auth.getSession();
+    if(error||!data?.session){alert("Sign in with an authorized school account to access fee review.");return;}
+    // The server-side queue/review RPCs enforce the Admin or assigned Principal permission.
     $("fees-admin-console")?.classList.remove("hidden");$("fees-admin-console")?.classList.add("flex");
-    window.loadFeesReviewQueue("admin");
+    await window.loadFeesReviewQueue("admin");
   };
   window.submitFeeSetupForm=async function(event){
     event.preventDefault();
