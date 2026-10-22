@@ -8015,98 +8015,36 @@ async function loadAdminStudents(){
       setupPrintWindowBackHandling(printWin);
       printWin.document.open();
       printWin.document.write('<!doctype html><title>Preparing student ID cards…</title><body style="font:16px Arial;padding:24px">Preparing student ID cards…
-<!-- Staff ID export: enforce a safe vertical layout budget to prevent clipped text in PDF/PNG downloads. -->
+
+<!-- Staff ID export: fixed section sizing and typography for reliable PNG/PDF rasterization. -->
 <style id="staff-id-card-export-layout-fix">
 .staff-id-preview-card {
-  box-sizing: border-box !important;
-  width: 54mm !important;
-  height: 85.6mm !important;
-  min-width: 54mm !important;
-  min-height: 85.6mm !important;
-  max-width: 54mm !important;
-  max-height: 85.6mm !important;
-  overflow: hidden !important;
+  box-sizing:border-box!important;width:54mm!important;height:85.6mm!important;min-width:54mm!important;min-height:85.6mm!important;max-width:54mm!important;max-height:85.6mm!important;
+  overflow:hidden!important;display:flex!important;flex-direction:column!important;flex-shrink:0!important;
 }
-.staff-id-preview-card .id-top {
-  box-sizing: border-box !important;
-  flex: 0 0 21.5mm !important;
-  height: 21.5mm !important;
-  min-height: 21.5mm !important;
-  max-height: 21.5mm !important;
-  padding: 1mm 2.5mm .6mm !important;
-}
-.staff-id-preview-card .id-photo-wrap {
-  box-sizing: border-box !important;
-  flex: 0 0 26mm !important;
-  width: 24mm !important;
-  height: 26mm !important;
-  min-height: 26mm !important;
-  max-height: 26mm !important;
-  margin: 0 auto !important;
-}
-.staff-id-preview-card .id-photo-wrap img,
-.staff-id-preview-card .id-photo-wrap .photo-fallback {
-  box-sizing: border-box !important;
-  width: 100% !important;
-  height: 100% !important;
-}
-.staff-id-preview-card .id-name-band {
-  box-sizing: border-box !important;
-  flex: 0 0 8mm !important;
-  height: 8mm !important;
-  min-height: 8mm !important;
-  max-height: 8mm !important;
-  padding: .8mm 1.5mm .5mm !important;
-  overflow: hidden !important;
-}
-.staff-id-preview-card .id-name {
-  font-size: 2.6mm !important;
-  line-height: 1.15 !important;
-}
-.staff-id-preview-card .id-role {
-  font-size: 1.8mm !important;
-  line-height: 1.15 !important;
-  margin-top: .25mm !important;
-}
-.staff-id-preview-card .id-details {
-  box-sizing: border-box !important;
-  flex: 0 0 15mm !important;
-  height: 15mm !important;
-  min-height: 15mm !important;
-  max-height: 15mm !important;
-  padding: .5mm 3mm 0 !important;
-  overflow: hidden !important;
-}
-.staff-id-preview-card .id-row {
-  box-sizing: border-box !important;
-  flex: 0 0 2mm !important;
-  height: 2mm !important;
-  min-height: 2mm !important;
-  max-height: 2mm !important;
-  align-items: center !important;
-  overflow: hidden !important;
-}
-.staff-id-preview-card .id-qr-area {
-  box-sizing: border-box !important;
-  flex: 0 0 10mm !important;
-  height: 10mm !important;
-  min-height: 10mm !important;
-  max-height: 10mm !important;
-  padding-top: .5mm !important;
-  margin: 0 3mm !important;
-  overflow: hidden !important;
-}
-.staff-id-preview-card .id-footer {
-  box-sizing: border-box !important;
-  flex: 0 0 2.4mm !important;
-  height: 2.4mm !important;
-  min-height: 2.4mm !important;
-  max-height: 2.4mm !important;
-  margin-top: auto !important;
-  padding: 0 .8mm .15mm !important;
-  overflow: hidden !important;
-}
+.staff-id-preview-card>.id-top {box-sizing:border-box!important;flex:0 0 21mm!important;height:21mm!important;min-height:21mm!important;max-height:21mm!important;padding:1mm 2.5mm .5mm!important;overflow:hidden!important;}
+.staff-id-preview-card .id-school {padding:0!important;line-height:1!important;}
+.staff-id-preview-card .id-logo {width:5.5mm!important;height:5.5mm!important;margin:0 auto .3mm!important;padding:.2mm!important;}
+.staff-id-preview-card .id-school-name {font-size:2.45mm!important;line-height:1.05!important;}
+.staff-id-preview-card .id-school-sub {font-size:1.5mm!important;line-height:1.05!important;margin-top:.25mm!important;}
+.staff-id-preview-card .id-school-phone {font-size:1.4mm!important;line-height:1.05!important;margin-top:.2mm!important;}
+.staff-id-preview-card .id-school-aff {font-size:1.15mm!important;line-height:1.05!important;margin-top:.2mm!important;}
+.staff-id-preview-card .id-red-line {height:.2mm!important;min-height:.2mm!important;margin:.35mm 8mm 0!important;}
+.staff-id-preview-card>.id-photo-wrap {box-sizing:border-box!important;flex:0 0 27mm!important;width:24mm!important;height:27mm!important;min-height:27mm!important;max-height:27mm!important;margin:0 auto!important;overflow:hidden!important;}
+.staff-id-preview-card>.id-photo-wrap img,.staff-id-preview-card>.id-photo-wrap .photo-fallback {box-sizing:border-box!important;width:100%!important;height:100%!important;display:block!important;object-fit:cover!important;object-position:center top!important;}
+.staff-id-preview-card>.id-name-band {box-sizing:border-box!important;flex:0 0 7.5mm!important;height:7.5mm!important;min-height:7.5mm!important;max-height:7.5mm!important;padding:.65mm 1.5mm .35mm!important;overflow:hidden!important;}
+.staff-id-preview-card .id-name {font-size:2.45mm!important;line-height:1.12!important;max-height:3mm!important;}
+.staff-id-preview-card .id-role {font-size:1.75mm!important;line-height:1.12!important;margin-top:.2mm!important;max-height:2.2mm!important;}
+.staff-id-preview-card>.id-details {box-sizing:border-box!important;display:flex!important;flex:0 0 15mm!important;height:15mm!important;min-height:15mm!important;max-height:15mm!important;padding:.5mm 3mm 0!important;gap:0!important;overflow:hidden!important;}
+.staff-id-preview-card .id-row {box-sizing:border-box!important;display:flex!important;flex:0 0 2.25mm!important;height:2.25mm!important;min-height:2.25mm!important;max-height:2.25mm!important;align-items:center!important;overflow:hidden!important;font-size:4.5pt!important;line-height:1!important;}
+.staff-id-preview-card .id-row span,.staff-id-preview-card .id-row b {font-size:4.5pt!important;line-height:1!important;height:auto!important;max-height:2.25mm!important;overflow:hidden!important;}
+.staff-id-preview-card>.id-qr-area {box-sizing:border-box!important;display:flex!important;flex:0 0 11mm!important;height:11mm!important;min-height:11mm!important;max-height:11mm!important;margin:0 3mm!important;padding:.6mm 0 0!important;overflow:hidden!important;}
+.staff-id-preview-card .id-valid {font-size:1.4mm!important;line-height:1.22!important;max-width:31mm!important;}
+.staff-id-preview-card .id-qrcode {width:9mm!important;height:9mm!important;flex:0 0 9mm!important;}
+.staff-id-preview-card .id-qrcode img,.staff-id-preview-card .id-qrcode canvas {width:9mm!important;height:9mm!important;display:block!important;}
+.staff-id-preview-card>.id-footer {box-sizing:border-box!important;flex:0 0 2.5mm!important;height:2.5mm!important;min-height:2.5mm!important;max-height:2.5mm!important;margin-top:auto!important;padding:0 .8mm .15mm!important;overflow:hidden!important;font-size:.85mm!important;line-height:1.1!important;}
 </style>
+
 
 </body>');
 
