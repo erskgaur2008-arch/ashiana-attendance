@@ -8014,8 +8014,7 @@ async function loadAdminStudents(){
       if(!printWin){showToast('Please allow pop-ups to print student ID cards.','error');return;}
       setupPrintWindowBackHandling(printWin);
       printWin.document.open();
-      printWin.document.write('<!doctype html><title>Preparing student ID cards…</title><body style="font:16px Arial;padding:24px">Preparing student ID cards…
-</body>');
+      printWin.document.write('<!doctype html><title>Preparing student ID cards…</title><body style="font:16px Arial;padding:24px">Preparing student ID cards…</body>');
 
       printWin.document.close();
       // For student login, resolve private photo URLs before rendering the card.
