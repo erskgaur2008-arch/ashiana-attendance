@@ -1311,8 +1311,8 @@
     flex-direction: column;
     align-items: center;
     justify-content: center;
-    min-height: 204px;
-    padding: 34px 28px 28px;
+    min-height: 244px;
+    padding: 38px 28px 30px;
   }
   #admin-portal-view .admin-dashboard-brand {
     display: flex;
@@ -1326,11 +1326,21 @@
   }
   #admin-portal-view .admin-dashboard-brand > div:last-child { text-align: center; }
   #admin-portal-view .admin-dashboard-logo {
-    width: 76px;
-    height: 76px;
-    flex: 0 0 76px;
+    width: 104px;
+    height: 104px;
+    flex: 0 0 104px;
     margin: 0 auto 14px;
-    border-radius: 20px;
+    border-radius: 0;
+    background: transparent !important;
+    border: 0 !important;
+    box-shadow: none !important;
+    overflow: visible;
+  }
+  #admin-portal-view .admin-dashboard-logo img {
+    width: 100%;
+    height: 100%;
+    object-fit: contain !important;
+    border-radius: 0 !important;
   }
   #admin-portal-view .admin-dashboard-brand h1 {
     font-size: clamp(30px, 2.1vw, 38px) !important;
@@ -3175,7 +3185,7 @@ id="admin-portal-view" class="hidden flex-col w-full space-y-4 admin-dashboard-s
       <div class="admin-dashboard-header">
         <div class="admin-dashboard-brand">
           <div class="admin-dashboard-logo">
-            <img src="logo 2.png" alt="Ashiana Public School" onerror="this.style.display='none';this.nextElementSibling.classList.remove('hidden');">
+            <img src="assets/ashiana-dashboard-emblem.webp" alt="Ashiana Public School emblem" onerror="this.style.display='none';this.nextElementSibling.classList.remove('hidden');">
             <span class="hidden">A</span>
           </div>
           <div>
