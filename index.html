@@ -9241,7 +9241,38 @@ window.addEventListener('load',async function(){
       try{
         await ensureIdCardExportLibraries();const zip=format==='zip'?new window.JSZip():null,PDF=window.jspdf.jsPDF;let pdf=null;
         for(let i=0;i<items.length;i++){
-          stage=document.createElement('div');stage.style.cssText='position:fixed;left:-12000px;top:0;width:54mm;height:85.6mm;overflow:visible;background:#fff;z-index:-1;';stage.innerHTML=items[i].html;document.body.appendChild(stage);const card=stage.firstElementChild;await ensureQRCodeLibrary();
+          stage=document.createElement('div');stage.style.cssText='position:fixed;left:-12000px;top:0;width:54mm;height:85.6mm;overflow:visible;background:#fff;z-index:-1;';stage.innerHTML=items[i].html;document.body.appendChild(stage);const card=stage.firstElementChild;
+          // Isolate staff PNG/PDF rendering from preview/mobile CSS and force a fixed physical-card grid.
+          card.classList.add('staff-id-export-render');
+          if(!document.getElementById('staff-id-export-render-css')){
+            const exportCss=document.createElement('style');
+            exportCss.id='staff-id-export-render-css';
+            exportCss.textContent=`
+              .staff-id-preview-card.staff-id-export-render{display:grid!important;grid-template-columns:54mm!important;grid-template-rows:22mm 28mm 7mm 15mm 10mm 2.6mm!important;gap:0!important;align-content:start!important;justify-content:start!important;box-sizing:border-box!important;width:54mm!important;height:85.6mm!important;min-width:54mm!important;min-height:85.6mm!important;max-width:54mm!important;max-height:85.6mm!important;overflow:hidden!important;padding:0!important;transform:none!important}
+              .staff-id-preview-card.staff-id-export-render>.id-top{grid-row:1;grid-column:1;min-height:0!important;height:22mm!important;max-height:22mm!important;padding:.7mm 2mm .3mm!important;overflow:hidden!important}
+              .staff-id-preview-card.staff-id-export-render .id-logo{width:5.5mm!important;height:5.5mm!important;margin:0 auto .25mm!important}
+              .staff-id-preview-card.staff-id-export-render .id-school-name{font-size:2.25mm!important;line-height:1.05!important;margin:0!important}
+              .staff-id-preview-card.staff-id-export-render .id-school-sub{font-size:1.45mm!important;line-height:1.05!important;margin-top:.25mm!important}
+              .staff-id-preview-card.staff-id-export-render .id-school-phone{font-size:1.3mm!important;line-height:1.05!important;margin-top:.2mm!important}
+              .staff-id-preview-card.staff-id-export-render .id-school-aff{font-size:1.05mm!important;line-height:1.05!important;margin-top:.2mm!important}
+              .staff-id-preview-card.staff-id-export-render .id-red-line{height:.2mm!important;margin:.25mm 8mm 0!important}
+              .staff-id-preview-card.staff-id-export-render>.id-photo-wrap{grid-row:2;grid-column:1;box-sizing:border-box!important;width:24mm!important;height:28mm!important;min-height:0!important;max-height:28mm!important;flex:none!important;margin:0 auto!important;overflow:hidden!important}
+              .staff-id-preview-card.staff-id-export-render>.id-name-band{grid-row:3;grid-column:1;box-sizing:border-box!important;width:54mm!important;height:7mm!important;min-height:0!important;max-height:7mm!important;flex:none!important;padding:.7mm 1.5mm!important;overflow:hidden!important}
+              .staff-id-preview-card.staff-id-export-render .id-name{font-size:2.4mm!important;line-height:1.1!important;max-width:100%!important}
+              .staff-id-preview-card.staff-id-export-render .id-role{font-size:1.6mm!important;line-height:1.1!important;margin-top:.25mm!important}
+              .staff-id-preview-card.staff-id-export-render>.id-details{grid-row:4;grid-column:1;display:flex!important;flex-direction:column!important;justify-content:flex-start!important;box-sizing:border-box!important;width:54mm!important;height:15mm!important;min-height:0!important;max-height:15mm!important;flex:none!important;padding:.25mm 2mm 0!important;overflow:hidden!important}
+              .staff-id-preview-card.staff-id-export-render .id-row{display:flex!important;align-items:center!important;box-sizing:border-box!important;height:2.35mm!important;min-height:2.35mm!important;max-height:2.35mm!important;font-size:4pt!important;line-height:1!important;overflow:hidden!important}
+              .staff-id-preview-card.staff-id-export-render .id-row span{flex:0 0 14mm!important;width:14mm!important;min-width:14mm!important;max-width:14mm!important;font-size:4pt!important;line-height:1!important}
+              .staff-id-preview-card.staff-id-export-render .id-row b{font-size:4pt!important;line-height:1!important;min-width:0!important}
+              .staff-id-preview-card.staff-id-export-render>.id-qr-area{grid-row:5;grid-column:1;box-sizing:border-box!important;width:auto!important;height:10mm!important;min-height:0!important;max-height:10mm!important;flex:none!important;margin:0 2mm!important;padding:.3mm 0 0!important;overflow:hidden!important}
+              .staff-id-preview-card.staff-id-export-render .id-valid{font-size:1.25mm!important;line-height:1.12!important;max-width:34mm!important}
+              .staff-id-preview-card.staff-id-export-render .id-qrcode{width:8mm!important;height:8mm!important;min-width:8mm!important;flex:0 0 8mm!important}
+              .staff-id-preview-card.staff-id-export-render .id-qrcode img,.staff-id-preview-card.staff-id-export-render .id-qrcode canvas{width:8mm!important;height:8mm!important}
+              .staff-id-preview-card.staff-id-export-render>.id-footer{grid-row:6;grid-column:1;box-sizing:border-box!important;width:54mm!important;height:2.6mm!important;min-height:0!important;max-height:2.6mm!important;flex:none!important;margin:0!important;align-items:center!important;font-size:.75mm!important;line-height:1!important;padding:0 .5mm!important;overflow:hidden!important}
+            `;
+            document.head.appendChild(exportCss);
+          }
+          await ensureQRCodeLibrary();
           if(items[i].kind==='staff')new QRCode(card.querySelector('.id-qrcode'),{text:JSON.stringify(items[i].payload),width:160,height:160,correctLevel:QRCode.CorrectLevel.M});else renderStudentCardQr(card.querySelector('[data-student-qr]'),items[i].record);
           await Promise.all(Array.from(card.querySelectorAll('img')).map(im=>im.decode?im.decode().catch(()=>{}):new Promise(r=>{if(im.complete)r();else{im.onload=r;im.onerror=r;}})));await new Promise(r=>requestAnimationFrame(()=>requestAnimationFrame(r)));
           const canvas=await window.html2canvas(card,{scale:4,backgroundColor:'#fff',useCORS:true,allowTaint:false,logging:false}),blob=await new Promise((resolve,reject)=>canvas.toBlob(b=>b?resolve(b):reject(new Error('PNG conversion failed.')),'image/png')),name=String(items[i].fileName||'id-card').replace(/[^a-zA-Z0-9_-]+/g,'-').slice(0,70)||'id-card';
