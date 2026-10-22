@@ -168,6 +168,27 @@ end;
 $$;
 
 
+create or replace function public.fee_student_submissions_by_session(p_token text)
+returns table (
+  submission_id uuid, fee_account_id uuid, amount_paise bigint,
+  upi_reference text, status text, submitted_at timestamptz, rejection_reason text
+)
+language plpgsql security definer set search_path = ''
+as $function$
+declare v_student uuid;
+begin
+  v_student := public.student_session_student_id(p_token);
+  if v_student is null then raise exception 'Invalid or expired student session'; end if;
+  return query
+  select p.id,p.fee_account_id,p.amount_paise,p.upi_reference,p.status,p.created_at,p.rejection_reason
+  from public.fee_payment_submissions p
+  join public.student_fee_accounts a on a.id=p.fee_account_id
+  where a.student_id=v_student and a.school_code='ashiana'
+  order by p.created_at desc
+  limit 50;
+end;
+$function$;
+
 create or replace function public.fee_student_receipts_by_session(p_token text)
 returns table (
   receipt_id uuid, receipt_number text, academic_year_label text,
@@ -264,6 +285,8 @@ grant execute on function public.fee_student_summary_by_session(text) to anon;
 grant execute on function public.fee_submit_payment_by_session(text,uuid,bigint,text,text,text) to anon;
 grant execute on function public.fee_admin_review_payment(uuid,boolean,text) to authenticated;
 grant execute on function public.fee_principal_confirm_payment(uuid,boolean,text) to authenticated;
+revoke all on function public.fee_student_submissions_by_session(text) from public, authenticated;
+grant execute on function public.fee_student_submissions_by_session(text) to anon;
 revoke all on function public.fee_student_receipts_by_session(text) from public, authenticated;
 revoke all on function public.fee_admin_payment_queue() from public, anon;
 revoke all on function public.fee_principal_payment_queue() from public, anon;
