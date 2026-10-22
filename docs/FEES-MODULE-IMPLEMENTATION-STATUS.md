@@ -1,36 +1,39 @@
 # Fees Management implementation status
 
-## Branch
+## Branch and review
 
-`feat/live-fees-management`
+- Branch: `feat/live-fees-management`
+- Draft PR: https://github.com/erskgaur2008-arch/ashiana-attendance/pull/241
 
-## Files currently drafted
+## Draft files
 
-- `supabase/migrations/20261023000100_fees_management_schema.sql`: additive fee tables for academic years, fee structures, student accounts, installments, discount approvals, payment submissions, ledger, receipts, audit, principal approvers, and reminder attempts.
-- `supabase/migrations/20261023000200_fees_management_security.sql`: student-session RPCs and Admin/Principal review RPCs.
-- `supabase/migrations/20261023000300_fees_management_storage.sql`: private payment-evidence bucket.
-- `supabase/tests/fees_management_security.sql`: initial database permission checks.
-- `docs/FEES-MODULE-PLAN.md`: requirements, accounting rules, and release checklist.
+- `supabase/migrations/20261023000100_fees_management_schema.sql`: additive fee tables.
+- `supabase/migrations/20261023000200_fees_management_security.sql`: student session summary/submission/receipt RPCs, Admin and Principal review queues, two-step confirmation, discount review.
+- `supabase/migrations/20261023000300_fees_management_storage.sql`: private evidence bucket.
+- `supabase/functions/fee-management/index.ts`: gateway for student summaries, proof upload URL creation, payment submission, receipts, authorized review queues, temporary proof viewing, Admin review and Principal confirmation.
+- `supabase/tests/fees_management_security.sql`: initial database privilege assertions.
+- `.github/workflows/fees-management-validation.yml`: Deno type check and required-file checks.
+- `docs/FEES-MODULE-PLAN.md`: product requirements and release safeguards.
 
 ## Not ready for production
 
-These files are a first implementation draft, not a production-ready or activated fee module. No migrations have been applied and no Edge Functions have been deployed. The existing live website is unchanged.
+This is a code draft, not a live/activated feature. SQL has not been applied and the Edge Function has not been deployed. The existing live web UI has not yet been integrated, and no production data has been modified.
 
-Before release, complete and review:
-1. Integrate student fee cards, payment submission, Admin review queue, Principal confirmation queue, discount management, and receipts into the current UI.
-2. Implement a server-side Edge Function for proof uploads/downloads and authorized queue reads; keep the storage bucket private and do not grant direct object access.
-3. Add narrowly scoped server-side admin operations to configure academic years, structures, installments, accounts, discounts, and principal approvers.
-4. Validate existing production admin identity mapping and the exact existing `private.is_admin()` definition before relying on it.
-5. Review whether student session tokens are passed and protected correctly by each RPC; never expose tokens, proof paths, or other students' fee records.
-6. Ensure Admin rejection and Principal rejection semantics are consistent and allow resubmission without reusing a duplicate reference.
-7. Add notification delivery with verified scheduler/dispatch mechanism; suppress reminders while a submission is pending review.
-8. Run SQL parsing, migration dependency checks, permission tests, state-transition tests, and a complete regression review.
-9. Produce a backup/restore and rollback plan. Never delete ledger entries or issued receipts; use audited reversals.
+Before merge/release:
+1. Integrate student fee cards, payment upload/submission, Admin queue, Principal queue, discount controls, and receipt display into the existing `index.html` without disturbing login/attendance code.
+2. Complete and test proof upload with an actual signed-upload flow; validate object metadata/content type after upload and before accepting the submission.
+3. Add secure admin operations for academic-year setup, fee structures, student fee account assignment, installment configuration, discount request creation, and Principal permission assignment.
+4. Verify SQL syntax and dependencies against the exact live schema. Check all roster columns, auth helpers, extensions, and RLS/role semantics.
+5. Test all state transitions, rejection/resubmission rules, duplicate UPI references, partial payments, discount calculations, receipts, and reversals.
+6. Ensure every review and download action is restricted server-side and every proof link is short-lived.
+7. Add reminders only after a supported scheduler is selected; pending-review submissions must not be reminded as unpaid.
+8. Add full security and regression tests for student session restoration, attendance, admin/teacher roles, notices, and existing push notifications.
+9. Prepare backup/restore and rollback instructions. Posted ledger entries and receipts must be corrected via audited reversal, not deletion.
 
-## Critical accounting safeguard
+## Accounting safeguard
 
-A screenshot and UPI reference are not proof of settlement by themselves. The authorized reviewers must reconcile the payment with the school's bank/UPI record. Only the two-step confirmation RPC creates a ledger credit and receipt.
+UPI reference and screenshot are evidence, not settlement confirmation. Authorized reviewers must reconcile against the school's bank/UPI record. A ledger credit and receipt are created only after distinct Admin and Principal approvals.
 
 ## Release controls
 
-Do not apply migrations to the live database, configure the live Principal approver, enable reminders, deploy functions, merge, or release an APK until the user explicitly approves the reviewed release.
+Do not apply migrations to the live database, assign the live Principal approver, enable reminders, deploy functions, merge, or release an APK until the user explicitly approves the reviewed release.
