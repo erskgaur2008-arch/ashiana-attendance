@@ -156,6 +156,97 @@ begin
 end;
 $$;
 
+
+create or replace function public.fee_student_receipts_by_session(p_token text)
+returns table (
+  receipt_id uuid, receipt_number text, academic_year_label text,
+  amount_paise bigint, issued_at timestamptz
+)
+language plpgsql security definer set search_path = ''
+as $
+declare v_student uuid;
+begin
+  v_student := public.student_session_student_id(p_token);
+  if v_student is null then raise exception 'Invalid or expired student session'; end if;
+  return query
+  select r.id, r.receipt_number, y.label, r.amount_paise, r.issued_at
+  from public.fee_receipts r
+  join public.student_fee_accounts a on a.id=r.fee_account_id
+  join public.fee_academic_years y on y.id=a.academic_year_id
+  where a.student_id=v_student and a.school_code='ashiana'
+  order by r.issued_at desc;
+end;
+$;
+
+create or replace function public.fee_admin_payment_queue()
+returns table (
+  submission_id uuid, student_id uuid, student_name text, enroll_no text,
+  class_name text, section text, amount_paise bigint, upi_reference text,
+  proof_object_path text, submitted_at timestamptz, status text
+)
+language plpgsql security definer set search_path = ''
+as $
+begin
+  if auth.uid() is null or not private.is_admin() then raise exception 'Admin permission required'; end if;
+  return query
+  select p.id, s.id, s.name::text, s.enroll_no::text, s.class_name::text, s.section::text,
+    p.amount_paise, p.upi_reference, p.proof_object_path, p.created_at, p.status
+  from public.fee_payment_submissions p
+  join public.student_fee_accounts a on a.id=p.fee_account_id
+  join public.student_roster s on s.id=a.student_id
+  where a.school_code='ashiana' and p.status='PENDING_ADMIN'
+  order by p.created_at asc;
+end;
+$;
+
+create or replace function public.fee_principal_payment_queue()
+returns table (
+  submission_id uuid, student_id uuid, student_name text, enroll_no text,
+  class_name text, section text, amount_paise bigint, upi_reference text,
+  proof_object_path text, submitted_at timestamptz, admin_reviewed_at timestamptz
+)
+language plpgsql security definer set search_path = ''
+as $
+begin
+  if auth.uid() is null or not exists (
+    select 1 from public.fee_principal_approvers p
+    where p.user_id=auth.uid() and p.school_code='ashiana' and p.is_enabled
+  ) then raise exception 'Authorized Principal fee permission required'; end if;
+  return query
+  select p.id, s.id, s.name::text, s.enroll_no::text, s.class_name::text, s.section::text,
+    p.amount_paise, p.upi_reference, p.proof_object_path, p.created_at, p.admin_reviewed_at
+  from public.fee_payment_submissions p
+  join public.student_fee_accounts a on a.id=p.fee_account_id
+  join public.student_roster s on s.id=a.student_id
+  where a.school_code='ashiana' and p.status='PENDING_PRINCIPAL'
+  order by p.admin_reviewed_at asc;
+end;
+$;
+
+create or replace function public.fee_admin_review_discount(
+  p_discount_id uuid, p_approve boolean, p_reason text default null
+) returns text
+language plpgsql security definer set search_path = ''
+as $
+declare v_actor uuid := auth.uid(); v_status text; v_account uuid;
+begin
+  if v_actor is null or not private.is_admin() then raise exception 'Admin permission required'; end if;
+  select d.status, d.fee_account_id into v_status, v_account
+  from public.fee_discount_requests d where d.id=p_discount_id for update;
+  if not found or v_status <> 'PENDING' then raise exception 'Discount is not awaiting review'; end if;
+  update public.fee_discount_requests
+    set status=case when p_approve then 'APPROVED' else 'REJECTED' end,
+        reviewed_by=v_actor, reviewed_at=now(),
+        reason=case when p_reason is null or length(trim(p_reason))<3 then reason
+                    else reason || E'\nReview: ' || trim(p_reason) end
+  where id=p_discount_id;
+  insert into public.fee_audit_log(school_code,actor_id,action,entity_type,entity_id,details)
+  values ('ashiana',v_actor,case when p_approve then 'DISCOUNT_APPROVED' else 'DISCOUNT_REJECTED' end,
+    'fee_discount_request',p_discount_id,jsonb_build_object('fee_account_id',v_account,'review_reason',p_reason));
+  return case when p_approve then 'APPROVED' else 'REJECTED' end;
+end;
+$;
+
 revoke all on function public.fee_student_summary_by_session(text) from public, authenticated;
 revoke all on function public.fee_submit_payment_by_session(text,uuid,bigint,text,text,text) from public, authenticated;
 revoke all on function public.fee_admin_review_payment(uuid,boolean,text) from public, anon, authenticated;
@@ -164,5 +255,13 @@ grant execute on function public.fee_student_summary_by_session(text) to anon;
 grant execute on function public.fee_submit_payment_by_session(text,uuid,bigint,text,text,text) to anon;
 grant execute on function public.fee_admin_review_payment(uuid,boolean,text) to authenticated;
 grant execute on function public.fee_principal_confirm_payment(uuid,boolean,text) to authenticated;
+revoke all on function public.fee_student_receipts_by_session(text) from public, authenticated;
+revoke all on function public.fee_admin_payment_queue() from public, anon;
+revoke all on function public.fee_principal_payment_queue() from public, anon;
+revoke all on function public.fee_admin_review_discount(uuid,boolean,text) from public, anon;
+grant execute on function public.fee_student_receipts_by_session(text) to anon;
+grant execute on function public.fee_admin_payment_queue() to authenticated;
+grant execute on function public.fee_principal_payment_queue() to authenticated;
+grant execute on function public.fee_admin_review_discount(uuid,boolean,text) to authenticated;
 
 commit;
