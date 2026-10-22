@@ -11596,12 +11596,52 @@ window.addEventListener('load',async function(){
         .toUpperCase() || "AP";
     }
 
+    // Persist staff profile photos in the device Cache API so they can render
+    // immediately on later launches. A changed avatar URL naturally gets a new cache entry.
+    const STAFF_AVATAR_CACHE = "ashiana-staff-avatars-v1";
+    async function loadCachedStaffAvatar(img, avatarUrl) {
+      if (!img || !avatarUrl) return;
+      const applyBlob = (blob) => {
+        if (!img.isConnected || img.dataset.avatarUrl !== avatarUrl) return;
+        if (img.dataset.objectUrl) URL.revokeObjectURL(img.dataset.objectUrl);
+        const objectUrl = URL.createObjectURL(blob);
+        img.dataset.objectUrl = objectUrl;
+        img.src = objectUrl;
+      };
+      try {
+        if (!("caches" in window)) {
+          img.src = avatarUrl;
+          return;
+        }
+        const cache = await caches.open(STAFF_AVATAR_CACHE);
+        const cached = await cache.match(avatarUrl);
+        if (cached) {
+          applyBlob(await cached.blob());
+          return;
+        }
+        // Keep the remote URL visible as a fallback while saving a successful fetch.
+        img.src = avatarUrl;
+        const response = await fetch(avatarUrl, { mode: "cors" });
+        if (!response.ok || !response.type.match(/^(cors|basic)$/)) return;
+        await cache.put(avatarUrl, response.clone());
+        applyBlob(await response.blob());
+      } catch (error) {
+        // Private browsing or device storage restrictions should not break the avatar.
+        if (img.isConnected && img.dataset.avatarUrl === avatarUrl && !img.src) img.src = avatarUrl;
+        console.debug("Staff avatar device cache unavailable:", error?.message || error);
+      }
+    }
+
     function renderStaffAvatar(elementId, staff) {
       const el = document.getElementById(elementId);
       if (!el) return;
       const avatarUrl = String(staff?.avatarUrl || staff?.avatar_url || '').trim();
       if (avatarUrl) {
-        el.innerHTML = `<img src="${studentEscape(avatarUrl)}" alt="Staff profile photo" class="w-full h-full object-cover" loading="eager" referrerpolicy="no-referrer">`;
+        el.innerHTML = `<img alt="Staff profile photo" class="w-full h-full object-cover" loading="eager" referrerpolicy="no-referrer">`;
+        const img = el.querySelector("img");
+        img.dataset.avatarUrl = avatarUrl;
+        img.src = avatarUrl;
+        loadCachedStaffAvatar(img, avatarUrl);
       } else {
         el.textContent = getStaffInitials(staff?.name);
       }
