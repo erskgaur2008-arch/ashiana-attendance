@@ -6780,6 +6780,17 @@ async function refreshStudentPortalData(){
   if(!error&&data?.success){currentAuthUser.portalData=data;currentAuthUser.studentRecord=data.student||s;populateStudentPortal(currentAuthUser.studentRecord);}
 }
 
+// Refresh the in-app notification feed while the student portal is open, and
+// immediately when the student returns to the app. Push delivery remains independent.
+(function installStudentNotificationRefresh(){
+  if(window.__ashianaStudentNotificationRefreshInstalled)return;
+  window.__ashianaStudentNotificationRefreshInstalled=true;
+  const refresh=()=>{if(document.visibilityState==="visible"&&String(currentAuthUser?.type||"").toLowerCase().includes("student"))refreshStudentPortalData().catch(()=>{});};
+  window.addEventListener("focus",refresh);
+  document.addEventListener("visibilitychange",refresh);
+  window.setInterval(refresh,30000);
+})();
+
     function scaleStudentIdCardPreview(){
       const preview=document.getElementById("student-id-card-preview");
       const card=preview?.querySelector(".student-id-preview-card");
