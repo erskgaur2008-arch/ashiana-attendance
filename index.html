@@ -8014,7 +8014,101 @@ async function loadAdminStudents(){
       if(!printWin){showToast('Please allow pop-ups to print student ID cards.','error');return;}
       setupPrintWindowBackHandling(printWin);
       printWin.document.open();
-      printWin.document.write('<!doctype html><title>Preparing student ID cards…</title><body style="font:16px Arial;padding:24px">Preparing student ID cards…</body>');
+      printWin.document.write('<!doctype html><title>Preparing student ID cards…</title><body style="font:16px Arial;padding:24px">Preparing student ID cards…
+<!-- Staff ID export: enforce a safe vertical layout budget to prevent clipped text in PDF/PNG downloads. -->
+<style id="staff-id-card-export-layout-fix">
+.staff-id-preview-card {
+  box-sizing: border-box !important;
+  width: 54mm !important;
+  height: 85.6mm !important;
+  min-width: 54mm !important;
+  min-height: 85.6mm !important;
+  max-width: 54mm !important;
+  max-height: 85.6mm !important;
+  overflow: hidden !important;
+}
+.staff-id-preview-card .id-top {
+  box-sizing: border-box !important;
+  flex: 0 0 21.5mm !important;
+  height: 21.5mm !important;
+  min-height: 21.5mm !important;
+  max-height: 21.5mm !important;
+  padding: 1mm 2.5mm .6mm !important;
+}
+.staff-id-preview-card .id-photo-wrap {
+  box-sizing: border-box !important;
+  flex: 0 0 26mm !important;
+  width: 24mm !important;
+  height: 26mm !important;
+  min-height: 26mm !important;
+  max-height: 26mm !important;
+  margin: 0 auto !important;
+}
+.staff-id-preview-card .id-photo-wrap img,
+.staff-id-preview-card .id-photo-wrap .photo-fallback {
+  box-sizing: border-box !important;
+  width: 100% !important;
+  height: 100% !important;
+}
+.staff-id-preview-card .id-name-band {
+  box-sizing: border-box !important;
+  flex: 0 0 8mm !important;
+  height: 8mm !important;
+  min-height: 8mm !important;
+  max-height: 8mm !important;
+  padding: .8mm 1.5mm .5mm !important;
+  overflow: hidden !important;
+}
+.staff-id-preview-card .id-name {
+  font-size: 2.6mm !important;
+  line-height: 1.15 !important;
+}
+.staff-id-preview-card .id-role {
+  font-size: 1.8mm !important;
+  line-height: 1.15 !important;
+  margin-top: .25mm !important;
+}
+.staff-id-preview-card .id-details {
+  box-sizing: border-box !important;
+  flex: 0 0 15mm !important;
+  height: 15mm !important;
+  min-height: 15mm !important;
+  max-height: 15mm !important;
+  padding: .5mm 3mm 0 !important;
+  overflow: hidden !important;
+}
+.staff-id-preview-card .id-row {
+  box-sizing: border-box !important;
+  flex: 0 0 2mm !important;
+  height: 2mm !important;
+  min-height: 2mm !important;
+  max-height: 2mm !important;
+  align-items: center !important;
+  overflow: hidden !important;
+}
+.staff-id-preview-card .id-qr-area {
+  box-sizing: border-box !important;
+  flex: 0 0 10mm !important;
+  height: 10mm !important;
+  min-height: 10mm !important;
+  max-height: 10mm !important;
+  padding-top: .5mm !important;
+  margin: 0 3mm !important;
+  overflow: hidden !important;
+}
+.staff-id-preview-card .id-footer {
+  box-sizing: border-box !important;
+  flex: 0 0 2.4mm !important;
+  height: 2.4mm !important;
+  min-height: 2.4mm !important;
+  max-height: 2.4mm !important;
+  margin-top: auto !important;
+  padding: 0 .8mm .15mm !important;
+  overflow: hidden !important;
+}
+</style>
+
+</body>');
 
       printWin.document.close();
       // For student login, resolve private photo URLs before rendering the card.
