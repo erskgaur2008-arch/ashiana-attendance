@@ -35,7 +35,7 @@
 ## Remaining before production
 
 1. Finish browser UI usability checks for academic-year, student and fee-account search; verify the result labels against the live roster.
-2. Verify real private proof upload/download end-to-end, including stored metadata and rejection of invalid uploads.
+2. Verify real private proof upload/download end-to-end, including stored metadata and rejection of invalid uploads. The client now requests cleanup of an unsubmitted proof after a failed payment submission; this still needs real-browser verification.
 3. Review the exact migration dependencies against production's schema without writing to production; only apply after explicit release approval, backup and rollback planning.
 4. Expand synthetic tests for rejection/resubmission, duplicate references, concurrent/partial payments, discount limits, reversal entries and multi-year balances.
 5. Identify and configure the actual Principal's authenticated user UUID; verify distinct Admin and Principal accounts.
