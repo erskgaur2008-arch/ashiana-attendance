@@ -140,6 +140,26 @@ Deno.serve(async (req) => {
     return reply({ submissions: data ?? [] });
   }
 
+  if (action === "admin-list-years") {
+    const { data, error } = await userClient.rpc("fee_admin_list_academic_years");
+    if (error) return reply({ error: error.message }, 403);
+    return reply({ academic_years: data ?? [] });
+  }
+
+  if (action === "admin-search-students") {
+    const query = typeof input.query === "string" ? input.query.trim().slice(0, 80) : "";
+    const { data, error } = await userClient.rpc("fee_admin_search_students", { p_query: query });
+    if (error) return reply({ error: error.message }, 403);
+    return reply({ students: data ?? [] });
+  }
+
+  if (action === "admin-search-fee-accounts") {
+    const query = typeof input.query === "string" ? input.query.trim().slice(0, 80) : "";
+    const { data, error } = await userClient.rpc("fee_admin_search_fee_accounts", { p_query: query });
+    if (error) return reply({ error: error.message }, 403);
+    return reply({ fee_accounts: data ?? [] });
+  }
+
   if (action === "admin-save-academic-year") {
     const label = typeof input.label === "string" ? input.label.trim() : "";
     const startsOn = typeof input.starts_on === "string" ? input.starts_on : "";
