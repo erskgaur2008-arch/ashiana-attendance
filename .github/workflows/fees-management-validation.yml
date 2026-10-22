@@ -69,6 +69,7 @@ jobs:
           grep -q "submitStudentFeePayment" index.html
           grep -q "openFeesAdminConsole" index.html
           grep -q "student-submissions" supabase/functions/fee-management/index.ts
+          grep -q "discard-proof-upload" supabase/functions/fee-management/index.ts
           grep -q "admin-discount-queue" supabase/functions/fee-management/index.ts
           grep -q "fee_admin_search_students" supabase/migrations/20261023000400_fees_management_admin_setup.sql
           grep -q "fee_admin_discount_queue" supabase/migrations/20261023000200_fees_management_security.sql
