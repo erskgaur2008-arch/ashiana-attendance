@@ -6756,7 +6756,7 @@ async function studentDashboardSection(type){
         const teachers=new Map();
         // One display-name resolver for every client: prefer the server's staff-profile name,
         // then the locally loaded staff record. Never display an email as a person's name.
-        const isEmailLike=value=>/^[^\\s@]+@[^\\s@]+\\.[^\\s@]+$/.test(String(value||"").trim());
+        const isEmailLike=value=>/^[^\s@]+@[^\s@]+\.[^\s@]+$/.test(String(value||"").trim());
         const findName=(email,serverName)=>{const server=String(serverName||"").trim();if(server&&!isEmailLike(server))return server;const e=String(email||"").trim().toLowerCase();const arr=Array.isArray(staffDatabase)?staffDatabase:[];const found=arr.find(x=>String(x.email||"").trim().toLowerCase()===e);const local=String(found?.name||"").trim();return local&&!isEmailLike(local)?local:"Teacher name unavailable";};
         (data.class_teachers||[]).forEach(x=>{const email=String(x.teacher_email||"").trim();if(email){const name=findName(email,x.teacher_name),key=name.toLowerCase(),old=teachers.get(key)||{name,roles:[]};if(!old.roles.includes("Class Teacher"))old.roles.push("Class Teacher");teachers.set(key,old);}});
         (data.subject_teachers||[]).forEach(x=>{const email=String(x.teacher_email||"").trim(),subject=String(x.subject_name||"").trim();if(email){const name=findName(email,x.teacher_name),key=name.toLowerCase(),old=teachers.get(key)||{name,roles:[]},role=subject?"Subject Teacher • "+subject:"Subject Teacher";if(!old.roles.includes(role))old.roles.push(role);teachers.set(key,old);}});
