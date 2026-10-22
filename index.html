@@ -6750,8 +6750,8 @@ async function studentDashboardSection(type){
         const receipts=Array.isArray(receiptResult.data?.receipts)?receiptResult.data.receipts:[];
         const money=(paise)=>"₹"+(Number(paise||0)/100).toLocaleString("en-IN",{minimumFractionDigits:2,maximumFractionDigits:2});
         host.innerHTML=accounts.length?accounts.map(a=>{
-          const due=Number(a.total_due_paise||0),paid=Number(a.total_paid_paise||0),discount=Number(a.approved_discount_paise||0),balance=Number(a.balance_paise??Math.max(0,due-discount-paid));
-          return '<section class="p-4 sm:p-5 bg-white border border-amber-200 rounded-2xl shadow-sm"><div class="flex items-start justify-between gap-3"><div><p class="text-xs text-slate-500">Academic year</p><h3 class="mt-1 text-lg font-extrabold text-slate-900">'+studentEscape(a.academic_year_label||"Current academic year")+'</h3></div><span class="px-2.5 py-1 rounded-full bg-amber-100 text-amber-800 text-[10px] font-extrabold">'+(balance>0?"Balance due":"No balance due")+'</span></div><div class="grid grid-cols-2 sm:grid-cols-3 gap-2 mt-4"><div class="p-3 rounded-xl bg-slate-50"><p class="text-[10px] text-slate-500">Total fee</p><p class="mt-1 font-extrabold">'+money(due)+'</p></div><div class="p-3 rounded-xl bg-emerald-50"><p class="text-[10px] text-emerald-700">Paid</p><p class="mt-1 font-extrabold text-emerald-800">'+money(paid)+'</p></div><div class="p-3 rounded-xl bg-rose-50 col-span-2 sm:col-span-1"><p class="text-[10px] text-rose-700">Pending balance</p><p class="mt-1 font-extrabold text-rose-800">'+money(balance)+'</p></div></div><p class="mt-3 text-[11px] leading-relaxed text-slate-500">Payments appear as paid only after Admin review and independent Principal confirmation. A UPI reference or screenshot alone is not proof of settlement.</p></section>';
+          const due=Number(a.total_due_paise||0),paid=Number(a.total_paid_paise||0),discount=Number(a.discount_paise||0),balance=Number(a.balance_paise??Math.max(0,due-discount-paid));
+          return '<section class="p-4 sm:p-5 bg-white border border-amber-200 rounded-2xl shadow-sm"><div class="flex items-start justify-between gap-3"><div><p class="text-xs text-slate-500">Academic year</p><h3 class="mt-1 text-lg font-extrabold text-slate-900">'+studentEscape(a.academic_year_label||"Current academic year")+'</h3></div><span class="px-2.5 py-1 rounded-full bg-amber-100 text-amber-800 text-[10px] font-extrabold">'+(balance>0?"Balance due":"No balance due")+'</span></div><div class="grid grid-cols-2 sm:grid-cols-3 gap-2 mt-4"><div class="p-3 rounded-xl bg-slate-50"><p class="text-[10px] text-slate-500">Total fee</p><p class="mt-1 font-extrabold">'+money(due)+'</p></div><div class="p-3 rounded-xl bg-emerald-50"><p class="text-[10px] text-emerald-700">Paid</p><p class="mt-1 font-extrabold text-emerald-800">'+money(paid)+'</p></div><div class="p-3 rounded-xl bg-rose-50 col-span-2 sm:col-span-1"><p class="text-[10px] text-rose-700">Pending balance</p><p class="mt-1 font-extrabold text-rose-800">'+money(balance)+'</p></div></div><p class="mt-3 text-[11px] leading-relaxed text-slate-500">Payments appear as paid only after Admin review and independent Principal confirmation. A UPI reference or screenshot alone is not proof of settlement.</p>'+(balance>0?'<form onsubmit="submitStudentFeePayment(event)" data-fee-account="'+studentEscape(a.fee_account_id)+'" class="mt-4 pt-4 border-t space-y-3"><h4 class="font-extrabold text-slate-900">Submit payment details</h4><div><label class="block text-xs font-bold mb-1">Amount paid (₹)</label><input name="amount_rupees" type="number" min="0.01" max="'+(balance/100).toFixed(2)+'" step="0.01" required class="w-full rounded-xl border border-slate-300 p-3 text-sm" placeholder="Enter amount paid"></div><div><label class="block text-xs font-bold mb-1">UPI / bank reference ID</label><input name="upi_reference" required minlength="6" maxlength="120" class="w-full rounded-xl border border-slate-300 p-3 text-sm" placeholder="Enter transaction reference"></div><div><label class="block text-xs font-bold mb-1">Payment screenshot / receipt (required)</label><input name="payment_proof" type="file" accept="image/jpeg,image/png,image/webp,application/pdf" required class="w-full rounded-xl border border-slate-300 p-3 text-xs"><p class="mt-1 text-[10px] text-slate-500">JPG, PNG, WebP or PDF; maximum 5 MB.</p></div><div><label class="block text-xs font-bold mb-1">Note (optional)</label><textarea name="student_note" maxlength="1000" rows="2" class="w-full rounded-xl border border-slate-300 p-3 text-sm" placeholder="Optional details"></textarea></div><div data-fee-feedback role="status" class="hidden rounded-xl p-3 text-xs font-semibold"></div><button type="submit" class="w-full rounded-xl bg-amber-800 text-white font-extrabold p-3 text-sm">Submit for verification</button><p class="text-[10px] leading-relaxed text-slate-500">Submission is not a receipt. Please ensure the payment is actually completed; school staff will reconcile the reference before confirmation.</p></form>':'')+'</section>';
         }).join(""):'<div class="p-4 rounded-2xl border border-slate-200 bg-white text-sm text-slate-600">No fee account has been assigned to your student record yet. Please contact the school office.</div>';
         host.innerHTML+='<section class="p-4 bg-white border rounded-2xl"><h3 class="font-extrabold text-slate-900">Receipts</h3><div class="mt-3 space-y-2">'+(receipts.length?receipts.map(r=>'<div class="flex items-start justify-between gap-3 p-3 rounded-xl bg-slate-50 border"><div><p class="text-sm font-bold">'+studentEscape(r.receipt_number||"Fee receipt")+'</p><p class="text-[10px] text-slate-500">'+studentEscape(r.issued_at||r.created_at||"")+'</p></div><b class="text-sm text-emerald-800">'+money(r.amount_paise||r.amount||0)+'</b></div>').join(""):'<p class="text-sm text-slate-500">No confirmed receipts yet.</p>')+'</div></section>';
       }catch(e){
@@ -6834,6 +6834,49 @@ function closeStudentDashboardSection(){
   if(panel)panel.classList.add("hidden");
   document.body.classList.remove("overflow-hidden");
 }
+async function submitStudentFeePayment(event){
+  event.preventDefault();
+  const form=event.currentTarget;
+  if(!form||form.dataset.submitting==="1")return false;
+  const feedback=form.querySelector("[data-fee-feedback]");
+  const button=form.querySelector('button[type="submit"]');
+  const show=(message,ok=false)=>{
+    if(feedback){feedback.textContent=message;feedback.className="rounded-xl p-3 text-xs font-semibold "+(ok?"bg-emerald-50 border border-emerald-200 text-emerald-800":"bg-rose-50 border border-rose-200 text-rose-800");}
+  };
+  const token=String(await window.AshianaNative?.getStudentSessionToken?.() || sessionStorage.getItem("aps_student_session_token_v1") || "");
+  const accountId=String(form.dataset.feeAccount||"");
+  const amountPaise=Math.round(Number(form.elements.amount_rupees?.value)*100);
+  const reference=String(form.elements.upi_reference?.value||"").trim();
+  const file=form.elements.payment_proof?.files?.[0];
+  if(!/^[a-f0-9]{64}$/i.test(token)){show("Your student session has expired. Please sign in again.");return false;}
+  if(!/^[0-9a-f]{8}-[0-9a-f]{4}-[1-8][0-9a-f]{3}-[89ab][0-9a-f]{3}-[0-9a-f]{12}$/i.test(accountId)){show("The fee account is invalid. Please refresh and try again.");return false;}
+  if(!Number.isSafeInteger(amountPaise)||amountPaise<=0||reference.length<6||!file){show("Enter the amount, reference ID and payment proof.");return false;}
+  if(file.size<=0||file.size>5*1024*1024){show("The proof file must be no larger than 5 MB.");return false;}
+  if(!["image/jpeg","image/png","image/webp","application/pdf"].includes(file.type)){show("Use a JPG, PNG, WebP image or PDF proof.");return false;}
+  form.dataset.submitting="1";if(button){button.disabled=true;button.textContent="Uploading proof…";}
+  try{
+    const client=typeof supabaseClient!=="undefined"?supabaseClient:window.__ashianaMainSupabaseClient;
+    if(!client?.functions?.invoke||!client?.storage)throw new Error("The application client is not ready.");
+    const uploadPrep=await client.functions.invoke("fee-management",{body:{action:"create-proof-upload",student_session_token:token,fee_account_id:accountId,file_name:file.name,content_type:file.type,size_bytes:file.size}});
+    if(uploadPrep.error)throw new Error(uploadPrep.error.message||"Could not prepare private proof upload.");
+    const prep=uploadPrep.data||{};
+    if(!prep.object_path||!prep.upload_token)throw new Error(prep.error||"The private upload link was not returned.");
+    const uploaded=await client.storage.from("fee-payment-proofs").uploadToSignedUrl(prep.object_path,prep.upload_token,file,{contentType:file.type,upsert:false});
+    if(uploaded.error)throw new Error(uploaded.error.message||"Proof upload failed.");
+    if(button)button.textContent="Submitting…";
+    const submitted=await client.functions.invoke("fee-management",{body:{action:"submit-payment",student_session_token:token,fee_account_id:accountId,amount_paise:amountPaise,upi_reference:reference,proof_object_path:prep.object_path,student_note:String(form.elements.student_note?.value||"").trim()}});
+    if(submitted.error)throw new Error(submitted.error.message||"Payment submission failed.");
+    show("Payment details submitted. Status: awaiting Admin review. This is not a confirmed receipt.",true);
+    form.reset();if(button){button.textContent="Submitted for review";button.disabled=true;}
+    if(window.showToast)showToast("Payment details submitted for verification.","success");
+    return false;
+  }catch(error){
+    show(error?.message||"Could not submit payment details. Please try again.");
+    if(button){button.disabled=false;button.textContent="Submit for verification";}
+    return false;
+  }finally{delete form.dataset.submitting;}
+}
+window.submitStudentFeePayment=submitStudentFeePayment;
 async function submitStudentLeave(event){
   event.preventDefault();
   const form=event.currentTarget;
