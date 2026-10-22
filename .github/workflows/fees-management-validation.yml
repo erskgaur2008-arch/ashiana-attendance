@@ -41,5 +41,6 @@ jobs:
           test -s supabase/migrations/20261023000100_fees_management_schema.sql
           test -s supabase/migrations/20261023000200_fees_management_security.sql
           test -s supabase/migrations/20261023000300_fees_management_storage.sql
+          test -s supabase/migrations/20261023000400_fees_management_admin_setup.sql
           test -s supabase/tests/fees_management_security.sql
           echo "Draft files are present. This workflow does not apply migrations or access production."
