@@ -282,12 +282,21 @@ create or replace function public.fee_admin_review_discount(
 ) returns text
 language plpgsql security definer set search_path = ''
 as $function$
-declare v_actor uuid := auth.uid(); v_status text; v_account uuid;
+declare v_actor uuid := auth.uid(); v_status text; v_account uuid; v_amount bigint; v_balance bigint;
 begin
   if v_actor is null or not private.is_admin() then raise exception 'Admin permission required'; end if;
-  select d.status, d.fee_account_id into v_status, v_account
+  select d.status, d.fee_account_id, d.amount_paise into v_status, v_account, v_amount
   from public.fee_discount_requests d where d.id=p_discount_id for update;
   if not found or v_status <> 'PENDING' then raise exception 'Discount is not awaiting review'; end if;
+  if p_approve then
+    perform 1 from public.student_fee_accounts a where a.id=v_account for update;
+    select greatest(0,
+      coalesce((select sum(i.amount_paise) from public.fee_installments i where i.fee_account_id=v_account),0)
+      - coalesce((select sum(d.amount_paise) from public.fee_discount_requests d where d.fee_account_id=v_account and d.status='APPROVED'),0)
+      - coalesce((select sum(l.amount_paise) from public.fee_ledger_entries l where l.fee_account_id=v_account),0)
+    )::bigint into v_balance;
+    if v_amount > v_balance then raise exception 'Discount exceeds the remaining fee balance'; end if;
+  end if;
   update public.fee_discount_requests
     set status=case when p_approve then 'APPROVED' else 'REJECTED' end,
         reviewed_by=v_actor, reviewed_at=now()
