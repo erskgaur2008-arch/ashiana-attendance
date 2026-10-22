@@ -1369,34 +1369,106 @@
   #admin-portal-view .admin-desktop-full-banner { display: none; }
 }
 
-/* Full uploaded banner is only used in the desktop browser Admin dashboard. */
+/* Option 4: centered emblem and school details with layered emerald waves.
+   Desktop Admin browser only; mobile/PWA, other roles and ID-card layouts are untouched. */
 @media (min-width: 801px) and (display-mode: browser) {
   #admin-portal-view .admin-dashboard-header {
-    display: block !important;
+    display: flex !important;
     position: relative !important;
-    min-height: 0 !important;
-    height: auto !important;
-    padding: 0 !important;
-    overflow: hidden;
-    border-radius: 24px;
+    box-sizing: border-box;
+    min-height: 250px !important;
+    height: 250px !important;
+    padding: 26px 30px 20px !important;
+    flex-direction: column !important;
+    align-items: center !important;
+    justify-content: center !important;
+    gap: 7px !important;
+    overflow: hidden !important;
+    isolation: isolate;
+    border: 1px solid rgba(167, 243, 208, .72) !important;
+    border-radius: 24px !important;
+    background: linear-gradient(118deg, #005844 0%, #007b5b 52%, #009e70 100%) !important;
+    box-shadow: 0 12px 30px rgba(0, 105, 78, .16), inset 0 1px 0 rgba(255,255,255,.24) !important;
+    color: #fff !important;
   }
-  #admin-portal-view .admin-desktop-full-banner {
+  #admin-portal-view .admin-dashboard-header::before {
+    content: "" !important;
     display: block !important;
-    width: 100%;
-    height: auto;
-    aspect-ratio: 2048 / 396;
-    object-fit: contain;
-    image-rendering: auto;
-    filter: none;
+    position: absolute !important;
+    z-index: -1;
+    inset: 0;
+    pointer-events: none;
+    background:
+      radial-gradient(ellipse at 5% 115%, transparent 0 25%, rgba(93, 225, 178, .22) 25.2% 26.2%, transparent 26.4% 32%, rgba(93, 225, 178, .13) 32.2% 34%, transparent 34.2%),
+      radial-gradient(ellipse at 100% 125%, transparent 0 28%, rgba(93, 225, 178, .22) 28.2% 29.2%, transparent 29.4% 35%, rgba(93, 225, 178, .12) 35.2% 37%, transparent 37.2%),
+      linear-gradient(130deg, rgba(255,255,255,.06), transparent 40%, rgba(255,255,255,.04));
   }
-  #admin-portal-view .admin-dashboard-header::before,
-  #admin-portal-view .admin-dashboard-header::after { display: none !important; content: none !important; }
-  #admin-portal-view .admin-dashboard-brand { display: none !important; }
+  #admin-portal-view .admin-dashboard-header::after {
+    content: "" !important;
+    display: block !important;
+    position: absolute !important;
+    z-index: -1;
+    left: 0; right: 0; bottom: 0;
+    height: 34px;
+    pointer-events: none;
+    background: linear-gradient(175deg, transparent 0 34%, rgba(74, 222, 170, .28) 35% 44%, transparent 45% 54%, rgba(110, 231, 183, .18) 55% 70%, transparent 71%);
+  }
+  #admin-portal-view .admin-desktop-full-banner { display: none !important; }
+  #admin-portal-view .admin-dashboard-brand {
+    display: flex !important;
+    position: relative !important;
+    z-index: 1;
+    flex-direction: column !important;
+    align-items: center !important;
+    justify-content: center !important;
+    gap: 7px !important;
+    width: 100% !important;
+    padding: 0 !important;
+    margin: 0 !important;
+    text-align: center !important;
+  }
+  #admin-portal-view .admin-dashboard-logo {
+    width: 78px !important;
+    height: 78px !important;
+    flex: 0 0 78px !important;
+    margin: 0 !important;
+    overflow: hidden !important;
+    border: 2px solid rgba(255,255,255,.78) !important;
+    border-radius: 50% !important;
+    background: #fff !important;
+    box-shadow: 0 0 0 5px rgba(255,255,255,.12), 0 5px 16px rgba(0,0,0,.18) !important;
+  }
+  #admin-portal-view .admin-dashboard-logo img {
+    display: block !important;
+    width: 100% !important;
+    height: 100% !important;
+    object-fit: contain !important;
+  }
+  #admin-portal-view .admin-dashboard-brand h1 {
+    margin: 0 !important;
+    color: #fff !important;
+    font-size: clamp(27px, 2.15vw, 38px) !important;
+    font-weight: 850 !important;
+    letter-spacing: .035em !important;
+    line-height: 1.15 !important;
+    text-align: center !important;
+    text-shadow: 0 2px 8px rgba(0,0,0,.12);
+  }
+  #admin-portal-view .admin-dashboard-brand p {
+    margin: 0 !important;
+    color: rgba(255,255,255,.94) !important;
+    font-size: 15px !important;
+    font-weight: 700 !important;
+    letter-spacing: .07em !important;
+    line-height: 1.3 !important;
+    text-align: center !important;
+    text-transform: uppercase;
+  }
   #admin-portal-view .admin-dashboard-actions {
     position: absolute !important;
-    top: 6% !important;
-    right: 1.2% !important;
-    z-index: 10;
+    top: 15px !important;
+    right: 16px !important;
+    z-index: 5;
     display: flex !important;
     margin: 0 !important;
   }
@@ -1406,10 +1478,20 @@
   }
   #admin-portal-view .admin-dashboard-actions .admin-logout-action {
     margin: 0 !important;
-    background: rgba(0, 92, 69, 0.18) !important;
-    border: 1px solid rgba(255,255,255,0.5) !important;
+    padding: 9px 15px !important;
+    border-radius: 999px !important;
+    background: rgba(255,255,255,.12) !important;
+    border: 1px solid rgba(255,255,255,.58) !important;
     color: #fff !important;
-    box-shadow: none !important;
+    box-shadow: 0 2px 8px rgba(0,0,0,.08) !important;
+    backdrop-filter: blur(8px);
+  }
+}
+@media (min-width: 801px) and (display-mode: browser) {
+  #admin-portal-view .admin-dashboard-brand .admin-desktop-school-phone {
+    margin-top: -3px !important;
+    font-size: 15px !important;
+    letter-spacing: .045em !important;
   }
 }
   </style>
@@ -3237,6 +3319,7 @@ id="admin-portal-view" class="hidden flex-col w-full space-y-4 admin-dashboard-s
           <div>
             <h1>ASHIANA PUBLIC SCHOOL</h1>
             <p>Sector 46-Chandigarh</p>
+            <p class="admin-desktop-school-phone">+91-9872500460</p>
           </div>
         </div>
         <div class="admin-dashboard-actions">
