@@ -1384,9 +1384,13 @@
     display: block !important;
     width: 100%;
     height: auto;
-    aspect-ratio: 800 / 155;
-    object-fit: cover;
+    aspect-ratio: 2048 / 396;
+    object-fit: contain;
+    image-rendering: auto;
+    filter: none;
   }
+  #admin-portal-view .admin-dashboard-header::before,
+  #admin-portal-view .admin-dashboard-header::after { display: none !important; content: none !important; }
   #admin-portal-view .admin-dashboard-brand { display: none !important; }
   #admin-portal-view .admin-dashboard-actions {
     position: absolute !important;
@@ -3224,7 +3228,7 @@ id="admin-portal-view" class="hidden flex-col w-full space-y-4 admin-dashboard-s
       
       <!-- Modern Admin Header -->
       <div class="admin-dashboard-header">
-        <img class="admin-desktop-full-banner" src="assets/ashiana-admin-full-banner.webp" alt="Ashiana Public School banner">
+        <img class="admin-desktop-full-banner" src="assets/ashiana-admin-full-banner-hq.webp" alt="Ashiana Public School banner">
         <div class="admin-dashboard-brand">
           <div class="admin-dashboard-logo">
             <img src="assets/ashiana-dashboard-emblem.webp" alt="Ashiana Public School emblem" onerror="this.style.display='none';this.nextElementSibling.classList.remove('hidden');">
