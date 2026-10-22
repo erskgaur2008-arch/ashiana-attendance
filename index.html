@@ -1238,6 +1238,70 @@
     }
     @media(max-width:360px){#student-portal-view>div>div:nth-child(2)>.grid>button{min-height:88px;padding:9px!important}#student-portal-view>div>div:first-child .text-lg{font-size:15px}#student-portal-view>div>div:nth-child(2)>.grid{gap:7px!important}}
     @media(prefers-reduced-motion:reduce){#student-portal-view *{transition:none!important;animation:none!important}}
+
+    /* Admin dashboard header polish: centered school identity, logout at top-right, no manual sync control. */
+    #admin-portal-view .admin-dashboard-header {
+      position: relative;
+      display: flex;
+      flex-direction: column;
+      align-items: center;
+    }
+    #admin-portal-view .admin-dashboard-brand {
+      display: flex;
+      flex-direction: column;
+      align-items: center;
+      justify-content: center;
+      width: 100%;
+      text-align: center;
+      padding: 18px 56px 12px;
+      box-sizing: border-box;
+    }
+    #admin-portal-view .admin-dashboard-brand > div:last-child {
+      text-align: center;
+    }
+    #admin-portal-view .admin-dashboard-actions {
+      position: absolute;
+      top: 12px;
+      right: 12px;
+      z-index: 5;
+      display: flex;
+      align-items: center;
+      justify-content: flex-end;
+    }
+    #admin-portal-view .admin-dashboard-actions button[title="Sync now"] {
+      display: none !important;
+    }
+    #admin-portal-view .admin-dashboard-actions .admin-logout-action {
+      margin-left: 0;
+    }
+    #admin-portal-view .admin-dashboard-logo {
+      margin: 0 auto 8px;
+      flex: 0 0 auto;
+    }
+    @media (max-width: 640px) {
+      #admin-portal-view .admin-dashboard-header {
+        padding-top: 8px !important;
+      }
+      #admin-portal-view .admin-dashboard-brand {
+        padding: 18px 48px 12px;
+      }
+      #admin-portal-view .admin-dashboard-actions {
+        top: 8px;
+        right: 8px;
+      }
+      #admin-portal-view .admin-dashboard-actions .admin-logout-action {
+        min-width: 38px;
+        min-height: 38px;
+        padding: 8px;
+        justify-content: center;
+      }
+      #admin-portal-view .admin-dashboard-actions .admin-logout-action span {
+        display: none !important;
+      }
+      #admin-portal-view .admin-dashboard-brand h1 {
+        text-align: center;
+      }
+    }
   </style>
 
 <style id="admin-daily-qr-page-preview">
