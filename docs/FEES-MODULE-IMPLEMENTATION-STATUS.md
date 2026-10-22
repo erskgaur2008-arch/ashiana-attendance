@@ -17,7 +17,7 @@
 - `index.html`: Student Portal fee summary, payment reference and proof submission, payment status/rejection reason, receipts, and Admin fee setup/review console with student/account search and discount approval queue.
 - `supabase/tests/fees_management_security.sql`: database privilege/RLS assertions.
 - `supabase/tests/fees_management_synthetic_bootstrap.sql`: mock Supabase dependencies and synthetic schema; no live data.
-- `supabase/tests/fees_management_rpc_smoke.sql`: transactional synthetic student/Admin/Principal payment approval and receipt test; rolls back its test data.
+- `supabase/tests/fees_management_rpc_smoke.sql`: transactional synthetic student/Admin/Principal payment approval and receipt test, repeat-confirmation protection, rejected-payment no-ledger/no-receipt assertions, and discount approval/balance/audit assertions; rolls back its test data.
 - `.github/workflows/fees-management-validation.yml`: Edge Function type-check, SQL parsing, inline JavaScript syntax validation, applies all four migrations to an isolated PostgreSQL 16 service, then runs security assertions and the synthetic payment smoke test.
 - `docs/FEES-MODULE-PLAN.md`: product requirements and release safeguards.
 
@@ -25,7 +25,7 @@
 
 - All 12 inline JavaScript blocks in the current branch's `index.html` parsed successfully in a syntax check.
 - The new fee console inline script parsed successfully.
-- GitHub Actions run **#84 passed** on commit `4dbc21de887efbffc41ef68d5569c13f41b96d43`.
+- GitHub Actions run **#84 passed** on commit `4dbc21de887efbffc41ef68d5569c13f41b96d43` for the original approval/receipt smoke test. Expanded rejection/discount assertions were added afterward; run #86 exposed a malformed SQL test terminator, which has been corrected. The expanded test must pass in CI before this branch can be considered validated.
 - Edge Function type-check, SQL parser, required-feature checks, and inline JavaScript parsing passed.
 - All four fee migrations applied successfully to an isolated PostgreSQL 16 test database using synthetic Supabase dependencies.
 - The SQL security assertions passed, and the synthetic RPC smoke test passed: create academic year/fee structure/account, load student summary, submit a payment, Admin review, distinct Principal confirmation, one ledger credit/receipt, and duplicate-confirmation rejection.
