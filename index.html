@@ -815,6 +815,136 @@
   #admin-portal-view > .grid.grid-cols-2.sm\:grid-cols-3.lg\:grid-cols-6 > div{background:#fff!important}
 }
 
+
+/* Ashiana Liquid Glass dashboard — visual-only layer; existing IDs and actions remain unchanged. */
+:root {
+  --aps-glass-border: rgba(255,255,255,.62);
+  --aps-glass-shadow: 0 12px 34px rgba(4, 65, 48, .10);
+  --aps-glass-blur: 18px;
+}
+#admin-portal-view.admin-dashboard-shell {
+  position: relative;
+  isolation: isolate;
+  padding: clamp(10px, 2vw, 22px);
+  border-radius: 28px;
+  background:
+    radial-gradient(ellipse at 8% 0%, rgba(16,185,129,.17), transparent 42%),
+    radial-gradient(ellipse at 96% 20%, rgba(125,211,252,.22), transparent 38%),
+    linear-gradient(145deg, #eefbf5 0%, #e8f1f8 52%, #f5fbf7 100%);
+}
+#admin-portal-view .admin-dashboard-header {
+  position: relative;
+  overflow: hidden;
+  display: flex;
+  flex-wrap: wrap;
+  align-items: center;
+  justify-content: space-between;
+  gap: 14px;
+  padding: clamp(16px, 2.4vw, 25px);
+  border: 1px solid var(--aps-glass-border);
+  border-radius: 25px;
+  background: linear-gradient(125deg, rgba(5,78,59,.94), rgba(5,130,91,.82) 58%, rgba(16,185,129,.68));
+  box-shadow: 0 14px 34px rgba(4,65,48,.18), inset 0 1px 0 rgba(255,255,255,.35);
+  color: #fff;
+}
+#admin-portal-view .admin-dashboard-header:after {
+  content: "";
+  position: absolute;
+  width: 240px;
+  height: 240px;
+  right: -65px;
+  top: -145px;
+  border-radius: 50%;
+  border: 1px solid rgba(255,255,255,.22);
+  box-shadow: 0 0 0 24px rgba(255,255,255,.045), 0 0 0 48px rgba(255,255,255,.035);
+  pointer-events: none;
+}
+#admin-portal-view .admin-dashboard-brand,
+#admin-portal-view .admin-dashboard-actions { position: relative; z-index: 1; }
+#admin-portal-view .admin-dashboard-brand h1 { color: #fff; letter-spacing: .025em; }
+#admin-portal-view .admin-dashboard-brand p { color: rgba(236,253,245,.82); }
+#admin-portal-view .admin-dashboard-logo {
+  border: 2px solid rgba(255,255,255,.72);
+  box-shadow: 0 5px 18px rgba(0,0,0,.16);
+}
+#admin-portal-view .admin-live-pill,
+#admin-portal-view .admin-header-action {
+  border: 1px solid rgba(255,255,255,.38);
+  background: rgba(255,255,255,.15);
+  color: #fff;
+  box-shadow: inset 0 1px 0 rgba(255,255,255,.22);
+  backdrop-filter: blur(var(--aps-glass-blur));
+  -webkit-backdrop-filter: blur(var(--aps-glass-blur));
+}
+#admin-portal-view .admin-header-action:hover { background: rgba(255,255,255,.25); }
+#admin-portal-view .admin-quick-actions {
+  display: grid;
+  grid-template-columns: repeat(auto-fit, minmax(min(100%, 138px), 1fr));
+  gap: 10px;
+}
+#admin-portal-view .admin-quick-actions button {
+  min-height: 66px;
+  justify-content: flex-start;
+  gap: 10px;
+  padding: 13px 14px;
+  border: 1px solid rgba(255,255,255,.88);
+  border-radius: 18px;
+  background: rgba(255,255,255,.64);
+  color: #07543e;
+  box-shadow: var(--aps-glass-shadow), inset 0 1px 0 rgba(255,255,255,.9);
+  backdrop-filter: blur(var(--aps-glass-blur));
+  -webkit-backdrop-filter: blur(var(--aps-glass-blur));
+  transition: transform .18s ease, background .18s ease, box-shadow .18s ease;
+}
+#admin-portal-view .admin-quick-actions button:hover {
+  transform: translateY(-2px);
+  background: rgba(255,255,255,.86);
+  box-shadow: 0 15px 32px rgba(4,65,48,.14), inset 0 1px 0 #fff;
+}
+#admin-portal-view .admin-quick-actions button:focus-visible,
+#admin-portal-view .admin-header-action:focus-visible {
+  outline: 3px solid #34d399;
+  outline-offset: 3px;
+}
+#admin-portal-view > .grid.grid-cols-2 > div {
+  border: 1px solid rgba(255,255,255,.9) !important;
+  border-radius: 20px !important;
+  box-shadow: 0 10px 25px rgba(15,65,50,.08), inset 0 1px 0 rgba(255,255,255,.9) !important;
+  background-color: rgba(255,255,255,.72) !important;
+  backdrop-filter: blur(14px);
+  -webkit-backdrop-filter: blur(14px);
+}
+#admin-portal-view #admin-tab-live > div,
+#admin-portal-view #admin-tab-qr .max-w-md,
+#admin-portal-view #admin-tab-qr .max-w-4xl,
+#admin-portal-view #admin-tab-reports > div,
+#admin-portal-view #admin-tab-directory > div {
+  border-radius: 22px;
+}
+#admin-portal-view #admin-tab-live > div {
+  border: 1px solid rgba(255,255,255,.92);
+  background: rgba(255,255,255,.82);
+  box-shadow: 0 12px 30px rgba(15,65,50,.08);
+}
+#admin-portal-view table thead { background: rgba(236,253,245,.88); }
+#admin-portal-view table tbody tr:hover { background: rgba(236,253,245,.65); }
+@media (max-width: 640px) {
+  #admin-portal-view.admin-dashboard-shell { padding: 8px; border-radius: 20px; gap: 12px; }
+  #admin-portal-view .admin-dashboard-header { border-radius: 21px; gap: 12px; }
+  #admin-portal-view .admin-dashboard-actions { display: flex; flex-wrap: wrap; gap: 8px; }
+  #admin-portal-view .admin-quick-actions { grid-template-columns: repeat(2, minmax(0, 1fr)); gap: 8px; }
+  #admin-portal-view .admin-quick-actions button { min-height: 60px; padding: 10px; border-radius: 16px; font-size: 12px; }
+}
+@media (prefers-reduced-motion: reduce) {
+  #admin-portal-view .admin-quick-actions button { transition: none; }
+}
+@supports not ((backdrop-filter: blur(1px)) or (-webkit-backdrop-filter: blur(1px))) {
+  #admin-portal-view .admin-quick-actions button,
+  #admin-portal-view .admin-live-pill,
+  #admin-portal-view .admin-header-action { background: rgba(255,255,255,.94); }
+  #admin-portal-view .admin-dashboard-header .admin-header-action { background: rgba(255,255,255,.2); }
+}
+
 </style>
 <style>
 .staff-comm-modal{position:fixed;inset:0;z-index:260;background:rgba(2,44,34,.55);backdrop-filter:blur(5px);display:none;align-items:center;justify-content:center;padding:12px}
