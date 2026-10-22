@@ -86,3 +86,42 @@ jobs:
           console.log(`Parsed ${checked} inline scripts successfully`);
           NODE
           echo "Draft source checks passed. This workflow does not apply migrations or access production."
+
+  database-validation:
+    name: Apply fee migrations to synthetic PostgreSQL
+    runs-on: ubuntu-latest
+    timeout-minutes: 10
+    services:
+      postgres:
+        image: postgres:16
+        env:
+          POSTGRES_PASSWORD: postgres
+          POSTGRES_DB: fees_test
+        ports:
+          - 5432:5432
+        options: >-
+          --health-cmd "pg_isready -U postgres -d fees_test"
+          --health-interval 5s
+          --health-timeout 5s
+          --health-retries 10
+    env:
+      PGHOST: localhost
+      PGPORT: 5432
+      PGUSER: postgres
+      PGPASSWORD: postgres
+      PGDATABASE: fees_test
+    steps:
+      - uses: actions/checkout@v4
+      - name: Install PostgreSQL client
+        run: sudo apt-get update && sudo apt-get install -y postgresql-client
+      - name: Create synthetic Supabase dependencies
+        run: psql -v ON_ERROR_STOP=1 -f supabase/tests/fees_management_synthetic_bootstrap.sql
+      - name: Apply all fee migrations to isolated database
+        run: |
+          set -euo pipefail
+          for migration in supabase/migrations/20261023000*_fees_management_*.sql; do
+            echo "Applying $migration"
+            psql -v ON_ERROR_STOP=1 -f "$migration"
+          done
+      - name: Run fee security assertions
+        run: psql -v ON_ERROR_STOP=1 -f supabase/tests/fees_management_security.sql
