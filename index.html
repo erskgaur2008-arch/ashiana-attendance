@@ -13384,7 +13384,7 @@ function addMessage(text,type){
 
   form?.addEventListener("submit",async function(e){
     e.preventDefault();
-    if(!signedStaffUser()) return;
+    if(!signedAdminUser()) return;
     const message=String(input.value||"").trim();
     if(!message)return;
     addMessage(message,"user");
