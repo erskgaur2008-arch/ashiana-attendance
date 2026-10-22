@@ -2772,6 +2772,7 @@ id="student-portal-view" class="hidden flex-col w-full max-w-2xl space-y-4 stude
             <button onclick="studentDashboardSection('classmates')" class="p-4 rounded-2xl border bg-cyan-50 text-left"><i data-lucide="contact-round" class="w-5 h-5 text-cyan-700"></i><b class="block mt-2 text-sm">Classmates</b><span class="text-[10px] text-slate-500">Your section students</span></button>
             <button onclick="studentDashboardSection('notice')" class="p-4 rounded-2xl border bg-amber-50 text-left"><i data-lucide="megaphone" class="w-5 h-5 text-amber-700"></i><b class="block mt-2 text-sm">Notice</b><span id="student-count-notices" class="text-[10px] text-slate-500">0 notices</span></button>
             <button onclick="studentDashboardSection('attendance')" class="p-4 rounded-2xl border bg-emerald-50 text-left"><i data-lucide="calendar-check" class="w-5 h-5 text-emerald-700"></i><b class="block mt-2 text-sm">Attendance</b><span id="student-count-attendance" class="text-[10px] text-slate-500">0 records</span></button>
+            <button type="button" onclick="studentDashboardSection('fees')" class="p-4 rounded-2xl border border-amber-200 bg-amber-50 text-left"><i data-lucide="wallet" class="w-5 h-5 text-amber-700"></i><b class="block mt-2 text-sm text-slate-900">Fees Management</b><span class="text-[10px] text-slate-600">Due, payments & receipts</span></button>
             <button onclick="studentDashboardSection('homework')" class="p-4 rounded-2xl border bg-blue-50 text-left"><i data-lucide="book-open-check" class="w-5 h-5 text-blue-700"></i><b class="block mt-2 text-sm">Homework</b><span id="student-count-homework" class="text-[10px] text-slate-500">0 items</span></button>
             <button onclick="studentDashboardSection('timetable')" class="p-4 rounded-2xl border bg-violet-50 text-left"><i data-lucide="calendar-clock" class="w-5 h-5 text-violet-700"></i><b class="block mt-2 text-sm">Timetable</b><span class="text-[10px] text-slate-500">Class schedule</span></button>
             <button onclick="studentDashboardSection('leave')" class="p-4 rounded-2xl border bg-rose-50 text-left"><i data-lucide="file-pen-line" class="w-5 h-5 text-rose-700"></i><b class="block mt-2 text-sm">Leave Request</b><span class="text-[10px] text-slate-500">Apply / track</span></button>
@@ -6708,7 +6709,7 @@ async function studentDashboardSection(type){
     title=document.getElementById("student-dashboard-panel-title"),
     loading=document.getElementById("student-dashboard-panel-loading");
   if(!host||!panel)return;
-  const names={notice:"Notice",attendance:"Attendance",homework:"Homework",timetable:"Timetable",leave:"Leave Request & Status",report:"Report Card",calendar:"School Calendar",profile:"Student Profile",mentor:"Your Mentor",classmates:"Classmates"};
+  const names={notice:"Notice",attendance:"Attendance",homework:"Homework",timetable:"Timetable",leave:"Leave Request & Status",report:"Report Card",calendar:"School Calendar",fees:"Fees Management",profile:"Student Profile",mentor:"Your Mentor",classmates:"Classmates"};
   title.textContent=names[type]||"Dashboard";
   panel.classList.remove("hidden");
   document.body.classList.add("overflow-hidden");
@@ -6731,7 +6732,34 @@ async function studentDashboardSection(type){
   }catch(e){console.warn("Student portal refresh failed:",e);}
   const fresh=currentAuthUser?.portalData||d;
   const sValue=(key)=>currentAuthUser?.studentRecord?.[key]||"—";
-  if(type==="profile"){
+  if(type==="fees"){
+    host.innerHTML='<div class="p-4 bg-white border rounded-2xl"><p class="text-sm font-bold text-slate-800">Loading your fee account…</p><p class="mt-1 text-xs text-slate-500">Your fee details are private to your student session.</p></div>';
+    const token=String(await window.AshianaNative?.getStudentSessionToken?.() || sessionStorage.getItem("aps_student_session_token_v1") || "");
+    if(!/^[a-f0-9]{64}$/i.test(token)){
+      host.innerHTML='<div class="p-4 rounded-2xl border border-rose-200 bg-rose-50 text-sm text-rose-800">Your student session has expired. Please sign in again.</div>';
+    }else{
+      try{
+        if(!supabaseClient?.functions?.invoke)throw new Error("The application client is not ready.");
+        const [summaryResult,receiptResult]=await Promise.all([
+          supabaseClient.functions.invoke("fee-management",{body:{action:"student-summary",student_session_token:token}}),
+          supabaseClient.functions.invoke("fee-management",{body:{action:"student-receipts",student_session_token:token}})
+        ]);
+        if(summaryResult.error)throw new Error(summaryResult.error.message||"Fee service is not available.");
+        if(receiptResult.error)throw new Error(receiptResult.error.message||"Receipt service is not available.");
+        const accounts=Array.isArray(summaryResult.data?.accounts)?summaryResult.data.accounts:[];
+        const receipts=Array.isArray(receiptResult.data?.receipts)?receiptResult.data.receipts:[];
+        const money=(paise)=>"₹"+(Number(paise||0)/100).toLocaleString("en-IN",{minimumFractionDigits:2,maximumFractionDigits:2});
+        host.innerHTML=accounts.length?accounts.map(a=>{
+          const due=Number(a.total_due_paise||0),paid=Number(a.total_paid_paise||0),discount=Number(a.approved_discount_paise||0),balance=Number(a.balance_paise??Math.max(0,due-discount-paid));
+          return '<section class="p-4 sm:p-5 bg-white border border-amber-200 rounded-2xl shadow-sm"><div class="flex items-start justify-between gap-3"><div><p class="text-xs text-slate-500">Academic year</p><h3 class="mt-1 text-lg font-extrabold text-slate-900">'+studentEscape(a.academic_year_name||a.academic_year||"Current academic year")+'</h3></div><span class="px-2.5 py-1 rounded-full bg-amber-100 text-amber-800 text-[10px] font-extrabold">'+(balance>0?"Balance due":"No balance due")+'</span></div><div class="grid grid-cols-2 sm:grid-cols-3 gap-2 mt-4"><div class="p-3 rounded-xl bg-slate-50"><p class="text-[10px] text-slate-500">Total fee</p><p class="mt-1 font-extrabold">'+money(due)+'</p></div><div class="p-3 rounded-xl bg-emerald-50"><p class="text-[10px] text-emerald-700">Paid</p><p class="mt-1 font-extrabold text-emerald-800">'+money(paid)+'</p></div><div class="p-3 rounded-xl bg-rose-50 col-span-2 sm:col-span-1"><p class="text-[10px] text-rose-700">Pending balance</p><p class="mt-1 font-extrabold text-rose-800">'+money(balance)+'</p></div></div><p class="mt-3 text-[11px] leading-relaxed text-slate-500">Payments appear as paid only after Admin review and independent Principal confirmation. A UPI reference or screenshot alone is not proof of settlement.</p></section>';
+        }).join(""):'<div class="p-4 rounded-2xl border border-slate-200 bg-white text-sm text-slate-600">No fee account has been assigned to your student record yet. Please contact the school office.</div>';
+        host.innerHTML+='<section class="p-4 bg-white border rounded-2xl"><h3 class="font-extrabold text-slate-900">Receipts</h3><div class="mt-3 space-y-2">'+(receipts.length?receipts.map(r=>'<div class="flex items-start justify-between gap-3 p-3 rounded-xl bg-slate-50 border"><div><p class="text-sm font-bold">'+studentEscape(r.receipt_number||"Fee receipt")+'</p><p class="text-[10px] text-slate-500">'+studentEscape(r.issued_at||r.created_at||"")+'</p></div><b class="text-sm text-emerald-800">'+money(r.amount_paise||r.amount||0)+'</b></div>').join(""):'<p class="text-sm text-slate-500">No confirmed receipts yet.</p>')+'</div></section>';
+      }catch(e){
+        console.warn("Student fees module unavailable:",e?.message||e);
+        host.innerHTML='<div class="p-4 rounded-2xl border border-amber-200 bg-amber-50"><h3 class="font-bold text-amber-900">Fees service is not connected yet</h3><p class="mt-2 text-sm text-amber-800">'+studentEscape(e?.message||"The fee service is not available.")+'</p><p class="mt-2 text-xs text-amber-800">The Fees Management screen is prepared, but it will show live figures only after the approved database migrations and Edge Function are deployed.</p><button type="button" onclick="studentDashboardSection(\'fees\')" class="mt-3 px-4 py-2 rounded-xl bg-amber-800 text-white text-xs font-bold">Try again</button></div>';
+      }
+    }
+  }else if(type==="profile"){
     host.innerHTML='<div class="bg-white rounded-2xl border p-4"><div class="grid grid-cols-1 sm:grid-cols-2 gap-3">'+
       '<div class="p-3 rounded-xl bg-slate-50 border"><span class="text-[10px] text-slate-500">Admission No.</span><p class="font-semibold mt-1">'+studentEscape(sValue("enroll_no"))+'</p></div>'+
       '<div class="p-3 rounded-xl bg-slate-50 border"><span class="text-[10px] text-slate-500">Roll No.</span><p class="font-semibold mt-1">'+studentEscape(sValue("roll_no"))+'</p></div>'+
