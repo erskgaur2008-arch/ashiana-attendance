@@ -14209,6 +14209,48 @@ function addMessage(text,type){
         <button type="button" onclick="loadFeesReviewQueue('admin')" class="rounded-xl bg-emerald-800 px-4 py-2.5 text-xs font-bold text-white">Admin review queue</button>
         <button type="button" onclick="loadFeesReviewQueue('principal')" class="rounded-xl bg-violet-800 px-4 py-2.5 text-xs font-bold text-white">Principal confirmation queue</button>
       </div>
+      <details class="rounded-2xl border bg-white p-4">
+        <summary class="cursor-pointer font-extrabold text-slate-900">Fee setup & permissions</summary>
+        <p class="mt-2 text-xs text-slate-500">These actions require an authorized Admin session and are audit logged. Keep the academic-year UUID returned after saving for fee structures and account assignment.</p>
+        <div class="mt-4 grid grid-cols-1 md:grid-cols-2 gap-4">
+          <form onsubmit="submitFeeSetupForm(event)" data-fee-setup="year" class="rounded-xl border p-3 space-y-2">
+            <h3 class="font-bold text-sm">Create / update academic year</h3>
+            <input name="label" required minlength="4" maxlength="40" placeholder="e.g. 2026-2027" class="w-full rounded-lg border p-2.5 text-sm">
+            <div class="grid grid-cols-2 gap-2"><input name="starts_on" type="date" required class="min-w-0 w-full rounded-lg border p-2 text-xs"><input name="ends_on" type="date" required class="min-w-0 w-full rounded-lg border p-2 text-xs"></div>
+            <label class="flex items-center gap-2 text-xs"><input name="is_active" type="checkbox"> Set as active academic year</label>
+            <button class="rounded-lg bg-emerald-800 px-3 py-2 text-xs font-bold text-white">Save academic year</button><p data-setup-result class="hidden break-all text-xs" role="status"></p>
+          </form>
+          <form onsubmit="submitFeeSetupForm(event)" data-fee-setup="structure" class="rounded-xl border p-3 space-y-2">
+            <h3 class="font-bold text-sm">Add fee structure</h3>
+            <input name="academic_year_id" required placeholder="Academic year UUID" class="w-full rounded-lg border p-2.5 text-xs">
+            <input name="class_name" required placeholder="Class (must match roster, e.g. II)" class="w-full rounded-lg border p-2.5 text-sm">
+            <input name="fee_name" required maxlength="100" placeholder="Fee name (e.g. Tuition Fee)" class="w-full rounded-lg border p-2.5 text-sm">
+            <input name="amount_rupees" type="number" min="0" step="0.01" required placeholder="Amount in ₹" class="w-full rounded-lg border p-2.5 text-sm">
+            <input name="due_date" type="date" class="w-full rounded-lg border p-2.5 text-sm">
+            <label class="flex items-center gap-2 text-xs"><input name="is_mandatory" type="checkbox" checked> Mandatory fee</label>
+            <button class="rounded-lg bg-emerald-800 px-3 py-2 text-xs font-bold text-white">Save fee structure</button><p data-setup-result class="hidden break-all text-xs" role="status"></p>
+          </form>
+          <form onsubmit="submitFeeSetupForm(event)" data-fee-setup="assign-student" class="rounded-xl border p-3 space-y-2">
+            <h3 class="font-bold text-sm">Assign student fee account</h3>
+            <input name="academic_year_id" required placeholder="Academic year UUID" class="w-full rounded-lg border p-2.5 text-xs">
+            <input name="student_id" required placeholder="Student roster UUID" class="w-full rounded-lg border p-2.5 text-xs">
+            <button class="rounded-lg bg-emerald-800 px-3 py-2 text-xs font-bold text-white">Assign account</button><p data-setup-result class="hidden break-all text-xs" role="status"></p>
+          </form>
+          <form onsubmit="submitFeeSetupForm(event)" data-fee-setup="principal" class="rounded-xl border p-3 space-y-2">
+            <h3 class="font-bold text-sm">Authorize Principal confirmer</h3>
+            <input name="user_id" required placeholder="Principal's authenticated user UUID" class="w-full rounded-lg border p-2.5 text-xs">
+            <button class="rounded-lg bg-violet-800 px-3 py-2 text-xs font-bold text-white">Enable Principal confirmation</button><p data-setup-result class="hidden break-all text-xs" role="status"></p>
+            <p class="text-[10px] text-slate-500">Do not enter an email or student ID. Use the authenticated Principal's user UUID.</p>
+          </form>
+          <form onsubmit="submitFeeSetupForm(event)" data-fee-setup="discount" class="rounded-xl border p-3 space-y-2">
+            <h3 class="font-bold text-sm">Request a student discount</h3>
+            <input name="fee_account_id" required placeholder="Student fee account UUID" class="w-full rounded-lg border p-2.5 text-xs">
+            <input name="amount_rupees" type="number" min="0.01" step="0.01" required placeholder="Discount amount in ₹" class="w-full rounded-lg border p-2.5 text-sm">
+            <textarea name="reason" required minlength="3" maxlength="1000" rows="2" placeholder="Reason for discount" class="w-full rounded-lg border p-2.5 text-sm"></textarea>
+            <button class="rounded-lg bg-amber-800 px-3 py-2 text-xs font-bold text-white">Create discount request</button><p data-setup-result class="hidden break-all text-xs" role="status"></p>
+          </form>
+        </div>
+      </details>
       <div id="fees-admin-status" class="rounded-xl border bg-white p-3 text-xs text-slate-600" role="status">Choose a review queue. Access is checked by the server.</div>
       <div id="fees-admin-queue" class="space-y-3"></div>
       <p class="rounded-xl border border-amber-200 bg-amber-50 p-3 text-[11px] leading-relaxed text-amber-900">Verify the UPI/bank transaction against the actual settlement record before approving. A screenshot or reference ID alone is not proof of payment. Principal confirmation must be performed by a separately authorized user.</p>
@@ -14228,6 +14270,42 @@ function addMessage(text,type){
     if(role!=="ADMIN"){if(window.showToast)showToast("Only an authenticated administrator can open fee review.","error");else alert("Only an authenticated administrator can open fee review.");return;}
     $("fees-admin-console")?.classList.remove("hidden");$("fees-admin-console")?.classList.add("flex");
     window.loadFeesReviewQueue("admin");
+  };
+  window.submitFeeSetupForm=async function(event){
+    event.preventDefault();
+    const form=event.currentTarget;if(!form||form.dataset.submitting==="1")return false;
+    const type=form.dataset.feeSetup, result=form.querySelector("[data-setup-result]");
+    const say=(msg,ok=false)=>{if(result){result.textContent=msg;result.className="mt-2 break-all text-xs "+(ok?"text-emerald-800":"text-rose-700");}};
+    const values=Object.fromEntries(new FormData(form).entries());
+    const client=getClient();if(!client?.functions?.invoke){say("Application client is not ready.");return false;}
+    let body={};
+    if(type==="year")body={action:"admin-save-academic-year",label:values.label,starts_on:values.starts_on,ends_on:values.ends_on,is_active:form.elements.is_active.checked};
+    else if(type==="structure"){
+      const amount=Math.round(Number(values.amount_rupees)*100);
+      if(!Number.isSafeInteger(amount)||amount<0){say("Enter a valid fee amount.");return false;}
+      body={action:"admin-save-structure",academic_year_id:values.academic_year_id,class_name:values.class_name,fee_name:values.fee_name,amount_paise:amount,is_mandatory:form.elements.is_mandatory.checked,due_date:values.due_date||null};
+    }else if(type==="assign-student")body={action:"admin-assign-student-account",academic_year_id:values.academic_year_id,student_id:values.student_id};
+    else if(type==="principal")body={action:"admin-assign-principal-approver",user_id:values.user_id,enabled:true};
+    else if(type==="discount"){
+      const amount=Math.round(Number(values.amount_rupees)*100);
+      if(!Number.isSafeInteger(amount)||amount<=0){say("Enter a valid discount amount.");return false;}
+      body={action:"admin-create-discount-request",fee_account_id:values.fee_account_id,amount_paise:amount,reason:values.reason};
+    }else return false;
+    form.dataset.submitting="1";const button=form.querySelector('button[type="submit"],button:not([type])');if(button){button.disabled=true;button.textContent="Saving…";}
+    try{
+      const {data,error}=await client.functions.invoke("fee-management",{body});
+      if(error)throw new Error(error.message||"Setup action failed.");
+      const id=data?.academic_year_id||data?.fee_structure_id||data?.fee_account_id||data?.discount_request_id||"";
+      say((data?.status||"Saved successfully.")+(id?" ID: "+id:""),true);
+      if(type==="year"&&id){
+        const structure=form.parentElement?.querySelector('form[data-fee-setup="structure"] input[name="academic_year_id"]');
+        const assignment=form.parentElement?.querySelector('form[data-fee-setup="assign-student"] input[name="academic_year_id"]');
+        if(structure)structure.value=id;if(assignment)assignment.value=id;
+      }
+      if(type==="principal"||type==="assign-student"||type==="discount")form.reset();
+      return false;
+    }catch(e){say(e?.message||"Setup action failed.");return false;}
+    finally{delete form.dataset.submitting;if(button){button.disabled=false;button.textContent=type==="year"?"Save academic year":type==="structure"?"Save fee structure":type==="assign-student"?"Assign account":type==="principal"?"Enable Principal confirmation":"Create discount request";}}
   };
   window.loadFeesReviewQueue=async function(kind){
     const host=$("fees-admin-queue");if(!host)return;
