@@ -196,6 +196,12 @@ Deno.serve(async (req) => {
     return reply({ discount_request_id: data, status: "PENDING_REVIEW" });
   }
 
+  if (action === "admin-discount-queue") {
+    const { data, error } = await userClient.rpc("fee_admin_discount_queue");
+    if (error) return reply({ error: error.message }, 403);
+    return reply({ requests: data ?? [] });
+  }
+
   if (action === "admin-review-discount") {
     const discountId = typeof input.discount_id === "string" ? input.discount_id : "";
     if (!UUID_RE.test(discountId) || typeof input.approve !== "boolean") return reply({ error: "Invalid discount review request" }, 400);
