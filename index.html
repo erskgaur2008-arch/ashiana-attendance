@@ -14238,7 +14238,7 @@ function addMessage(text,type){
           </form>
           <form onsubmit="submitFeeSetupForm(event)" data-fee-setup="assign-student" class="rounded-xl border p-3 space-y-2">
             <h3 class="font-bold text-sm">Assign student fee account</h3>
-            <input name="academic_year_id" required placeholder="Academic year UUID" class="w-full rounded-lg border p-2.5 text-xs">
+            <select name="academic_year_id" required class="w-full rounded-lg border p-2.5 text-sm"><option value="">Loading academic years…</option></select>
             <div class="flex gap-2"><input name="student_search" placeholder="Search name, admission no. or class" class="min-w-0 flex-1 rounded-lg border p-2.5 text-xs"><button type="button" onclick="searchFeeSetupStudents(event)" class="rounded-lg border px-3 py-2 text-xs font-bold">Find</button></div>
             <select name="student_id" required class="w-full rounded-lg border p-2.5 text-sm"><option value="">Search and select a student</option></select>
             <button class="rounded-lg bg-emerald-800 px-3 py-2 text-xs font-bold text-white">Assign account</button><p data-setup-result class="hidden break-all text-xs" role="status"></p>
