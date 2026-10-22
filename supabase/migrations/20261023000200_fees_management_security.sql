@@ -189,7 +189,7 @@ as $
 begin
   if auth.uid() is null or not private.is_admin() then raise exception 'Admin permission required'; end if;
   return query
-  select p.id, s.id, s.name::text, s.enroll_no::text, s.class_name::text, s.section::text,
+  select p.id, s.id, s.student_name::text, s.enroll_no::text, s.class_name::text, s.section::text,
     p.amount_paise, p.upi_reference, p.proof_object_path, p.created_at, p.status
   from public.fee_payment_submissions p
   join public.student_fee_accounts a on a.id=p.fee_account_id
@@ -213,7 +213,7 @@ begin
     where p.user_id=auth.uid() and p.school_code='ashiana' and p.is_enabled
   ) then raise exception 'Authorized Principal fee permission required'; end if;
   return query
-  select p.id, s.id, s.name::text, s.enroll_no::text, s.class_name::text, s.section::text,
+  select p.id, s.id, s.student_name::text, s.enroll_no::text, s.class_name::text, s.section::text,
     p.amount_paise, p.upi_reference, p.proof_object_path, p.created_at, p.admin_reviewed_at
   from public.fee_payment_submissions p
   join public.student_fee_accounts a on a.id=p.fee_account_id
@@ -236,9 +236,7 @@ begin
   if not found or v_status <> 'PENDING' then raise exception 'Discount is not awaiting review'; end if;
   update public.fee_discount_requests
     set status=case when p_approve then 'APPROVED' else 'REJECTED' end,
-        reviewed_by=v_actor, reviewed_at=now(),
-        reason=case when p_reason is null or length(trim(p_reason))<3 then reason
-                    else reason || E'\nReview: ' || trim(p_reason) end
+        reviewed_by=v_actor, reviewed_at=now()
   where id=p_discount_id;
   insert into public.fee_audit_log(school_code,actor_id,action,entity_type,entity_id,details)
   values ('ashiana',v_actor,case when p_approve then 'DISCOUNT_APPROVED' else 'DISCOUNT_REJECTED' end,
