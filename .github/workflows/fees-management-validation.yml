@@ -7,6 +7,8 @@ on:
       - 'supabase/functions/fee-management/**'
       - 'supabase/migrations/20261023000*_fees_management_*.sql'
       - 'supabase/tests/fees_management_security.sql'
+      - 'supabase/tests/fees_management_synthetic_bootstrap.sql'
+      - 'supabase/tests/fees_management_rpc_smoke.sql'
       - 'index.html'
       - '.github/workflows/fees-management-validation.yml'
   push:
@@ -125,3 +127,5 @@ jobs:
           done
       - name: Run fee security assertions
         run: psql -v ON_ERROR_STOP=1 -f supabase/tests/fees_management_security.sql
+      - name: Run synthetic payment approval and receipt smoke test
+        run: psql -v ON_ERROR_STOP=1 -f supabase/tests/fees_management_rpc_smoke.sql
