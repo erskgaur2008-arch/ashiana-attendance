@@ -83,7 +83,7 @@ begin
   loop
     if not exists(select 1 from public.fee_installments i where i.fee_account_id=v_account and i.fee_structure_id=v_structure.id) then
       insert into public.fee_installments(fee_account_id,fee_structure_id,installment_no,amount_paise,due_date)
-      values (v_account,v_structure.id,1,v_structure.amount_paise,coalesce(v_structure.due_date,current_date))
+      values (v_account,v_structure.id,1,v_structure.amount_paise,coalesce(v_structure.due_date,(select y.starts_on from public.fee_academic_years y where y.id=p_academic_year_id)))
       returning id into v_installment;
     end if;
   end loop;
