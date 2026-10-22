@@ -6506,6 +6506,31 @@ function formatStudentHomeworkDueDate(value){
   if(Number.isNaN(d.getTime()))return String(value);
   return d.toLocaleDateString("en-IN",{day:"2-digit",month:"short",year:"numeric"});
 }
+function studentUpdateReadStorageKey(section){
+  const studentId=String(currentAuthUser?.portalData?.student?.id||currentAuthUser?.student?.id||currentAuthUser?.id||"student");
+  return "aps_student_updates_read_v1:"+studentId+":"+section;
+}
+function studentUpdateItemKey(item,index){
+  if(item&&typeof item==="object"){
+    const stable=item.id||item.uuid||item.notice_id||item.homework_id||item.event_id||item.created_at||item.publish_at||item.updated_at||item.due_date||item.event_date;
+    if(stable)return String(stable);
+    return JSON.stringify(item);
+  }
+  return String(item??index);
+}
+function studentUnreadUpdates(section,items){
+  const rows=Array.isArray(items)?items:[];
+  if(section==="attendance")return rows.filter(n=>!n.read_at).length;
+  let seen=[];
+  try{seen=JSON.parse(localStorage.getItem(studentUpdateReadStorageKey(section))||"[]");}catch(_){}
+  if(!Array.isArray(seen))seen=[];
+  const seenSet=new Set(seen);
+  return rows.filter((item,index)=>!seenSet.has(studentUpdateItemKey(item,index))).length;
+}
+function markStudentUpdateSectionRead(section,items){
+  const rows=Array.isArray(items)?items:[];
+  try{localStorage.setItem(studentUpdateReadStorageKey(section),JSON.stringify(rows.map(studentUpdateItemKey)));}catch(error){console.warn("Could not save read status for "+section,error);}
+}
 async function markStudentAttendanceNotificationsRead(){
   try{
     const token=String(await window.AshianaNative?.getStudentSessionToken?.()||sessionStorage.getItem("aps_student_session_token_v1")||"");
@@ -6520,26 +6545,46 @@ async function markStudentAttendanceNotificationsRead(){
   }catch(error){console.warn("Could not mark attendance notifications as read:",error?.message||error);}
 }
 function renderStudentAttendanceNotifications(){
-  const portal=currentAuthUser?.portalData||{},rows=Array.isArray(portal.attendance_notifications)?portal.attendance_notifications:[];
-  const unread=rows.filter(n=>!n.read_at).length;
-  const view=document.getElementById("student-portal-view");
+  const portal=currentAuthUser?.portalData||{},view=document.getElementById("student-portal-view");
   if(!view)return;
-  const attendanceButton=view.querySelector('button[onclick="studentDashboardSection(\'attendance\')"]');
-  if(!attendanceButton)return;
-  attendanceButton.classList.add("relative");
-  let badge=document.getElementById("student-attendance-notification-badge");
-  if(!badge){
-    badge=document.createElement("span");badge.id="student-attendance-notification-badge";
-    badge.className="absolute top-2 right-2 min-w-[20px] h-5 px-1 rounded-full bg-rose-500 text-white text-[10px] font-extrabold items-center justify-center border border-white shadow-sm";
-    attendanceButton.appendChild(badge);
-  }
-  badge.textContent=unread>99?"99+":String(unread);
-  badge.classList.toggle("hidden",unread===0);
-  badge.classList.toggle("flex",unread>0);
-  if(!attendanceButton.dataset.notificationReadHandler){
-    attendanceButton.dataset.notificationReadHandler="true";
-    attendanceButton.addEventListener("click",()=>{if((currentAuthUser?.portalData?.attendance_notifications||[]).some(n=>!n.read_at))void markStudentAttendanceNotificationsRead();});
-  }
+  const configs=[
+    {section:"notice",button:"notice",items:portal.notices||[]},
+    {section:"attendance",button:"attendance",items:portal.attendance_notifications||[]},
+    {section:"homework",button:"homework",items:portal.homework||[]},
+    {section:"timetable",button:"timetable",items:portal.timetable||[]},
+    {section:"leave",button:"leave",items:portal.leave_requests||[]},
+    {section:"report-card",button:"report-card",items:portal.report_cards||[]},
+    {section:"calendar",button:"calendar",items:portal.calendar||[]}
+  ];
+  configs.forEach(config=>{
+    const button=view.querySelector('button[onclick="studentDashboardSection(\''+config.button+'\')"]');
+    if(!button)return;
+    button.classList.add("relative");
+    let badge=document.getElementById("student-update-badge-"+config.section);
+    if(!badge){
+      badge=document.createElement("span");badge.id="student-update-badge-"+config.section;
+      badge.className="absolute top-2 right-2 min-w-[20px] h-5 px-1 rounded-full bg-rose-500 text-white text-[10px] font-extrabold items-center justify-center border border-white shadow-sm";
+      button.appendChild(badge);
+    }
+    const unread=studentUnreadUpdates(config.section,config.items);
+    badge.textContent=unread>99?"99+":String(unread);
+    badge.classList.toggle("hidden",unread===0);
+    badge.classList.toggle("flex",unread>0);
+    if(!button.dataset.updateReadHandler){
+      button.dataset.updateReadHandler="true";
+      button.addEventListener("click",()=>{
+        const current=Array.isArray(currentAuthUser?.portalData?.[config.section==="report-card"?"report_cards":config.section==="calendar"?"calendar":config.section==="notice"?"notices":config.section==="attendance"?"attendance_notifications":config.section==="leave"?"leave_requests":config.section] )?currentAuthUser.portalData[config.section==="report-card"?"report_cards":config.section==="calendar"?"calendar":config.section==="notice"?"notices":config.section==="attendance"?"attendance_notifications":config.section==="leave"?"leave_requests":config.section]:config.items;
+        if(config.section==="attendance"){
+          if(current.some(n=>!n.read_at))void markStudentAttendanceNotificationsRead();
+        }else{
+          markStudentUpdateSectionRead(config.section,current);
+          const latest=studentUnreadUpdates(config.section,current);
+          badge.textContent=String(latest);badge.classList.toggle("hidden",latest===0);badge.classList.toggle("flex",latest>0);
+        }
+      });
+    }
+  });
+  if(window.lucide)window.lucide.createIcons();
 }
 
 function populateStudentPortal(s){if(!s)return;const set=(id,v)=>{const e=document.getElementById(id);if(e)e.textContent=v||"—";};set("student-portal-name",s.student_name);set("student-portal-class","Class "+(s.class_name||"—")+" • Section "+(s.section||"—"));set("student-portal-admission",s.enroll_no);set("student-portal-roll",s.roll_no);set("student-portal-section",s.section);set("student-portal-category",s.category);set("student-portal-dob",s.dob?new Date(s.dob+"T00:00:00").toLocaleDateString("en-IN",{day:"2-digit",month:"short",year:"numeric"}):"—");set("student-portal-father",s.father_name);set("student-portal-mother",s.mother_name);set("student-portal-phone",s.phone_number);set("student-portal-address",s.address);const av=document.getElementById("student-portal-avatar-content");if(av){av.textContent=(s.student_name||"ST").split(/\s+/).map(x=>x[0]).join("").slice(0,2).toUpperCase();getStudentPhotoUrl(s).then(url=>{if(url)av.innerHTML='<img src="'+studentEscape(url)+'" class="w-full h-full object-cover" alt="Student photo">';}).catch(()=>{});}const d=currentAuthUser?.portalData||{};document.getElementById("student-count-notices").textContent=(d.notices||[]).length+" notices";document.getElementById("student-count-attendance").textContent=(d.attendance||[]).length+" records";document.getElementById("student-count-homework").textContent=(d.homework||[]).length+" items";document.getElementById("student-count-report").textContent=(d.report_cards||[]).length+" published";renderStudentAttendanceNotifications();}
