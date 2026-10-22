@@ -14266,7 +14266,7 @@ function addMessage(text,type){
   function getClient(){return (typeof supabaseClient!=="undefined"&&supabaseClient)||window.__ashianaMainSupabaseClient||null;}
   window.closeFeesAdminConsole=function(){$("fees-admin-console")?.classList.add("hidden");$("fees-admin-console")?.classList.remove("flex");};
   window.openFeesAdminConsole=function(){
-    const role=String(window.currentAuthUser?.type||"").toUpperCase();
+    const role=String(typeof currentAuthUser!=="undefined" ? currentAuthUser?.type||"" : "").toUpperCase();
     if(role!=="ADMIN"){if(window.showToast)showToast("Only an authenticated administrator can open fee review.","error");else alert("Only an authenticated administrator can open fee review.");return;}
     $("fees-admin-console")?.classList.remove("hidden");$("fees-admin-console")?.classList.add("flex");
     window.loadFeesReviewQueue("admin");
