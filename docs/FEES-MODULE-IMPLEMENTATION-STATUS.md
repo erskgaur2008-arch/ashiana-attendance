@@ -18,7 +18,7 @@
 - `supabase/tests/fees_management_security.sql`: database privilege/RLS assertions.
 - `supabase/tests/fees_management_synthetic_bootstrap.sql`: mock Supabase dependencies and synthetic schema; no live data.
 - `supabase/tests/fees_management_rpc_smoke.sql`: transactional synthetic student/Admin/Principal payment approval and receipt test, repeat-confirmation protection, rejected-payment no-ledger/no-receipt assertions, and discount approval/balance/audit assertions; rolls back its test data.
-- `.github/workflows/fees-management-validation.yml`: Edge Function type-check, SQL parsing, inline JavaScript syntax validation, applies all four migrations to an isolated PostgreSQL 16 service, then runs security assertions and the synthetic payment smoke test.
+- `.github/workflows/fees-management-validation.yml`: Edge Function type-check, SQL parsing, inline JavaScript syntax validation, applies all four migrations to an isolated PostgreSQL 16 service, then runs security assertions and the synthetic payment smoke test. The smoke test now also asserts duplicate UPI references, over-balance payment submissions, and excessive discount approvals are rejected.
 - `docs/FEES-MODULE-PLAN.md`: product requirements and release safeguards.
 
 ## Validation so far
