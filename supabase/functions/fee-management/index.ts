@@ -181,7 +181,7 @@ Deno.serve(async (req) => {
     const label = typeof input.label === "string" ? input.label.trim() : "";
     const startsOn = typeof input.starts_on === "string" ? input.starts_on : "";
     const endsOn = typeof input.ends_on === "string" ? input.ends_on : "";
-    if (label.length < 4 || label.length > 40 || !/^\\d{4}-\\d{2}-\\d{2}$/.test(startsOn) || !/^\\d{4}-\\d{2}-\\d{2}$/.test(endsOn) || startsOn > endsOn || typeof input.is_active !== "boolean") {
+    if (label.length < 4 || label.length > 40 || !/^\d{4}-\d{2}-\d{2}$/.test(startsOn) || !/^\d{4}-\d{2}-\d{2}$/.test(endsOn) || startsOn > endsOn || typeof input.is_active !== "boolean") {
       return respond({ error: "Provide a valid academic-year label and date range" }, 400);
     }
     const { data, error } = await userClient.rpc("fee_admin_save_academic_year", { p_label: label, p_starts_on: startsOn, p_ends_on: endsOn, p_is_active: input.is_active });
@@ -194,7 +194,7 @@ Deno.serve(async (req) => {
     const className = typeof input.class_name === "string" ? input.class_name.trim() : "";
     const feeName = typeof input.fee_name === "string" ? input.fee_name.trim() : "";
     const amountPaise = Number(input.amount_paise);
-    const dueDate = typeof input.due_date === "string" && /^\\d{4}-\\d{2}-\\d{2}$/.test(input.due_date) ? input.due_date : null;
+    const dueDate = typeof input.due_date === "string" && /^\d{4}-\d{2}-\d{2}$/.test(input.due_date) ? input.due_date : null;
     if (!UUID_RE.test(yearId) || !className || feeName.length < 2 || feeName.length > 100 || !Number.isSafeInteger(amountPaise) || amountPaise < 0 || typeof input.is_mandatory !== "boolean") {
       return respond({ error: "Provide a valid academic year, class, fee name and amount" }, 400);
     }
