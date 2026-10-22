@@ -88,6 +88,24 @@
   </script>
 
   <style>
+    /* Ashiana typography system: Inter for the app UI, with robust offline/device fallbacks. */
+    :root {
+      --ashiana-font-sans: "Inter", "Noto Sans", Roboto, Arial, sans-serif;
+      font-synthesis: none;
+      text-rendering: optimizeLegibility;
+    }
+    body,
+    body button,
+    body input,
+    body select,
+    body textarea {
+      font-family: var(--ashiana-font-sans);
+    }
+    body {
+      font-feature-settings: "cv11", "ss01";
+    }
+  </style>
+  <style>
     body { 
       font-family: 'Inter', sans-serif; 
       -webkit-tap-highlight-color: transparent;
