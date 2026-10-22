@@ -216,6 +216,105 @@ Deno.serve(async (req: Request) => {
   const { data: userData, error: userError } = await client.auth.getUser();
   if (userError || !userData.user) return json({ error: "AUTH_REQUIRED" }, 401);
 
+  if (action === "send-attendance-update") {
+    const callerEmail = String(userData.user.email || "").trim().toLowerCase();
+    if (!callerEmail) return json({ error: "AUTH_REQUIRED" }, 401);
+
+    const { data: admins, error: adminError } = await service.from("admin_users")
+      .select("email").eq("active", true).ilike("email", escapeLike(callerEmail));
+    const isAdmin = !adminError && Boolean(admins?.length);
+    const { data: staffRows, error: staffError } = isAdmin ? { data: [], error: null } :
+      await service.from("staff").select("email").eq("status", "ACTIVE")
+        .ilike("email", escapeLike(callerEmail)).limit(1);
+    if (!isAdmin && (staffError || !staffRows?.length)) {
+      return json({ error: "ACTIVE_STAFF_REQUIRED" }, 403);
+    }
+
+    const schoolCode = String(body.schoolCode || "ashiana").trim().toLowerCase();
+    const enrollNo = String(body.admissionNo || "").trim().toUpperCase();
+    const attendanceDate = String(body.attendanceDate || "");
+    const status = String(body.status || "").trim().toUpperCase();
+    if (schoolCode !== "ashiana" || !enrollNo ||
+        !/^\\d{4}-\\d{2}-\\d{2}$/.test(attendanceDate) ||
+        !["PRESENT", "ABSENT", "LEAVE"].includes(status)) {
+      return json({ error: "INVALID_ATTENDANCE_NOTIFICATION" }, 400);
+    }
+
+    const { data: student, error: studentError } = await service.from("student_roster")
+      .select("id,enroll_no,student_name,class_name,section,status")
+      .eq("school_code", schoolCode).ilike("enroll_no", escapeLike(enrollNo))
+      .eq("status", "ACTIVE").maybeSingle();
+    if (studentError || !student) return json({ error: "ACTIVE_STUDENT_NOT_FOUND" }, 404);
+
+    // A push request cannot create an attendance event by itself: require the
+    // authoritative attendance row to have been saved by this caller first.
+    let attendanceQuery = service.from("student_attendance").select("student_id,status,marked_by")
+      .eq("school_code", schoolCode).eq("student_id", student.id)
+      .eq("attendance_date", attendanceDate).eq("status", status);
+    if (!isAdmin) attendanceQuery = attendanceQuery.eq("marked_by", userData.user.id);
+    const { data: savedMark, error: markError } = await attendanceQuery.maybeSingle();
+    if (markError || !savedMark) return json({ error: "SAVED_ATTENDANCE_NOT_FOUND" }, 409);
+
+    const title = "Attendance Marked";
+    const message = "Your attendance for " + attendanceDate + " has been marked " + status + ".";
+    const { data: created, error: notificationError } = await service
+      .from("student_attendance_notifications")
+      .upsert({
+        school_code: schoolCode, student_id: student.id, attendance_date: attendanceDate,
+        status, title, message,
+      }, { onConflict: "student_id,attendance_date,status", ignoreDuplicates: true })
+      .select("id").maybeSingle();
+    if (notificationError) {
+      console.error("Attendance notification persistence failed:", notificationError.message);
+      return json({ error: "ATTENDANCE_NOTIFICATION_SAVE_FAILED" }, 500);
+    }
+    if (!created) return json({ success: true, duplicate: true, sent: 0 });
+
+    const { data: subscriptions, error: subscriptionError } = await service
+      .from("student_push_subscriptions")
+      .select("id,platform,endpoint,subscription,device_token,class_name,section")
+      .eq("school_code", schoolCode).ilike("enroll_no", escapeLike(String(student.enroll_no || enrollNo)));
+    if (subscriptionError) return json({ success: true, inAppSaved: true, pushError: "SUBSCRIPTION_LOOKUP_FAILED" });
+
+    const rows = (subscriptions || []) as StudentPushRow[];
+    const webRows = rows.filter((row) => row.platform === "web");
+    const androidRows = rows.filter((row) => row.platform === "android");
+    if (webPushConfigured && webRows.length) webpush.setVapidDetails(vapidSubject, vapidPublic, vapidPrivate);
+
+    let fcmAccessToken = "";
+    if (androidRows.length && fcmAccount) {
+      try { fcmAccessToken = await getFcmAccessToken(fcmAccount); }
+      catch (error) { console.error("FCM token setup failed:", (error as Error)?.message || "unknown error"); }
+    }
+
+    let sentWeb = 0, sentAndroid = 0, failed = 0, skipped = 0;
+    const jobs: Array<Promise<void>> = [];
+    for (const row of webRows) {
+      if (!webPushConfigured) { skipped++; continue; }
+      jobs.push(sendWebPush(row, title, message, "attendance_update", service)
+        .then((ok) => { if (ok) sentWeb++; else failed++; }));
+    }
+    for (const row of androidRows) {
+      if (!fcmAccessToken || !fcmAccount) { skipped++; continue; }
+      jobs.push(sendFcm(fcmAccessToken, fcmAccount.project_id, String(row.device_token || ""), title, message, "attendance_update")
+        .then(async (result) => {
+          if (result.ok) sentAndroid++;
+          else {
+            failed++;
+            if (result.detail === "UNREGISTERED" || result.status === 404) {
+              await service.from("student_push_subscriptions").delete().eq("id", row.id);
+            }
+          }
+        }));
+    }
+    for (let i = 0; i < jobs.length; i += 20) await Promise.allSettled(jobs.slice(i, i + 20));
+    return json({
+      success: true, inAppSaved: true, duplicate: false, subscriptionsFound: rows.length,
+      sent: sentWeb + sentAndroid, sentWeb, sentAndroid, failed, skipped,
+      webPushConfigured, androidPushConfigured: Boolean(fcmAccessToken),
+    });
+  }
+
   if (action === "subscribe" && String(body.platform || "") === "android") {
     const token = String(body.deviceToken || "");
     if (token.length < 20 || token.length > 4096) return json({ error: "INVALID_DEVICE_TOKEN" }, 400);
