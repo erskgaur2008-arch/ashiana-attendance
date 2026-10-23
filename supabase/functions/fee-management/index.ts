@@ -245,6 +245,22 @@ Deno.serve(async (req) => {
     return respond({ fee_structures: data ?? [] });
   }
 
+  if (action === "admin-save-school-upi-qr") {
+    const dataUrl = typeof input.qr_data_url === "string" ? input.qr_data_url : "";
+    const upiId = typeof input.upi_id === "string" ? input.upi_id.trim() : "";
+    const payeeName = typeof input.payee_name === "string" ? input.payee_name.trim() : "";
+    if (dataUrl.length < 100 || dataUrl.length > 1400000 ||
+        !/^data:image\/(png|jpeg|webp);base64,[A-Za-z0-9+/]+={0,2}$/.test(dataUrl)) {
+      return respond({ error: "Upload a valid PNG, JPEG, or WebP QR image under 1 MB" }, 400);
+    }
+    if (!/^[A-Za-z0-9._-]+@[A-Za-z0-9.-]+$/.test(upiId) || payeeName.length < 2 || payeeName.length > 80) {
+      return respond({ error: "Provide a valid school UPI ID and verified payee name" }, 400);
+    }
+    const { error } = await userClient.rpc("fee_admin_save_school_upi_qr", { p_data_url: dataUrl, p_upi_id: upiId, p_payee_name: payeeName });
+    if (error) return respond({ error: error.message }, 403);
+    return respond({ status: "SCHOOL_UPI_QR_SAVED" });
+  }
+
   if (action === "admin-save-academic-year") {
     const label = typeof input.label === "string" ? input.label.trim() : "";
     const startsOn = typeof input.starts_on === "string" ? input.starts_on : "";
