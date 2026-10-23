@@ -12,7 +12,7 @@ on:
       - 'index.html'
       - '.github/workflows/fees-management-validation.yml'
   push:
-    branches: [feat/live-fees-management]
+    branches: [main, feat/live-fees-management]
     paths:
       - 'supabase/functions/fee-management/**'
       - 'supabase/migrations/20261023000*_fees_management_*.sql'
@@ -125,7 +125,7 @@ jobs:
       - name: Apply all fee migrations to isolated database
         run: |
           set -euo pipefail
-          for migration in supabase/migrations/20261023000*_fees_management_*.sql; do
+          for migration in supabase/migrations/20261023000*_fees_management_*.sql supabase/migrations/20261023170000_fee_installment_payment_selection.sql; do
             echo "Applying $migration"
             psql -v ON_ERROR_STOP=1 -f "$migration"
           done
