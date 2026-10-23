@@ -137,6 +137,17 @@ begin
     raise exception 'Rejected excessive discount should remain pending for a corrected review';
   end if;
 
+  -- NULL Admin discount decisions must fail closed and leave the request pending.
+  v_discount := public.fee_admin_create_discount_request(v_account,1000,'Synthetic NULL decision test');
+  begin
+    perform public.fee_admin_review_discount(v_discount,null,null);
+    raise exception 'NULL Admin discount decision unexpectedly succeeded';
+  exception when others then
+    if sqlerrm = 'NULL Admin discount decision unexpectedly succeeded' then raise; end if;
+  end;
+  if (select status from public.fee_discount_requests where id=v_discount) <> 'PENDING' then
+    raise exception 'NULL Admin discount decision changed discount state';
+  end if;
   -- A valid discount requires an explicit reason, is audited, and reduces the balance.
   v_discount := public.fee_admin_create_discount_request(v_account,1000,'Synthetic approved discount test');
   v_result := public.fee_admin_review_discount(v_discount,true,'Synthetic review note');
