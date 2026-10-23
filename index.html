@@ -14230,9 +14230,21 @@ window.showStudentSchoolUpiQr=async function(accountId){
     if(!client?.functions?.invoke)throw new Error("Application client is not ready.");
     const {data,error}=await client.functions.invoke("fee-management",{body:{action:"student-payment-qr",student_session_token:token,fee_account_id:accountId}});
     if(error)throw new Error(error.message||data?.error||"Could not load school QR.");
-    if(!data?.qr_data_url)throw new Error("The school has not uploaded its payment QR yet. Please contact the school office.");
-    const img=document.createElement("img");img.src=data.qr_data_url;img.alt="Official Ashiana Public School UPI payment QR";img.className="mx-auto max-h-72 max-w-full object-contain";img.referrerPolicy="no-referrer";
-    host.replaceChildren(img);
+    if(!data?.upi_id||!data?.payee_name)throw new Error("The school has not configured its verified UPI ID and payee name yet.");
+    const balancePaise=Number(data.balance_paise);
+    if(!Number.isSafeInteger(balancePaise)||balancePaise<=0)throw new Error("No outstanding balance is due on this fee account.");
+    await ensureQRCodeLibrary();
+    if(typeof QRCode==="undefined")throw new Error("Payment QR generator is unavailable. Please retry.");
+    const amount=(balancePaise/100).toFixed(2);
+    const params=new URLSearchParams({pa:data.upi_id,pn:data.payee_name,am:amount,cu:"INR",tn:"Ashiana school fees"});
+    const upiUri="upi://pay?"+params.toString();
+    const qrHost=document.createElement("div");qrHost.className="mx-auto flex max-w-full flex-col items-center gap-3";
+    const qrCanvas=document.createElement("div");qrCanvas.className="rounded-xl bg-white p-3";
+    new QRCode(qrCanvas,{text:upiUri,width:256,height:256,colorDark:"#064e3b",colorLight:"#ffffff",correctLevel:QRCode.CorrectLevel.M});
+    const amountLabel=document.createElement("p");amountLabel.className="text-lg font-extrabold text-slate-900";amountLabel.textContent="Amount due: ₹"+Number(amount).toLocaleString("en-IN",{minimumFractionDigits:2,maximumFractionDigits:2});
+    const payee=document.createElement("p");payee.className="text-xs text-slate-600";payee.textContent="Pay to: "+data.payee_name+" ("+data.upi_id+")";
+    const note=document.createElement("p");note.className="text-[11px] text-slate-500";note.textContent="Confirm the payee and amount in your UPI app. Payment is not confirmed until the school verifies it.";
+    qrHost.append(qrCanvas,amountLabel,payee,note);host.replaceChildren(qrHost);
   }catch(e){host.textContent=e?.message||"Unable to show school payment QR.";}
 };
 </script>
@@ -14254,8 +14266,13 @@ window.showStudentSchoolUpiQr=async function(accountId){
         <p class="mt-2 text-xs text-slate-500">These actions require an authorized Admin session and are audit logged. Keep the academic-year UUID returned after saving for fee structures and account assignment.</p>
         <div class="mt-4 grid grid-cols-1 md:grid-cols-2 gap-4">
           <form onsubmit="submitFeeSetupForm(event)" data-fee-setup="school-upi-qr" class="rounded-xl border border-amber-200 bg-amber-50 p-3 space-y-2 md:col-span-2">
-            <h3 class="font-bold text-sm">School UPI QR Code</h3>
-            <p class="text-xs text-slate-600">Upload the official school payment QR. The saved QR is shown to students in Pay Fees. PNG, JPEG or WebP, maximum 1 MB.</p>
+            <h3 class="font-bold text-sm">School UPI Payment Details</h3>
+            <p class="text-xs text-slate-600">Enter the school's verified UPI ID and payee name. Student QR codes will request each student's current outstanding balance. Keep the official QR image as a reference/fallback.</p>
+            <label class="block text-xs font-semibold">School UPI ID / VPA</label>
+            <input name="upi_id" required maxlength="120" pattern="[A-Za-z0-9._-]+@[A-Za-z0-9.-]+" placeholder="schoolname@bank" class="w-full rounded-lg border bg-white p-2.5 text-sm">
+            <label class="block text-xs font-semibold">Payee name as shown in UPI app</label>
+            <input name="payee_name" required minlength="2" maxlength="80" placeholder="Ashiana Public School" class="w-full rounded-lg border bg-white p-2.5 text-sm">
+            <label class="block text-xs font-semibold">Official QR image (reference/fallback)</label>
             <input name="qr_image" type="file" accept="image/png,image/jpeg,image/webp" required class="w-full rounded-lg border bg-white p-2.5 text-sm">
             <div class="flex flex-wrap items-center gap-3"><img data-school-qr-preview alt="School UPI QR preview" class="hidden max-h-44 max-w-44 rounded-lg border bg-white p-2"><span data-school-qr-current class="text-xs text-slate-600">No new QR selected.</span></div>
             <button type="button" onclick="previewSchoolUpiQr(event)" class="rounded-lg border bg-white px-3 py-2 text-xs font-bold">Preview selected QR</button>
@@ -14477,9 +14494,13 @@ window.showStudentSchoolUpiQr=async function(accountId){
           const qrData=String(reader.result||"");
           if(!qrData.startsWith("data:image/"))throw new Error("Could not read QR image.");
           say("Saving school QR…");
-          const {data,error}=await client.functions.invoke("fee-management",{body:{action:"admin-save-school-upi-qr",qr_data_url:qrData}});
-          if(error||data?.error||data?.status!=="SCHOOL_UPI_QR_SAVED")throw new Error(error?.message||data?.error||"QR save was not confirmed.");
-          say("School UPI QR saved. It will appear in student Pay Fees.",true);
+          const upiId=String(form.elements.upi_id?.value||"").trim();
+          const payeeName=String(form.elements.payee_name?.value||"").trim();
+          if(!/^[A-Za-z0-9._-]+@[A-Za-z0-9.-]+$/.test(upiId))throw new Error("Enter a valid school UPI ID (VPA).");
+          if(payeeName.length<2||payeeName.length>80)throw new Error("Enter the verified school payee name.");
+          const {data,error}=await client.functions.invoke("fee-management",{body:{action:"admin-save-school-upi-qr",qr_data_url:qrData,upi_id:upiId,payee_name:payeeName}});
+          if(error||data?.error||data?.status!=="SCHOOL_UPI_QR_SAVED")throw new Error(error?.message||data?.error||"UPI details save was not confirmed.");
+          say("School UPI details saved. Student QR codes will include the current balance.",true);
         }catch(e){say(e?.message||"QR save failed.");}
       };
       reader.onerror=()=>say("Could not read QR image.");
