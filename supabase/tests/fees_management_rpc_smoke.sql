@@ -39,6 +39,15 @@ begin
     'synthetic-student-session-token-000000000000',v_account,v_installment,5000,
     'SYNTHETIC-UPI-REF-001',v_account::text||'/synthetic-proof.png','Synthetic test only'
   );
+  if (select installment_id from public.fee_payment_submissions where id=v_submission) <> v_installment then
+    raise exception 'Payment submission was not attached to the selected installment';
+  end if;
+  select * into v_summary
+  from public.fee_student_summary_by_session('synthetic-student-session-token-000000000000')
+  where fee_account_id=v_account;
+  if v_summary.fee_items->0->>'pending_paise' <> '5000' or v_summary.fee_items->0->>'balance_paise' <> '5000' then
+    raise exception 'Selected installment pending amount/balance was not updated';
+  end if;
   -- Missing/NULL Admin decision must fail closed instead of changing payment state.
   begin
     perform public.fee_admin_review_payment(v_submission,null,null);
