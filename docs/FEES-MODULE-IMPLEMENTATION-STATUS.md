@@ -30,6 +30,7 @@
 - All four fee migrations applied successfully to an isolated PostgreSQL 16 test database using synthetic Supabase dependencies.
 - The SQL security assertions passed, and the synthetic RPC smoke test passed: create academic year/fee structure/account, load student summary, submit a payment, Admin review, distinct Principal confirmation, one ledger credit/receipt, and duplicate-confirmation rejection.
 - A date-validation regex bug in the academic-year and due-date inputs was corrected.
+- Latest validation run **#106** passed on commit `9411a99346e3b2db515bf5a317db70758954bf6f`; both jobs passed after adding fail-closed checks for NULL Admin review and NULL Principal confirmation. The smoke test verifies a NULL Principal decision leaves the submission `PENDING_PRINCIPAL`. Run: https://github.com/erskgaur2008-arch/ashiana-attendance/actions/runs/39882278207.
 - This is isolated synthetic validation only. It is not a test against production schema or real uploads, devices, identities, push delivery, or UI end-to-end.
 
 ## Remaining before production
