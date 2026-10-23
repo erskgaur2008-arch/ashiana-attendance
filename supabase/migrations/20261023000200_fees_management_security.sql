@@ -286,6 +286,7 @@ language plpgsql security definer set search_path = ''
 as $function$
 declare v_actor uuid := auth.uid(); v_status text; v_account uuid; v_amount bigint; v_balance bigint;
 begin
+  if p_approve is null then raise exception 'Admin discount decision must be explicit'; end if;
   if v_actor is null or not private.is_admin() then raise exception 'Admin permission required'; end if;
   select d.status, d.fee_account_id, d.amount_paise into v_status, v_account, v_amount
   from public.fee_discount_requests d where d.id=p_discount_id for update;
