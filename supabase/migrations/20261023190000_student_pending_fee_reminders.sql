@@ -18,7 +18,7 @@ begin
 end $$;
 
 create unique index if not exists fee_reminder_attempts_stage_unique
-  on public.fee_reminder_attempts(fee_account_id, installment_id, reminder_kind, reminder_stage);
+  on public.fee_reminder_attempts(fee_account_id, installment_id, reminder_kind, reminder_stage, due_date);
 
 create table if not exists public.fee_student_reminders (
   id uuid primary key default gen_random_uuid(),
