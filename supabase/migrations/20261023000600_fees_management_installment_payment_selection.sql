@@ -163,7 +163,8 @@ begin
     select a.id from public.student_fee_accounts a
     join public.student_roster s on s.id=a.student_id
     where a.academic_year_id=p_academic_year_id and a.school_code='ashiana'
-      and s.status='ACTIVE' and s.class_name=trim(p_class_name)
+      and s.status='ACTIVE' and (trim(s.class_name)=trim(p_class_name) or
+        concat_ws('-',nullif(trim(s.class_name),''),nullif(trim(s.section),''))=trim(p_class_name))
   loop
     insert into public.fee_installments(fee_account_id,fee_structure_id,installment_no,amount_paise,due_date)
     values (v_account.id,v_id,1,p_amount_paise,coalesce(p_due_date,
@@ -177,6 +178,56 @@ begin
     jsonb_build_object('academic_year_id',p_academic_year_id,'class_name',trim(p_class_name),
       'fee_name',trim(p_fee_name),'amount_paise',p_amount_paise,'assigned_accounts_synced',true));
   return v_id;
+end;
+$;
+
+-- Match fee categories against the roster's class and section without losing class-only compatibility.
+create or replace function public.fee_admin_assign_student_account(
+  p_academic_year_id uuid, p_student_id uuid
+) returns uuid
+language plpgsql security definer set search_path = ''
+as $
+declare
+  v_actor uuid := auth.uid();
+  v_account uuid;
+  v_class text;
+  v_section text;
+  v_class_key text;
+  v_school text;
+  v_structure record;
+  v_installment uuid;
+begin
+  if v_actor is null or not private.is_admin() then raise exception 'Admin permission required'; end if;
+  select s.class_name, s.section, s.school_code into v_class,v_section,v_school
+  from public.student_roster s where s.id=p_student_id and s.status='ACTIVE';
+  if not found or v_school <> 'ashiana' then raise exception 'Active Ashiana student not found'; end if;
+  v_class_key := concat_ws('-',nullif(trim(v_class),''),nullif(trim(v_section),''));
+  if not exists(select 1 from public.fee_academic_years y where y.id=p_academic_year_id and y.school_code='ashiana') then
+    raise exception 'Academic year not found';
+  end if;
+
+  insert into public.student_fee_accounts(school_code,academic_year_id,student_id,created_by)
+  values ('ashiana',p_academic_year_id,p_student_id,v_actor)
+  on conflict (academic_year_id,student_id) do update set school_code='ashiana'
+  returning id into v_account;
+
+  for v_structure in
+    select fs.id,fs.amount_paise,fs.due_date from public.fee_structures fs
+    where fs.academic_year_id=p_academic_year_id and fs.school_code='ashiana'
+      and fs.class_name in (trim(v_class),v_class_key)
+  loop
+    insert into public.fee_installments(fee_account_id,fee_structure_id,installment_no,amount_paise,due_date)
+    values (v_account,v_structure.id,1,v_structure.amount_paise,
+      coalesce(v_structure.due_date,(select y.starts_on from public.fee_academic_years y where y.id=p_academic_year_id)))
+    on conflict (fee_account_id,fee_structure_id,installment_no) do update
+      set amount_paise=excluded.amount_paise,due_date=excluded.due_date
+    returning id into v_installment;
+  end loop;
+
+  insert into public.fee_audit_log(school_code,actor_id,action,entity_type,entity_id,details)
+  values ('ashiana',v_actor,'STUDENT_FEE_ACCOUNT_ASSIGNED','student_fee_account',v_account,
+    jsonb_build_object('student_id',p_student_id,'academic_year_id',p_academic_year_id,'class_key',v_class_key));
+  return v_account;
 end;
 $;
 
