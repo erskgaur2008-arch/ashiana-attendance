@@ -250,7 +250,16 @@ Deno.serve(async (req) => {
     const structureId = typeof input.fee_structure_id === "string" ? input.fee_structure_id : "";
     if (!UUID_RE.test(structureId)) return respond({ error: "Valid fee structure ID is required" }, 400);
     const { data, error } = await userClient.rpc("fee_admin_delete_structure", { p_fee_structure_id: structureId });
-    if (error) return respond({ error: error.message }, 403);
+    if (error) {
+      const message = String(error.message || "Unable to delete fee structure.");
+      if (/linked to existing fee or payment records/i.test(message)) {
+        return respond({
+          error: "Cannot delete this fee structure because it is linked to existing student fee or payment records. Those records have been preserved. Use a new fee structure for future charges.",
+          code: "FEE_STRUCTURE_HAS_RECORDS"
+        });
+      }
+      return respond({ error: message }, 403);
+    }
     return respond({ status: "FEE_STRUCTURE_DELETED", fee_structure_id: data });
   }
 
