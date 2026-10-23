@@ -118,10 +118,11 @@ Deno.serve(async (req) => {
   if (action === "submit-payment") {
     const token = typeof input.student_session_token === "string" ? input.student_session_token : "";
     const accountId = typeof input.fee_account_id === "string" ? input.fee_account_id : "";
+    const installmentId = typeof input.installment_id === "string" ? input.installment_id : "";
     const objectPath = typeof input.proof_object_path === "string" ? input.proof_object_path : "";
     const reference = typeof input.upi_reference === "string" ? input.upi_reference.trim() : "";
     const amount = Number(input.amount_paise);
-    if (token.length < 32 || token.length > 256 || !UUID_RE.test(accountId) ||
+    if (token.length < 32 || token.length > 256 || !UUID_RE.test(accountId) || !UUID_RE.test(installmentId) ||
         !Number.isSafeInteger(amount) || amount <= 0 || amount > 1000000000 ||
         reference.length < 6 || reference.length > 120 ||
         !objectPath.startsWith(accountId + "/") || objectPath.includes("..") || objectPath.startsWith("/")) {
@@ -153,6 +154,7 @@ Deno.serve(async (req) => {
     const { data, error } = await adminClient.rpc("fee_submit_payment_by_session", {
       p_token: token,
       p_fee_account_id: accountId,
+      p_installment_id: installmentId,
       p_amount_paise: amount,
       p_upi_reference: reference,
       p_proof_object_path: objectPath,
