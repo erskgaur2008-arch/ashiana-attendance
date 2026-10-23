@@ -187,6 +187,17 @@ Deno.serve(async (req) => {
     return respond({ academic_years: data ?? [] });
   }
 
+  if (action === "admin-search-students-page") {
+    const query = typeof input.query === "string" ? input.query : "";
+    const limit = Math.max(1, Math.min(100, Number(input.limit) || 50));
+    const offset = Math.max(0, Number(input.offset) || 0);
+    const { data, error } = await userClient.rpc("fee_admin_search_students_page", {
+      p_query: query, p_limit: limit, p_offset: offset,
+    });
+    if (error) return respond({ error: error.message || "Unable to search students" }, 403);
+    return respond({ students: data ?? [], limit, offset, has_more: (data?.length ?? 0) === limit });
+  }
+
   if (action === "admin-search-students") {
     const query = typeof input.query === "string" ? input.query.trim().slice(0, 80) : "";
     const { data, error } = await userClient.rpc("fee_admin_search_students", { p_query: query });
