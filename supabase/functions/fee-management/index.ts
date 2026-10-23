@@ -238,6 +238,14 @@ Deno.serve(async (req) => {
     return respond({ fee_structures: data ?? [] });
   }
 
+  if (action === "admin-delete-structure") {
+    const structureId = typeof input.fee_structure_id === "string" ? input.fee_structure_id : "";
+    if (!UUID_RE.test(structureId)) return respond({ error: "Valid fee structure ID is required" }, 400);
+    const { data, error } = await userClient.rpc("fee_admin_delete_structure", { p_fee_structure_id: structureId });
+    if (error) return respond({ error: error.message }, 403);
+    return respond({ status: "FEE_STRUCTURE_DELETED", fee_structure_id: data });
+  }
+
   if (action === "admin-save-school-upi-qr") {
     const dataUrl = typeof input.qr_data_url === "string" ? input.qr_data_url : "";
     if (dataUrl.length < 100 || dataUrl.length > 1400000 ||
