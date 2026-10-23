@@ -125,6 +125,25 @@ begin
     raise exception 'Rejected payment must not create a ledger entry or receipt';
   end if;
 
+  -- Pending payment amounts must be reserved when checking a discount, to prevent
+  -- a discount plus an in-flight payment from exceeding the fee balance.
+  v_submission := public.fee_submit_payment_by_session(
+    'synthetic-student-session-token-000000000000',v_account,3000,
+    'SYNTHETIC-UPI-PENDING-003',v_account::text||'/pending-proof.png','Pending payment/discount concurrency test'
+  );
+  v_discount := public.fee_admin_create_discount_request(v_account,2500,'Synthetic discount versus pending payment');
+  begin
+    perform public.fee_admin_review_discount(v_discount,true,'Must account for pending payment');
+    raise exception 'Discount plus pending payment unexpectedly exceeded available balance';
+  exception when others then
+    if sqlerrm = 'Discount plus pending payment unexpectedly exceeded available balance' then raise; end if;
+  end;
+  if (select status from public.fee_discount_requests where id=v_discount) <> 'PENDING' then
+    raise exception 'Discount exceeding balance after pending payments should remain pending';
+  end if;
+  v_result := public.fee_admin_review_payment(v_submission,false,'Synthetic pending payment release');
+  if v_result <> 'REJECTED' then raise exception 'Pending payment test cleanup failed'; end if;
+
   -- Discount approval must not exceed the remaining fee balance.
   v_discount := public.fee_admin_create_discount_request(v_account,6000,'Synthetic excessive discount test');
   begin
