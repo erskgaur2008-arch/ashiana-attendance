@@ -14313,8 +14313,8 @@ function addMessage(text,type){
   };
   window.searchFeeSetupStudents=async function(event){
     const form=event.currentTarget.closest("form"),query=String(form?.elements.student_search?.value||"").trim(),select=form?.elements.student_id;
-    if(!form||!select)return;
-    select.innerHTML='<option value="">Searching students…</option>';
+    if(!form)return;
+    if(select)select.innerHTML='<option value="">Searching students…</option>';
     try{
       const client=getClient();const {data,error}=await client.functions.invoke("fee-management",{body:{action:"admin-search-students",query}});
       if(error)throw error;
@@ -14327,7 +14327,7 @@ function addMessage(text,type){
       }
       const datalist=document.getElementById("fees-class-options");
       if(datalist)datalist.innerHTML=classes.map(x=>'<option value="'+escapeHtml(x)+'"></option>').join("");
-    }catch(e){select.innerHTML='<option value="">Search failed</option>';setStatus(e?.message||"Student search failed.",true);}
+    }catch(e){if(select)select.innerHTML='<option value="">Search failed</option>';setStatus(e?.message||"Student search failed.",true);}
   };
   window.previewFeeClassStudents=async function(event){
     const form=event.currentTarget.closest("form"), cls=String(form?.elements.class_name?.value||"").trim(), host=form?.querySelector("[data-class-preview]");
