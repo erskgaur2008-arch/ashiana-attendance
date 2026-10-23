@@ -14277,6 +14277,20 @@ function addMessage(text,type){
         <summary class="cursor-pointer font-extrabold text-slate-900">Fee setup & permissions</summary>
         <p class="mt-2 text-xs text-slate-500">These actions require an authorized Admin session and are audit logged. Keep the academic-year UUID returned after saving for fee structures and account assignment.</p>
         <div class="mt-4 grid grid-cols-1 md:grid-cols-2 gap-4">
+          <form onsubmit="submitFeeSetupForm(event)" data-fee-setup="school-upi-qr" class="rounded-xl border border-amber-200 bg-amber-50 p-3 space-y-2 md:col-span-2">
+            <h3 class="font-bold text-sm">School UPI Payment Details</h3>
+            <p class="text-xs text-slate-600">Enter the school's verified UPI ID and payee name. Student QR codes will request each student's current outstanding balance. Keep the official QR image as a reference/fallback.</p>
+            <label class="block text-xs font-semibold">School UPI ID / VPA</label>
+            <input name="upi_id" required maxlength="120" pattern="[A-Za-z0-9._-]+@[A-Za-z0-9.-]+" placeholder="schoolname@bank" class="w-full rounded-lg border bg-white p-2.5 text-sm">
+            <label class="block text-xs font-semibold">Payee name as shown in UPI app</label>
+            <input name="payee_name" required minlength="2" maxlength="80" placeholder="Ashiana Public School" class="w-full rounded-lg border bg-white p-2.5 text-sm">
+            <label class="block text-xs font-semibold">Official QR image (reference/fallback)</label>
+            <input name="qr_image" type="file" accept="image/png,image/jpeg,image/webp" required class="w-full rounded-lg border bg-white p-2.5 text-sm">
+            <div class="flex flex-wrap items-center gap-3"><img data-school-qr-preview alt="School UPI QR preview" class="hidden max-h-44 max-w-44 rounded-lg border bg-white p-2"><span data-school-qr-current class="text-xs text-slate-600">No new QR selected.</span></div>
+            <button type="button" onclick="previewSchoolUpiQr(event)" class="rounded-lg border bg-white px-3 py-2 text-xs font-bold">Preview selected QR</button>
+            <button type="submit" class="rounded-lg bg-amber-800 px-3 py-2 text-xs font-bold text-white">Save school QR</button><p data-setup-result class="hidden break-all text-xs" role="status"></p>
+          </form>
+
           <form onsubmit="submitFeeSetupForm(event)" data-fee-setup="year" class="rounded-xl border p-3 space-y-2">
             <h3 class="font-bold text-sm">Create / update academic year</h3>
             <input name="label" required minlength="4" maxlength="40" placeholder="e.g. 2026-2027" class="w-full rounded-lg border p-2.5 text-sm">
@@ -14418,6 +14432,13 @@ function addMessage(text,type){
       if(!rows.length)select.innerHTML='<option value="">No matching fee accounts</option>';
     }catch(e){select.innerHTML='<option value="">Search failed</option>';setStatus(e?.message||"Fee account search failed.",true);}
   };
+  window.previewSchoolUpiQr=function(event){
+    const form=event.currentTarget.closest("form"),file=form?.elements.qr_image?.files?.[0];
+    const img=form?.querySelector("[data-school-qr-preview]"),label=form?.querySelector("[data-school-qr-current]");
+    if(!file||!img||!label)return;
+    if(!["image/png","image/jpeg","image/webp"].includes(file.type)||file.size>1024*1024){label.textContent="Invalid file. Use PNG, JPEG or WebP under 1 MB.";img.classList.add("hidden");return;}
+    const reader=new FileReader();reader.onload=()=>{img.src=String(reader.result||"");img.classList.remove("hidden");label.textContent=file.name+" · "+Math.ceil(file.size/1024)+" KB";};reader.readAsDataURL(file);
+  };
   window.submitFeeSetupForm=async function(event){
     event.preventDefault();
     const form=event.currentTarget;if(!form||form.dataset.submitting==="1")return false;
@@ -14431,6 +14452,27 @@ function addMessage(text,type){
       const amount=Math.round(Number(values.amount_rupees)*100);
       if(!Number.isSafeInteger(amount)||amount<0){say("Enter a valid fee amount.");return false;}
       body={action:"admin-save-structure",academic_year_id:values.academic_year_id,class_name:values.class_name,fee_name:values.fee_name,amount_paise:amount,is_mandatory:form.elements.is_mandatory.checked,due_date:values.due_date||null};
+    }else if(type==="school-upi-qr"){
+      const file=form.elements.qr_image?.files?.[0];
+      if(!file){say("Choose the school QR image first.");return false;}
+      if(!["image/png","image/jpeg","image/webp"].includes(file.type)||file.size>1024*1024){say("Use a PNG, JPEG or WebP image under 1 MB.");return false;}
+      const reader=new FileReader();
+      reader.onload=async()=>{
+        try{
+          const qrData=String(reader.result||"");
+          if(!qrData.startsWith("data:image/"))throw new Error("Could not read QR image.");
+          say("Saving school QR…");
+          const upiId=String(form.elements.upi_id?.value||"").trim();
+          const payeeName=String(form.elements.payee_name?.value||"").trim();
+          if(!/^[A-Za-z0-9._-]+@[A-Za-z0-9.-]+$/.test(upiId))throw new Error("Enter a valid school UPI ID (VPA).");
+          if(payeeName.length<2||payeeName.length>80)throw new Error("Enter the verified school payee name.");
+          const {data,error}=await client.functions.invoke("fee-management",{body:{action:"admin-save-school-upi-qr",qr_data_url:qrData,upi_id:upiId,payee_name:payeeName}});
+          if(error||data?.error||data?.status!=="SCHOOL_UPI_QR_SAVED")throw new Error(error?.message||data?.error||"UPI details save was not confirmed.");
+          say("School UPI details saved. Student QR codes will include the selected installment balance.",true);
+        }catch(e){say(e?.message||"QR save failed.");}
+      };
+      reader.onerror=()=>say("Could not read QR image.");
+      reader.readAsDataURL(file);return false;
     }else if(type==="assign-student"){
       const cls=String(values.class_name||"").trim();
       if(!cls){say("Select a class / section.");return false;}
