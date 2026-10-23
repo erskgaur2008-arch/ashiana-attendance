@@ -14292,6 +14292,8 @@ function addMessage(text,type){
     // The server-side queue/review RPCs enforce the Admin or assigned Principal permission.
     $("fees-admin-console")?.classList.remove("hidden");$("fees-admin-console")?.classList.add("flex");
     await window.loadFeeSetupOptions();
+    const assignForm=document.querySelector('#fees-admin-console form[data-fee-setup="assign-student"]');
+    if(assignForm)await window.searchFeeSetupStudents({currentTarget:assignForm.querySelector("select[name=class_name]")||assignForm.querySelector("button")});
     await window.loadFeesReviewQueue("admin");
   };
   window.loadFeeSetupOptions=async function(){
@@ -14327,6 +14329,19 @@ function addMessage(text,type){
       if(datalist)datalist.innerHTML=classes.map(x=>'<option value="'+escapeHtml(x)+'"></option>').join("");
     }catch(e){select.innerHTML='<option value="">Search failed</option>';setStatus(e?.message||"Student search failed.",true);}
   };
+  window.previewFeeClassStudents=async function(event){
+    const form=event.currentTarget.closest("form"), cls=String(form?.elements.class_name?.value||"").trim(), host=form?.querySelector("[data-class-preview]");
+    if(!form||!host||!cls)return;
+    host.textContent="Loading class roster…";
+    try{
+      const client=getClient();
+      const query=cls.includes("-")?cls.slice(0,cls.lastIndexOf("-")):cls;
+      const {data,error}=await client.functions.invoke("fee-management",{body:{action:"admin-search-students",query}});
+      if(error)throw error;
+      const rows=(Array.isArray(data?.students)?data.students:[]).filter(x=>(String(x.class_name||"").trim()+(x.section?"-"+String(x.section).trim():""))===cls);
+      host.textContent=rows.length?rows.length+" active student(s) found in "+cls+". The current search endpoint returns at most 50 students; verify the count against the school roster before assigning.":"No active students found for "+cls+".";
+    }catch(e){host.textContent=e?.message||"Could not load class roster.";}
+  };
   window.searchFeeSetupAccounts=async function(event){
     const form=event.currentTarget.closest("form"),query=String(form?.elements.account_search?.value||"").trim(),select=form?.elements.fee_account_id;
     if(!form||!select)return;
@@ -14352,7 +14367,27 @@ function addMessage(text,type){
       const amount=Math.round(Number(values.amount_rupees)*100);
       if(!Number.isSafeInteger(amount)||amount<0){say("Enter a valid fee amount.");return false;}
       body={action:"admin-save-structure",academic_year_id:values.academic_year_id,class_name:values.class_name,fee_name:values.fee_name,amount_paise:amount,is_mandatory:form.elements.is_mandatory.checked,due_date:values.due_date||null};
-    }else if(type==="assign-student")body={action:"admin-assign-student-account",academic_year_id:values.academic_year_id,student_id:values.student_id};
+    }else if(type==="assign-student"){
+      const cls=String(values.class_name||"").trim();
+      if(!cls){say("Select a class / section.");return false;}
+      const query=cls.includes("-")?cls.slice(0,cls.lastIndexOf("-")):cls;
+      form.dataset.submitting="1";const button=form.querySelector('button[type="submit"],button:not([type])');if(button){button.disabled=true;button.textContent="Assigning class accounts…";}
+      try{
+        const {data:searchData,error:searchError}=await client.functions.invoke("fee-management",{body:{action:"admin-search-students",query}});
+        if(searchError)throw new Error(searchError.message||"Could not load class roster.");
+        const students=(Array.isArray(searchData?.students)?searchData.students:[]).filter(x=>(String(x.class_name||"").trim()+(x.section?"-"+String(x.section).trim():""))===cls);
+        if(!students.length)throw new Error("No active students found for "+cls+".");
+        if(students.length>=50)throw new Error("This class search reached the 50-student limit. Bulk assignment stopped to avoid silently missing students.");
+        let success=0,failed=0;
+        for(const student of students){
+          const {error}=await client.functions.invoke("fee-management",{body:{action:"admin-assign-student-account",academic_year_id:values.academic_year_id,student_id:student.student_id}});
+          if(error)failed++;else success++;
+        }
+        say("Class "+cls+": "+success+" account(s) assigned; "+failed+" failed. Verify existing accounts and roster before proceeding.",failed===0);
+        return false;
+      }catch(e){say(e?.message||"Class assignment failed.");return false;}
+      finally{delete form.dataset.submitting;if(button){button.disabled=false;button.textContent="Assign class accounts";}}
+    }
     else if(type==="principal")body={action:"admin-assign-principal-approver",user_id:values.user_id,enabled:true};
     else if(type==="discount"){
       const amount=Math.round(Number(values.amount_rupees)*100);
