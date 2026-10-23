@@ -14322,6 +14322,7 @@ function addMessage(text,type){
       });
       // Load the class selector independently; the discount search form is not guaranteed to run.
       const classSelect=document.querySelector('#fees-admin-console form[data-fee-setup="assign-student"] select[name="class_name"]');
+      const multiClassSelect=document.getElementById("fees-multi-classes");
       const datalist=document.getElementById("fees-class-options");
       let students=[],offset=0,page=[];
       do{
@@ -14334,6 +14335,8 @@ function addMessage(text,type){
         .sort((a,b)=>a.localeCompare(b,undefined,{numeric:true}));
       if(classSelect)classSelect.innerHTML='<option value="">Select class / section</option>'+classes.map(x=>'<option value="'+escapeHtml(x)+'">'+escapeHtml(x)+'</option>').join("");
       if(classSelect&&!classes.length)classSelect.innerHTML='<option value="">No active classes found</option>';
+      if(multiClassSelect)multiClassSelect.innerHTML=classes.map(x=>'<option value="'+escapeHtml(x)+'">'+escapeHtml(x)+'</option>').join("");
+      if(multiClassSelect&&!classes.length)multiClassSelect.innerHTML='<option value="">No active classes found</option>';
       if(datalist)datalist.innerHTML=classes.map(x=>'<option value="'+escapeHtml(x)+'"></option>').join("");
     }catch(e){
       const message=e?.message||"Admin permission required";
@@ -14403,6 +14406,13 @@ function addMessage(text,type){
       if(!rows.length)select.innerHTML='<option value="">No matching fee accounts</option>';
     }catch(e){select.innerHTML='<option value="">Search failed</option>';setStatus(e?.message||"Fee account search failed.",true);}
   };
+  window.previewSchoolUpiQr=function(event){
+    const form=event.currentTarget.closest("form"),file=form?.elements.qr_image?.files?.[0];
+    const img=form?.querySelector("[data-school-qr-preview]"),label=form?.querySelector("[data-school-qr-current]");
+    if(!file||!img||!label)return;
+    if(!["image/png","image/jpeg","image/webp"].includes(file.type)||file.size>1024*1024){label.textContent="Invalid file. Use PNG, JPEG or WebP under 1 MB.";img.classList.add("hidden");return;}
+    const reader=new FileReader();reader.onload=()=>{img.src=String(reader.result||"");img.classList.remove("hidden");label.textContent=file.name+" · "+Math.ceil(file.size/1024)+" KB";};reader.readAsDataURL(file);
+  };
   window.submitFeeSetupForm=async function(event){
     event.preventDefault();
     const form=event.currentTarget;if(!form||form.dataset.submitting==="1")return false;
@@ -14414,8 +14424,38 @@ function addMessage(text,type){
     if(type==="year")body={action:"admin-save-academic-year",label:values.label,starts_on:values.starts_on,ends_on:values.ends_on,is_active:form.elements.is_active.checked};
     else if(type==="structure"){
       const amount=Math.round(Number(values.amount_rupees)*100);
+      const classes=[...form.elements.class_names.selectedOptions].map(o=>o.value).filter(Boolean);
       if(!Number.isSafeInteger(amount)||amount<0){say("Enter a valid fee amount.");return false;}
-      body={action:"admin-save-structure",academic_year_id:values.academic_year_id,class_name:values.class_name,fee_name:values.fee_name,amount_paise:amount,is_mandatory:form.elements.is_mandatory.checked,due_date:values.due_date||null};
+      if(!classes.length){say("Select at least one class / section.");return false;}
+      form.dataset.submitting="1";
+      const button=form.querySelector('button[type="submit"],button:not([type])');if(button){button.disabled=true;button.textContent="Saving fee categories…";}
+      try{
+        let success=0,failed=[];
+        for(const className of classes){
+          const {error}=await client.functions.invoke("fee-management",{body:{action:"admin-save-structure",academic_year_id:values.academic_year_id,class_name:className,fee_name:values.fee_name,amount_paise:amount,is_mandatory:form.elements.is_mandatory.checked,due_date:values.due_date||null}});
+          if(error)failed.push(className);else success++;
+        }
+        say("Category "+values.fee_name+": saved for "+success+" class(es)"+(failed.length?"; failed: "+failed.join(", "):". Existing payment history was not changed."),failed.length===0);
+        return false;
+      }catch(e){say(e?.message||"Could not save fee categories.");return false;}
+      finally{delete form.dataset.submitting;if(button){button.disabled=false;button.textContent="Save fee structure";}}
+    }else if(type==="school-upi-qr"){
+      const file=form.elements.qr_image?.files?.[0];
+      if(!file){say("Choose the school QR image first.");return false;}
+      if(!["image/png","image/jpeg","image/webp"].includes(file.type)||file.size>1024*1024){say("Use a PNG, JPEG or WebP image under 1 MB.");return false;}
+      const reader=new FileReader();
+      reader.onload=async()=>{
+        try{
+          const qrData=String(reader.result||"");
+          if(!qrData.startsWith("data:image/"))throw new Error("Could not read QR image.");
+          say("Saving school QR…");
+          const {data,error}=await client.functions.invoke("fee-management",{body:{action:"admin-save-school-upi-qr",qr_data_url:qrData}});
+          if(error)throw new Error(error.message||data?.error||"QR save failed.");
+          say("School UPI QR saved. It will appear in student Pay Fees.",true);
+        }catch(e){say(e?.message||"QR save failed.");}
+      };
+      reader.onerror=()=>say("Could not read QR image.");
+      reader.readAsDataURL(file);return false;
     }else if(type==="assign-student"){
       const cls=String(values.class_name||"").trim();
       if(!cls){say("Select a class / section.");return false;}
