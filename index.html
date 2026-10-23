@@ -14307,7 +14307,27 @@ function addMessage(text,type){
         if(previous&&years.some(y=>y.academic_year_id===previous))select.value=previous;
         else if(active)select.value=active.academic_year_id;
       });
-    }catch(e){setStatus("Could not load academic years: "+(e?.message||"Admin permission required"),true);}
+      // Load the class selector independently; the discount search form is not guaranteed to run.
+      const classSelect=document.querySelector('#fees-admin-console form[data-fee-setup="assign"] select[name="class_name"]');
+      const datalist=document.getElementById("fees-class-options");
+      let students=[],offset=0,page=[];
+      do{
+        const {data:pageData,error:pageError}=await client.functions.invoke("fee-management",{body:{action:"admin-search-students-page",query:"",limit:100,offset}});
+        if(pageError)throw new Error(pageError.message||"Could not load student classes.");
+        page=Array.isArray(pageData?.students)?pageData.students:[];
+        students.push(...page);offset+=page.length;
+      }while(page.length===100);
+      const classes=[...new Set(students.map(x=>String(x.class_name||"").trim()+(x.section?"-"+String(x.section).trim():"")).filter(Boolean))]
+        .sort((a,b)=>a.localeCompare(b,undefined,{numeric:true}));
+      if(classSelect)classSelect.innerHTML='<option value="">Select class / section</option>'+classes.map(x=>'<option value="'+escapeHtml(x)+'">'+escapeHtml(x)+'</option>').join("");
+      if(classSelect&&!classes.length)classSelect.innerHTML='<option value="">No active classes found</option>';
+      if(datalist)datalist.innerHTML=classes.map(x=>'<option value="'+escapeHtml(x)+'"></option>').join("");
+    }catch(e){
+      const message=e?.message||"Admin permission required";
+      setStatus("Could not load fee setup options: "+message,true);
+      const classSelect=document.querySelector('#fees-admin-console form[data-fee-setup="assign"] select[name="class_name"]');
+      if(classSelect)classSelect.innerHTML='<option value="">Could not load classes — reopen Fees Management to retry</option>';
+    }
   };
   window.previewFeeClassStudents=async function(event){
     const form=event.currentTarget.closest("form"),cls=String(form?.elements.class_name?.value||"").trim(),host=form?.querySelector("[data-class-preview]");
