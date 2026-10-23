@@ -14243,8 +14243,16 @@ window.showStudentSchoolUpiQr=async function(accountId){
     new QRCode(qrCanvas,{text:upiUri,width:256,height:256,colorDark:"#064e3b",colorLight:"#ffffff",correctLevel:QRCode.CorrectLevel.M});
     const amountLabel=document.createElement("p");amountLabel.className="text-lg font-extrabold text-slate-900";amountLabel.textContent="Amount due: ₹"+Number(amount).toLocaleString("en-IN",{minimumFractionDigits:2,maximumFractionDigits:2});
     const payee=document.createElement("p");payee.className="text-xs text-slate-600";payee.textContent="Pay to: "+data.payee_name+" ("+data.upi_id+")";
-    const note=document.createElement("p");note.className="text-[11px] text-slate-500";note.textContent="Confirm the payee and amount in your UPI app. Payment is not confirmed until the school verifies it.";
-    qrHost.append(qrCanvas,amountLabel,payee,note);host.replaceChildren(qrHost);
+    const note=document.createElement("p");note.className="text-[11px] text-slate-500";note.textContent="On this phone, tap Pay with UPI app. To pay from another phone, scan this QR. Confirm payee and amount before authorizing payment.";
+    const payButton=document.createElement("button");payButton.type="button";payButton.className="w-full rounded-xl bg-emerald-800 px-4 py-3 text-sm font-extrabold text-white";payButton.textContent="Pay with UPI app";
+    payButton.addEventListener("click",()=>{
+      try{
+        // A user gesture is required by mobile browsers to launch an installed UPI handler.
+        window.location.href=upiUri;
+        note.textContent="Opening an installed UPI app… If no app opens, scan the QR using another phone or check that a UPI app is installed.";
+      }catch(_){note.textContent="Could not open a UPI app. Scan this QR using another phone.";}
+    });
+    qrHost.append(qrCanvas,amountLabel,payee,payButton,note);host.replaceChildren(qrHost);
   }catch(e){host.textContent=e?.message||"Unable to show school payment QR.";}
 };
 </script>
