@@ -297,6 +297,8 @@ begin
       coalesce((select sum(i.amount_paise) from public.fee_installments i where i.fee_account_id=v_account),0)
       - coalesce((select sum(d.amount_paise) from public.fee_discount_requests d where d.fee_account_id=v_account and d.status='APPROVED'),0)
       - coalesce((select sum(l.amount_paise) from public.fee_ledger_entries l where l.fee_account_id=v_account),0)
+      - coalesce((select sum(p.amount_paise) from public.fee_payment_submissions p
+          where p.fee_account_id=v_account and p.status in ('PENDING_ADMIN','PENDING_PRINCIPAL')),0)
     )::bigint into v_balance;
     if v_amount > v_balance then raise exception 'Discount exceeds the remaining fee balance'; end if;
   end if;
