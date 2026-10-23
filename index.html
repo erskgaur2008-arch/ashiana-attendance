@@ -14308,7 +14308,7 @@ function addMessage(text,type){
         else if(active)select.value=active.academic_year_id;
       });
       // Load the class selector independently; the discount search form is not guaranteed to run.
-      const classSelect=document.querySelector('#fees-admin-console form[data-fee-setup="assign"] select[name="class_name"]');
+      const classSelect=document.querySelector('#fees-admin-console form[data-fee-setup="assign-student"] select[name="class_name"]');
       const datalist=document.getElementById("fees-class-options");
       let students=[],offset=0,page=[];
       do{
@@ -14325,7 +14325,7 @@ function addMessage(text,type){
     }catch(e){
       const message=e?.message||"Admin permission required";
       setStatus("Could not load fee setup options: "+message,true);
-      const classSelect=document.querySelector('#fees-admin-console form[data-fee-setup="assign"] select[name="class_name"]');
+      const classSelect=document.querySelector('#fees-admin-console form[data-fee-setup="assign-student"] select[name="class_name"]');
       if(classSelect)classSelect.innerHTML='<option value="">Could not load classes — reopen Fees Management to retry</option>';
     }
   };
