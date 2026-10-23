@@ -90,6 +90,7 @@ language plpgsql security definer set search_path = ''
 as $$
 declare v_actor uuid := auth.uid(); v_status text;
 begin
+  if p_approve is null then raise exception 'Admin decision must be explicit'; end if;
   if v_actor is null or not private.is_admin() then raise exception 'Admin permission required'; end if;
   select status into v_status from public.fee_payment_submissions
     where id=p_submission_id for update;
@@ -119,6 +120,7 @@ as $$
 declare v_actor uuid := auth.uid(); v_submission public.fee_payment_submissions%rowtype;
   v_receipt text;
 begin
+  if p_confirm is null then raise exception 'Principal decision must be explicit'; end if;
   if v_actor is null or not exists (
     select 1 from public.fee_principal_approvers p
     where p.user_id=v_actor and p.school_code='ashiana' and p.is_enabled
