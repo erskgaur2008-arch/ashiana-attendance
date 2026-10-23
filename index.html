@@ -14235,8 +14235,8 @@ function addMessage(text,type){
           </form>
           <form onsubmit="submitFeeSetupForm(event)" data-fee-setup="structure" class="rounded-xl border p-3 space-y-2">
             <h3 class="font-bold text-sm">Add fee structure</h3>
-            <select name="academic_year_id" required class="w-full rounded-lg border p-2.5 text-sm"><option value="">Loading academic years…</option></select>
-            <input name="class_name" required list="fees-class-options" placeholder="Class / section (e.g. I-A)" class="w-full rounded-lg border p-2.5 text-sm">
+            <select name="academic_year_id" required onchange="loadExistingFeeStructures(event)" class="w-full rounded-lg border p-2.5 text-sm"><option value="">Loading academic years…</option></select>
+            <input name="class_name" required list="fees-class-options" onchange="loadExistingFeeStructures(event)" placeholder="Class / section (e.g. I-A)" class="w-full rounded-lg border p-2.5 text-sm">
             <datalist id="fees-class-options"></datalist>
             <div data-fee-structures-list class="rounded-lg border bg-slate-50 p-2 text-xs text-slate-600">Select an academic year and class to view existing fee structures.</div>
             <input name="fee_name" required maxlength="100" placeholder="Fee name (e.g. Tuition Fee)" class="w-full rounded-lg border p-2.5 text-sm">
@@ -14310,6 +14310,19 @@ function addMessage(text,type){
         else if(active)select.value=active.academic_year_id;
       });
     }catch(e){setStatus("Could not load academic years: "+(e?.message||"Admin permission required"),true);}
+  };
+  window.loadExistingFeeStructures=async function(event){
+    const form=event.currentTarget.closest("form"),host=form?.querySelector("[data-fee-structures-list]");
+    if(!form||!host)return;
+    const yearId=String(form.elements.academic_year_id?.value||""),cls=String(form.elements.class_name?.value||"").trim();
+    if(!yearId){host.textContent="Select an academic year to view fee structures.";return;}
+    host.textContent="Loading existing fee structures…";
+    try{
+      const client=getClient(),{data,error}=await client.functions.invoke("fee-management",{body:{action:"admin-list-structures",academic_year_id:yearId,class_name:cls}});
+      if(error)throw new Error(error.message||"Could not load fee structures.");
+      const rows=Array.isArray(data?.fee_structures)?data.fee_structures:[];
+      host.innerHTML=rows.length?'<p class="font-bold mb-1">Existing fee structures</p>'+rows.map(r=>'<p class="py-1 border-t">'+escapeHtml(r.class_name)+' · '+escapeHtml(r.fee_name)+' — '+money(r.amount_paise)+(r.is_mandatory?' · Mandatory':' · Optional')+(r.due_date?' · Due '+escapeHtml(r.due_date):'')+'</p>').join(""):'No fee structures found for this selection yet.';
+    }catch(e){host.textContent=e?.message||"Could not load fee structures.";}
   };
   window.searchFeeSetupStudents=async function(event){
     const form=event.currentTarget.closest("form"),query=String(form?.elements.student_search?.value||"").trim(),select=form?.elements.student_id;
