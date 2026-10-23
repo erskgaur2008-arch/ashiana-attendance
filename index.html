@@ -6858,11 +6858,13 @@ async function submitStudentFeePayment(event){
   };
   const token=String(await window.AshianaNative?.getStudentSessionToken?.() || sessionStorage.getItem("aps_student_session_token_v1") || "");
   const accountId=String(form.dataset.feeAccount||"");
+  const installmentId=String(form.dataset.installmentId||"");
   const amountPaise=Math.round(Number(form.elements.amount_rupees?.value)*100);
   const reference=String(form.elements.upi_reference?.value||"").trim();
   const file=form.elements.payment_proof?.files?.[0];
   if(!/^[a-f0-9]{64}$/i.test(token)){show("Your student session has expired. Please sign in again.");return false;}
   if(!/^[0-9a-f]{8}-[0-9a-f]{4}-[1-8][0-9a-f]{3}-[89ab][0-9a-f]{3}-[0-9a-f]{12}$/i.test(accountId)){show("The fee account is invalid. Please refresh and try again.");return false;}
+  if(!/^[0-9a-f]{8}-[0-9a-f]{4}-[1-8][0-9a-f]{3}-[89ab][0-9a-f]{3}-[0-9a-f]{12}$/i.test(installmentId)){show("Select a valid fee installment before submitting.");return false;}
   if(!Number.isSafeInteger(amountPaise)||amountPaise<=0||reference.length<6||!file){show("Enter the amount, reference ID and payment proof.");return false;}
   if(file.size<=0||file.size>5*1024*1024){show("The proof file must be no larger than 5 MB.");return false;}
   if(!["image/jpeg","image/png","image/webp","application/pdf"].includes(file.type)){show("Use a JPG, PNG, WebP image or PDF proof.");return false;}
@@ -6879,7 +6881,7 @@ async function submitStudentFeePayment(event){
     if(uploaded.error)throw new Error(uploaded.error.message||"Proof upload failed.");
     uploadedProofPath=prep.object_path;
     if(button)button.textContent="Submitting…";
-    const submitted=await client.functions.invoke("fee-management",{body:{action:"submit-payment",student_session_token:token,fee_account_id:accountId,amount_paise:amountPaise,upi_reference:reference,proof_object_path:prep.object_path,student_note:String(form.elements.student_note?.value||"").trim()}});
+    const submitted=await client.functions.invoke("fee-management",{body:{action:"submit-payment",student_session_token:token,fee_account_id:accountId,installment_id:installmentId,amount_paise:amountPaise,upi_reference:reference,proof_object_path:prep.object_path,student_note:String(form.elements.student_note?.value||"").trim()}});
     if(submitted.error)throw new Error(submitted.error.message||"Payment submission failed.");
     show("Payment details submitted. Status: awaiting Admin review. This is not a confirmed receipt.",true);
     form.reset();if(button){button.textContent="Submitted for review";button.disabled=true;}
@@ -14226,7 +14228,7 @@ function addMessage(text,type){
 </div>
 <script>
 window.closeStudentSchoolUpiQr=function(){const m=document.getElementById("student-school-upi-qr-modal");m?.classList.add("hidden");m?.classList.remove("flex");};
-window.showStudentSchoolUpiQr=async function(accountId){
+window.showStudentSchoolUpiQr=async function(accountId,installmentId){
   const modal=document.getElementById("student-school-upi-qr-modal"),host=document.getElementById("student-school-upi-qr-content");
   if(!modal||!host)return;
   modal.classList.remove("hidden");modal.classList.add("flex");host.textContent="Loading official school QR…";
@@ -14235,11 +14237,11 @@ window.showStudentSchoolUpiQr=async function(accountId){
     if(!/^[a-f0-9]{64}$/i.test(token))throw new Error("Your student session has expired. Please sign in again.");
     const client=typeof supabaseClient!=="undefined"?supabaseClient:window.__ashianaMainSupabaseClient;
     if(!client?.functions?.invoke)throw new Error("Application client is not ready.");
-    const {data,error}=await client.functions.invoke("fee-management",{body:{action:"student-payment-qr",student_session_token:token,fee_account_id:accountId}});
+    const {data,error}=await client.functions.invoke("fee-management",{body:{action:"student-payment-qr",student_session_token:token,fee_account_id:accountId,installment_id:installmentId}});
     if(error)throw new Error(error.message||data?.error||"Could not load school QR.");
     if(!data?.upi_id||!data?.payee_name)throw new Error("The school has not configured its verified UPI ID and payee name yet.");
     const balancePaise=Number(data.balance_paise);
-    if(!Number.isSafeInteger(balancePaise)||balancePaise<=0)throw new Error("No outstanding balance is due on this fee account.");
+    if(!Number.isSafeInteger(balancePaise)||balancePaise<=0)throw new Error("No outstanding balance remains for this installment.");
     await ensureQRCodeLibrary();
     if(typeof QRCode==="undefined")throw new Error("Payment QR generator is unavailable. Please retry.");
     const amount=(balancePaise/100).toFixed(2);
@@ -14248,7 +14250,7 @@ window.showStudentSchoolUpiQr=async function(accountId){
     const qrHost=document.createElement("div");qrHost.className="mx-auto flex max-w-full flex-col items-center gap-3";
     const qrCanvas=document.createElement("div");qrCanvas.className="rounded-xl bg-white p-3";
     new QRCode(qrCanvas,{text:upiUri,width:256,height:256,colorDark:"#064e3b",colorLight:"#ffffff",correctLevel:QRCode.CorrectLevel.M});
-    const amountLabel=document.createElement("p");amountLabel.className="text-lg font-extrabold text-slate-900";amountLabel.textContent="Amount due: ₹"+Number(amount).toLocaleString("en-IN",{minimumFractionDigits:2,maximumFractionDigits:2});
+    const amountLabel=document.createElement("p");amountLabel.className="text-lg font-extrabold text-slate-900";amountLabel.textContent="Installment balance: ₹"+Number(amount).toLocaleString("en-IN",{minimumFractionDigits:2,maximumFractionDigits:2});
     const payee=document.createElement("p");payee.className="text-xs text-slate-600";payee.textContent="Pay to: "+data.payee_name+" ("+data.upi_id+")";
     const note=document.createElement("p");note.className="text-[11px] text-slate-500";note.textContent="On this phone, tap Pay with UPI app. To pay from another phone, scan this QR. Confirm payee and amount before authorizing payment.";
     const payButton=document.createElement("button");payButton.type="button";payButton.className="w-full rounded-xl bg-emerald-800 px-4 py-3 text-sm font-extrabold text-white";payButton.textContent="Pay with UPI app";
