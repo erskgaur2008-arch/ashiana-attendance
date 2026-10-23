@@ -1,0 +1,35 @@
+name: Scheduled Student Fee Reminders
+
+on:
+  schedule:
+    # 06:00 Asia/Kolkata daily
+    - cron: '30 0 * * *'
+  workflow_dispatch:
+
+permissions:
+  contents: read
+
+jobs:
+  send-fee-reminders:
+    runs-on: ubuntu-latest
+    timeout-minutes: 5
+    steps:
+      - name: Validate secret configuration
+        env:
+          FEE_REMINDER_CRON_SECRET: ${{ secrets.FEE_REMINDER_CRON_SECRET }}
+        run: |
+          if [ -z "$FEE_REMINDER_CRON_SECRET" ]; then
+            echo "::error::Add FEE_REMINDER_CRON_SECRET to repository Actions secrets before enabling scheduled delivery."
+            exit 1
+          fi
+      - name: Send scheduled reminders
+        env:
+          FEE_REMINDER_CRON_SECRET: ${{ secrets.FEE_REMINDER_CRON_SECRET }}
+        run: |
+          set -euo pipefail
+          curl --fail-with-body --silent --show-error \
+            --request POST \
+            --header "x-fee-reminder-secret: ${FEE_REMINDER_CRON_SECRET}" \
+            --header "content-type: application/json" \
+            --data '{}' \
+            https://oalfzgluqroqbbrulhpr.supabase.co/functions/v1/fee-reminders

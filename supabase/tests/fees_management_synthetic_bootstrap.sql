@@ -2,6 +2,7 @@
 -- Never points at a live project and contains no real student data.
 create role anon nologin;
 create role authenticated nologin;
+create role service_role nologin bypassrls;
 create schema if not exists auth;
 create schema if not exists private;
 create schema if not exists storage;

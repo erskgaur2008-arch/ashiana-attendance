@@ -41,7 +41,7 @@ Deno.serve(async (req) => {
   const action = input.action;
   const studentActions = new Set([
     "create-proof-upload", "student-summary", "student-payment-qr", "discard-proof-upload",
-    "submit-payment", "student-submissions", "student-receipts",
+    "submit-payment", "student-submissions", "student-receipts", "student-reminders",
   ]);
   if (!authHeader?.startsWith("Bearer ") && !studentActions.has(String(action))) {
     return respond({ error: "Authorization required" }, 401);
@@ -192,6 +192,14 @@ Deno.serve(async (req) => {
     const { data, error } = await adminClient.rpc("fee_student_submissions_by_session", { p_token: token });
     if (error) return respond({ error: "Unable to load payment status" }, 403);
     return respond({ submissions: data ?? [] });
+  }
+
+  if (action === "student-reminders") {
+    const token = typeof input.student_session_token === "string" ? input.student_session_token : "";
+    if (!token) return respond({ error: "Student session token is required" }, 400);
+    const { data, error } = await adminClient.rpc("fee_student_reminders_by_session", { p_token: token });
+    if (error) return respond({ error: error.message }, 403);
+    return respond({ reminders: data ?? [] });
   }
 
   if (action === "student-receipts") {

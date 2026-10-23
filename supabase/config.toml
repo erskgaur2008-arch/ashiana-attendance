@@ -2,3 +2,7 @@
 # Admin/Principal actions still enforce Supabase Auth inside the database RPCs.
 [functions.fee-management]
 verify_jwt = false
+
+# Scheduled fee reminders authenticate with the dedicated FEE_REMINDER_CRON_SECRET header.
+[functions.fee-reminders]
+verify_jwt = false
