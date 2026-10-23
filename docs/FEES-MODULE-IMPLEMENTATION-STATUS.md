@@ -12,7 +12,8 @@
 - `supabase/migrations/20261023000100_fees_management_schema.sql`: additive fee tables.
 - `supabase/migrations/20261023000200_fees_management_security.sql`: session-token-scoped student summary, submission, receipt and payment-status RPCs; Admin/Principal review queues; two-step confirmation; discount review; balance/duplicate-reference safeguards.
 - `supabase/migrations/20261023000300_fees_management_storage.sql`: private payment-evidence bucket.
-- `supabase/migrations/20261023000400_fees_management_admin_setup.sql`: audited Admin setup RPCs plus authorized academic-year listing, active-student search and fee-account search.
+- `supabase/migrations/20261023000400_fees_management_admin_setup.sql
+- `supabase/migrations/20261023000600_fees_management_installment_payment_selection.sql`: adds installment-specific payment allocation and summary JSON; keeps existing assigned accounts synchronized when Admin creates/edits a fee structure.`: audited Admin setup RPCs plus authorized academic-year listing, active-student search and fee-account search.
 - `supabase/migrations/20261023000500_fees_management_discount_pending_balance.sql`: forward-only fix for the already-applied discount-review function; approved discounts now reserve amounts from payments awaiting review. Do not edit previously applied migration files to ship this fix.
 - `supabase/functions/fee-management/index.ts`: gateway for student fee summary, private proof upload/download, payment submission/status/receipts, Admin setup/search/review, discount approval and Principal confirmation. Browser CORS is allowlist-only via `FEE_ALLOWED_ORIGINS`.
 - `supabase/config.toml`: sets `verify_jwt = false` for this one Edge Function because the student portal uses a custom session token in the body; all Admin/Principal operations still require Supabase Auth through server-side RPC checks.
@@ -47,7 +48,7 @@
 1. Finish browser UI usability checks for academic-year, student and fee-account search; verify the result labels against the live roster.
 2. Verify real private proof upload/download end-to-end, including stored metadata and rejection of invalid uploads. The client now requests cleanup of an unsubmitted proof after a failed payment submission; this still needs real-browser verification.
 3. Reconcile production migration history first: migrations 1–4 are already recorded there, so do not attempt to reapply them. Review and approve only the new forward migration 5 after backup/rollback planning.
-4. Expand synthetic tests for rejection/resubmission, duplicate references, concurrent/partial payments, discount limits, reversal entries and multi-year balances.
+4. Expand synthetic tests for rejection/resubmission, duplicate references, concurrent/partial payments per installment, discount limits, reversal entries and multi-year balances.
 5. Identify and configure the actual Principal's authenticated user UUID; verify distinct Admin and Principal accounts.
 6. Implement and verify scheduled fee reminders. Production has no confirmed scheduler; pending-review submissions must not be reminded as unpaid.
 7. Set `FEE_ALLOWED_ORIGINS` to the approved exact web origins before deployment and test authorization for every action.
