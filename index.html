@@ -14478,6 +14478,9 @@ window.showStudentSchoolUpiQr=async function(accountId){
           else if(typeof detail?.message==="string"&&detail.message.trim())message=detail.message;
         }
       }catch(_){}
+      if(/Edge Function returned a non-2xx status code/i.test(message)){
+        message="The server rejected this deletion. Please refresh Fees Management and try again. If it continues, send the screenshot so we can inspect the server response.";
+      }
       if(/linked to existing fee or payment records/i.test(message)){
         message="Cannot delete this fee structure because it is already linked to student fee or payment records. Those records are preserved. Use a new fee structure for future charges.";
       }
