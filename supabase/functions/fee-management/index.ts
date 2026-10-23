@@ -206,6 +206,21 @@ Deno.serve(async (req) => {
     return respond({ fee_accounts: data ?? [] });
   }
 
+  if (action === "admin-list-structures") {
+    const yearId = typeof input.academic_year_id === "string" ? input.academic_year_id : "";
+    const className = typeof input.class_name === "string" ? input.class_name.trim() : "";
+    if (!UUID_RE.test(yearId)) return respond({ error: "Valid academic year is required" }, 400);
+    const { data: permission, error: permissionError } = await userClient.rpc("fee_admin_list_academic_years");
+    if (permissionError || !Array.isArray(permission) || !permission.some((row: { id?: string }) => row.id === yearId)) {
+      return respond({ error: "Admin permission required or academic year unavailable" }, 403);
+    }
+    let query = adminClient.from("fee_structures").select("id,class_name,fee_name,amount_paise,is_mandatory,due_date").eq("school_code","ashiana").eq("academic_year_id",yearId).order("class_name").order("fee_name").limit(300);
+    if (className) query = query.eq("class_name",className);
+    const { data, error } = await query;
+    if (error) return respond({ error: "Unable to load fee structures" }, 500);
+    return respond({ fee_structures: data ?? [] });
+  }
+
   if (action === "admin-save-academic-year") {
     const label = typeof input.label === "string" ? input.label.trim() : "";
     const startsOn = typeof input.starts_on === "string" ? input.starts_on : "";
