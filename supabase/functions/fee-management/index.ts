@@ -23,7 +23,7 @@ Deno.serve(async (req) => {
   const corsHeaders: Record<string, string> = { ...corsBase };
   if (origin && allowedOrigins.includes(origin)) corsHeaders["Access-Control-Allow-Origin"] = origin;
   const respond = (body: unknown, status = 200) => reply(body, status, corsHeaders);
-  if (req.method === "OPTIONS") return new Response("ok", { status: 204, headers: corsHeaders });
+  if (req.method === "OPTIONS") return new Response(null, { status: 204, headers: corsHeaders });
   if (req.method !== "POST") return respond({ error: "Method not allowed" }, 405);
 
   const url = Deno.env.get("SUPABASE_URL");
@@ -32,24 +32,27 @@ Deno.serve(async (req) => {
   if (!url || !anonKey || !serviceKey) return respond({ error: "Server configuration unavailable" }, 500);
 
   const authHeader = req.headers.get("Authorization");
-  if (!authHeader?.startsWith("Bearer ")) return respond({ error: "Authorization required" }, 401);
-
   let input: Record<string, unknown>;
   try {
     input = await req.json();
   } catch {
     return respond({ error: "Invalid JSON body" }, 400);
   }
-
+  const action = input.action;
+  const studentActions = new Set([
+    "create-proof-upload", "student-summary", "discard-proof-upload",
+    "submit-payment", "student-submissions", "student-receipts",
+  ]);
+  if (!authHeader?.startsWith("Bearer ") && !studentActions.has(String(action))) {
+    return respond({ error: "Authorization required" }, 401);
+  }
   const userClient = createClient(url, anonKey, {
-    global: { headers: { Authorization: authHeader } },
+    ...(authHeader?.startsWith("Bearer ") ? { global: { headers: { Authorization: authHeader } } } : {}),
     auth: { persistSession: false, autoRefreshToken: false },
   });
   const adminClient = createClient(url, serviceKey, {
     auth: { persistSession: false, autoRefreshToken: false },
   });
-
-  const action = input.action;
   if (action === "create-proof-upload") {
     // Student portal bearer tokens are custom session tokens, not Supabase Auth JWTs.
     // They must be passed in student_session_token and validated by the dedicated RPC.
