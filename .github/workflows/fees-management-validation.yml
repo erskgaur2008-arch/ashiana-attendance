@@ -6,6 +6,7 @@ on:
     paths:
       - 'supabase/functions/fee-management/**'
       - 'supabase/migrations/20261023000*_fees_management_*.sql'
+      - 'supabase/migrations/20261023170000_fee_installment_payment_selection.sql'
       - 'supabase/tests/fees_management_security.sql'
       - 'supabase/tests/fees_management_synthetic_bootstrap.sql'
       - 'supabase/tests/fees_management_rpc_smoke.sql'
@@ -16,6 +17,7 @@ on:
     paths:
       - 'supabase/functions/fee-management/**'
       - 'supabase/migrations/20261023000*_fees_management_*.sql'
+      - 'supabase/migrations/20261023170000_fee_installment_payment_selection.sql'
       - 'supabase/tests/fees_management_security.sql'
       - 'supabase/tests/fees_management_synthetic_bootstrap.sql'
       - 'supabase/tests/fees_management_rpc_smoke.sql'
@@ -47,8 +49,12 @@ jobs:
           from pathlib import Path
           from pglast import parse_sql
           paths = sorted(Path("supabase/migrations").glob("20261023000*_fees_management_*.sql"))
-          if len(paths) < 5:
-              raise SystemExit(f"Expected all 5 fee migrations, found {len(paths)}")
+          installment_migration = Path("supabase/migrations/20261023170000_fee_installment_payment_selection.sql")
+          if installment_migration.exists():
+              paths.append(installment_migration)
+          paths = sorted(set(paths))
+          if len(paths) < 6:
+              raise SystemExit(f"Expected fee foundation plus installment migration, found {len(paths)}")
           for path in paths:
               source = path.read_text(encoding="utf-8")
               parse_sql(source)
@@ -63,11 +69,15 @@ jobs:
           test -s supabase/migrations/20261023000300_fees_management_storage.sql
           test -s supabase/migrations/20261023000400_fees_management_admin_setup.sql
           test -s supabase/migrations/20261023000500_fees_management_discount_pending_balance.sql
+          test -s supabase/migrations/20261023170000_fee_installment_payment_selection.sql
           test -s supabase/config.toml
           grep -q 'verify_jwt = false' supabase/config.toml
           test -s supabase/tests/fees_management_security.sql
           grep -q "studentDashboardSection('fees')" index.html
           grep -q "submitStudentFeePayment" index.html
+          grep -q "data-installment-id" index.html
+          grep -q "installment_id:installmentId" index.html
+          grep -q "p_installment_id: installmentId" supabase/functions/fee-management/index.ts
           grep -q "openFeesAdminConsole" index.html
           grep -q "student-submissions" supabase/functions/fee-management/index.ts
           grep -q "discard-proof-upload" supabase/functions/fee-management/index.ts
