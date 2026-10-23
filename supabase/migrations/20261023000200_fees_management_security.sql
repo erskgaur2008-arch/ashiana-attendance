@@ -90,7 +90,6 @@ language plpgsql security definer set search_path = ''
 as $$
 declare v_actor uuid := auth.uid(); v_status text;
 begin
-  if p_approve is null then raise exception 'Admin decision must be explicit'; end if;
   if v_actor is null or not private.is_admin() then raise exception 'Admin permission required'; end if;
   select status into v_status from public.fee_payment_submissions
     where id=p_submission_id for update;
@@ -120,7 +119,6 @@ as $$
 declare v_actor uuid := auth.uid(); v_submission public.fee_payment_submissions%rowtype;
   v_receipt text;
 begin
-  if p_confirm is null then raise exception 'Principal decision must be explicit'; end if;
   if v_actor is null or not exists (
     select 1 from public.fee_principal_approvers p
     where p.user_id=v_actor and p.school_code='ashiana' and p.is_enabled
@@ -286,7 +284,6 @@ language plpgsql security definer set search_path = ''
 as $function$
 declare v_actor uuid := auth.uid(); v_status text; v_account uuid; v_amount bigint; v_balance bigint;
 begin
-  if p_approve is null then raise exception 'Admin discount decision must be explicit'; end if;
   if v_actor is null or not private.is_admin() then raise exception 'Admin permission required'; end if;
   select d.status, d.fee_account_id, d.amount_paise into v_status, v_account, v_amount
   from public.fee_discount_requests d where d.id=p_discount_id for update;
@@ -297,8 +294,6 @@ begin
       coalesce((select sum(i.amount_paise) from public.fee_installments i where i.fee_account_id=v_account),0)
       - coalesce((select sum(d.amount_paise) from public.fee_discount_requests d where d.fee_account_id=v_account and d.status='APPROVED'),0)
       - coalesce((select sum(l.amount_paise) from public.fee_ledger_entries l where l.fee_account_id=v_account),0)
-      - coalesce((select sum(p.amount_paise) from public.fee_payment_submissions p
-          where p.fee_account_id=v_account and p.status in ('PENDING_ADMIN','PENDING_PRINCIPAL')),0)
     )::bigint into v_balance;
     if v_amount > v_balance then raise exception 'Discount exceeds the remaining fee balance'; end if;
   end if;
