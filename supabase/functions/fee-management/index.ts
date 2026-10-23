@@ -86,10 +86,18 @@ Deno.serve(async (req) => {
     const accountId = typeof input.fee_account_id === "string" ? input.fee_account_id : "";
     if (token.length < 32 || token.length > 256 || !UUID_RE.test(accountId)) return respond({ error: "Invalid student session or fee account" }, 400);
     const { data: accounts, error: summaryError } = await adminClient.rpc("fee_student_summary_by_session", { p_token: token });
-    if (summaryError || !Array.isArray(accounts) || !accounts.some((row: { fee_account_id?: string }) => row.fee_account_id === accountId)) return respond({ error: "Fee account not available for this student session" }, 403);
-    const { data, error } = await adminClient.from("fee_school_payment_settings").select("upi_qr_data_url,updated_at").eq("school_code","ashiana").maybeSingle();
-    if (error) return respond({ error: "Unable to load school payment QR" }, 500);
-    return respond({ qr_data_url: data?.upi_qr_data_url ?? null, updated_at: data?.updated_at ?? null });
+    if (summaryError || !Array.isArray(accounts)) return respond({ error: "Unable to verify student fee account" }, 403);
+    const account = accounts.find((row: { fee_account_id?: string }) => row.fee_account_id === accountId);
+    if (!account) return respond({ error: "Fee account not available for this student session" }, 403);
+    const totalDue = Number((account as { total_due_paise?: number }).total_due_paise ?? 0);
+    const totalPaid = Number((account as { total_paid_paise?: number }).total_paid_paise ?? 0);
+    const discount = Number((account as { discount_paise?: number }).discount_paise ?? 0);
+    const balance = Number((account as { balance_paise?: number }).balance_paise ?? Math.max(0,totalDue-discount-totalPaid));
+    if (!Number.isSafeInteger(balance) || balance <= 0) return respond({ error: "No outstanding balance is due on this fee account" }, 409);
+    const { data, error } = await adminClient.from("fee_school_payment_settings").select("upi_id,payee_name,updated_at").eq("school_code","ashiana").maybeSingle();
+    if (error) return respond({ error: "Unable to load school payment details" }, 500);
+    if (!data?.upi_id || !data?.payee_name) return respond({ error: "School UPI details have not been configured by Admin" }, 404);
+    return respond({ upi_id: data.upi_id, payee_name: data.payee_name, balance_paise: balance, updated_at: data.updated_at });
   }
 
   if (action === "student-summary") {
@@ -240,11 +248,16 @@ Deno.serve(async (req) => {
 
   if (action === "admin-save-school-upi-qr") {
     const dataUrl = typeof input.qr_data_url === "string" ? input.qr_data_url : "";
+    const upiId = typeof input.upi_id === "string" ? input.upi_id.trim() : "";
+    const payeeName = typeof input.payee_name === "string" ? input.payee_name.trim() : "";
     if (dataUrl.length < 100 || dataUrl.length > 1400000 ||
         !/^data:image\/(png|jpeg|webp);base64,[A-Za-z0-9+/]+={0,2}$/.test(dataUrl)) {
       return respond({ error: "Upload a valid PNG, JPEG, or WebP QR image under 1 MB" }, 400);
     }
-    const { error } = await userClient.rpc("fee_admin_save_school_upi_qr", { p_data_url: dataUrl });
+    if (!/^[A-Za-z0-9._-]+@[A-Za-z0-9.-]+$/.test(upiId) || payeeName.length < 2 || payeeName.length > 80) {
+      return respond({ error: "Provide a valid school UPI ID and verified payee name" }, 400);
+    }
+    const { error } = await userClient.rpc("fee_admin_save_school_upi_qr", { p_data_url: dataUrl, p_upi_id: upiId, p_payee_name: payeeName });
     if (error) return respond({ error: error.message }, 403);
     return respond({ status: "SCHOOL_UPI_QR_SAVED" });
   }
