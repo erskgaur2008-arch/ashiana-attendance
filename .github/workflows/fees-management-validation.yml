@@ -64,6 +64,8 @@ jobs:
           test -s supabase/migrations/20261023000400_fees_management_admin_setup.sql
           test -s supabase/migrations/20261023000500_fees_management_discount_pending_balance.sql
           test -s supabase/migrations/20261023000600_fees_management_installment_payment_selection.sql
+          test -s supabase/migrations/20261023000800_fees_management_school_upi_qr.sql
+          test -s supabase/migrations/20261023001000_fees_management_dynamic_student_upi_qr.sql
           test -s supabase/config.toml
           grep -q 'verify_jwt = false' supabase/config.toml
           test -s supabase/tests/fees_management_security.sql
@@ -71,6 +73,8 @@ jobs:
           grep -q "submitStudentFeePayment" index.html
           grep -q "data-installment-id" index.html
           grep -q "installment_id:installmentId" index.html
+          grep -q "student-payment-qr" supabase/functions/fee-management/index.ts
+          grep -q "fee_admin_save_school_upi_qr" supabase/migrations/20261023001000_fees_management_dynamic_student_upi_qr.sql
           grep -q "openFeesAdminConsole" index.html
           grep -q "student-submissions" supabase/functions/fee-management/index.ts
           grep -q "discard-proof-upload" supabase/functions/fee-management/index.ts
