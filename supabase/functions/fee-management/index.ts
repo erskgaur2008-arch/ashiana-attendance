@@ -40,7 +40,7 @@ Deno.serve(async (req) => {
   }
   const action = input.action;
   const studentActions = new Set([
-    "create-proof-upload", "student-summary", "discard-proof-upload",
+    "create-proof-upload", "student-summary", "student-payment-qr", "discard-proof-upload",
     "submit-payment", "student-submissions", "student-receipts",
   ]);
   if (!authHeader?.startsWith("Bearer ") && !studentActions.has(String(action))) {
