@@ -14226,6 +14226,15 @@ function addMessage(text,type){
         <summary class="cursor-pointer font-extrabold text-slate-900">Fee setup & permissions</summary>
         <p class="mt-2 text-xs text-slate-500">These actions require an authorized Admin session and are audit logged. Keep the academic-year UUID returned after saving for fee structures and account assignment.</p>
         <div class="mt-4 grid grid-cols-1 md:grid-cols-2 gap-4">
+          <form onsubmit="submitFeeSetupForm(event)" data-fee-setup="school-upi-qr" class="rounded-xl border border-amber-200 bg-amber-50 p-3 space-y-2 md:col-span-2">
+            <h3 class="font-bold text-sm">School UPI QR Code</h3>
+            <p class="text-xs text-slate-600">Upload the official school payment QR. The saved QR is shown to students in Pay Fees. PNG, JPEG or WebP, maximum 1 MB.</p>
+            <input name="qr_image" type="file" accept="image/png,image/jpeg,image/webp" required class="w-full rounded-lg border bg-white p-2.5 text-sm">
+            <div class="flex flex-wrap items-center gap-3"><img data-school-qr-preview alt="School UPI QR preview" class="hidden max-h-44 max-w-44 rounded-lg border bg-white p-2"><span data-school-qr-current class="text-xs text-slate-600">No new QR selected.</span></div>
+            <button type="button" onclick="previewSchoolUpiQr(event)" class="rounded-lg border bg-white px-3 py-2 text-xs font-bold">Preview selected QR</button>
+            <button type="submit" class="rounded-lg bg-amber-800 px-3 py-2 text-xs font-bold text-white">Save school QR</button><p data-setup-result class="hidden break-all text-xs" role="status"></p>
+          </form>
+
           <form onsubmit="submitFeeSetupForm(event)" data-fee-setup="year" class="rounded-xl border p-3 space-y-2">
             <h3 class="font-bold text-sm">Create / update academic year</h3>
             <input name="label" required minlength="4" maxlength="40" placeholder="e.g. 2026-2027" class="w-full rounded-lg border p-2.5 text-sm">
@@ -14236,10 +14245,14 @@ function addMessage(text,type){
           <form onsubmit="submitFeeSetupForm(event)" data-fee-setup="structure" class="rounded-xl border p-3 space-y-2">
             <h3 class="font-bold text-sm">Add fee structure</h3>
             <select name="academic_year_id" required class="w-full rounded-lg border p-2.5 text-sm"><option value="">Loading academic years…</option></select>
-            <input name="class_name" required list="fees-class-options" placeholder="Class / section (e.g. I-A)" class="w-full rounded-lg border p-2.5 text-sm" onchange="loadExistingFeeStructures(event)">
-            <datalist id="fees-class-options"></datalist>
-            <div data-fee-structures-list class="rounded-lg border bg-slate-50 p-2 text-xs text-slate-600">Select an academic year and class to view existing fee structures.</div>
-            <input name="fee_name" required maxlength="100" placeholder="Fee name (e.g. Tuition Fee)" class="w-full rounded-lg border p-2.5 text-sm">
+            <label class="block text-xs font-semibold">Fee category</label>
+            <select name="fee_name" required class="w-full rounded-lg border p-2.5 text-sm">
+              <option value="Admission Charges">Admission Charges</option><option value="Quarter 1">Quarter 1</option><option value="Quarter 2">Quarter 2</option><option value="Quarter 3">Quarter 3</option><option value="Quarter 4">Quarter 4</option>
+            </select>
+            <label class="block text-xs font-semibold">Select multiple classes / sections</label>
+            <select name="class_names" id="fees-multi-classes" multiple required size="6" class="w-full rounded-lg border p-2.5 text-sm" aria-describedby="fees-multi-classes-help"><option value="">Loading classes…</option></select>
+            <p id="fees-multi-classes-help" class="text-[11px] text-slate-500">Select one or more classes. On a computer use Ctrl/⌘; on a phone, tap to select multiple.</p>
+            <div data-fee-structures-list class="rounded-lg border bg-slate-50 p-2 text-xs text-slate-600">Select an academic year to view existing fee structures.</div>
             <input name="amount_rupees" type="number" min="0" step="0.01" required placeholder="Amount in ₹" class="w-full rounded-lg border p-2.5 text-sm">
             <input name="due_date" type="date" class="w-full rounded-lg border p-2.5 text-sm">
             <label class="flex items-center gap-2 text-xs"><input name="is_mandatory" type="checkbox" checked> Mandatory fee</label>
