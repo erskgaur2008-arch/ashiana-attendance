@@ -14350,14 +14350,40 @@ window.showStudentSchoolUpiQr=async function(accountId){
   function getClient(){return (typeof supabaseClient!=="undefined"&&supabaseClient)||window.__ashianaMainSupabaseClient||null;}
   window.closeFeesAdminConsole=function(){$("fees-admin-console")?.classList.add("hidden");$("fees-admin-console")?.classList.remove("flex");};
   window.openFeesAdminConsole=async function(){
-    const client=getClient();
-    if(!client?.auth?.getSession){alert("Application authentication is not ready.");return;}
-    const {data,error}=await client.auth.getSession();
-    if(error||!data?.session){alert("Sign in with an authorized school account to access fee review.");return;}
-    // The server-side queue/review RPCs enforce the Admin or assigned Principal permission.
-    $("fees-admin-console")?.classList.remove("hidden");$("fees-admin-console")?.classList.add("flex");
-    await window.loadFeeSetupOptions();
-    await window.loadFeesReviewQueue("admin");
+    const panel=$("fees-admin-console");
+    try{
+      const client=getClient();
+      if(!client?.auth?.getSession){
+        alert("Fees Management could not start because the school login client is not ready. Please reload the page and sign in again.");
+        return;
+      }
+      const {data,error}=await client.auth.getSession();
+      if(error)throw error;
+      if(!data?.session){
+        alert("Your school session is not available. Please sign in again, then open Fees Management.");
+        return;
+      }
+      if(!panel){
+        throw new Error("The Fees Management panel is missing from this page version. Refresh the website and try again.");
+      }
+      // Open the panel before loading remote data so the user gets immediate feedback.
+      panel.classList.remove("hidden");
+      panel.classList.add("flex");
+      setStatus("Opening Fees Management…");
+      await Promise.all([
+        window.loadFeeSetupOptions(),
+        window.loadFeesReviewQueue("admin")
+      ]);
+    }catch(error){
+      console.error("[Fees Management] Could not open admin console:",error);
+      if(panel){
+        panel.classList.remove("hidden");
+        panel.classList.add("flex");
+        setStatus("Fees Management could not load: "+(error?.message||"Unexpected error. Please refresh and try again."),true);
+      }else{
+        alert("Fees Management could not open: "+(error?.message||"Unexpected error. Please refresh and try again."));
+      }
+    }
   };
   window.loadFeeSetupOptions=async function(){
     const client=getClient();if(!client?.functions?.invoke)return;
