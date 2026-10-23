@@ -84,20 +84,28 @@ Deno.serve(async (req) => {
   if (action === "student-payment-qr") {
     const token = typeof input.student_session_token === "string" ? input.student_session_token : "";
     const accountId = typeof input.fee_account_id === "string" ? input.fee_account_id : "";
-    if (token.length < 32 || token.length > 256 || !UUID_RE.test(accountId)) return respond({ error: "Invalid student session or fee account" }, 400);
+    const installmentId = typeof input.installment_id === "string" ? input.installment_id : "";
+    if (token.length < 32 || token.length > 256 || !UUID_RE.test(accountId) || !UUID_RE.test(installmentId)) {
+      return respond({ error: "Invalid student session or selected installment" }, 400);
+    }
     const { data: accounts, error: summaryError } = await adminClient.rpc("fee_student_summary_by_session", { p_token: token });
     if (summaryError || !Array.isArray(accounts)) return respond({ error: "Unable to verify student fee account" }, 403);
     const account = accounts.find((row: { fee_account_id?: string }) => row.fee_account_id === accountId);
     if (!account) return respond({ error: "Fee account not available for this student session" }, 403);
-    const totalDue = Number((account as { total_due_paise?: number }).total_due_paise ?? 0);
-    const totalPaid = Number((account as { total_paid_paise?: number }).total_paid_paise ?? 0);
-    const discount = Number((account as { discount_paise?: number }).discount_paise ?? 0);
-    const balance = Number((account as { balance_paise?: number }).balance_paise ?? Math.max(0,totalDue-discount-totalPaid));
-    if (!Number.isSafeInteger(balance) || balance <= 0) return respond({ error: "No outstanding balance is due on this fee account" }, 409);
-    const { data, error } = await adminClient.from("fee_school_payment_settings").select("upi_id,payee_name,updated_at").eq("school_code","ashiana").maybeSingle();
+    const feeItems = Array.isArray((account as { fee_items?: unknown }).fee_items)
+      ? (account as { fee_items: Array<Record<string, unknown>> }).fee_items : [];
+    const item = feeItems.find((row) => row.installment_id === installmentId);
+    if (!item) return respond({ error: "Selected installment is not assigned to this student" }, 403);
+    const balance = Number(item.balance_paise);
+    if (!Number.isSafeInteger(balance) || balance <= 0) return respond({ error: "No outstanding balance remains for this installment" }, 409);
+    const { data, error } = await adminClient.from("fee_school_payment_settings")
+      .select("upi_id,payee_name,updated_at").eq("school_code", "ashiana").maybeSingle();
     if (error) return respond({ error: "Unable to load school payment details" }, 500);
     if (!data?.upi_id || !data?.payee_name) return respond({ error: "School UPI details have not been configured by Admin" }, 404);
-    return respond({ upi_id: data.upi_id, payee_name: data.payee_name, balance_paise: balance, updated_at: data.updated_at });
+    return respond({
+      upi_id: data.upi_id, payee_name: data.payee_name, balance_paise: balance,
+      fee_name: item.fee_name, updated_at: data.updated_at
+    });
   }
 
   if (action === "student-summary") {
@@ -132,10 +140,11 @@ Deno.serve(async (req) => {
   if (action === "submit-payment") {
     const token = typeof input.student_session_token === "string" ? input.student_session_token : "";
     const accountId = typeof input.fee_account_id === "string" ? input.fee_account_id : "";
+    const installmentId = typeof input.installment_id === "string" ? input.installment_id : "";
     const objectPath = typeof input.proof_object_path === "string" ? input.proof_object_path : "";
     const reference = typeof input.upi_reference === "string" ? input.upi_reference.trim() : "";
     const amount = Number(input.amount_paise);
-    if (token.length < 32 || token.length > 256 || !UUID_RE.test(accountId) ||
+    if (token.length < 32 || token.length > 256 || !UUID_RE.test(accountId) || !UUID_RE.test(installmentId) ||
         !Number.isSafeInteger(amount) || amount <= 0 || amount > 1000000000 ||
         reference.length < 6 || reference.length > 120 ||
         !objectPath.startsWith(accountId + "/") || objectPath.includes("..") || objectPath.startsWith("/")) {
@@ -167,6 +176,7 @@ Deno.serve(async (req) => {
     const { data, error } = await adminClient.rpc("fee_submit_payment_by_session", {
       p_token: token,
       p_fee_account_id: accountId,
+      p_installment_id: installmentId,
       p_amount_paise: amount,
       p_upi_reference: reference,
       p_proof_object_path: objectPath,
