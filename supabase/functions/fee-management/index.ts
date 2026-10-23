@@ -23,7 +23,7 @@ Deno.serve(async (req) => {
   const corsHeaders: Record<string, string> = { ...corsBase };
   if (origin && allowedOrigins.includes(origin)) corsHeaders["Access-Control-Allow-Origin"] = origin;
   const respond = (body: unknown, status = 200) => reply(body, status, corsHeaders);
-  if (req.method === "OPTIONS") return new Response("ok", { status: 204, headers: corsHeaders });
+  if (req.method === "OPTIONS") return new Response(null, { status: 204, headers: corsHeaders });
   if (req.method !== "POST") return respond({ error: "Method not allowed" }, 405);
 
   const url = Deno.env.get("SUPABASE_URL");
