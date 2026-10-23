@@ -8339,47 +8339,6 @@ async function loadAdminStudents(){
       setupPrintWindowBackHandling(printWin);
       printWin.document.open();
       printWin.document.write('<!doctype html><title>Preparing student ID cards…</title><body style="font:16px Arial;padding:24px">Preparing student ID cards…
-<div id="student-school-upi-qr-modal" class="hidden fixed inset-0 z-[350] bg-slate-950/70 p-4 items-center justify-center" role="dialog" aria-modal="true" aria-labelledby="student-school-upi-qr-title">
-  <div class="w-full max-w-sm rounded-2xl bg-white p-5 text-center shadow-2xl">
-    <h2 id="student-school-upi-qr-title" class="text-lg font-extrabold">School UPI Payment QR</h2>
-    <p class="mt-1 text-xs text-slate-500">Verify the payee name and installment amount in your UPI app before paying.</p>
-    <div id="student-school-upi-qr-content" class="my-4 flex min-h-40 items-center justify-center rounded-xl border bg-slate-50 p-3 text-sm text-slate-600">Loading official school QR…</div>
-    <button type="button" onclick="closeStudentSchoolUpiQr()" class="w-full rounded-xl border px-4 py-3 text-sm font-bold">Close</button>
-  </div>
-</div>
-<script>
-window.closeStudentSchoolUpiQr=function(){const m=document.getElementById("student-school-upi-qr-modal");m?.classList.add("hidden");m?.classList.remove("flex");};
-window.showStudentSchoolUpiQr=async function(accountId,installmentId){
-  const modal=document.getElementById("student-school-upi-qr-modal"),host=document.getElementById("student-school-upi-qr-content");
-  if(!modal||!host)return;
-  modal.classList.remove("hidden");modal.classList.add("flex");host.textContent="Loading official school QR…";
-  try{
-    const token=String(await window.AshianaNative?.getStudentSessionToken?.()||sessionStorage.getItem("aps_student_session_token_v1")||"");
-    if(!/^[a-f0-9]{64}$/i.test(token))throw new Error("Your student session has expired. Please sign in again.");
-    const client=typeof supabaseClient!=="undefined"?supabaseClient:window.__ashianaMainSupabaseClient;
-    if(!client?.functions?.invoke)throw new Error("Application client is not ready.");
-    const {data,error}=await client.functions.invoke("fee-management",{body:{action:"student-payment-qr",student_session_token:token,fee_account_id:accountId,installment_id:installmentId}});
-    if(error)throw new Error(error.message||data?.error||"Could not load school QR.");
-    if(!data?.upi_id||!data?.payee_name)throw new Error("The school has not configured its verified UPI ID and payee name yet.");
-    const balancePaise=Number(data.balance_paise);
-    if(!Number.isSafeInteger(balancePaise)||balancePaise<=0)throw new Error("No outstanding balance remains for this installment.");
-    await ensureQRCodeLibrary();
-    if(typeof QRCode==="undefined")throw new Error("Payment QR generator is unavailable. Please retry.");
-    const amount=(balancePaise/100).toFixed(2);
-    const params=new URLSearchParams({pa:data.upi_id,pn:data.payee_name,am:amount,cu:"INR",tn:"Ashiana school fees"});
-    const upiUri="upi://pay?"+params.toString();
-    const qrHost=document.createElement("div");qrHost.className="mx-auto flex max-w-full flex-col items-center gap-3";
-    const qrCanvas=document.createElement("div");qrCanvas.className="rounded-xl bg-white p-3";
-    new QRCode(qrCanvas,{text:upiUri,width:256,height:256,colorDark:"#064e3b",colorLight:"#ffffff",correctLevel:QRCode.CorrectLevel.M});
-    const amountLabel=document.createElement("p");amountLabel.className="text-lg font-extrabold text-slate-900";amountLabel.textContent="Installment balance: ₹"+Number(amount).toLocaleString("en-IN",{minimumFractionDigits:2,maximumFractionDigits:2});
-    const payee=document.createElement("p");payee.className="text-xs text-slate-600";payee.textContent="Pay to: "+data.payee_name+" ("+data.upi_id+")";
-    const note=document.createElement("p");note.className="text-[11px] text-slate-500";note.textContent="Confirm the payee and amount before authorizing. On this phone, use Pay with UPI app; otherwise scan this QR from another phone.";
-    const payButton=document.createElement("button");payButton.type="button";payButton.className="w-full rounded-xl bg-emerald-800 px-4 py-3 text-sm font-extrabold text-white";payButton.textContent="Pay with UPI app";
-    payButton.addEventListener("click",()=>{window.location.href=upiUri;note.textContent="Opening an installed UPI app… If no app opens, scan this QR using another phone.";});
-    qrHost.append(qrCanvas,amountLabel,payee,payButton,note);host.replaceChildren(qrHost);
-  }catch(e){host.textContent=e?.message||"Unable to show school payment QR.";}
-};
-</script>
 </body>');
 
       printWin.document.close();
@@ -14571,6 +14530,47 @@ function addMessage(text,type){
   });
   document.addEventListener("keydown",e=>{if(e.key==="Escape"&&!$("fees-admin-console")?.classList.contains("hidden"))window.closeFeesAdminConsole();});
 })();
+</script>
+<div id="student-school-upi-qr-modal" class="hidden fixed inset-0 z-[350] bg-slate-950/70 p-4 items-center justify-center" role="dialog" aria-modal="true" aria-labelledby="student-school-upi-qr-title">
+  <div class="w-full max-w-sm rounded-2xl bg-white p-5 text-center shadow-2xl">
+    <h2 id="student-school-upi-qr-title" class="text-lg font-extrabold">School UPI Payment QR</h2>
+    <p class="mt-1 text-xs text-slate-500">Verify the payee name and installment amount in your UPI app before paying.</p>
+    <div id="student-school-upi-qr-content" class="my-4 flex min-h-40 items-center justify-center rounded-xl border bg-slate-50 p-3 text-sm text-slate-600">Loading official school QR…</div>
+    <button type="button" onclick="closeStudentSchoolUpiQr()" class="w-full rounded-xl border px-4 py-3 text-sm font-bold">Close</button>
+  </div>
+</div>
+<script>
+window.closeStudentSchoolUpiQr=function(){const m=document.getElementById("student-school-upi-qr-modal");m?.classList.add("hidden");m?.classList.remove("flex");};
+window.showStudentSchoolUpiQr=async function(accountId,installmentId){
+  const modal=document.getElementById("student-school-upi-qr-modal"),host=document.getElementById("student-school-upi-qr-content");
+  if(!modal||!host)return;
+  modal.classList.remove("hidden");modal.classList.add("flex");host.textContent="Loading official school QR…";
+  try{
+    const token=String(await window.AshianaNative?.getStudentSessionToken?.()||sessionStorage.getItem("aps_student_session_token_v1")||"");
+    if(!/^[a-f0-9]{64}$/i.test(token))throw new Error("Your student session has expired. Please sign in again.");
+    const client=typeof supabaseClient!=="undefined"?supabaseClient:window.__ashianaMainSupabaseClient;
+    if(!client?.functions?.invoke)throw new Error("Application client is not ready.");
+    const {data,error}=await client.functions.invoke("fee-management",{body:{action:"student-payment-qr",student_session_token:token,fee_account_id:accountId,installment_id:installmentId}});
+    if(error)throw new Error(error.message||data?.error||"Could not load school QR.");
+    if(!data?.upi_id||!data?.payee_name)throw new Error("The school has not configured its verified UPI ID and payee name yet.");
+    const balancePaise=Number(data.balance_paise);
+    if(!Number.isSafeInteger(balancePaise)||balancePaise<=0)throw new Error("No outstanding balance remains for this installment.");
+    await ensureQRCodeLibrary();
+    if(typeof QRCode==="undefined")throw new Error("Payment QR generator is unavailable. Please retry.");
+    const amount=(balancePaise/100).toFixed(2);
+    const params=new URLSearchParams({pa:data.upi_id,pn:data.payee_name,am:amount,cu:"INR",tn:"Ashiana school fees"});
+    const upiUri="upi://pay?"+params.toString();
+    const qrHost=document.createElement("div");qrHost.className="mx-auto flex max-w-full flex-col items-center gap-3";
+    const qrCanvas=document.createElement("div");qrCanvas.className="rounded-xl bg-white p-3";
+    new QRCode(qrCanvas,{text:upiUri,width:256,height:256,colorDark:"#064e3b",colorLight:"#ffffff",correctLevel:QRCode.CorrectLevel.M});
+    const amountLabel=document.createElement("p");amountLabel.className="text-lg font-extrabold text-slate-900";amountLabel.textContent="Installment balance: ₹"+Number(amount).toLocaleString("en-IN",{minimumFractionDigits:2,maximumFractionDigits:2});
+    const payee=document.createElement("p");payee.className="text-xs text-slate-600";payee.textContent="Pay to: "+data.payee_name+" ("+data.upi_id+")";
+    const note=document.createElement("p");note.className="text-[11px] text-slate-500";note.textContent="Confirm the payee and amount before authorizing. On this phone, use Pay with UPI app; otherwise scan this QR from another phone.";
+    const payButton=document.createElement("button");payButton.type="button";payButton.className="w-full rounded-xl bg-emerald-800 px-4 py-3 text-sm font-extrabold text-white";payButton.textContent="Pay with UPI app";
+    payButton.addEventListener("click",()=>{window.location.href=upiUri;note.textContent="Opening an installed UPI app… If no app opens, scan this QR using another phone.";});
+    qrHost.append(qrCanvas,amountLabel,payee,payButton,note);host.replaceChildren(qrHost);
+  }catch(e){host.textContent=e?.message||"Unable to show school payment QR.";}
+};
 </script>
 </body>
 </html>
