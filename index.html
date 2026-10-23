@@ -14466,7 +14466,23 @@ window.showStudentSchoolUpiQr=async function(accountId){
       if(error||data?.error||data?.status!=="FEE_STRUCTURE_DELETED")throw new Error(error?.message||data?.error||"Delete was not confirmed.");
       if(host)host.textContent="Fee structure deleted.";
       await window.loadExistingFeeStructures({currentTarget:form.querySelector('select[name="academic_year_id"]')});
-    }catch(e){if(host)host.textContent=e?.message||"Unable to delete fee structure.";}
+    }catch(e){
+      let message=e?.message||"Unable to delete fee structure.";
+      // Supabase FunctionsHttpError keeps the Edge Function's JSON response on error.context.
+      // Read it so administrators see the actual safe-delete reason instead of a generic status.
+      try{
+        const response=e?.context;
+        if(response&&typeof response.json==="function"){
+          const detail=await response.clone().json();
+          if(typeof detail?.error==="string"&&detail.error.trim())message=detail.error;
+          else if(typeof detail?.message==="string"&&detail.message.trim())message=detail.message;
+        }
+      }catch(_){}
+      if(/linked to existing fee or payment records/i.test(message)){
+        message="Cannot delete this fee structure because it is already linked to student fee or payment records. Those records are preserved. Use a new fee structure for future charges.";
+      }
+      if(host)host.textContent=message;
+    }
   };
   window.searchFeeSetupStudents=async function(event){
     const form=event.currentTarget.closest("form"),query=String(form?.elements.student_search?.value||"").trim(),select=form?.elements.student_id;
