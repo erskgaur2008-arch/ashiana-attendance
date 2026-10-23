@@ -35,6 +35,14 @@ begin
     'synthetic-student-session-token-000000000000',v_account,5000,
     'SYNTHETIC-UPI-REF-001',v_account::text||'/synthetic-proof.png','Synthetic test only'
   );
+  -- Missing/NULL Admin decision must fail closed instead of changing payment state.
+  begin
+    perform public.fee_admin_review_payment(v_submission,null,null);
+    raise exception 'NULL Admin decision unexpectedly succeeded';
+  exception when others then
+    if sqlerrm = 'NULL Admin decision unexpectedly succeeded' then raise; end if;
+  end;
+
   v_result := public.fee_admin_review_payment(v_submission,true,null);
   if v_result <> 'PENDING_PRINCIPAL' then raise exception 'Admin review transition failed'; end if;
 
@@ -44,6 +52,17 @@ begin
 
   perform set_config('request.jwt.claim.sub','bbbbbbbb-bbbb-4bbb-8bbb-bbbbbbbbbbbb',true);
   perform set_config('request.jwt.claim.fee_admin','false',true);
+  -- Missing/NULL Principal decision must never be interpreted as confirmation.
+  begin
+    perform public.fee_principal_confirm_payment(v_submission,null,null);
+    raise exception 'NULL Principal decision unexpectedly succeeded';
+  exception when others then
+    if sqlerrm = 'NULL Principal decision unexpectedly succeeded' then raise; end if;
+  end;
+  if (select status from public.fee_payment_submissions where id=v_submission) <> 'PENDING_PRINCIPAL' then
+    raise exception 'NULL Principal decision changed the payment state';
+  end if;
+
   v_result := public.fee_principal_confirm_payment(v_submission,true,null);
 
   if v_result is null or v_result not like 'APS-%' then
