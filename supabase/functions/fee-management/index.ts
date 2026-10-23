@@ -83,9 +83,10 @@ Deno.serve(async (req) => {
 
   if (action === "student-payment-qr") {
     const token = typeof input.student_session_token === "string" ? input.student_session_token : "";
-    if (token.length < 32 || token.length > 256) return respond({ error: "Invalid student session" }, 400);
+    const accountId = typeof input.fee_account_id === "string" ? input.fee_account_id : "";
+    if (token.length < 32 || token.length > 256 || !UUID_RE.test(accountId)) return respond({ error: "Invalid student session or fee account" }, 400);
     const { data: accounts, error: summaryError } = await adminClient.rpc("fee_student_summary_by_session", { p_token: token });
-    if (summaryError || !Array.isArray(accounts) || !accounts.length) return respond({ error: "Student session not authorized" }, 403);
+    if (summaryError || !Array.isArray(accounts) || !accounts.some((row: { fee_account_id?: string }) => row.fee_account_id === accountId)) return respond({ error: "Fee account not available for this student session" }, 403);
     const { data, error } = await adminClient.from("fee_school_payment_settings").select("upi_qr_data_url,updated_at").eq("school_code","ashiana").maybeSingle();
     if (error) return respond({ error: "Unable to load school payment QR" }, 500);
     return respond({ qr_data_url: data?.upi_qr_data_url ?? null, updated_at: data?.updated_at ?? null });
