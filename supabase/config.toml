@@ -1,0 +1,4 @@
+# Fee-management accepts custom student session tokens in the request body.
+# Admin/Principal actions still enforce Supabase Auth inside the database RPCs.
+[functions.fee-management]
+verify_jwt = false

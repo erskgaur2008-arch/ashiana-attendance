@@ -1,0 +1,135 @@
+name: Fees Management Draft Validation
+
+on:
+  pull_request:
+    branches: [main]
+    paths:
+      - 'supabase/functions/fee-management/**'
+      - 'supabase/migrations/20261023000*_fees_management_*.sql'
+      - 'supabase/tests/fees_management_security.sql'
+      - 'supabase/tests/fees_management_synthetic_bootstrap.sql'
+      - 'supabase/tests/fees_management_rpc_smoke.sql'
+      - 'index.html'
+      - '.github/workflows/fees-management-validation.yml'
+  push:
+    branches: [feat/live-fees-management]
+    paths:
+      - 'supabase/functions/fee-management/**'
+      - 'supabase/migrations/20261023000*_fees_management_*.sql'
+      - 'supabase/tests/fees_management_security.sql'
+      - 'supabase/tests/fees_management_synthetic_bootstrap.sql'
+      - 'supabase/tests/fees_management_rpc_smoke.sql'
+      - 'index.html'
+      - '.github/workflows/fees-management-validation.yml'
+  workflow_dispatch:
+
+permissions:
+  contents: read
+
+jobs:
+  typecheck:
+    name: Type-check fee management Edge Function
+    runs-on: ubuntu-latest
+    timeout-minutes: 10
+    steps:
+      - uses: actions/checkout@v4
+      - uses: denoland/setup-deno@v2
+        with:
+          deno-version: v2.x
+      - name: Install function dependencies
+        run: deno install --entrypoint supabase/functions/fee-management/index.ts
+      - name: Type-check Edge Function
+        run: deno check --node-modules-dir=auto supabase/functions/fee-management/index.ts
+      - name: Validate SQL statement syntax
+        run: |
+          python -m pip install --disable-pip-version-check pglast
+          python - <<'PY'
+          from pathlib import Path
+          from pglast import parse_sql
+          paths = sorted(Path("supabase/migrations").glob("20261023000*_fees_management_*.sql"))
+          if len(paths) < 5:
+              raise SystemExit(f"Expected all 5 fee migrations, found {len(paths)}")
+          for path in paths:
+              source = path.read_text(encoding="utf-8")
+              parse_sql(source)
+              print(f"SQL syntax OK: {path}")
+          PY
+      - name: Check migration and test files exist
+        shell: bash
+        run: |
+          set -euo pipefail
+          test -s supabase/migrations/20261023000100_fees_management_schema.sql
+          test -s supabase/migrations/20261023000200_fees_management_security.sql
+          test -s supabase/migrations/20261023000300_fees_management_storage.sql
+          test -s supabase/migrations/20261023000400_fees_management_admin_setup.sql
+          test -s supabase/migrations/20261023000500_fees_management_discount_pending_balance.sql
+          test -s supabase/config.toml
+          grep -q 'verify_jwt = false' supabase/config.toml
+          test -s supabase/tests/fees_management_security.sql
+          grep -q "studentDashboardSection('fees')" index.html
+          grep -q "submitStudentFeePayment" index.html
+          grep -q "openFeesAdminConsole" index.html
+          grep -q "student-submissions" supabase/functions/fee-management/index.ts
+          grep -q "discard-proof-upload" supabase/functions/fee-management/index.ts
+          grep -q "admin-discount-queue" supabase/functions/fee-management/index.ts
+          grep -q "fee_admin_search_students" supabase/migrations/20261023000400_fees_management_admin_setup.sql
+          grep -q "fee_admin_discount_queue" supabase/migrations/20261023000200_fees_management_security.sql
+          node <<'NODE'
+          const fs = require('node:fs');
+          const html = fs.readFileSync('index.html', 'utf8');
+          const scripts = [...html.matchAll(/<script(?:\s[^>]*)?>([\s\S]*?)<\/script>/gi)];
+          let checked = 0;
+          for (const [index, match] of scripts.entries()) {
+            const source = match[1];
+            if (!source.trim()) continue;
+            try { new Function(source); checked++; }
+            catch (error) {
+              console.error(`Inline script ${index + 1} syntax error: ${error.message}`);
+              process.exit(1);
+            }
+          }
+          if (checked === 0) throw new Error('No inline scripts were checked');
+          console.log(`Parsed ${checked} inline scripts successfully`);
+          NODE
+          echo "Draft source checks passed. This workflow does not apply migrations or access production."
+
+  database-validation:
+    name: Apply fee migrations to synthetic PostgreSQL
+    runs-on: ubuntu-latest
+    timeout-minutes: 10
+    services:
+      postgres:
+        image: postgres:16
+        env:
+          POSTGRES_PASSWORD: postgres
+          POSTGRES_DB: fees_test
+        ports:
+          - 5432:5432
+        options: >-
+          --health-cmd "pg_isready -U postgres -d fees_test"
+          --health-interval 5s
+          --health-timeout 5s
+          --health-retries 10
+    env:
+      PGHOST: localhost
+      PGPORT: 5432
+      PGUSER: postgres
+      PGPASSWORD: postgres
+      PGDATABASE: fees_test
+    steps:
+      - uses: actions/checkout@v4
+      - name: Install PostgreSQL client
+        run: sudo apt-get update && sudo apt-get install -y postgresql-client
+      - name: Create synthetic Supabase dependencies
+        run: psql -v ON_ERROR_STOP=1 -f supabase/tests/fees_management_synthetic_bootstrap.sql
+      - name: Apply all fee migrations to isolated database
+        run: |
+          set -euo pipefail
+          for migration in supabase/migrations/20261023000*_fees_management_*.sql; do
+            echo "Applying $migration"
+            psql -v ON_ERROR_STOP=1 -f "$migration"
+          done
+      - name: Run fee security assertions
+        run: psql -v ON_ERROR_STOP=1 -f supabase/tests/fees_management_security.sql
+      - name: Run synthetic payment approval and receipt smoke test
+        run: psql -v ON_ERROR_STOP=1 -f supabase/tests/fees_management_rpc_smoke.sql

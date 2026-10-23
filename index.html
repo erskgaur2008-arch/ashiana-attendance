@@ -2772,6 +2772,7 @@ id="student-portal-view" class="hidden flex-col w-full max-w-2xl space-y-4 stude
             <button onclick="studentDashboardSection('classmates')" class="p-4 rounded-2xl border bg-cyan-50 text-left"><i data-lucide="contact-round" class="w-5 h-5 text-cyan-700"></i><b class="block mt-2 text-sm">Classmates</b><span class="text-[10px] text-slate-500">Your section students</span></button>
             <button onclick="studentDashboardSection('notice')" class="p-4 rounded-2xl border bg-amber-50 text-left"><i data-lucide="megaphone" class="w-5 h-5 text-amber-700"></i><b class="block mt-2 text-sm">Notice</b><span id="student-count-notices" class="text-[10px] text-slate-500">0 notices</span></button>
             <button onclick="studentDashboardSection('attendance')" class="p-4 rounded-2xl border bg-emerald-50 text-left"><i data-lucide="calendar-check" class="w-5 h-5 text-emerald-700"></i><b class="block mt-2 text-sm">Attendance</b><span id="student-count-attendance" class="text-[10px] text-slate-500">0 records</span></button>
+            <button type="button" onclick="studentDashboardSection('fees')" class="p-4 rounded-2xl border border-amber-200 bg-amber-50 text-left"><i data-lucide="wallet" class="w-5 h-5 text-amber-700"></i><b class="block mt-2 text-sm text-slate-900">Fees Management</b><span class="text-[10px] text-slate-600">Due, payments & receipts</span></button>
             <button onclick="studentDashboardSection('homework')" class="p-4 rounded-2xl border bg-blue-50 text-left"><i data-lucide="book-open-check" class="w-5 h-5 text-blue-700"></i><b class="block mt-2 text-sm">Homework</b><span id="student-count-homework" class="text-[10px] text-slate-500">0 items</span></button>
             <button onclick="studentDashboardSection('timetable')" class="p-4 rounded-2xl border bg-violet-50 text-left"><i data-lucide="calendar-clock" class="w-5 h-5 text-violet-700"></i><b class="block mt-2 text-sm">Timetable</b><span class="text-[10px] text-slate-500">Class schedule</span></button>
             <button onclick="studentDashboardSection('leave')" class="p-4 rounded-2xl border bg-rose-50 text-left"><i data-lucide="file-pen-line" class="w-5 h-5 text-rose-700"></i><b class="block mt-2 text-sm">Leave Request</b><span class="text-[10px] text-slate-500">Apply / track</span></button>
@@ -3388,6 +3389,7 @@ id="admin-portal-view" class="hidden flex-col w-full space-y-4 admin-dashboard-s
         <button type="button" onclick="window.switchAdminTab('qr')"><i data-lucide="qr-code"></i><span>Daily QR</span></button>
         <button type="button" id="admin-nav-reports" onclick="window.switchAdminTab('reports')"><i data-lucide="file-spreadsheet"></i><span>Report</span></button>
         <button type="button" id="admin-nav-working-days" onclick="openMonthlyWorkingDaysCalendar()" title="Mark working days, weekly offs, and school holidays for a month"><i data-lucide="calendar-days"></i><span>Monthly Working Days</span></button>
+        <button type="button" id="admin-nav-fees" onclick="openFeesAdminConsole()" title="Review fee payments and Principal confirmations"><i data-lucide="wallet"></i><span>Fees Management</span></button>
         <button type="button" id="admin-nav-attendance-rules" onclick="window.switchAdminTab('attendance-rules')" title="Manage staff attendance calculation rules"><i data-lucide="sliders-horizontal"></i><span>Attendance Rules</span></button>
         <button type="button" id="admin-nav-leave" onclick="window.switchAdminTab('leave')" title="Faculty Leave Applications"><i data-lucide="calendar-check"></i><span>Leaves</span></button>
         <button type="button" id="admin-nav-corrections" onclick="window.switchAdminTab('corrections')" title="Manual Attendance Corrections"><i data-lucide="file-pen"></i><span>Corrections</span></button>
@@ -6708,7 +6710,7 @@ async function studentDashboardSection(type){
     title=document.getElementById("student-dashboard-panel-title"),
     loading=document.getElementById("student-dashboard-panel-loading");
   if(!host||!panel)return;
-  const names={notice:"Notice",attendance:"Attendance",homework:"Homework",timetable:"Timetable",leave:"Leave Request & Status",report:"Report Card",calendar:"School Calendar",profile:"Student Profile",mentor:"Your Mentor",classmates:"Classmates"};
+  const names={notice:"Notice",attendance:"Attendance",homework:"Homework",timetable:"Timetable",leave:"Leave Request & Status",report:"Report Card",calendar:"School Calendar",fees:"Fees Management",profile:"Student Profile",mentor:"Your Mentor",classmates:"Classmates"};
   title.textContent=names[type]||"Dashboard";
   panel.classList.remove("hidden");
   document.body.classList.add("overflow-hidden");
@@ -6731,7 +6733,39 @@ async function studentDashboardSection(type){
   }catch(e){console.warn("Student portal refresh failed:",e);}
   const fresh=currentAuthUser?.portalData||d;
   const sValue=(key)=>currentAuthUser?.studentRecord?.[key]||"—";
-  if(type==="profile"){
+  if(type==="fees"){
+    host.innerHTML='<div class="p-4 bg-white border rounded-2xl"><p class="text-sm font-bold text-slate-800">Loading your fee account…</p><p class="mt-1 text-xs text-slate-500">Your fee details are private to your student session.</p></div>';
+    const token=String(await window.AshianaNative?.getStudentSessionToken?.() || sessionStorage.getItem("aps_student_session_token_v1") || "");
+    if(!/^[a-f0-9]{64}$/i.test(token)){
+      host.innerHTML='<div class="p-4 rounded-2xl border border-rose-200 bg-rose-50 text-sm text-rose-800">Your student session has expired. Please sign in again.</div>';
+    }else{
+      try{
+        if(!supabaseClient?.functions?.invoke)throw new Error("The application client is not ready.");
+        const [summaryResult,receiptResult,submissionResult]=await Promise.all([
+          supabaseClient.functions.invoke("fee-management",{body:{action:"student-summary",student_session_token:token}}),
+          supabaseClient.functions.invoke("fee-management",{body:{action:"student-receipts",student_session_token:token}}),
+          supabaseClient.functions.invoke("fee-management",{body:{action:"student-submissions",student_session_token:token}})
+        ]);
+        if(summaryResult.error)throw new Error(summaryResult.error.message||"Fee service is not available.");
+        if(receiptResult.error)throw new Error(receiptResult.error.message||"Receipt service is not available.");
+        if(submissionResult.error)throw new Error(submissionResult.error.message||"Payment status service is not available.");
+        const accounts=Array.isArray(summaryResult.data?.accounts)?summaryResult.data.accounts:[];
+        const receipts=Array.isArray(receiptResult.data?.receipts)?receiptResult.data.receipts:[];
+        const submissions=Array.isArray(submissionResult.data?.submissions)?submissionResult.data.submissions:[];
+        const money=(paise)=>"₹"+(Number(paise||0)/100).toLocaleString("en-IN",{minimumFractionDigits:2,maximumFractionDigits:2});
+        host.innerHTML=accounts.length?accounts.map(a=>{
+          const due=Number(a.total_due_paise||0),paid=Number(a.total_paid_paise||0),discount=Number(a.discount_paise||0),balance=Number(a.balance_paise??Math.max(0,due-discount-paid));
+          return '<section class="p-4 sm:p-5 bg-white border border-amber-200 rounded-2xl shadow-sm"><div class="flex items-start justify-between gap-3"><div><p class="text-xs text-slate-500">Academic year</p><h3 class="mt-1 text-lg font-extrabold text-slate-900">'+studentEscape(a.academic_year_label||"Current academic year")+'</h3></div><span class="px-2.5 py-1 rounded-full bg-amber-100 text-amber-800 text-[10px] font-extrabold">'+(balance>0?"Balance due":"No balance due")+'</span></div><div class="grid grid-cols-2 sm:grid-cols-3 gap-2 mt-4"><div class="p-3 rounded-xl bg-slate-50"><p class="text-[10px] text-slate-500">Total fee</p><p class="mt-1 font-extrabold">'+money(due)+'</p></div><div class="p-3 rounded-xl bg-emerald-50"><p class="text-[10px] text-emerald-700">Paid</p><p class="mt-1 font-extrabold text-emerald-800">'+money(paid)+'</p></div><div class="p-3 rounded-xl bg-rose-50 col-span-2 sm:col-span-1"><p class="text-[10px] text-rose-700">Pending balance</p><p class="mt-1 font-extrabold text-rose-800">'+money(balance)+'</p></div></div><p class="mt-3 text-[11px] leading-relaxed text-slate-500">Payments appear as paid only after Admin review and independent Principal confirmation. A UPI reference or screenshot alone is not proof of settlement.</p>'+(balance>0?'<form onsubmit="submitStudentFeePayment(event)" data-fee-account="'+studentEscape(a.fee_account_id)+'" class="mt-4 pt-4 border-t space-y-3"><h4 class="font-extrabold text-slate-900">Submit payment details</h4><div><label class="block text-xs font-bold mb-1">Amount paid (₹)</label><input name="amount_rupees" type="number" min="0.01" max="'+(balance/100).toFixed(2)+'" step="0.01" required class="w-full rounded-xl border border-slate-300 p-3 text-sm" placeholder="Enter amount paid"></div><div><label class="block text-xs font-bold mb-1">UPI / bank reference ID</label><input name="upi_reference" required minlength="6" maxlength="120" class="w-full rounded-xl border border-slate-300 p-3 text-sm" placeholder="Enter transaction reference"></div><div><label class="block text-xs font-bold mb-1">Payment screenshot / receipt (required)</label><input name="payment_proof" type="file" accept="image/jpeg,image/png,image/webp,application/pdf" required class="w-full rounded-xl border border-slate-300 p-3 text-xs"><p class="mt-1 text-[10px] text-slate-500">JPG, PNG, WebP or PDF; maximum 5 MB.</p></div><div><label class="block text-xs font-bold mb-1">Note (optional)</label><textarea name="student_note" maxlength="1000" rows="2" class="w-full rounded-xl border border-slate-300 p-3 text-sm" placeholder="Optional details"></textarea></div><div data-fee-feedback role="status" class="hidden rounded-xl p-3 text-xs font-semibold"></div><button type="submit" class="w-full rounded-xl bg-amber-800 text-white font-extrabold p-3 text-sm">Submit for verification</button><p class="text-[10px] leading-relaxed text-slate-500">Submission is not a receipt. Please ensure the payment is actually completed; school staff will reconcile the reference before confirmation.</p></form>':'')+'</section>';
+        }).join(""):'<div class="p-4 rounded-2xl border border-slate-200 bg-white text-sm text-slate-600">No fee account has been assigned to your student record yet. Please contact the school office.</div>';
+        host.innerHTML+='<section class="p-4 bg-white border rounded-2xl"><h3 class="font-extrabold text-slate-900">Receipts</h3><div class="mt-3 space-y-2">'+(receipts.length?receipts.map(r=>'<div class="flex items-start justify-between gap-3 p-3 rounded-xl bg-slate-50 border"><div><p class="text-sm font-bold">'+studentEscape(r.receipt_number||"Fee receipt")+'</p><p class="text-[10px] text-slate-500">'+studentEscape(r.issued_at||r.created_at||"")+'</p></div><b class="text-sm text-emerald-800">'+money(r.amount_paise||r.amount||0)+'</b></div>').join(""):'<p class="text-sm text-slate-500">No confirmed receipts yet.</p>')+'</div></section>';
+        const statusLabel={PENDING_ADMIN:"Awaiting Admin review",PENDING_PRINCIPAL:"Awaiting Principal confirmation",CONFIRMED:"Confirmed",REJECTED:"Rejected"};
+        host.innerHTML+='<section class="p-4 bg-white border rounded-2xl"><h3 class="font-extrabold text-slate-900">Payment submissions</h3><div class="mt-3 space-y-2">'+(submissions.length?submissions.map(p=>'<div class="p-3 rounded-xl border bg-slate-50"><div class="flex flex-wrap items-center justify-between gap-2"><div><p class="text-sm font-bold">'+money(p.amount_paise)+'</p><p class="text-[10px] text-slate-500">Reference: '+studentEscape(p.upi_reference||"—")+' · '+studentEscape(p.submitted_at||"")+'</p></div><span class="rounded-full px-2 py-1 text-[10px] font-extrabold '+(p.status==="CONFIRMED"?"bg-emerald-100 text-emerald-800":p.status==="REJECTED"?"bg-rose-100 text-rose-800":"bg-amber-100 text-amber-800")+'">'+studentEscape(statusLabel[p.status]||p.status||"Pending")+'</span></div>'+(p.rejection_reason?'<p class="mt-2 text-xs text-rose-800">Reason: '+studentEscape(p.rejection_reason)+'</p>':'')+'</div>').join(""):'<p class="text-sm text-slate-500">No payment submissions yet.</p>')+'</div></section>';
+      }catch(e){
+        console.warn("Student fees module unavailable:",e?.message||e);
+        host.innerHTML='<div class="p-4 rounded-2xl border border-amber-200 bg-amber-50"><h3 class="font-bold text-amber-900">Fees service is not connected yet</h3><p class="mt-2 text-sm text-amber-800">'+studentEscape(e?.message||"The fee service is not available.")+'</p><p class="mt-2 text-xs text-amber-800">The Fees Management screen is prepared, but it will show live figures only after the approved database migrations and Edge Function are deployed.</p><button type="button" onclick="studentDashboardSection(\'fees\')" class="mt-3 px-4 py-2 rounded-xl bg-amber-800 text-white text-xs font-bold">Try again</button></div>';
+      }
+    }
+  }else if(type==="profile"){
     host.innerHTML='<div class="bg-white rounded-2xl border p-4"><div class="grid grid-cols-1 sm:grid-cols-2 gap-3">'+
       '<div class="p-3 rounded-xl bg-slate-50 border"><span class="text-[10px] text-slate-500">Admission No.</span><p class="font-semibold mt-1">'+studentEscape(sValue("enroll_no"))+'</p></div>'+
       '<div class="p-3 rounded-xl bg-slate-50 border"><span class="text-[10px] text-slate-500">Roll No.</span><p class="font-semibold mt-1">'+studentEscape(sValue("roll_no"))+'</p></div>'+
@@ -6806,6 +6840,56 @@ function closeStudentDashboardSection(){
   if(panel)panel.classList.add("hidden");
   document.body.classList.remove("overflow-hidden");
 }
+async function submitStudentFeePayment(event){
+  event.preventDefault();
+  const form=event.currentTarget;
+  if(!form||form.dataset.submitting==="1")return false;
+  const feedback=form.querySelector("[data-fee-feedback]");
+  const button=form.querySelector('button[type="submit"]');
+  const show=(message,ok=false)=>{
+    if(feedback){feedback.textContent=message;feedback.className="rounded-xl p-3 text-xs font-semibold "+(ok?"bg-emerald-50 border border-emerald-200 text-emerald-800":"bg-rose-50 border border-rose-200 text-rose-800");}
+  };
+  const token=String(await window.AshianaNative?.getStudentSessionToken?.() || sessionStorage.getItem("aps_student_session_token_v1") || "");
+  const accountId=String(form.dataset.feeAccount||"");
+  const amountPaise=Math.round(Number(form.elements.amount_rupees?.value)*100);
+  const reference=String(form.elements.upi_reference?.value||"").trim();
+  const file=form.elements.payment_proof?.files?.[0];
+  if(!/^[a-f0-9]{64}$/i.test(token)){show("Your student session has expired. Please sign in again.");return false;}
+  if(!/^[0-9a-f]{8}-[0-9a-f]{4}-[1-8][0-9a-f]{3}-[89ab][0-9a-f]{3}-[0-9a-f]{12}$/i.test(accountId)){show("The fee account is invalid. Please refresh and try again.");return false;}
+  if(!Number.isSafeInteger(amountPaise)||amountPaise<=0||reference.length<6||!file){show("Enter the amount, reference ID and payment proof.");return false;}
+  if(file.size<=0||file.size>5*1024*1024){show("The proof file must be no larger than 5 MB.");return false;}
+  if(!["image/jpeg","image/png","image/webp","application/pdf"].includes(file.type)){show("Use a JPG, PNG, WebP image or PDF proof.");return false;}
+  form.dataset.submitting="1";if(button){button.disabled=true;button.textContent="Uploading proof…";}
+  let uploadedProofPath="";
+  try{
+    const client=typeof supabaseClient!=="undefined"?supabaseClient:window.__ashianaMainSupabaseClient;
+    if(!client?.functions?.invoke||!client?.storage)throw new Error("The application client is not ready.");
+    const uploadPrep=await client.functions.invoke("fee-management",{body:{action:"create-proof-upload",student_session_token:token,fee_account_id:accountId,file_name:file.name,content_type:file.type,size_bytes:file.size}});
+    if(uploadPrep.error)throw new Error(uploadPrep.error.message||"Could not prepare private proof upload.");
+    const prep=uploadPrep.data||{};
+    if(!prep.object_path||!prep.upload_token)throw new Error(prep.error||"The private upload link was not returned.");
+    const uploaded=await client.storage.from("fee-payment-proofs").uploadToSignedUrl(prep.object_path,prep.upload_token,file,{contentType:file.type,upsert:false});
+    if(uploaded.error)throw new Error(uploaded.error.message||"Proof upload failed.");
+    uploadedProofPath=prep.object_path;
+    if(button)button.textContent="Submitting…";
+    const submitted=await client.functions.invoke("fee-management",{body:{action:"submit-payment",student_session_token:token,fee_account_id:accountId,amount_paise:amountPaise,upi_reference:reference,proof_object_path:prep.object_path,student_note:String(form.elements.student_note?.value||"").trim()}});
+    if(submitted.error)throw new Error(submitted.error.message||"Payment submission failed.");
+    show("Payment details submitted. Status: awaiting Admin review. This is not a confirmed receipt.",true);
+    form.reset();if(button){button.textContent="Submitted for review";button.disabled=true;}
+    if(window.showToast)showToast("Payment details submitted for verification.","success");
+    return false;
+  }catch(error){
+    if(uploadedProofPath){
+      try{
+        await client.functions.invoke("fee-management",{body:{action:"discard-proof-upload",student_session_token:token,fee_account_id:accountId,proof_object_path:uploadedProofPath}});
+      }catch(_cleanupError){/* Preserve the original payment error; an unused proof can be cleaned up later. */}
+    }
+    show(error?.message||"Could not submit payment details. Please try again.");
+    if(button){button.disabled=false;button.textContent="Submit for verification";}
+    return false;
+  }finally{delete form.dataset.submitting;}
+}
+window.submitStudentFeePayment=submitStudentFeePayment;
 async function submitStudentLeave(event){
   event.preventDefault();
   const form=event.currentTarget;
@@ -14125,5 +14209,215 @@ function addMessage(text,type){
   #ashiana-ai-launcher span:last-child { display: none !important; }
 }
 </style>
+<!-- Fees Management review console. All actions are routed through fee-management RPC authorization. -->
+<div id="fees-admin-console" class="hidden fixed inset-0 z-[280] bg-slate-950/70 backdrop-blur-sm p-2 sm:p-5 items-center justify-center" role="dialog" aria-modal="true" aria-labelledby="fees-admin-title">
+  <div class="w-full max-w-5xl max-h-[94dvh] overflow-y-auto rounded-2xl bg-slate-50 shadow-2xl">
+    <div class="sticky top-0 z-10 flex items-center justify-between gap-3 border-b bg-white p-4">
+      <div><h2 id="fees-admin-title" class="text-lg font-extrabold text-slate-900">Fees Management</h2><p class="text-xs text-slate-500">Admin review and independent Principal confirmation</p></div>
+      <button type="button" onclick="closeFeesAdminConsole()" class="rounded-xl border px-3 py-2 text-sm font-bold">Close</button>
+    </div>
+    <div class="p-4 space-y-4">
+      <div class="flex flex-wrap gap-2">
+        <button type="button" onclick="loadFeesReviewQueue('admin')" class="rounded-xl bg-emerald-800 px-4 py-2.5 text-xs font-bold text-white">Admin review queue</button>
+        <button type="button" onclick="loadFeesReviewQueue('principal')" class="rounded-xl bg-violet-800 px-4 py-2.5 text-xs font-bold text-white">Principal confirmation queue</button>
+        <button type="button" onclick="loadFeesReviewQueue('discount')" class="rounded-xl bg-amber-800 px-4 py-2.5 text-xs font-bold text-white">Discount approvals</button>
+      </div>
+      <details class="rounded-2xl border bg-white p-4">
+        <summary class="cursor-pointer font-extrabold text-slate-900">Fee setup & permissions</summary>
+        <p class="mt-2 text-xs text-slate-500">These actions require an authorized Admin session and are audit logged. Keep the academic-year UUID returned after saving for fee structures and account assignment.</p>
+        <div class="mt-4 grid grid-cols-1 md:grid-cols-2 gap-4">
+          <form onsubmit="submitFeeSetupForm(event)" data-fee-setup="year" class="rounded-xl border p-3 space-y-2">
+            <h3 class="font-bold text-sm">Create / update academic year</h3>
+            <input name="label" required minlength="4" maxlength="40" placeholder="e.g. 2026-2027" class="w-full rounded-lg border p-2.5 text-sm">
+            <div class="grid grid-cols-2 gap-2"><input name="starts_on" type="date" required class="min-w-0 w-full rounded-lg border p-2 text-xs"><input name="ends_on" type="date" required class="min-w-0 w-full rounded-lg border p-2 text-xs"></div>
+            <label class="flex items-center gap-2 text-xs"><input name="is_active" type="checkbox"> Set as active academic year</label>
+            <button class="rounded-lg bg-emerald-800 px-3 py-2 text-xs font-bold text-white">Save academic year</button><p data-setup-result class="hidden break-all text-xs" role="status"></p>
+          </form>
+          <form onsubmit="submitFeeSetupForm(event)" data-fee-setup="structure" class="rounded-xl border p-3 space-y-2">
+            <h3 class="font-bold text-sm">Add fee structure</h3>
+            <select name="academic_year_id" required class="w-full rounded-lg border p-2.5 text-sm"><option value="">Loading academic years…</option></select>
+            <input name="class_name" required placeholder="Class (must match roster, e.g. II)" class="w-full rounded-lg border p-2.5 text-sm">
+            <input name="fee_name" required maxlength="100" placeholder="Fee name (e.g. Tuition Fee)" class="w-full rounded-lg border p-2.5 text-sm">
+            <input name="amount_rupees" type="number" min="0" step="0.01" required placeholder="Amount in ₹" class="w-full rounded-lg border p-2.5 text-sm">
+            <input name="due_date" type="date" class="w-full rounded-lg border p-2.5 text-sm">
+            <label class="flex items-center gap-2 text-xs"><input name="is_mandatory" type="checkbox" checked> Mandatory fee</label>
+            <button class="rounded-lg bg-emerald-800 px-3 py-2 text-xs font-bold text-white">Save fee structure</button><p data-setup-result class="hidden break-all text-xs" role="status"></p>
+          </form>
+          <form onsubmit="submitFeeSetupForm(event)" data-fee-setup="assign-student" class="rounded-xl border p-3 space-y-2">
+            <h3 class="font-bold text-sm">Assign student fee account</h3>
+            <select name="academic_year_id" required class="w-full rounded-lg border p-2.5 text-sm"><option value="">Loading academic years…</option></select>
+            <div class="flex gap-2"><input name="student_search" placeholder="Search name, admission no. or class" class="min-w-0 flex-1 rounded-lg border p-2.5 text-xs"><button type="button" onclick="searchFeeSetupStudents(event)" class="rounded-lg border px-3 py-2 text-xs font-bold">Find</button></div>
+            <select name="student_id" required class="w-full rounded-lg border p-2.5 text-sm"><option value="">Search and select a student</option></select>
+            <button class="rounded-lg bg-emerald-800 px-3 py-2 text-xs font-bold text-white">Assign account</button><p data-setup-result class="hidden break-all text-xs" role="status"></p>
+          </form>
+          <form onsubmit="submitFeeSetupForm(event)" data-fee-setup="principal" class="rounded-xl border p-3 space-y-2">
+            <h3 class="font-bold text-sm">Authorize Principal confirmer</h3>
+            <input name="user_id" required placeholder="Principal's authenticated user UUID" class="w-full rounded-lg border p-2.5 text-xs">
+            <button class="rounded-lg bg-violet-800 px-3 py-2 text-xs font-bold text-white">Enable Principal confirmation</button><p data-setup-result class="hidden break-all text-xs" role="status"></p>
+            <p class="text-[10px] text-slate-500">Do not enter an email or student ID. Use the authenticated Principal's user UUID.</p>
+          </form>
+          <form onsubmit="submitFeeSetupForm(event)" data-fee-setup="discount" class="rounded-xl border p-3 space-y-2">
+            <h3 class="font-bold text-sm">Request a student discount</h3>
+            <div class="flex gap-2"><input name="account_search" placeholder="Search student name or admission no." class="min-w-0 flex-1 rounded-lg border p-2.5 text-xs"><button type="button" onclick="searchFeeSetupAccounts(event)" class="rounded-lg border px-3 py-2 text-xs font-bold">Find</button></div>
+            <select name="fee_account_id" required class="w-full rounded-lg border p-2.5 text-sm"><option value="">Search and select a fee account</option></select>
+            <input name="amount_rupees" type="number" min="0.01" step="0.01" required placeholder="Discount amount in ₹" class="w-full rounded-lg border p-2.5 text-sm">
+            <textarea name="reason" required minlength="3" maxlength="1000" rows="2" placeholder="Reason for discount" class="w-full rounded-lg border p-2.5 text-sm"></textarea>
+            <button class="rounded-lg bg-amber-800 px-3 py-2 text-xs font-bold text-white">Create discount request</button><p data-setup-result class="hidden break-all text-xs" role="status"></p>
+          </form>
+        </div>
+      </details>
+      <div id="fees-admin-status" class="rounded-xl border bg-white p-3 text-xs text-slate-600" role="status">Choose a review queue. Access is checked by the server.</div>
+      <div id="fees-admin-queue" class="space-y-3"></div>
+      <p class="rounded-xl border border-amber-200 bg-amber-50 p-3 text-[11px] leading-relaxed text-amber-900">Verify the UPI/bank transaction against the actual settlement record before approving. A screenshot or reference ID alone is not proof of payment. Principal confirmation must be performed by a separately authorized user.</p>
+    </div>
+  </div>
+</div>
+<script>
+(function(){
+  const $=id=>document.getElementById(id);
+  function escapeHtml(v){return String(v??"").replace(/&/g,"&amp;").replace(/</g,"&lt;").replace(/>/g,"&gt;").replace(/"/g,"&quot;").replace(/'/g,"&#39;");}
+  function money(p){return "₹"+(Number(p||0)/100).toLocaleString("en-IN",{minimumFractionDigits:2,maximumFractionDigits:2});}
+  function setStatus(msg,bad=false){const el=$("fees-admin-status");if(el){el.textContent=msg;el.className="rounded-xl border p-3 text-xs "+(bad?"border-rose-200 bg-rose-50 text-rose-800":"bg-white text-slate-600");}}
+  function getClient(){return (typeof supabaseClient!=="undefined"&&supabaseClient)||window.__ashianaMainSupabaseClient||null;}
+  window.closeFeesAdminConsole=function(){$("fees-admin-console")?.classList.add("hidden");$("fees-admin-console")?.classList.remove("flex");};
+  window.openFeesAdminConsole=async function(){
+    const client=getClient();
+    if(!client?.auth?.getSession){alert("Application authentication is not ready.");return;}
+    const {data,error}=await client.auth.getSession();
+    if(error||!data?.session){alert("Sign in with an authorized school account to access fee review.");return;}
+    // The server-side queue/review RPCs enforce the Admin or assigned Principal permission.
+    $("fees-admin-console")?.classList.remove("hidden");$("fees-admin-console")?.classList.add("flex");
+    await window.loadFeeSetupOptions();
+    await window.loadFeesReviewQueue("admin");
+  };
+  window.loadFeeSetupOptions=async function(){
+    const client=getClient();if(!client?.functions?.invoke)return;
+    try{
+      const {data,error}=await client.functions.invoke("fee-management",{body:{action:"admin-list-years"}});
+      if(error)throw error;
+      const years=Array.isArray(data?.academic_years)?data.academic_years:[];
+      document.querySelectorAll('#fees-admin-console select[name="academic_year_id"]').forEach(select=>{
+        const previous=select.value;
+        select.innerHTML='<option value="">Select academic year</option>'+years.map(y=>'<option value="'+escapeHtml(y.academic_year_id)+'">'+escapeHtml(y.label)+(y.is_active?" (active)":"")+'</option>').join("");
+        if(previous&&years.some(y=>y.academic_year_id===previous))select.value=previous;
+      });
+    }catch(e){setStatus("Could not load academic years: "+(e?.message||"Admin permission required"),true);}
+  };
+  window.searchFeeSetupStudents=async function(event){
+    const form=event.currentTarget.closest("form"),query=String(form?.elements.student_search?.value||"").trim(),select=form?.elements.student_id;
+    if(!form||!select)return;
+    select.innerHTML='<option value="">Searching students…</option>';
+    try{
+      const client=getClient();const {data,error}=await client.functions.invoke("fee-management",{body:{action:"admin-search-students",query}});
+      if(error)throw error;
+      const rows=Array.isArray(data?.students)?data.students:[];
+      select.innerHTML='<option value="">Select student</option>'+rows.map(x=>'<option value="'+escapeHtml(x.student_id)+'">'+escapeHtml(x.student_name)+' · '+escapeHtml(x.enroll_no)+' · '+escapeHtml(x.class_name)+'-'+escapeHtml(x.section)+'</option>').join("");
+      if(!rows.length)select.innerHTML='<option value="">No matching active students</option>';
+    }catch(e){select.innerHTML='<option value="">Search failed</option>';setStatus(e?.message||"Student search failed.",true);}
+  };
+  window.searchFeeSetupAccounts=async function(event){
+    const form=event.currentTarget.closest("form"),query=String(form?.elements.account_search?.value||"").trim(),select=form?.elements.fee_account_id;
+    if(!form||!select)return;
+    select.innerHTML='<option value="">Searching fee accounts…</option>';
+    try{
+      const client=getClient();const {data,error}=await client.functions.invoke("fee-management",{body:{action:"admin-search-fee-accounts",query}});
+      if(error)throw error;
+      const rows=Array.isArray(data?.fee_accounts)?data.fee_accounts:[];
+      select.innerHTML='<option value="">Select fee account</option>'+rows.map(x=>'<option value="'+escapeHtml(x.fee_account_id)+'">'+escapeHtml(x.student_name)+' · '+escapeHtml(x.enroll_no)+' · '+escapeHtml(x.academic_year_label)+'</option>').join("");
+      if(!rows.length)select.innerHTML='<option value="">No matching fee accounts</option>';
+    }catch(e){select.innerHTML='<option value="">Search failed</option>';setStatus(e?.message||"Fee account search failed.",true);}
+  };
+  window.submitFeeSetupForm=async function(event){
+    event.preventDefault();
+    const form=event.currentTarget;if(!form||form.dataset.submitting==="1")return false;
+    const type=form.dataset.feeSetup, result=form.querySelector("[data-setup-result]");
+    const say=(msg,ok=false)=>{if(result){result.textContent=msg;result.className="mt-2 break-all text-xs "+(ok?"text-emerald-800":"text-rose-700");}};
+    const values=Object.fromEntries(new FormData(form).entries());
+    const client=getClient();if(!client?.functions?.invoke){say("Application client is not ready.");return false;}
+    let body={};
+    if(type==="year")body={action:"admin-save-academic-year",label:values.label,starts_on:values.starts_on,ends_on:values.ends_on,is_active:form.elements.is_active.checked};
+    else if(type==="structure"){
+      const amount=Math.round(Number(values.amount_rupees)*100);
+      if(!Number.isSafeInteger(amount)||amount<0){say("Enter a valid fee amount.");return false;}
+      body={action:"admin-save-structure",academic_year_id:values.academic_year_id,class_name:values.class_name,fee_name:values.fee_name,amount_paise:amount,is_mandatory:form.elements.is_mandatory.checked,due_date:values.due_date||null};
+    }else if(type==="assign-student")body={action:"admin-assign-student-account",academic_year_id:values.academic_year_id,student_id:values.student_id};
+    else if(type==="principal")body={action:"admin-assign-principal-approver",user_id:values.user_id,enabled:true};
+    else if(type==="discount"){
+      const amount=Math.round(Number(values.amount_rupees)*100);
+      if(!Number.isSafeInteger(amount)||amount<=0){say("Enter a valid discount amount.");return false;}
+      body={action:"admin-create-discount-request",fee_account_id:values.fee_account_id,amount_paise:amount,reason:values.reason};
+    }else return false;
+    form.dataset.submitting="1";const button=form.querySelector('button[type="submit"],button:not([type])');if(button){button.disabled=true;button.textContent="Saving…";}
+    try{
+      const {data,error}=await client.functions.invoke("fee-management",{body});
+      if(error)throw new Error(error.message||"Setup action failed.");
+      const id=data?.academic_year_id||data?.fee_structure_id||data?.fee_account_id||data?.discount_request_id||"";
+      say((data?.status||"Saved successfully.")+(id?" ID: "+id:""),true);
+      if(type==="year"&&id){
+        const selects=form.parentElement?.querySelectorAll('form[data-fee-setup="structure"] select[name="academic_year_id"],form[data-fee-setup="assign-student"] select[name="academic_year_id"]');
+        selects?.forEach(select=>{if(![...select.options].some(option=>option.value===id)){const option=document.createElement("option");option.value=id;option.textContent=values.label;select.appendChild(option);}select.value=id;});
+      }
+      if(type==="principal"||type==="assign-student"||type==="discount")form.reset();
+      return false;
+    }catch(e){say(e?.message||"Setup action failed.");return false;}
+    finally{delete form.dataset.submitting;if(button){button.disabled=false;button.textContent=type==="year"?"Save academic year":type==="structure"?"Save fee structure":type==="assign-student"?"Assign account":type==="principal"?"Enable Principal confirmation":"Create discount request";}}
+  };
+  window.loadFeesReviewQueue=async function(kind){
+    const host=$("fees-admin-queue");if(!host)return;
+    host.innerHTML="";setStatus("Loading "+(kind==="principal"?"Principal confirmation":"Admin review")+" queue…");
+    const client=getClient();if(!client?.functions?.invoke){setStatus("Application client is not ready.",true);return;}
+    try{
+      const action=kind==="principal"?"principal-queue":kind==="discount"?"admin-discount-queue":"admin-queue";
+      const {data,error}=await client.functions.invoke("fee-management",{body:{action}});
+      if(error)throw new Error(error.message||"Queue request failed.");
+      const rows=kind==="discount"?(Array.isArray(data?.requests)?data.requests:[]):(Array.isArray(data?.submissions)?data.submissions:[]);
+      if(!rows.length){setStatus(kind==="principal"?"No payments are awaiting Principal confirmation, or this account is not an assigned Principal.":kind==="discount"?"No discount requests are awaiting Admin review.":"No payments are awaiting Admin review.");host.innerHTML='<div class="rounded-2xl border bg-white p-5 text-center text-sm text-slate-500">No queue items returned.</div>';return;}
+      if(kind==="discount"){
+        setStatus(rows.length+" discount request(s) awaiting Admin review.");
+        host.innerHTML=rows.map(r=>'<article class="rounded-2xl border bg-white p-4 shadow-sm"><div class="flex flex-wrap items-start justify-between gap-3"><div><h3 class="font-extrabold text-slate-900">'+escapeHtml(r.student_name||"Student")+'</h3><p class="mt-1 text-xs text-slate-500">Admission: '+escapeHtml(r.enroll_no||"—")+' · Class '+escapeHtml(r.class_name||"—")+'-'+escapeHtml(r.section||"—")+' · '+escapeHtml(r.academic_year_label||"")+'</p><p class="mt-2 text-sm text-slate-700">'+escapeHtml(r.reason||"No reason provided")+'</p><p class="mt-1 text-[10px] text-slate-500">Requested: '+escapeHtml(r.requested_at||"")+'</p></div><div class="text-right"><p class="text-xl font-extrabold text-amber-800">'+money(r.amount_paise)+'</p><span class="text-[10px] font-bold uppercase text-amber-700">PENDING</span></div></div><div class="mt-3 flex flex-wrap gap-2"><button type="button" data-fee-discount-approve="'+escapeHtml(r.discount_id)+'" class="rounded-xl bg-emerald-800 px-3 py-2 text-xs font-bold text-white">Approve discount</button><button type="button" data-fee-discount-reject="'+escapeHtml(r.discount_id)+'" class="rounded-xl bg-rose-700 px-3 py-2 text-xs font-bold text-white">Reject discount</button></div><div data-row-status class="hidden mt-3 rounded-xl p-3 text-xs" role="status"></div></article>').join("");
+        return;
+      }
+      setStatus(rows.length+" payment(s) in the "+(kind==="principal"?"Principal confirmation":"Admin review")+" queue.");
+      host.innerHTML=rows.map(r=>'<article class="rounded-2xl border bg-white p-4 shadow-sm" data-submission="'+escapeHtml(r.submission_id)+'"><div class="flex flex-wrap items-start justify-between gap-3"><div><h3 class="font-extrabold text-slate-900">'+escapeHtml(r.student_name||"Student")+'</h3><p class="mt-1 text-xs text-slate-500">Admission: '+escapeHtml(r.enroll_no||"—")+' · Class '+escapeHtml(r.class_name||"—")+'-'+escapeHtml(r.section||"—")+'</p><p class="mt-2 text-xs text-slate-600">Reference: <b>'+escapeHtml(r.upi_reference||"—")+'</b></p><p class="mt-1 text-xs text-slate-600">Submitted: '+escapeHtml(r.submitted_at||"—")+'</p></div><div class="text-right"><p class="text-xl font-extrabold text-emerald-800">'+money(r.amount_paise)+'</p><span class="text-[10px] font-bold uppercase text-amber-700">'+escapeHtml(r.status||"PENDING")+'</span></div></div><div class="mt-3 flex flex-wrap gap-2"><button type="button" data-fee-proof="'+escapeHtml(r.submission_id)+'" class="rounded-xl border px-3 py-2 text-xs font-bold">View private proof</button>'+(kind==="admin"?'<button type="button" data-fee-approve="'+escapeHtml(r.submission_id)+'" class="rounded-xl bg-emerald-800 px-3 py-2 text-xs font-bold text-white">Approve for Principal</button><button type="button" data-fee-reject="'+escapeHtml(r.submission_id)+'" class="rounded-xl bg-rose-700 px-3 py-2 text-xs font-bold text-white">Reject</button>':'<button type="button" data-fee-confirm="'+escapeHtml(r.submission_id)+'" class="rounded-xl bg-violet-800 px-3 py-2 text-xs font-bold text-white">Confirm payment</button><button type="button" data-fee-principal-reject="'+escapeHtml(r.submission_id)+'" class="rounded-xl bg-rose-700 px-3 py-2 text-xs font-bold text-white">Reject</button>')+'</div><div data-row-status class="hidden mt-3 rounded-xl p-3 text-xs" role="status"></div></article>').join("");
+    }catch(e){setStatus(e?.message||"Could not load the queue.",true);host.innerHTML='<div class="rounded-xl border border-rose-200 bg-rose-50 p-4 text-sm text-rose-800">'+escapeHtml(e?.message||"Could not load queue")+'</div>';}
+  };
+  $("fees-admin-queue")?.addEventListener("click",async ev=>{
+    const b=ev.target.closest("button");if(!b)return;
+    const id=b.dataset.feeProof||b.dataset.feeApprove||b.dataset.feeReject||b.dataset.feeConfirm||b.dataset.feePrincipalReject||b.dataset.feeDiscountApprove||b.dataset.feeDiscountReject;
+    if(!id)return;
+    const row=b.closest("article"),client=getClient();
+    const status=row?.querySelector("[data-row-status]");
+    const rowMsg=(msg,ok=false)=>{if(status){status.textContent=msg;status.className="mt-3 rounded-xl border p-3 text-xs "+(ok?"border-emerald-200 bg-emerald-50 text-emerald-800":"border-rose-200 bg-rose-50 text-rose-800");}};
+    b.disabled=true;
+    try{
+      if(b.dataset.feeProof){
+        const {data,error}=await client.functions.invoke("fee-management",{body:{action:"create-proof-download",submission_id:id}});
+        if(error||!data?.signed_url)throw new Error(error?.message||data?.error||"Private proof link unavailable.");
+        window.open(data.signed_url,"_blank","noopener,noreferrer");rowMsg("Private proof link created; it expires shortly.",true);return;
+      }
+      if(b.dataset.feeDiscountApprove||b.dataset.feeDiscountReject){
+        const reject=Boolean(b.dataset.feeDiscountReject);
+        const reason=reject?prompt("Enter a reason for rejecting this discount request:",""):prompt("Optional approval note for audit trail:","");
+        if(reject&&(reason===null||reason.trim().length<3)){rowMsg("Rejection cancelled. A reason of at least 3 characters is required.");return;}
+        const {data,error}=await client.functions.invoke("fee-management",{body:{action:"admin-review-discount",discount_id:id,approve:!reject,reason:reason===null?null:reason.trim()}});
+        if(error)throw new Error(error.message||data?.error||"Discount review failed.");
+        rowMsg(reject?"Discount request rejected.":"Discount approved and audit logged.",true);b.closest("article")?.remove();setStatus("Discount review saved.");return;
+      }
+      const isReject=Boolean(b.dataset.feeReject||b.dataset.feePrincipalReject);
+      const reason=isReject?prompt("Enter a clear reason for rejection:",""):null;
+      if(isReject&&(reason===null||reason.trim().length<3)){rowMsg("Rejection cancelled. A reason of at least 3 characters is required.");return;}
+      const isAdmin=Boolean(b.dataset.feeApprove||b.dataset.feeReject);
+      const payload=isAdmin?{action:"admin-review-payment",submission_id:id,approve:!isReject,reason:isReject?reason.trim():null}:{action:"principal-confirm-payment",submission_id:id,confirm:!isReject,reason:isReject?reason.trim():null};
+      const {data,error}=await client.functions.invoke("fee-management",{body:payload});
+      if(error)throw new Error(error.message||data?.error||"Review action failed.");
+      rowMsg(isAdmin?(isReject?"Payment rejected.":"Admin review complete; awaiting Principal confirmation."):(isReject?"Payment rejected by Principal.":"Payment confirmed and receipt should now be issued."),true);
+      b.closest("article")?.remove();
+      setStatus("Review action saved. Queue refreshed.");
+    }catch(e){rowMsg(e?.message||"Action failed.");}
+    finally{b.disabled=false;}
+  });
+  document.addEventListener("keydown",e=>{if(e.key==="Escape"&&!$("fees-admin-console")?.classList.contains("hidden"))window.closeFeesAdminConsole();});
+})();
+</script>
 </body>
 </html>
