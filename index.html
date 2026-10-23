@@ -14315,10 +14315,15 @@ function addMessage(text,type){
     host.textContent="Loading class roster…";
     try{
       const client=getClient(),query=cls.includes("-")?cls.slice(0,cls.lastIndexOf("-")):cls;
-      const {data,error}=await client.functions.invoke("fee-management",{body:{action:"admin-search-students",query}});
-      if(error)throw new Error(error.message||"Could not load class roster.");
-      const rows=(Array.isArray(data?.students)?data.students:[]).filter(x=>(String(x.class_name||"").trim()+(x.section?"-"+String(x.section).trim():""))===cls);
-      host.textContent=rows.length?rows.length+" active student(s) found in "+cls+". This search returns up to 50 students; assignment will stop if the result limit is reached.":"No active students found for "+cls+".";
+      let rows=[],offset=0,page=[];
+      do{
+        const {data,error}=await client.functions.invoke("fee-management",{body:{action:"admin-search-students-page",query,limit:100,offset}});
+        if(error)throw new Error(error.message||"Could not load class roster.");
+        page=Array.isArray(data?.students)?data.students:[];
+        rows.push(...page);offset+=page.length;
+      }while(page.length===100);
+      rows=rows.filter(x=>(String(x.class_name||"").trim()+(x.section?"-"+String(x.section).trim():""))===cls);
+      host.textContent=rows.length?rows.length+" active student(s) found in "+cls+".":"No active students found for "+cls+".";
     }catch(e){host.textContent=e?.message||"Could not load class roster.";}
   };
   window.loadExistingFeeStructures=async function(event){
@@ -14384,11 +14389,15 @@ function addMessage(text,type){
       const query=cls.includes("-")?cls.slice(0,cls.lastIndexOf("-")):cls;
       form.dataset.submitting="1";const button=form.querySelector('button[type="submit"],button:not([type])');if(button){button.disabled=true;button.textContent="Assigning class accounts…";}
       try{
-        const {data:searchData,error:searchError}=await client.functions.invoke("fee-management",{body:{action:"admin-search-students",query}});
-        if(searchError)throw new Error(searchError.message||"Could not load class roster.");
-        const students=(Array.isArray(searchData?.students)?searchData.students:[]).filter(x=>(String(x.class_name||"").trim()+(x.section?"-"+String(x.section).trim():""))===cls);
+        let students=[],offset=0,page=[];
+        do{
+          const {data:searchData,error:searchError}=await client.functions.invoke("fee-management",{body:{action:"admin-search-students-page",query,limit:100,offset}});
+          if(searchError)throw new Error(searchError.message||"Could not load class roster.");
+          page=Array.isArray(searchData?.students)?searchData.students:[];
+          students.push(...page);offset+=page.length;
+        }while(page.length===100);
+        students=students.filter(x=>(String(x.class_name||"").trim()+(x.section?"-"+String(x.section).trim():""))===cls);
         if(!students.length)throw new Error("No active students found for "+cls+".");
-        if(students.length>=50)throw new Error("Class assignment stopped because the search reached its 50-student limit. No accounts were assigned.");
         let success=0,failed=0;
         for(const student of students){const {error}=await client.functions.invoke("fee-management",{body:{action:"admin-assign-student-account",academic_year_id:values.academic_year_id,student_id:student.student_id}});if(error)failed++;else success++;}
         say("Class "+cls+": "+success+" account(s) assigned; "+failed+" failed. Existing accounts are preserved.",failed===0);
