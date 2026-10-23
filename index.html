@@ -14544,8 +14544,8 @@ window.showStudentSchoolUpiQr=async function(accountId){
       try{
         let success=0,failed=[];
         for(const className of classes){
-          const {error}=await client.functions.invoke("fee-management",{body:{action:"admin-save-structure",academic_year_id:values.academic_year_id,class_name:className,fee_name:values.fee_name,amount_paise:amount,is_mandatory:form.elements.is_mandatory.checked,due_date:values.due_date||null}});
-          if(error||data?.error||!data?.fee_structure_id){failed.push(className);}else success++;
+          const {data,error}=await client.functions.invoke("fee-management",{body:{action:"admin-save-structure",academic_year_id:values.academic_year_id,class_name:className,fee_name:values.fee_name,amount_paise:amount,is_mandatory:form.elements.is_mandatory.checked,due_date:values.due_date||null}});
+          if(error||data?.error||!data?.fee_structure_id){failed.push(className+(data?.error?": "+data.error:error?.message?": "+error.message:""));}else success++;
         }
         say("Category "+values.fee_name+": saved for "+success+" class(es)"+(failed.length?"; failed: "+failed.join(", "):". Existing payment history was not changed."),failed.length===0);
         return false;
