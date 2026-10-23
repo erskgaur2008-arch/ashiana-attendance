@@ -14350,14 +14350,40 @@ window.showStudentSchoolUpiQr=async function(accountId){
   function getClient(){return (typeof supabaseClient!=="undefined"&&supabaseClient)||window.__ashianaMainSupabaseClient||null;}
   window.closeFeesAdminConsole=function(){$("fees-admin-console")?.classList.add("hidden");$("fees-admin-console")?.classList.remove("flex");};
   window.openFeesAdminConsole=async function(){
-    const client=getClient();
-    if(!client?.auth?.getSession){alert("Application authentication is not ready.");return;}
-    const {data,error}=await client.auth.getSession();
-    if(error||!data?.session){alert("Sign in with an authorized school account to access fee review.");return;}
-    // The server-side queue/review RPCs enforce the Admin or assigned Principal permission.
-    $("fees-admin-console")?.classList.remove("hidden");$("fees-admin-console")?.classList.add("flex");
-    await window.loadFeeSetupOptions();
-    await window.loadFeesReviewQueue("admin");
+    const panel=$("fees-admin-console");
+    try{
+      const client=getClient();
+      if(!client?.auth?.getSession){
+        alert("Fees Management could not start because the school login client is not ready. Please reload the page and sign in again.");
+        return;
+      }
+      const {data,error}=await client.auth.getSession();
+      if(error)throw error;
+      if(!data?.session){
+        alert("Your school session is not available. Please sign in again, then open Fees Management.");
+        return;
+      }
+      if(!panel){
+        throw new Error("The Fees Management panel is missing from this page version. Refresh the website and try again.");
+      }
+      // Open the panel before loading remote data so the user gets immediate feedback.
+      panel.classList.remove("hidden");
+      panel.classList.add("flex");
+      setStatus("Opening Fees Management…");
+      await Promise.all([
+        window.loadFeeSetupOptions(),
+        window.loadFeesReviewQueue("admin")
+      ]);
+    }catch(error){
+      console.error("[Fees Management] Could not open admin console:",error);
+      if(panel){
+        panel.classList.remove("hidden");
+        panel.classList.add("flex");
+        setStatus("Fees Management could not load: "+(error?.message||"Unexpected error. Please refresh and try again."),true);
+      }else{
+        alert("Fees Management could not open: "+(error?.message||"Unexpected error. Please refresh and try again."));
+      }
+    }
   };
   window.loadFeeSetupOptions=async function(){
     const client=getClient();if(!client?.functions?.invoke)return;
@@ -14425,7 +14451,7 @@ window.showStudentSchoolUpiQr=async function(accountId){
       const client=getClient(),{data,error}=await client.functions.invoke("fee-management",{body:{action:"admin-list-structures",academic_year_id:yearId,class_name:cls}});
       if(error||data?.error)throw new Error(error?.message||data?.error||"Could not load fee structures.");
       const rows=Array.isArray(data?.fee_structures)?data.fee_structures:[];
-      host.innerHTML=rows.length?'<p class="font-bold mb-1">Existing fee structures</p>'+rows.map(r=>'<div class="flex items-start justify-between gap-2 py-2 border-t"><div class="min-w-0">'+escapeHtml(r.class_name)+' · '+escapeHtml(r.fee_name)+' — '+money(r.amount_paise)+(r.is_mandatory?' · Mandatory':' · Optional')+(r.due_date?' · Due '+escapeHtml(r.due_date):'')+'</div><button type="button" class="shrink-0 rounded-lg border border-rose-300 px-2 py-1 text-xs font-bold text-rose-700" onclick="deleteFeeStructure(\\''+escapeHtml(r.id)+'\\',\\''+escapeHtml(r.class_name)+'\\',\\''+escapeHtml(r.fee_name)+'\\')">Delete</button></div>').join(""):'No fee structures found for this selection yet.';
+      host.innerHTML=rows.length?'<p class="font-bold mb-1">Existing fee structures</p>'+rows.map(r=>'<div class="flex items-start justify-between gap-2 py-2 border-t"><div class="min-w-0">'+escapeHtml(r.class_name)+' · '+escapeHtml(r.fee_name)+' — '+money(r.amount_paise)+(r.is_mandatory?' · Mandatory':' · Optional')+(r.due_date?' · Due '+escapeHtml(r.due_date):'')+'</div><button type="button" class="shrink-0 rounded-lg border border-rose-300 px-2 py-1 text-xs font-bold text-rose-700" onclick="deleteFeeStructure(&quot;'+escapeHtml(r.id)+'&quot;,&quot;'+escapeHtml(r.class_name)+'&quot;,&quot;'+escapeHtml(r.fee_name)+'&quot;)">Delete</button></div>').join(""):'No fee structures found for this selection yet.';
     }catch(e){host.textContent=e?.message||"Could not load fee structures.";}
   };
   window.deleteFeeStructure=async function(id,className,feeName){
