@@ -44,7 +44,7 @@ Deno.serve(async (req) => {
   // Student endpoints authenticate the custom student session token through dedicated
   // database RPCs. They must work even when the browser has no Supabase Auth session.
   const studentActions = new Set([
-    "create-proof-upload", "student-summary", "discard-proof-upload",
+    "create-proof-upload", "student-summary", "student-payment-qr", "discard-proof-upload",
     "submit-payment", "student-submissions", "student-receipts",
   ]);
   if (!authHeader?.startsWith("Bearer ") && !studentActions.has(String(action))) {
@@ -84,6 +84,28 @@ Deno.serve(async (req) => {
       return respond({ error: "Unable to prepare private upload" }, 500);
     }
     return respond({ object_path: objectPath, signed_url: data.signedUrl, upload_token: data.token, content_type: contentType, expires_in_seconds: 120 });
+  }
+
+  if (action === "student-payment-qr") {
+    const token = typeof input.student_session_token === "string" ? input.student_session_token : "";
+    const accountId = typeof input.fee_account_id === "string" ? input.fee_account_id : "";
+    const installmentId = typeof input.installment_id === "string" ? input.installment_id : "";
+    if (token.length < 32 || token.length > 256 || !UUID_RE.test(accountId) || !UUID_RE.test(installmentId)) {
+      return respond({ error: "Invalid student session or selected installment" }, 400);
+    }
+    const { data: summaries, error: summaryError } = await adminClient.rpc("fee_student_summary_by_session", { p_token: token });
+    const account = Array.isArray(summaries) ? summaries.find((row: { fee_account_id?: string }) => row.fee_account_id === accountId) : null;
+    if (summaryError || !account) return respond({ error: "Fee account not available for this student session" }, 403);
+    const items = Array.isArray((account as { fee_items?: unknown }).fee_items) ? (account as { fee_items: Array<Record<string, unknown>> }).fee_items : [];
+    const item = items.find((row) => row.installment_id === installmentId);
+    if (!item) return respond({ error: "Selected installment is not assigned to this student" }, 403);
+    const balance = Number(item.balance_paise);
+    if (!Number.isSafeInteger(balance) || balance <= 0) return respond({ error: "No outstanding balance remains for this installment" }, 409);
+    const { data: settings, error: settingsError } = await adminClient.from("fee_school_payment_settings")
+      .select("upi_id,payee_name,updated_at").eq("school_code", "ashiana").maybeSingle();
+    if (settingsError) return respond({ error: "Unable to load school payment details" }, 500);
+    if (!settings?.upi_id || !settings?.payee_name) return respond({ error: "School UPI details have not been configured by Admin" }, 404);
+    return respond({ upi_id: settings.upi_id, payee_name: settings.payee_name, balance_paise: balance, fee_name: item.fee_name, updated_at: settings.updated_at });
   }
 
   if (action === "student-summary") {
