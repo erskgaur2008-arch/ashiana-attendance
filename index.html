@@ -14236,7 +14236,9 @@ function addMessage(text,type){
           <form onsubmit="submitFeeSetupForm(event)" data-fee-setup="structure" class="rounded-xl border p-3 space-y-2">
             <h3 class="font-bold text-sm">Add fee structure</h3>
             <select name="academic_year_id" required class="w-full rounded-lg border p-2.5 text-sm"><option value="">Loading academic years…</option></select>
-            <input name="class_name" required placeholder="Class (must match roster, e.g. II)" class="w-full rounded-lg border p-2.5 text-sm">
+            <input name="class_name" required list="fees-class-options" placeholder="Class / section (e.g. I-A)" class="w-full rounded-lg border p-2.5 text-sm" onchange="loadExistingFeeStructures(event)">
+            <datalist id="fees-class-options"></datalist>
+            <div data-fee-structures-list class="rounded-lg border bg-slate-50 p-2 text-xs text-slate-600">Select an academic year and class to view existing fee structures.</div>
             <input name="fee_name" required maxlength="100" placeholder="Fee name (e.g. Tuition Fee)" class="w-full rounded-lg border p-2.5 text-sm">
             <input name="amount_rupees" type="number" min="0" step="0.01" required placeholder="Amount in ₹" class="w-full rounded-lg border p-2.5 text-sm">
             <input name="due_date" type="date" class="w-full rounded-lg border p-2.5 text-sm">
@@ -14246,9 +14248,11 @@ function addMessage(text,type){
           <form onsubmit="submitFeeSetupForm(event)" data-fee-setup="assign-student" class="rounded-xl border p-3 space-y-2">
             <h3 class="font-bold text-sm">Assign student fee account</h3>
             <select name="academic_year_id" required class="w-full rounded-lg border p-2.5 text-sm"><option value="">Loading academic years…</option></select>
-            <div class="flex gap-2"><input name="student_search" placeholder="Search name, admission no. or class" class="min-w-0 flex-1 rounded-lg border p-2.5 text-xs"><button type="button" onclick="searchFeeSetupStudents(event)" class="rounded-lg border px-3 py-2 text-xs font-bold">Find</button></div>
-            <select name="student_id" required class="w-full rounded-lg border p-2.5 text-sm"><option value="">Search and select a student</option></select>
-            <button class="rounded-lg bg-emerald-800 px-3 py-2 text-xs font-bold text-white">Assign account</button><p data-setup-result class="hidden break-all text-xs" role="status"></p>
+            <label class="block text-xs font-semibold">Class / section</label>
+            <select name="class_name" required class="w-full rounded-lg border p-2.5 text-sm" onchange="previewFeeClassStudents(event)"><option value="">Loading classes…</option></select>
+            <p class="text-xs text-slate-500">Assigns fee accounts to active students in the selected class/section for this academic year. Existing accounts are preserved.</p>
+            <div data-class-preview class="rounded-lg border bg-slate-50 p-2 text-xs text-slate-600">Choose a class to preview students.</div>
+            <button class="rounded-lg bg-emerald-800 px-3 py-2 text-xs font-bold text-white">Assign class accounts</button><p data-setup-result class="hidden break-all text-xs" role="status"></p>
           </form>
           <form onsubmit="submitFeeSetupForm(event)" data-fee-setup="principal" class="rounded-xl border p-3 space-y-2">
             <h3 class="font-bold text-sm">Authorize Principal confirmer</h3>
@@ -14299,21 +14303,55 @@ function addMessage(text,type){
       document.querySelectorAll('#fees-admin-console select[name="academic_year_id"]').forEach(select=>{
         const previous=select.value;
         select.innerHTML='<option value="">Select academic year</option>'+years.map(y=>'<option value="'+escapeHtml(y.academic_year_id)+'">'+escapeHtml(y.label)+(y.is_active?" (active)":"")+'</option>').join("");
+        const active=years.find(y=>y.is_active);
         if(previous&&years.some(y=>y.academic_year_id===previous))select.value=previous;
+        else if(active)select.value=active.academic_year_id;
       });
     }catch(e){setStatus("Could not load academic years: "+(e?.message||"Admin permission required"),true);}
   };
+  window.previewFeeClassStudents=async function(event){
+    const form=event.currentTarget.closest("form"),cls=String(form?.elements.class_name?.value||"").trim(),host=form?.querySelector("[data-class-preview]");
+    if(!form||!host||!cls)return;
+    host.textContent="Loading class roster…";
+    try{
+      const client=getClient(),query=cls.includes("-")?cls.slice(0,cls.lastIndexOf("-")):cls;
+      const {data,error}=await client.functions.invoke("fee-management",{body:{action:"admin-search-students",query}});
+      if(error)throw new Error(error.message||"Could not load class roster.");
+      const rows=(Array.isArray(data?.students)?data.students:[]).filter(x=>(String(x.class_name||"").trim()+(x.section?"-"+String(x.section).trim():""))===cls);
+      host.textContent=rows.length?rows.length+" active student(s) found in "+cls+". This search returns up to 50 students; assignment will stop if the result limit is reached.":"No active students found for "+cls+".";
+    }catch(e){host.textContent=e?.message||"Could not load class roster.";}
+  };
+  window.loadExistingFeeStructures=async function(event){
+    const form=event.currentTarget.closest("form"),host=form?.querySelector("[data-fee-structures-list]");
+    if(!form||!host)return;
+    const yearId=String(form.elements.academic_year_id?.value||""),cls=String(form.elements.class_name?.value||"").trim();
+    if(!yearId){host.textContent="Select an academic year to view fee structures.";return;}
+    host.textContent="Loading existing fee structures…";
+    try{
+      const client=getClient(),{data,error}=await client.functions.invoke("fee-management",{body:{action:"admin-list-structures",academic_year_id:yearId,class_name:cls}});
+      if(error)throw new Error(error.message||"Could not load fee structures.");
+      const rows=Array.isArray(data?.fee_structures)?data.fee_structures:[];
+      host.innerHTML=rows.length?'<p class="font-bold mb-1">Existing fee structures</p>'+rows.map(r=>'<p class="py-1 border-t">'+escapeHtml(r.class_name)+' · '+escapeHtml(r.fee_name)+' — '+money(r.amount_paise)+(r.is_mandatory?' · Mandatory':' · Optional')+(r.due_date?' · Due '+escapeHtml(r.due_date):'')+'</p>').join(""):'No fee structures found for this selection yet.';
+    }catch(e){host.textContent=e?.message||"Could not load fee structures.";}
+  };
   window.searchFeeSetupStudents=async function(event){
     const form=event.currentTarget.closest("form"),query=String(form?.elements.student_search?.value||"").trim(),select=form?.elements.student_id;
-    if(!form||!select)return;
-    select.innerHTML='<option value="">Searching students…</option>';
+    if(!form)return;
+    if(select)select.innerHTML='<option value="">Searching students…</option>';
     try{
       const client=getClient();const {data,error}=await client.functions.invoke("fee-management",{body:{action:"admin-search-students",query}});
       if(error)throw error;
       const rows=Array.isArray(data?.students)?data.students:[];
-      select.innerHTML='<option value="">Select student</option>'+rows.map(x=>'<option value="'+escapeHtml(x.student_id)+'">'+escapeHtml(x.student_name)+' · '+escapeHtml(x.enroll_no)+' · '+escapeHtml(x.class_name)+'-'+escapeHtml(x.section)+'</option>').join("");
-      if(!rows.length)select.innerHTML='<option value="">No matching active students</option>';
-    }catch(e){select.innerHTML='<option value="">Search failed</option>';setStatus(e?.message||"Student search failed.",true);}
+      if(select){
+        select.innerHTML='<option value="">Select student</option>'+rows.map(x=>'<option value="'+escapeHtml(x.student_id)+'">'+escapeHtml(x.student_name)+' · '+escapeHtml(x.enroll_no)+' · '+escapeHtml(x.class_name)+'-'+escapeHtml(x.section)+'</option>').join("");
+        if(!rows.length)select.innerHTML='<option value="">No matching active students</option>';
+      }
+      const classes=[...new Set(rows.map(x=>String(x.class_name||"").trim()+(x.section?"-"+String(x.section).trim():"")).filter(Boolean))].sort((a,b)=>a.localeCompare(b,undefined,{numeric:true}));
+      const classSelect=form.elements.class_name;
+      if(classSelect){classSelect.innerHTML='<option value="">Select class / section</option>'+classes.map(x=>'<option value="'+escapeHtml(x)+'">'+escapeHtml(x)+'</option>').join("");if(!classes.length)classSelect.innerHTML='<option value="">No classes returned</option>';}
+      const datalist=document.getElementById("fees-class-options");
+      if(datalist)datalist.innerHTML=classes.map(x=>'<option value="'+escapeHtml(x)+'"></option>').join("");
+    }catch(e){if(select)select.innerHTML='<option value="">Search failed</option>';setStatus(e?.message||"Student search failed.",true);}
   };
   window.searchFeeSetupAccounts=async function(event){
     const form=event.currentTarget.closest("form"),query=String(form?.elements.account_search?.value||"").trim(),select=form?.elements.fee_account_id;
@@ -14340,7 +14378,24 @@ function addMessage(text,type){
       const amount=Math.round(Number(values.amount_rupees)*100);
       if(!Number.isSafeInteger(amount)||amount<0){say("Enter a valid fee amount.");return false;}
       body={action:"admin-save-structure",academic_year_id:values.academic_year_id,class_name:values.class_name,fee_name:values.fee_name,amount_paise:amount,is_mandatory:form.elements.is_mandatory.checked,due_date:values.due_date||null};
-    }else if(type==="assign-student")body={action:"admin-assign-student-account",academic_year_id:values.academic_year_id,student_id:values.student_id};
+    }else if(type==="assign-student"){
+      const cls=String(values.class_name||"").trim();
+      if(!cls){say("Select a class / section.");return false;}
+      const query=cls.includes("-")?cls.slice(0,cls.lastIndexOf("-")):cls;
+      form.dataset.submitting="1";const button=form.querySelector('button[type="submit"],button:not([type])');if(button){button.disabled=true;button.textContent="Assigning class accounts…";}
+      try{
+        const {data:searchData,error:searchError}=await client.functions.invoke("fee-management",{body:{action:"admin-search-students",query}});
+        if(searchError)throw new Error(searchError.message||"Could not load class roster.");
+        const students=(Array.isArray(searchData?.students)?searchData.students:[]).filter(x=>(String(x.class_name||"").trim()+(x.section?"-"+String(x.section).trim():""))===cls);
+        if(!students.length)throw new Error("No active students found for "+cls+".");
+        if(students.length>=50)throw new Error("Class assignment stopped because the search reached its 50-student limit. No accounts were assigned.");
+        let success=0,failed=0;
+        for(const student of students){const {error}=await client.functions.invoke("fee-management",{body:{action:"admin-assign-student-account",academic_year_id:values.academic_year_id,student_id:student.student_id}});if(error)failed++;else success++;}
+        say("Class "+cls+": "+success+" account(s) assigned; "+failed+" failed. Existing accounts are preserved.",failed===0);
+        return false;
+      }catch(e){say(e?.message||"Class assignment failed.");return false;}
+      finally{delete form.dataset.submitting;if(button){button.disabled=false;button.textContent="Assign class accounts";}}
+    }
     else if(type==="principal")body={action:"admin-assign-principal-approver",user_id:values.user_id,enabled:true};
     else if(type==="discount"){
       const amount=Math.round(Number(values.amount_rupees)*100);

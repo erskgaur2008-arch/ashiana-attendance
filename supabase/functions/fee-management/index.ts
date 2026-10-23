@@ -23,7 +23,7 @@ Deno.serve(async (req) => {
   const corsHeaders: Record<string, string> = { ...corsBase };
   if (origin && allowedOrigins.includes(origin)) corsHeaders["Access-Control-Allow-Origin"] = origin;
   const respond = (body: unknown, status = 200) => reply(body, status, corsHeaders);
-  if (req.method === "OPTIONS") return new Response("ok", { status: 204, headers: corsHeaders });
+  if (req.method === "OPTIONS") return new Response(null, { status: 204, headers: corsHeaders });
   if (req.method !== "POST") return respond({ error: "Method not allowed" }, 405);
 
   const url = Deno.env.get("SUPABASE_URL");
@@ -32,24 +32,27 @@ Deno.serve(async (req) => {
   if (!url || !anonKey || !serviceKey) return respond({ error: "Server configuration unavailable" }, 500);
 
   const authHeader = req.headers.get("Authorization");
-  if (!authHeader?.startsWith("Bearer ")) return respond({ error: "Authorization required" }, 401);
-
   let input: Record<string, unknown>;
   try {
     input = await req.json();
   } catch {
     return respond({ error: "Invalid JSON body" }, 400);
   }
-
+  const action = input.action;
+  const studentActions = new Set([
+    "create-proof-upload", "student-summary", "discard-proof-upload",
+    "submit-payment", "student-submissions", "student-receipts",
+  ]);
+  if (!authHeader?.startsWith("Bearer ") && !studentActions.has(String(action))) {
+    return respond({ error: "Authorization required" }, 401);
+  }
   const userClient = createClient(url, anonKey, {
-    global: { headers: { Authorization: authHeader } },
+    ...(authHeader?.startsWith("Bearer ") ? { global: { headers: { Authorization: authHeader } } } : {}),
     auth: { persistSession: false, autoRefreshToken: false },
   });
   const adminClient = createClient(url, serviceKey, {
     auth: { persistSession: false, autoRefreshToken: false },
   });
-
-  const action = input.action;
   if (action === "create-proof-upload") {
     // Student portal bearer tokens are custom session tokens, not Supabase Auth JWTs.
     // They must be passed in student_session_token and validated by the dedicated RPC.
@@ -196,6 +199,21 @@ Deno.serve(async (req) => {
     const { data, error } = await userClient.rpc("fee_admin_search_fee_accounts", { p_query: query });
     if (error) return respond({ error: error.message }, 403);
     return respond({ fee_accounts: data ?? [] });
+  }
+
+  if (action === "admin-list-structures") {
+    const yearId = typeof input.academic_year_id === "string" ? input.academic_year_id : "";
+    const className = typeof input.class_name === "string" ? input.class_name.trim() : "";
+    if (!UUID_RE.test(yearId)) return respond({ error: "Valid academic year is required" }, 400);
+    const { data: years, error: permissionError } = await userClient.rpc("fee_admin_list_academic_years");
+    if (permissionError || !Array.isArray(years) || !years.some((row: { id?: string }) => row.id === yearId)) {
+      return respond({ error: "Admin permission required or academic year unavailable" }, 403);
+    }
+    let query = adminClient.from("fee_structures").select("id,class_name,fee_name,amount_paise,is_mandatory,due_date").eq("school_code","ashiana").eq("academic_year_id",yearId).order("class_name").order("fee_name").limit(300);
+    if (className) query = query.eq("class_name",className);
+    const { data, error } = await query;
+    if (error) return respond({ error: "Unable to load fee structures" }, 500);
+    return respond({ fee_structures: data ?? [] });
   }
 
   if (action === "admin-save-academic-year") {
