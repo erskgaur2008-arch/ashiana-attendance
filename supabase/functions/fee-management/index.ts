@@ -40,7 +40,7 @@ Deno.serve(async (req) => {
   }
   const action = input.action;
   const studentActions = new Set([
-    "create-proof-upload", "student-summary", "discard-proof-upload",
+    "create-proof-upload", "student-summary", "student-payment-qr", "discard-proof-upload",
     "submit-payment", "student-submissions", "student-receipts",
   ]);
   if (!authHeader?.startsWith("Bearer ") && !studentActions.has(String(action))) {
@@ -79,6 +79,17 @@ Deno.serve(async (req) => {
       return respond({ error: "Unable to prepare private upload" }, 500);
     }
     return respond({ object_path: objectPath, signed_url: data.signedUrl, upload_token: data.token, content_type: contentType, expires_in_seconds: 120 });
+  }
+
+  if (action === "student-payment-qr") {
+    const token = typeof input.student_session_token === "string" ? input.student_session_token : "";
+    const accountId = typeof input.fee_account_id === "string" ? input.fee_account_id : "";
+    if (token.length < 32 || token.length > 256 || !UUID_RE.test(accountId)) return respond({ error: "Invalid student session or fee account" }, 400);
+    const { data: accounts, error: summaryError } = await adminClient.rpc("fee_student_summary_by_session", { p_token: token });
+    if (summaryError || !Array.isArray(accounts) || !accounts.some((row: { fee_account_id?: string }) => row.fee_account_id === accountId)) return respond({ error: "Fee account not available for this student session" }, 403);
+    const { data, error } = await adminClient.from("fee_school_payment_settings").select("upi_qr_data_url,updated_at").eq("school_code","ashiana").maybeSingle();
+    if (error) return respond({ error: "Unable to load school payment QR" }, 500);
+    return respond({ qr_data_url: data?.upi_qr_data_url ?? null, updated_at: data?.updated_at ?? null });
   }
 
   if (action === "student-summary") {
@@ -225,6 +236,17 @@ Deno.serve(async (req) => {
     const { data, error } = await query;
     if (error) return respond({ error: "Unable to load fee structures" }, 500);
     return respond({ fee_structures: data ?? [] });
+  }
+
+  if (action === "admin-save-school-upi-qr") {
+    const dataUrl = typeof input.qr_data_url === "string" ? input.qr_data_url : "";
+    if (dataUrl.length < 100 || dataUrl.length > 1400000 ||
+        !/^data:image\/(png|jpeg|webp);base64,[A-Za-z0-9+/]+={0,2}$/.test(dataUrl)) {
+      return respond({ error: "Upload a valid PNG, JPEG, or WebP QR image under 1 MB" }, 400);
+    }
+    const { error } = await userClient.rpc("fee_admin_save_school_upi_qr", { p_data_url: dataUrl });
+    if (error) return respond({ error: error.message }, 403);
+    return respond({ status: "SCHOOL_UPI_QR_SAVED" });
   }
 
   if (action === "admin-save-academic-year") {

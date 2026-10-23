@@ -6755,7 +6755,7 @@ async function studentDashboardSection(type){
         const money=(paise)=>"₹"+(Number(paise||0)/100).toLocaleString("en-IN",{minimumFractionDigits:2,maximumFractionDigits:2});
         host.innerHTML=accounts.length?accounts.map(a=>{
           const due=Number(a.total_due_paise||0),paid=Number(a.total_paid_paise||0),discount=Number(a.discount_paise||0),balance=Number(a.balance_paise??Math.max(0,due-discount-paid));
-          return '<section class="p-4 sm:p-5 bg-white border border-amber-200 rounded-2xl shadow-sm"><div class="flex items-start justify-between gap-3"><div><p class="text-xs text-slate-500">Academic year</p><h3 class="mt-1 text-lg font-extrabold text-slate-900">'+studentEscape(a.academic_year_label||"Current academic year")+'</h3></div><span class="px-2.5 py-1 rounded-full bg-amber-100 text-amber-800 text-[10px] font-extrabold">'+(balance>0?"Balance due":"No balance due")+'</span></div><div class="grid grid-cols-2 sm:grid-cols-3 gap-2 mt-4"><div class="p-3 rounded-xl bg-slate-50"><p class="text-[10px] text-slate-500">Total fee</p><p class="mt-1 font-extrabold">'+money(due)+'</p></div><div class="p-3 rounded-xl bg-emerald-50"><p class="text-[10px] text-emerald-700">Paid</p><p class="mt-1 font-extrabold text-emerald-800">'+money(paid)+'</p></div><div class="p-3 rounded-xl bg-rose-50 col-span-2 sm:col-span-1"><p class="text-[10px] text-rose-700">Pending balance</p><p class="mt-1 font-extrabold text-rose-800">'+money(balance)+'</p></div></div><p class="mt-3 text-[11px] leading-relaxed text-slate-500">Payments appear as paid only after Admin review and independent Principal confirmation. A UPI reference or screenshot alone is not proof of settlement.</p>'+(balance>0?'<form onsubmit="submitStudentFeePayment(event)" data-fee-account="'+studentEscape(a.fee_account_id)+'" class="mt-4 pt-4 border-t space-y-3"><h4 class="font-extrabold text-slate-900">Submit payment details</h4><div><label class="block text-xs font-bold mb-1">Amount paid (₹)</label><input name="amount_rupees" type="number" min="0.01" max="'+(balance/100).toFixed(2)+'" step="0.01" required class="w-full rounded-xl border border-slate-300 p-3 text-sm" placeholder="Enter amount paid"></div><div><label class="block text-xs font-bold mb-1">UPI / bank reference ID</label><input name="upi_reference" required minlength="6" maxlength="120" class="w-full rounded-xl border border-slate-300 p-3 text-sm" placeholder="Enter transaction reference"></div><div><label class="block text-xs font-bold mb-1">Payment screenshot / receipt (required)</label><input name="payment_proof" type="file" accept="image/jpeg,image/png,image/webp,application/pdf" required class="w-full rounded-xl border border-slate-300 p-3 text-xs"><p class="mt-1 text-[10px] text-slate-500">JPG, PNG, WebP or PDF; maximum 5 MB.</p></div><div><label class="block text-xs font-bold mb-1">Note (optional)</label><textarea name="student_note" maxlength="1000" rows="2" class="w-full rounded-xl border border-slate-300 p-3 text-sm" placeholder="Optional details"></textarea></div><div data-fee-feedback role="status" class="hidden rounded-xl p-3 text-xs font-semibold"></div><button type="submit" class="w-full rounded-xl bg-amber-800 text-white font-extrabold p-3 text-sm">Submit for verification</button><p class="text-[10px] leading-relaxed text-slate-500">Submission is not a receipt. Please ensure the payment is actually completed; school staff will reconcile the reference before confirmation.</p></form>':'')+'</section>';
+          return '<section class="p-4 sm:p-5 bg-white border border-amber-200 rounded-2xl shadow-sm"><div class="flex items-start justify-between gap-3"><div><p class="text-xs text-slate-500">Academic year</p><h3 class="mt-1 text-lg font-extrabold text-slate-900">'+studentEscape(a.academic_year_label||"Current academic year")+'</h3></div><span class="px-2.5 py-1 rounded-full bg-amber-100 text-amber-800 text-[10px] font-extrabold">'+(balance>0?"Balance due":"No balance due")+'</span></div><div class="grid grid-cols-2 sm:grid-cols-3 gap-2 mt-4"><div class="p-3 rounded-xl bg-slate-50"><p class="text-[10px] text-slate-500">Total fee</p><p class="mt-1 font-extrabold">'+money(due)+'</p></div><div class="p-3 rounded-xl bg-emerald-50"><p class="text-[10px] text-emerald-700">Paid</p><p class="mt-1 font-extrabold text-emerald-800">'+money(paid)+'</p></div><div class="p-3 rounded-xl bg-rose-50 col-span-2 sm:col-span-1"><p class="text-[10px] text-rose-700">Pending balance</p><p class="mt-1 font-extrabold text-rose-800">'+money(balance)+'</p></div></div><p class="mt-3 text-[11px] leading-relaxed text-slate-500">Payments appear as paid only after Admin review and independent Principal confirmation. A UPI reference or screenshot alone is not proof of settlement.</p>'+(balance>0?'<form onsubmit="submitStudentFeePayment(event)" data-fee-account="'+studentEscape(a.fee_account_id)+'" class="mt-4 pt-4 border-t space-y-3"><h4 class="font-extrabold text-slate-900">Pay Fees</h4><button type="button" onclick="showStudentSchoolUpiQr(\''+studentEscape(a.fee_account_id)+'\')" class="w-full rounded-xl bg-amber-800 px-4 py-3 text-sm font-extrabold text-white">Pay Fees · Show School UPI QR</button><p class="text-[11px] text-slate-500">Scan the official school QR, complete payment in your UPI app, then enter the reference ID and upload proof below.</p><div><label class="block text-xs font-bold mb-1">Amount paid (₹)</label><input name="amount_rupees" type="number" min="0.01" max="'+(balance/100).toFixed(2)+'" step="0.01" required class="w-full rounded-xl border border-slate-300 p-3 text-sm" placeholder="Enter amount paid"></div><div><label class="block text-xs font-bold mb-1">UPI / bank reference ID</label><input name="upi_reference" required minlength="6" maxlength="120" class="w-full rounded-xl border border-slate-300 p-3 text-sm" placeholder="Enter transaction reference"></div><div><label class="block text-xs font-bold mb-1">Payment screenshot / receipt (required)</label><input name="payment_proof" type="file" accept="image/jpeg,image/png,image/webp,application/pdf" required class="w-full rounded-xl border border-slate-300 p-3 text-xs"><p class="mt-1 text-[10px] text-slate-500">JPG, PNG, WebP or PDF; maximum 5 MB.</p></div><div><label class="block text-xs font-bold mb-1">Note (optional)</label><textarea name="student_note" maxlength="1000" rows="2" class="w-full rounded-xl border border-slate-300 p-3 text-sm" placeholder="Optional details"></textarea></div><div data-fee-feedback role="status" class="hidden rounded-xl p-3 text-xs font-semibold"></div><button type="submit" class="w-full rounded-xl bg-amber-800 text-white font-extrabold p-3 text-sm">Submit for verification</button><p class="text-[10px] leading-relaxed text-slate-500">Submission is not a receipt. Please ensure the payment is actually completed; school staff will reconcile the reference before confirmation.</p></form>':'')+'</section>';
         }).join(""):'<div class="p-4 rounded-2xl border border-slate-200 bg-white text-sm text-slate-600">No fee account has been assigned to your student record yet. Please contact the school office.</div>';
         host.innerHTML+='<section class="p-4 bg-white border rounded-2xl"><h3 class="font-extrabold text-slate-900">Receipts</h3><div class="mt-3 space-y-2">'+(receipts.length?receipts.map(r=>'<div class="flex items-start justify-between gap-3 p-3 rounded-xl bg-slate-50 border"><div><p class="text-sm font-bold">'+studentEscape(r.receipt_number||"Fee receipt")+'</p><p class="text-[10px] text-slate-500">'+studentEscape(r.issued_at||r.created_at||"")+'</p></div><b class="text-sm text-emerald-800">'+money(r.amount_paise||r.amount||0)+'</b></div>').join(""):'<p class="text-sm text-slate-500">No confirmed receipts yet.</p>')+'</div></section>';
         const statusLabel={PENDING_ADMIN:"Awaiting Admin review",PENDING_PRINCIPAL:"Awaiting Principal confirmation",CONFIRMED:"Confirmed",REJECTED:"Rejected"};
@@ -14209,6 +14209,33 @@ function addMessage(text,type){
   #ashiana-ai-launcher span:last-child { display: none !important; }
 }
 </style>
+<div id="student-school-upi-qr-modal" class="hidden fixed inset-0 z-[350] bg-slate-950/70 p-4 items-center justify-center" role="dialog" aria-modal="true" aria-labelledby="student-school-upi-qr-title">
+  <div class="w-full max-w-sm rounded-2xl bg-white p-5 text-center shadow-2xl">
+    <h2 id="student-school-upi-qr-title" class="text-lg font-extrabold">School UPI Payment QR</h2>
+    <p class="mt-1 text-xs text-slate-500">Verify the payee name in your UPI app before paying.</p>
+    <div id="student-school-upi-qr-content" class="my-4 flex min-h-40 items-center justify-center rounded-xl border bg-slate-50 p-3 text-sm text-slate-600">Loading official school QR…</div>
+    <button type="button" onclick="closeStudentSchoolUpiQr()" class="w-full rounded-xl border px-4 py-3 text-sm font-bold">Close</button>
+  </div>
+</div>
+<script>
+window.closeStudentSchoolUpiQr=function(){const m=document.getElementById("student-school-upi-qr-modal");m?.classList.add("hidden");m?.classList.remove("flex");};
+window.showStudentSchoolUpiQr=async function(accountId){
+  const modal=document.getElementById("student-school-upi-qr-modal"),host=document.getElementById("student-school-upi-qr-content");
+  if(!modal||!host)return;
+  modal.classList.remove("hidden");modal.classList.add("flex");host.textContent="Loading official school QR…";
+  try{
+    const token=String(await window.AshianaNative?.getStudentSessionToken?.()||sessionStorage.getItem("aps_student_session_token_v1")||"");
+    if(!/^[a-f0-9]{64}$/i.test(token))throw new Error("Your student session has expired. Please sign in again.");
+    const client=typeof supabaseClient!=="undefined"?supabaseClient:window.__ashianaMainSupabaseClient;
+    if(!client?.functions?.invoke)throw new Error("Application client is not ready.");
+    const {data,error}=await client.functions.invoke("fee-management",{body:{action:"student-payment-qr",student_session_token:token,fee_account_id:accountId}});
+    if(error)throw new Error(error.message||data?.error||"Could not load school QR.");
+    if(!data?.qr_data_url)throw new Error("The school has not uploaded its payment QR yet. Please contact the school office.");
+    const img=document.createElement("img");img.src=data.qr_data_url;img.alt="Official Ashiana Public School UPI payment QR";img.className="mx-auto max-h-72 max-w-full object-contain";img.referrerPolicy="no-referrer";
+    host.replaceChildren(img);
+  }catch(e){host.textContent=e?.message||"Unable to show school payment QR.";}
+};
+</script>
 <!-- Fees Management review console. All actions are routed through fee-management RPC authorization. -->
 <div id="fees-admin-console" class="hidden fixed inset-0 z-[280] bg-slate-950/70 backdrop-blur-sm p-2 sm:p-5 items-center justify-center" role="dialog" aria-modal="true" aria-labelledby="fees-admin-title">
   <div class="w-full max-w-5xl max-h-[94dvh] overflow-y-auto rounded-2xl bg-slate-50 shadow-2xl">
@@ -14226,6 +14253,15 @@ function addMessage(text,type){
         <summary class="cursor-pointer font-extrabold text-slate-900">Fee setup & permissions</summary>
         <p class="mt-2 text-xs text-slate-500">These actions require an authorized Admin session and are audit logged. Keep the academic-year UUID returned after saving for fee structures and account assignment.</p>
         <div class="mt-4 grid grid-cols-1 md:grid-cols-2 gap-4">
+          <form onsubmit="submitFeeSetupForm(event)" data-fee-setup="school-upi-qr" class="rounded-xl border border-amber-200 bg-amber-50 p-3 space-y-2 md:col-span-2">
+            <h3 class="font-bold text-sm">School UPI QR Code</h3>
+            <p class="text-xs text-slate-600">Upload the official school payment QR. The saved QR is shown to students in Pay Fees. PNG, JPEG or WebP, maximum 1 MB.</p>
+            <input name="qr_image" type="file" accept="image/png,image/jpeg,image/webp" required class="w-full rounded-lg border bg-white p-2.5 text-sm">
+            <div class="flex flex-wrap items-center gap-3"><img data-school-qr-preview alt="School UPI QR preview" class="hidden max-h-44 max-w-44 rounded-lg border bg-white p-2"><span data-school-qr-current class="text-xs text-slate-600">No new QR selected.</span></div>
+            <button type="button" onclick="previewSchoolUpiQr(event)" class="rounded-lg border bg-white px-3 py-2 text-xs font-bold">Preview selected QR</button>
+            <button type="submit" class="rounded-lg bg-amber-800 px-3 py-2 text-xs font-bold text-white">Save school QR</button><p data-setup-result class="hidden break-all text-xs" role="status"></p>
+          </form>
+
           <form onsubmit="submitFeeSetupForm(event)" data-fee-setup="year" class="rounded-xl border p-3 space-y-2">
             <h3 class="font-bold text-sm">Create / update academic year</h3>
             <input name="label" required minlength="4" maxlength="40" placeholder="e.g. 2026-2027" class="w-full rounded-lg border p-2.5 text-sm">
@@ -14235,11 +14271,15 @@ function addMessage(text,type){
           </form>
           <form onsubmit="submitFeeSetupForm(event)" data-fee-setup="structure" class="rounded-xl border p-3 space-y-2">
             <h3 class="font-bold text-sm">Add fee structure</h3>
-            <select name="academic_year_id" required class="w-full rounded-lg border p-2.5 text-sm"><option value="">Loading academic years…</option></select>
-            <input name="class_name" required list="fees-class-options" placeholder="Class / section (e.g. I-A)" class="w-full rounded-lg border p-2.5 text-sm" onchange="loadExistingFeeStructures(event)">
-            <datalist id="fees-class-options"></datalist>
-            <div data-fee-structures-list class="rounded-lg border bg-slate-50 p-2 text-xs text-slate-600">Select an academic year and class to view existing fee structures.</div>
-            <input name="fee_name" required maxlength="100" placeholder="Fee name (e.g. Tuition Fee)" class="w-full rounded-lg border p-2.5 text-sm">
+            <select name="academic_year_id" required onchange="loadExistingFeeStructures(event)" class="w-full rounded-lg border p-2.5 text-sm"><option value="">Loading academic years…</option></select>
+            <label class="block text-xs font-semibold">Fee category</label>
+            <select name="fee_name" required class="w-full rounded-lg border p-2.5 text-sm">
+              <option value="Admission Charges">Admission Charges</option><option value="Quarter 1">Quarter 1</option><option value="Quarter 2">Quarter 2</option><option value="Quarter 3">Quarter 3</option><option value="Quarter 4">Quarter 4</option>
+            </select>
+            <label class="block text-xs font-semibold">Select multiple classes / sections</label>
+            <select name="class_names" id="fees-multi-classes" multiple required size="6" onchange="loadExistingFeeStructures(event)" class="w-full rounded-lg border p-2.5 text-sm" aria-describedby="fees-multi-classes-help"><option value="">Loading classes…</option></select>
+            <p id="fees-multi-classes-help" class="text-[11px] text-slate-500">Select one or more classes. On a computer use Ctrl/⌘; on a phone, tap to select multiple.</p>
+            <div data-fee-structures-list class="rounded-lg border bg-slate-50 p-2 text-xs text-slate-600">Select an academic year to view existing fee structures.</div>
             <input name="amount_rupees" type="number" min="0" step="0.01" required placeholder="Amount in ₹" class="w-full rounded-lg border p-2.5 text-sm">
             <input name="due_date" type="date" class="w-full rounded-lg border p-2.5 text-sm">
             <label class="flex items-center gap-2 text-xs"><input name="is_mandatory" type="checkbox" checked> Mandatory fee</label>
@@ -14309,6 +14349,7 @@ function addMessage(text,type){
       });
       // Load the class selector independently; the discount search form is not guaranteed to run.
       const classSelect=document.querySelector('#fees-admin-console form[data-fee-setup="assign-student"] select[name="class_name"]');
+      const multiClassSelect=document.getElementById("fees-multi-classes");
       const datalist=document.getElementById("fees-class-options");
       let students=[],offset=0,page=[];
       do{
@@ -14321,6 +14362,8 @@ function addMessage(text,type){
         .sort((a,b)=>a.localeCompare(b,undefined,{numeric:true}));
       if(classSelect)classSelect.innerHTML='<option value="">Select class / section</option>'+classes.map(x=>'<option value="'+escapeHtml(x)+'">'+escapeHtml(x)+'</option>').join("");
       if(classSelect&&!classes.length)classSelect.innerHTML='<option value="">No active classes found</option>';
+      if(multiClassSelect)multiClassSelect.innerHTML=classes.map(x=>'<option value="'+escapeHtml(x)+'">'+escapeHtml(x)+'</option>').join("");
+      if(multiClassSelect&&!classes.length)multiClassSelect.innerHTML='<option value="">No active classes found</option>';
       if(datalist)datalist.innerHTML=classes.map(x=>'<option value="'+escapeHtml(x)+'"></option>').join("");
     }catch(e){
       const message=e?.message||"Admin permission required";
@@ -14349,12 +14392,13 @@ function addMessage(text,type){
   window.loadExistingFeeStructures=async function(event){
     const form=event.currentTarget.closest("form"),host=form?.querySelector("[data-fee-structures-list]");
     if(!form||!host)return;
-    const yearId=String(form.elements.academic_year_id?.value||""),cls=String(form.elements.class_name?.value||"").trim();
+    const yearId=String(form.elements.academic_year_id?.value||"");
+    const cls=String(form.elements.class_names?.selectedOptions?.[0]?.value||"").trim();
     if(!yearId){host.textContent="Select an academic year to view fee structures.";return;}
     host.textContent="Loading existing fee structures…";
     try{
       const client=getClient(),{data,error}=await client.functions.invoke("fee-management",{body:{action:"admin-list-structures",academic_year_id:yearId,class_name:cls}});
-      if(error)throw new Error(error.message||"Could not load fee structures.");
+      if(error||data?.error)throw new Error(error?.message||data?.error||"Could not load fee structures.");
       const rows=Array.isArray(data?.fee_structures)?data.fee_structures:[];
       host.innerHTML=rows.length?'<p class="font-bold mb-1">Existing fee structures</p>'+rows.map(r=>'<p class="py-1 border-t">'+escapeHtml(r.class_name)+' · '+escapeHtml(r.fee_name)+' — '+money(r.amount_paise)+(r.is_mandatory?' · Mandatory':' · Optional')+(r.due_date?' · Due '+escapeHtml(r.due_date):'')+'</p>').join(""):'No fee structures found for this selection yet.';
     }catch(e){host.textContent=e?.message||"Could not load fee structures.";}
@@ -14390,6 +14434,13 @@ function addMessage(text,type){
       if(!rows.length)select.innerHTML='<option value="">No matching fee accounts</option>';
     }catch(e){select.innerHTML='<option value="">Search failed</option>';setStatus(e?.message||"Fee account search failed.",true);}
   };
+  window.previewSchoolUpiQr=function(event){
+    const form=event.currentTarget.closest("form"),file=form?.elements.qr_image?.files?.[0];
+    const img=form?.querySelector("[data-school-qr-preview]"),label=form?.querySelector("[data-school-qr-current]");
+    if(!file||!img||!label)return;
+    if(!["image/png","image/jpeg","image/webp"].includes(file.type)||file.size>1024*1024){label.textContent="Invalid file. Use PNG, JPEG or WebP under 1 MB.";img.classList.add("hidden");return;}
+    const reader=new FileReader();reader.onload=()=>{img.src=String(reader.result||"");img.classList.remove("hidden");label.textContent=file.name+" · "+Math.ceil(file.size/1024)+" KB";};reader.readAsDataURL(file);
+  };
   window.submitFeeSetupForm=async function(event){
     event.preventDefault();
     const form=event.currentTarget;if(!form||form.dataset.submitting==="1")return false;
@@ -14401,8 +14452,38 @@ function addMessage(text,type){
     if(type==="year")body={action:"admin-save-academic-year",label:values.label,starts_on:values.starts_on,ends_on:values.ends_on,is_active:form.elements.is_active.checked};
     else if(type==="structure"){
       const amount=Math.round(Number(values.amount_rupees)*100);
+      const classes=[...form.elements.class_names.selectedOptions].map(o=>o.value).filter(Boolean);
       if(!Number.isSafeInteger(amount)||amount<0){say("Enter a valid fee amount.");return false;}
-      body={action:"admin-save-structure",academic_year_id:values.academic_year_id,class_name:values.class_name,fee_name:values.fee_name,amount_paise:amount,is_mandatory:form.elements.is_mandatory.checked,due_date:values.due_date||null};
+      if(!classes.length){say("Select at least one class / section.");return false;}
+      form.dataset.submitting="1";
+      const button=form.querySelector('button[type="submit"],button:not([type])');if(button){button.disabled=true;button.textContent="Saving fee categories…";}
+      try{
+        let success=0,failed=[];
+        for(const className of classes){
+          const {error}=await client.functions.invoke("fee-management",{body:{action:"admin-save-structure",academic_year_id:values.academic_year_id,class_name:className,fee_name:values.fee_name,amount_paise:amount,is_mandatory:form.elements.is_mandatory.checked,due_date:values.due_date||null}});
+          if(error||data?.error||!data?.fee_structure_id){failed.push(className);}else success++;
+        }
+        say("Category "+values.fee_name+": saved for "+success+" class(es)"+(failed.length?"; failed: "+failed.join(", "):". Existing payment history was not changed."),failed.length===0);
+        return false;
+      }catch(e){say(e?.message||"Could not save fee categories.");return false;}
+      finally{delete form.dataset.submitting;if(button){button.disabled=false;button.textContent="Save fee structure";}}
+    }else if(type==="school-upi-qr"){
+      const file=form.elements.qr_image?.files?.[0];
+      if(!file){say("Choose the school QR image first.");return false;}
+      if(!["image/png","image/jpeg","image/webp"].includes(file.type)||file.size>1024*1024){say("Use a PNG, JPEG or WebP image under 1 MB.");return false;}
+      const reader=new FileReader();
+      reader.onload=async()=>{
+        try{
+          const qrData=String(reader.result||"");
+          if(!qrData.startsWith("data:image/"))throw new Error("Could not read QR image.");
+          say("Saving school QR…");
+          const {data,error}=await client.functions.invoke("fee-management",{body:{action:"admin-save-school-upi-qr",qr_data_url:qrData}});
+          if(error||data?.error||data?.status!=="SCHOOL_UPI_QR_SAVED")throw new Error(error?.message||data?.error||"QR save was not confirmed.");
+          say("School UPI QR saved. It will appear in student Pay Fees.",true);
+        }catch(e){say(e?.message||"QR save failed.");}
+      };
+      reader.onerror=()=>say("Could not read QR image.");
+      reader.readAsDataURL(file);return false;
     }else if(type==="assign-student"){
       const cls=String(values.class_name||"").trim();
       if(!cls){say("Select a class / section.");return false;}
