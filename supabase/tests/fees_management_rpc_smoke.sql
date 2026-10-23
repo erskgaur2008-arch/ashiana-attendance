@@ -29,8 +29,10 @@ begin
   select * into v_summary
   from public.fee_student_summary_by_session('synthetic-student-session-token-000000000000')
   where fee_account_id=v_account;
-  if not found or v_summary.total_due_paise <> 10000 or v_summary.balance_paise <> 10000 then
-    raise exception 'Synthetic student fee summary mismatch';
+  if not found or v_summary.total_due_paise <> 10000 or v_summary.balance_paise <> 10000 or jsonb_array_length(v_summary.fee_items) <> 1
+     or v_summary.fee_items->0->>'fee_name' <> 'Tuition'
+     or v_summary.fee_items->0->>'installment_id' <> v_installment::text then
+    raise exception 'Synthetic student fee summary or installment breakdown mismatch';
   end if;
 
   v_submission := public.fee_submit_payment_by_session(
@@ -102,7 +104,7 @@ begin
   -- A submission cannot exceed the remaining balance.
   begin
     perform public.fee_submit_payment_by_session(
-      'synthetic-student-session-token-000000000000',v_account,6000,
+      'synthetic-student-session-token-000000000000',v_account,v_installment,6000,
       'SYNTHETIC-UPI-OVERPAY-001',v_account::text||'/overpay-proof.png','Overpayment test'
     );
     raise exception 'Overpayment unexpectedly succeeded';
@@ -114,7 +116,7 @@ begin
   perform set_config('request.jwt.claim.sub','aaaaaaaa-aaaa-4aaa-8aaa-aaaaaaaaaaaa',true);
   perform set_config('request.jwt.claim.fee_admin','true',true);
   v_rejected_submission := public.fee_submit_payment_by_session(
-    'synthetic-student-session-token-000000000000',v_account,2500,
+    'synthetic-student-session-token-000000000000',v_account,v_installment,2500,
     'SYNTHETIC-UPI-REF-002',v_account::text||'/synthetic-proof-2.png','Synthetic rejection test'
   );
   v_result := public.fee_admin_review_payment(v_rejected_submission,false,'Synthetic proof mismatch');
@@ -130,7 +132,7 @@ begin
   -- Pending payment amounts must be reserved when checking a discount, to prevent
   -- a discount plus an in-flight payment from exceeding the fee balance.
   v_submission := public.fee_submit_payment_by_session(
-    'synthetic-student-session-token-000000000000',v_account,3000,
+    'synthetic-student-session-token-000000000000',v_account,v_installment,3000,
     'SYNTHETIC-UPI-PENDING-003',v_account::text||'/pending-proof.png','Pending payment/discount concurrency test'
   );
   v_discount := public.fee_admin_create_discount_request(v_account,2500,'Synthetic discount versus pending payment');
