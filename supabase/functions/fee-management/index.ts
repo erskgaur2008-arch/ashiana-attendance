@@ -32,7 +32,6 @@ Deno.serve(async (req) => {
   if (!url || !anonKey || !serviceKey) return respond({ error: "Server configuration unavailable" }, 500);
 
   const authHeader = req.headers.get("Authorization");
-  if (!authHeader?.startsWith("Bearer ")) return respond({ error: "Authorization required" }, 401);
 
   let input: Record<string, unknown>;
   try {
@@ -41,15 +40,24 @@ Deno.serve(async (req) => {
     return respond({ error: "Invalid JSON body" }, 400);
   }
 
+  const action = input.action;
+  // Student endpoints authenticate the custom student session token through dedicated
+  // database RPCs. They must work even when the browser has no Supabase Auth session.
+  const studentActions = new Set([
+    "create-proof-upload", "student-summary", "discard-proof-upload",
+    "submit-payment", "student-submissions", "student-receipts",
+  ]);
+  if (!authHeader?.startsWith("Bearer ") && !studentActions.has(String(action))) {
+    return respond({ error: "Authorization required" }, 401);
+  }
+
   const userClient = createClient(url, anonKey, {
-    global: { headers: { Authorization: authHeader } },
+    ...(authHeader?.startsWith("Bearer ") ? { global: { headers: { Authorization: authHeader } } } : {}),
     auth: { persistSession: false, autoRefreshToken: false },
   });
   const adminClient = createClient(url, serviceKey, {
     auth: { persistSession: false, autoRefreshToken: false },
   });
-
-  const action = input.action;
   if (action === "create-proof-upload") {
     // Student portal bearer tokens are custom session tokens, not Supabase Auth JWTs.
     // They must be passed in student_session_token and validated by the dedicated RPC.
