@@ -14271,13 +14271,13 @@ window.showStudentSchoolUpiQr=async function(accountId){
           </form>
           <form onsubmit="submitFeeSetupForm(event)" data-fee-setup="structure" class="rounded-xl border p-3 space-y-2">
             <h3 class="font-bold text-sm">Add fee structure</h3>
-            <select name="academic_year_id" required class="w-full rounded-lg border p-2.5 text-sm"><option value="">Loading academic years…</option></select>
+            <select name="academic_year_id" required onchange="loadExistingFeeStructures(event)" class="w-full rounded-lg border p-2.5 text-sm"><option value="">Loading academic years…</option></select>
             <label class="block text-xs font-semibold">Fee category</label>
             <select name="fee_name" required class="w-full rounded-lg border p-2.5 text-sm">
               <option value="Admission Charges">Admission Charges</option><option value="Quarter 1">Quarter 1</option><option value="Quarter 2">Quarter 2</option><option value="Quarter 3">Quarter 3</option><option value="Quarter 4">Quarter 4</option>
             </select>
             <label class="block text-xs font-semibold">Select multiple classes / sections</label>
-            <select name="class_names" id="fees-multi-classes" multiple required size="6" class="w-full rounded-lg border p-2.5 text-sm" aria-describedby="fees-multi-classes-help"><option value="">Loading classes…</option></select>
+            <select name="class_names" id="fees-multi-classes" multiple required size="6" onchange="loadExistingFeeStructures(event)" class="w-full rounded-lg border p-2.5 text-sm" aria-describedby="fees-multi-classes-help"><option value="">Loading classes…</option></select>
             <p id="fees-multi-classes-help" class="text-[11px] text-slate-500">Select one or more classes. On a computer use Ctrl/⌘; on a phone, tap to select multiple.</p>
             <div data-fee-structures-list class="rounded-lg border bg-slate-50 p-2 text-xs text-slate-600">Select an academic year to view existing fee structures.</div>
             <input name="amount_rupees" type="number" min="0" step="0.01" required placeholder="Amount in ₹" class="w-full rounded-lg border p-2.5 text-sm">
@@ -14392,12 +14392,13 @@ window.showStudentSchoolUpiQr=async function(accountId){
   window.loadExistingFeeStructures=async function(event){
     const form=event.currentTarget.closest("form"),host=form?.querySelector("[data-fee-structures-list]");
     if(!form||!host)return;
-    const yearId=String(form.elements.academic_year_id?.value||""),cls=String(form.elements.class_name?.value||"").trim();
+    const yearId=String(form.elements.academic_year_id?.value||"");
+    const cls=String(form.elements.class_names?.selectedOptions?.[0]?.value||"").trim();
     if(!yearId){host.textContent="Select an academic year to view fee structures.";return;}
     host.textContent="Loading existing fee structures…";
     try{
       const client=getClient(),{data,error}=await client.functions.invoke("fee-management",{body:{action:"admin-list-structures",academic_year_id:yearId,class_name:cls}});
-      if(error)throw new Error(error.message||"Could not load fee structures.");
+      if(error||data?.error)throw new Error(error?.message||data?.error||"Could not load fee structures.");
       const rows=Array.isArray(data?.fee_structures)?data.fee_structures:[];
       host.innerHTML=rows.length?'<p class="font-bold mb-1">Existing fee structures</p>'+rows.map(r=>'<p class="py-1 border-t">'+escapeHtml(r.class_name)+' · '+escapeHtml(r.fee_name)+' — '+money(r.amount_paise)+(r.is_mandatory?' · Mandatory':' · Optional')+(r.due_date?' · Due '+escapeHtml(r.due_date):'')+'</p>').join(""):'No fee structures found for this selection yet.';
     }catch(e){host.textContent=e?.message||"Could not load fee structures.";}
@@ -14460,7 +14461,7 @@ window.showStudentSchoolUpiQr=async function(accountId){
         let success=0,failed=[];
         for(const className of classes){
           const {error}=await client.functions.invoke("fee-management",{body:{action:"admin-save-structure",academic_year_id:values.academic_year_id,class_name:className,fee_name:values.fee_name,amount_paise:amount,is_mandatory:form.elements.is_mandatory.checked,due_date:values.due_date||null}});
-          if(error)failed.push(className);else success++;
+          if(error||data?.error||!data?.fee_structure_id){failed.push(className);}else success++;
         }
         say("Category "+values.fee_name+": saved for "+success+" class(es)"+(failed.length?"; failed: "+failed.join(", "):". Existing payment history was not changed."),failed.length===0);
         return false;
@@ -14477,7 +14478,7 @@ window.showStudentSchoolUpiQr=async function(accountId){
           if(!qrData.startsWith("data:image/"))throw new Error("Could not read QR image.");
           say("Saving school QR…");
           const {data,error}=await client.functions.invoke("fee-management",{body:{action:"admin-save-school-upi-qr",qr_data_url:qrData}});
-          if(error)throw new Error(error.message||data?.error||"QR save failed.");
+          if(error||data?.error||data?.status!=="SCHOOL_UPI_QR_SAVED")throw new Error(error?.message||data?.error||"QR save was not confirmed.");
           say("School UPI QR saved. It will appear in student Pay Fees.",true);
         }catch(e){say(e?.message||"QR save failed.");}
       };
