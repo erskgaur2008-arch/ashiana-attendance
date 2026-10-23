@@ -7,6 +7,8 @@ on:
       - 'supabase/functions/fee-management/**'
       - 'supabase/migrations/20261023000*_fees_management_*.sql'
       - 'supabase/migrations/20261023170000_fee_installment_payment_selection.sql'
+      - 'supabase/migrations/20261023190000_student_pending_fee_reminders.sql'
+      - 'supabase/functions/fee-reminders/**'
       - 'supabase/tests/fees_management_security.sql'
       - 'supabase/tests/fees_management_synthetic_bootstrap.sql'
       - 'supabase/tests/fees_management_rpc_smoke.sql'
@@ -18,6 +20,8 @@ on:
       - 'supabase/functions/fee-management/**'
       - 'supabase/migrations/20261023000*_fees_management_*.sql'
       - 'supabase/migrations/20261023170000_fee_installment_payment_selection.sql'
+      - 'supabase/migrations/20261023190000_student_pending_fee_reminders.sql'
+      - 'supabase/functions/fee-reminders/**'
       - 'supabase/tests/fees_management_security.sql'
       - 'supabase/tests/fees_management_synthetic_bootstrap.sql'
       - 'supabase/tests/fees_management_rpc_smoke.sql'
@@ -50,8 +54,11 @@ jobs:
           from pglast import parse_sql
           paths = sorted(Path("supabase/migrations").glob("20261023000*_fees_management_*.sql"))
           installment_migration = Path("supabase/migrations/20261023170000_fee_installment_payment_selection.sql")
+          reminder_migration = Path("supabase/migrations/20261023190000_student_pending_fee_reminders.sql")
           if installment_migration.exists():
               paths.append(installment_migration)
+          if reminder_migration.exists():
+              paths.append(reminder_migration)
           paths = sorted(set(paths))
           if len(paths) < 6:
               raise SystemExit(f"Expected fee foundation plus installment migration, found {len(paths)}")
@@ -70,6 +77,11 @@ jobs:
           test -s supabase/migrations/20261023000400_fees_management_admin_setup.sql
           test -s supabase/migrations/20261023000500_fees_management_discount_pending_balance.sql
           test -s supabase/migrations/20261023170000_fee_installment_payment_selection.sql
+          test -s supabase/migrations/20261023190000_student_pending_fee_reminders.sql
+          test -s supabase/functions/fee-reminders/index.ts
+          grep -q 'fee_student_reminders_by_session' supabase/functions/fee-management/index.ts
+          grep -q 'student-reminders' index.html
+          grep -q 'fee_reminder_candidates' supabase/functions/fee-reminders/index.ts
           test -s supabase/config.toml
           grep -q 'verify_jwt = false' supabase/config.toml
           test -s supabase/tests/fees_management_security.sql
@@ -135,7 +147,7 @@ jobs:
       - name: Apply all fee migrations to isolated database
         run: |
           set -euo pipefail
-          for migration in supabase/migrations/20261023000*_fees_management_*.sql supabase/migrations/20261023170000_fee_installment_payment_selection.sql; do
+          for migration in supabase/migrations/20261023000*_fees_management_*.sql supabase/migrations/20261023170000_fee_installment_payment_selection.sql supabase/migrations/20261023190000_student_pending_fee_reminders.sql; do
             echo "Applying $migration"
             psql -v ON_ERROR_STOP=1 -f "$migration"
           done
