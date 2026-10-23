@@ -14400,8 +14400,22 @@ window.showStudentSchoolUpiQr=async function(accountId){
       const client=getClient(),{data,error}=await client.functions.invoke("fee-management",{body:{action:"admin-list-structures",academic_year_id:yearId,class_name:cls}});
       if(error||data?.error)throw new Error(error?.message||data?.error||"Could not load fee structures.");
       const rows=Array.isArray(data?.fee_structures)?data.fee_structures:[];
-      host.innerHTML=rows.length?'<p class="font-bold mb-1">Existing fee structures</p>'+rows.map(r=>'<p class="py-1 border-t">'+escapeHtml(r.class_name)+' · '+escapeHtml(r.fee_name)+' — '+money(r.amount_paise)+(r.is_mandatory?' · Mandatory':' · Optional')+(r.due_date?' · Due '+escapeHtml(r.due_date):'')+'</p>').join(""):'No fee structures found for this selection yet.';
+      host.innerHTML=rows.length?'<p class="font-bold mb-1">Existing fee structures</p>'+rows.map(r=>'<div class="flex items-start justify-between gap-2 py-2 border-t"><div class="min-w-0">'+escapeHtml(r.class_name)+' · '+escapeHtml(r.fee_name)+' — '+money(r.amount_paise)+(r.is_mandatory?' · Mandatory':' · Optional')+(r.due_date?' · Due '+escapeHtml(r.due_date):'')+'</div><button type="button" class="shrink-0 rounded-lg border border-rose-300 px-2 py-1 text-xs font-bold text-rose-700" onclick="deleteFeeStructure(\''+escapeHtml(r.id)+'\',\''+escapeHtml(r.class_name)+'\',\''+escapeHtml(r.fee_name)+'\')">Delete</button></div>').join(""):'No fee structures found for this selection yet.';
     }catch(e){host.textContent=e?.message||"Could not load fee structures.";}
+  };
+  window.deleteFeeStructure=async function(id,className,feeName){
+    if(!/^[a-f0-9-]{36}$/i.test(String(id||"")))return;
+    if(!window.confirm("Delete fee structure \""+className+" · "+feeName+"\"? This cannot be undone. Structures linked to existing fee/payment records will be protected."))return;
+    const form=document.querySelector('#fees-admin-console form[data-fee-setup="structure"]');
+    const host=form?.querySelector("[data-fee-structures-list]");
+    if(host)host.textContent="Deleting fee structure…";
+    try{
+      const client=getClient();
+      const {data,error}=await client.functions.invoke("fee-management",{body:{action:"admin-delete-structure",fee_structure_id:id}});
+      if(error||data?.error||data?.status!=="FEE_STRUCTURE_DELETED")throw new Error(error?.message||data?.error||"Delete was not confirmed.");
+      if(host)host.textContent="Fee structure deleted.";
+      await window.loadExistingFeeStructures({currentTarget:form.querySelector('select[name="academic_year_id"]')});
+    }catch(e){if(host)host.textContent=e?.message||"Unable to delete fee structure.";}
   };
   window.searchFeeSetupStudents=async function(event){
     const form=event.currentTarget.closest("form"),query=String(form?.elements.student_search?.value||"").trim(),select=form?.elements.student_id;
