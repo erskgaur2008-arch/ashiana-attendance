@@ -217,7 +217,7 @@ Deno.serve(async (req) => {
     const className = typeof input.class_name === "string" ? input.class_name.trim() : "";
     if (!UUID_RE.test(yearId)) return respond({ error: "Valid academic year is required" }, 400);
     const { data: years, error: permissionError } = await userClient.rpc("fee_admin_list_academic_years");
-    if (permissionError || !Array.isArray(years) || !years.some((row: { id?: string }) => row.id === yearId)) {
+    if (permissionError || !Array.isArray(years) || !years.some((row: { academic_year_id?: string; id?: string }) => (row.academic_year_id ?? row.id) === yearId)) {
       return respond({ error: "Admin permission required or academic year unavailable" }, 403);
     }
     let query = adminClient.from("fee_structures").select("id,class_name,fee_name,amount_paise,is_mandatory,due_date").eq("school_code","ashiana").eq("academic_year_id",yearId).order("class_name").order("fee_name").limit(300);
