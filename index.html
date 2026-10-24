@@ -6886,7 +6886,7 @@ async function studentDashboardSection(type){
     }
   }else if(type==="notice"){
     const notices=fresh.notices||[];
-    host.innerHTML=notices.map(x=>'<article class="p-4 sm:p-5 bg-white border border-slate-200 rounded-2xl shadow-sm"><div class="flex items-start gap-3"><span class="mt-1 w-2 h-2 rounded-full bg-emerald-600 flex-shrink-0"></span><div class="min-w-0 flex-1"><h4 class="text-base sm:text-lg font-extrabold text-slate-900 break-words leading-snug">'+studentEscape(x.title)+'</h4><div class="mt-3 text-[13px] sm:text-sm text-slate-700 whitespace-pre-wrap break-words leading-7">'+studentEscape(x.body||"")+'</div>'+(x.attachment_path?'<a href="'+studentEscape(teacherPortalPdfUrl(x.attachment_path))+'" target="_blank" rel="noopener" class="mt-3 inline-flex items-center gap-2 px-3 py-2 rounded-xl bg-rose-50 text-rose-700 border border-rose-200 text-xs font-bold"><i data-lucide="file-text" class="w-4 h-4"></i><span>View PDF'+(x.attachment_name?' • '+studentEscape(x.attachment_name):'')+'</span></a>':'')+'<div class="mt-3 pt-2 border-t border-slate-100 text-[10px] text-slate-400">'+studentEscape(formatStudentPortalDate(x.publish_at||x.created_at||""))+'</div></div></div></article>').join("")||'<div class="p-6 bg-white border rounded-2xl text-center text-slate-400">No notices published.</div>';
+    host.innerHTML=notices.map(x=>'<article class="p-4 sm:p-5 bg-white border border-slate-200 rounded-2xl shadow-sm"><div class="flex items-start gap-3"><span class="mt-1 w-2 h-2 rounded-full bg-emerald-600 flex-shrink-0"></span><div class="min-w-0 flex-1"><h4 class="text-base sm:text-lg font-extrabold text-slate-900 break-words leading-snug">'+studentEscape(x.title)+'</h4><div class="mt-1.5 flex items-center gap-1.5 text-xs sm:text-sm text-slate-500"><i data-lucide="user-round" class="w-4 h-4 shrink-0"></i><span>Published by: '+studentEscape(studentNoticePublisherLabel(x.published_by))+'</span></div><div class="mt-3 text-[13px] sm:text-sm text-slate-700 whitespace-pre-wrap break-words leading-7">'+studentEscape(x.body||"")+'</div>'+(x.attachment_path?'<a href="'+studentEscape(teacherPortalPdfUrl(x.attachment_path))+'" target="_blank" rel="noopener" class="mt-3 inline-flex items-center gap-2 px-3 py-2 rounded-xl bg-rose-50 text-rose-700 border border-rose-200 text-xs font-bold"><i data-lucide="file-text" class="w-4 h-4"></i><span>View PDF'+(x.attachment_name?' • '+studentEscape(x.attachment_name):'')+'</span></a>':'')+'<div class="mt-3 pt-2 border-t border-slate-100 text-[10px] text-slate-400">'+studentEscape(formatStudentPortalDate(x.publish_at||x.created_at||""))+'</div></div></div></article>').join("")||'<div class="p-6 bg-white border rounded-2xl text-center text-slate-400">No notices published.</div>';
   }else if(type==="attendance"){
     window.studentAttendanceView="home";window.studentAttendanceSelectedMonth="";
     renderStudentAttendancePanel(fresh.attendance||[],"home");
@@ -6905,6 +6905,12 @@ async function studentDashboardSection(type){
   }
   if(loading)loading.classList.add("hidden");
   if(window.lucide)lucide.createIcons();
+}
+function studentNoticePublisherLabel(value){
+  const raw=String(value||'').trim();
+  if(!raw) return 'School Administration';
+  const label=raw.includes('@') ? raw.split('@')[0].replace(/[._-]+/g,' ').trim() : raw;
+  return label.split(/\s+/).filter(Boolean).map(part=>part.charAt(0).toUpperCase()+part.slice(1).toLowerCase()).join(' ') || 'School Administration';
 }
 function closeStudentDashboardSection(){
   const panel=document.getElementById("student-dashboard-panel");
@@ -13119,7 +13125,7 @@ window.addEventListener('load',async function(){
       try{
         const payloads=targets.map(target=>({
           school_code:APS_STUDENT_SCHOOL,class_name:target.class_name,section:target.section,
-          title,body,published_by:String(currentAuthUser.email||'ADMIN').trim().toLowerCase(),
+          title,body,published_by:String(currentAuthUser.full_name||currentAuthUser.displayName||currentAuthUser.name||currentAuthUser.email||'ADMIN').trim(),
           publish_at:new Date().toISOString(),active:true
         }));
         const {error}=await supabaseClient.from('student_notices').insert(payloads);
