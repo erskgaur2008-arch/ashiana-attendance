@@ -185,16 +185,26 @@ Deno.serve(async (req: Request) => {
     if (platform !== "android" && platform !== "web") return json({ error: "INVALID_PLATFORM" }, 400);
 
     const studentClient = createClient(url, anon, { auth: { persistSession: false, autoRefreshToken: false } });
-    const { data: login, error: loginError } = await studentClient.rpc("student_login", {
+    const { data: login, error: loginError } = await studentClient.rpc("student_session_start", {
       p_school_code: schoolCode,
       p_enroll_no: enrollNo,
       p_dob_password: dobPassword,
     });
-    if (loginError || !login?.success || !login?.student) {
+    if (loginError || !login?.success || !login?.student || !login?.session_token) {
       return json({ error: "STUDENT_AUTHENTICATION_FAILED" }, 401);
     }
 
+    // Push registration only needs the verified student identity, not a persistent session.
+    // Revoke this temporary token immediately after credential validation.
     const student = login.student as Record<string, unknown>;
+    const temporarySessionToken = String(login.session_token);
+    const { error: revokeError } = await studentClient.rpc("student_session_revoke", {
+      p_token: temporarySessionToken,
+    });
+    if (revokeError) {
+      console.error("Temporary student session revoke failed.");
+      return json({ error: "STUDENT_AUTHENTICATION_FAILED" }, 503);
+    }
     const verifiedEnrollNo = String(student.enroll_no || enrollNo).trim().toUpperCase();
     const className = String(student.class_name || student.class || "").trim() || null;
     const section = String(student.section || student.section_name || "").trim() || null;
