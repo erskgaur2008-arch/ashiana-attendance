@@ -14727,7 +14727,7 @@ window.showStudentSchoolUpiQr=async function(accountId,installmentId){
 <div id="admin-push-monitor-modal" class="hidden fixed inset-0 z-[150] bg-slate-950/70 backdrop-blur-sm p-3 items-center justify-center" onclick="closeAdminPushMonitor(event)">
   <section class="bg-white w-full max-w-4xl max-h-[92vh] rounded-2xl shadow-2xl overflow-hidden flex flex-col" onclick="event.stopPropagation()">
     <header class="p-4 bg-gradient-to-r from-emerald-950 to-emerald-700 text-white flex items-center justify-between">
-      <div><h2 class="font-bold text-lg">Student Push Monitor</h2><p class="text-xs text-emerald-100">Registered devices and last registration time</p></div>
+      <div><h2 class="font-bold text-lg">Push Monitor &amp; Active Users</h2><p class="text-xs text-emerald-100">Active student, staff and administrator accounts plus push devices</p></div>
       <button type="button" onclick="closeAdminPushMonitor()" class="rounded-xl bg-white/15 px-3 py-2 text-sm font-bold">Close</button>
     </header>
     <div class="p-4 border-b bg-slate-50 flex flex-wrap items-center gap-2 justify-between">
@@ -14736,6 +14736,20 @@ window.showStudentSchoolUpiQr=async function(accountId,installmentId){
     </div>
     <div id="admin-push-monitor-status" class="px-4 pt-3 text-sm text-slate-600" role="status"></div>
     <div class="p-4 overflow-auto">
+      <section class="mb-6">
+        <div class="flex flex-wrap items-center justify-between gap-2 mb-2">
+          <h3 class="font-bold text-slate-800">Active Users</h3>
+          <p id="admin-active-user-summary" class="text-xs text-slate-600">Loading active accounts…</p>
+        </div>
+        <div class="overflow-auto border border-slate-200 rounded-xl">
+          <table class="w-full text-left text-sm">
+            <thead class="text-xs uppercase bg-emerald-50 text-slate-700"><tr><th class="p-2">Role</th><th class="p-2">Admission No. / Employee ID</th><th class="p-2">Name</th><th class="p-2">Class / Department</th><th class="p-2">Status</th><th class="p-2">Last Login</th></tr></thead>
+            <tbody id="admin-active-user-rows"><tr><td colspan="6" class="p-3 text-slate-500">No active users loaded.</td></tr></tbody>
+          </table>
+        </div>
+        <p class="text-xs text-slate-500 mt-2">Counts come from active student, staff/teacher and administrator records. Last Login is shown only when a successful login event has been recorded; a dash does not mean the account is disabled.</p>
+      </section>
+      <h3 class="font-bold text-slate-800 mb-2">Registered Push Devices</h3>
       <table class="w-full text-left text-sm">
         <thead class="text-xs uppercase bg-slate-100 text-slate-600"><tr><th class="p-2">Admission No.</th><th class="p-2">Class</th><th class="p-2">Platform</th><th class="p-2">Registered</th><th class="p-2">Last Updated</th><th class="p-2">Last Login</th><th class="p-2">Last Push</th></tr></thead>
         <tbody id="admin-push-monitor-rows"><tr><td colspan="7" class="p-3 text-slate-500">No data loaded.</td></tr></tbody>
@@ -14762,6 +14776,8 @@ window.showStudentSchoolUpiQr=async function(accountId,installmentId){
     const status=document.getElementById('admin-push-monitor-status');
     const rows=document.getElementById('admin-push-monitor-rows');
     const summary=document.getElementById('admin-push-monitor-summary');
+    const activeRows=document.getElementById('admin-active-user-rows');
+    const activeSummary=document.getElementById('admin-active-user-summary');
     if(!status||!rows)return;
     status.textContent='Loading registration data…';
     try{
@@ -14779,7 +14795,8 @@ window.showStudentSchoolUpiQr=async function(accountId,installmentId){
         byStudent.set(key,{...item,enroll_no:key});
       }
       for(const item of activity){
-        const key=String(item.enroll_no||'').trim().toUpperCase();
+        if(String(item.role||'student').toLowerCase()!=='student')continue;
+        const key=String(item.user_identifier||item.enroll_no||'').trim().toUpperCase();
         if(!key)continue;
         const prior=byStudent.get(key)||{enroll_no:key,class_name:item.class_name,section:item.section,platform:item.platform||'—',created_at:null,updated_at:null};
         Object.assign(prior,{last_login_at:item.last_login_at||null,last_push_at:item.last_push_at||null,last_push_status:item.last_push_status||null,last_push_error:item.last_push_error||null});
@@ -14789,6 +14806,14 @@ window.showStudentSchoolUpiQr=async function(accountId,installmentId){
       const loginCount=items.filter(item=>item.last_login_at).length;
       summary.textContent=devices.length+' registered device record(s) · '+loginCount+' student(s) with a recorded successful login';
       const fmt=value=>value?esc(new Date(value).toLocaleString()):'—';
+      const activeUsers=Array.isArray(data.activeUsers)?data.activeUsers:[];
+      const counts=data.activeUserCounts||{};
+      if(activeSummary)activeSummary.textContent=(counts.total??activeUsers.length)+' active account(s) · Students: '+(counts.students??activeUsers.filter(x=>x.role==='student').length)+' · Staff/Teachers: '+(counts.staff??activeUsers.filter(x=>x.role==='staff').length)+' · Admins: '+(counts.administrators??activeUsers.filter(x=>x.role==='admin').length)+' · Recorded logins: '+(counts.withRecordedLogin??activeUsers.filter(x=>x.last_login_at).length);
+      if(activeRows)activeRows.innerHTML=activeUsers.length?activeUsers.map(item=>{
+        const role=String(item.role||'').toLowerCase();
+        const identifierLabel=role==='student'?'Admission No.':role==='staff'?'Employee ID':'Admin Email';
+        return '<tr class="border-b border-slate-100"><td class="p-2 font-semibold">'+esc(role==='staff'?'Staff/Teacher':role==='admin'?'Admin':'Student')+'</td><td class="p-2 font-semibold"><span class="text-[10px] text-slate-500 block">'+identifierLabel+'</span>'+esc(item.user_identifier||'—')+'</td><td class="p-2">'+esc(item.name||'—')+'</td><td class="p-2">'+esc(item.context||'—')+'</td><td class="p-2"><span class="rounded-full bg-emerald-50 text-emerald-700 px-2 py-1 text-xs font-bold">'+esc(item.status||'ACTIVE')+'</span></td><td class="p-2">'+fmt(item.last_login_at)+'</td></tr>';
+      }).join(''):'<tr><td colspan="6" class="p-3 text-slate-500">No active accounts found.</td></tr>';
       rows.innerHTML=items.length?items.map(item=>{
         const push=item.last_push_status?String(item.last_push_status).toUpperCase()+(item.last_push_error?' ('+String(item.last_push_error)+')':''):'—';
         return '<tr class="border-b border-slate-100"><td class="p-2 font-semibold">'+esc(item.enroll_no)+'</td><td class="p-2">'+esc([item.class_name,item.section].filter(Boolean).join('-')||'—')+'</td><td class="p-2">'+esc(item.platform||'—')+'</td><td class="p-2">'+fmt(item.created_at)+'</td><td class="p-2">'+fmt(item.updated_at)+'</td><td class="p-2">'+fmt(item.last_login_at)+'</td><td class="p-2">'+esc(push)+(item.last_push_at?' · '+fmt(item.last_push_at):'')+'</td></tr>';
@@ -14798,6 +14823,8 @@ window.showStudentSchoolUpiQr=async function(accountId,installmentId){
       status.textContent='Could not load registrations: '+String(error?.message||'Request failed');
       summary.textContent='Registration data unavailable';
       rows.innerHTML='<tr><td colspan="7" class="p-3 text-slate-500">Unable to load data. Verify administrator access and Edge Function deployment.</td></tr>';
+      if(activeSummary)activeSummary.textContent='Active account data unavailable';
+      if(activeRows)activeRows.innerHTML='<tr><td colspan="6" class="p-3 text-slate-500">Unable to load active accounts.</td></tr>';
     }
   };
 })();
