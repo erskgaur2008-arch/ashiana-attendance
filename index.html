@@ -2097,7 +2097,7 @@
           window.__ashianaMainSupabaseClient = window.supabase.createClient(
             "https://oalfzgluqroqbbrulhpr.supabase.co",
             "sb_publishable_PND9f9FKbNrxlEakSgLKYA_5EsqLHkg",
-            { auth: { persistSession: true, autoRefreshToken: true, detectSessionInUrl: false } }
+            { auth: { persistSession: true, autoRefreshToken: true, detectSessionInUrl: false, storage: window.localStorage, storageKey: "sb-oalfzgluqroqbbrulhpr-auth-token" } }
           );
           return window.__ashianaMainSupabaseClient;
         }
@@ -2457,6 +2457,10 @@
               sessionStorage.setItem("aps_student_session_token_v1", studentSessionToken);
               if (window.AshianaNative?.isAndroid?.()) {
                 await window.AshianaNative.saveStudentSessionToken(studentSessionToken);
+              } else {
+                // Persist only the opaque, revocable token for browser/PWA
+                // session restoration. The DOB password is never stored.
+                localStorage.setItem("aps_student_session_token_v1", studentSessionToken);
               }
               // Keep the in-memory-tab handoff for web/PWA navigation and immediate UI setup.
               sessionStorage.setItem("aps_student_session_v1", JSON.stringify(pendingStudentUser));
@@ -5325,6 +5329,12 @@ id="admin-portal-view" class="hidden flex-col w-full space-y-4 admin-dashboard-s
           console.warn("Secure Student session could not be read:", secureStorageError);
         }
         if (!secureStudentToken) {
+          // Web/PWA sessions use only the opaque, revocable server-issued token
+          // in localStorage so they can survive browser restarts. Never persist
+          // the DOB password or trust a cached student profile for authorization.
+          try { secureStudentToken = String(localStorage.getItem("aps_student_session_token_v1") || ""); } catch (_) {}
+        }
+        if (!secureStudentToken) {
           try { secureStudentToken = String(sessionStorage.getItem("aps_student_session_token_v1") || ""); } catch (_) {}
         }
         try {
@@ -5357,6 +5367,7 @@ id="admin-portal-view" class="hidden flex-col w-full space-y-4 admin-dashboard-s
           if (bundleError) throw bundleError;
           if (!bundleData?.success || !bundleData?.student) {
             localStorage.removeItem("aps_student_session_v1"); sessionStorage.removeItem("aps_student_session_v1");
+            localStorage.removeItem("aps_student_session_token_v1");
             sessionStorage.removeItem("aps_student_session_token_v1");
             sessionStorage.removeItem(STORAGE_KEY_CURRENT_USER);
             sessionStorage.removeItem("aps_login_handoff_v1");
@@ -5494,7 +5505,7 @@ id="admin-portal-view" class="hidden flex-col w-full space-y-4 admin-dashboard-s
         sessionStorage.removeItem(STORAGE_KEY_CURRENT_USER);
         if (String(e?.message || '').includes('STUDENT_SESSION_EXPIRED') ||
             String(e?.message || '').includes('STUDENT_SESSION_INVALID')) {
-          try { localStorage.removeItem("aps_student_session_v1"); sessionStorage.removeItem("aps_student_session_v1"); sessionStorage.removeItem("aps_student_session_token_v1"); } catch (_) {}
+          try { localStorage.removeItem("aps_student_session_v1"); localStorage.removeItem("aps_student_session_token_v1"); sessionStorage.removeItem("aps_student_session_v1"); sessionStorage.removeItem("aps_student_session_token_v1"); } catch (_) {}
           try { await window.AshianaNative?.clearStudentSessionToken?.(); } catch (_) {}
         }
         return false;
@@ -7149,7 +7160,7 @@ async function refreshStudentPortalData(){
       sessionStorage.removeItem("aps_login_handoff_v1");
       localStorage.removeItem("aps_student_session_v1"); sessionStorage.removeItem("aps_student_session_v1");
       try {
-        const token = String(await window.AshianaNative?.getStudentSessionToken?.() || sessionStorage.getItem("aps_student_session_token_v1") || "");
+        const token = String(await window.AshianaNative?.getStudentSessionToken?.() || localStorage.getItem("aps_student_session_token_v1") || sessionStorage.getItem("aps_student_session_token_v1") || "");
         if (/^[a-f0-9]{64}$/i.test(token) && supabaseClient) {
           await supabaseClient.rpc("student_session_revoke", { p_token: token });
         }
@@ -7158,6 +7169,7 @@ async function refreshStudentPortalData(){
         console.warn("Secure Student session cleanup failed:", e);
       }
       sessionStorage.removeItem("aps_student_session_token_v1");
+      localStorage.removeItem("aps_student_session_token_v1");
       try { localStorage.removeItem("sb-oalfzgluqroqbbrulhpr-auth-token"); } catch (_) {}
       try { localStorage.removeItem("aps_student_session_expiry_v1"); } catch (_) {}
       try { sessionStorage.removeItem("aps_student_session_expiry_v1"); } catch (_) {}
