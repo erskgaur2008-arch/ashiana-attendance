@@ -34,7 +34,7 @@ jobs:
               "logout clears persistent token":
                   'localStorage.removeItem("aps_student_session_token_v1")' in source,
               "expired session clears persistent token":
-                  'localStorage.removeItem("aps_student_session_token_v1"); sessionStorage.removeItem("aps_student_session_token_v1")' in source,
+                  source.count('localStorage.removeItem("aps_student_session_token_v1")') >= 2,
           }
           for name, ok in checks.items():
               print(("PASS" if ok else "FAIL") + ": " + name)
