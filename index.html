@@ -14738,22 +14738,28 @@ window.showStudentSchoolUpiQr=async function(accountId,installmentId){
     <div class="p-4 overflow-auto">
       <section class="mb-6">
         <div class="flex flex-wrap items-center justify-between gap-2 mb-2">
-          <h3 class="font-bold text-slate-800">Active Users</h3>
+          <div class="flex items-center gap-2"><h3 class="font-bold text-slate-800">Active Users</h3><button type="button" id="admin-active-users-toggle" aria-expanded="true" aria-controls="admin-active-users-content" onclick="toggleAdminPushSection('admin-active-users-content','admin-active-users-toggle')" class="rounded-lg border border-slate-300 px-3 py-1 text-xs font-bold text-slate-700">Collapse ▾</button></div>
           <p id="admin-active-user-summary" class="text-xs text-slate-600">Loading active accounts…</p>
         </div>
-        <div class="overflow-auto border border-slate-200 rounded-xl">
-          <table class="w-full text-left text-sm">
-            <thead class="text-xs uppercase bg-emerald-50 text-slate-700"><tr><th class="p-2">Role</th><th class="p-2">Admission No. / Employee ID</th><th class="p-2">Name</th><th class="p-2">Class / Department</th><th class="p-2">Status</th><th class="p-2">Last Login</th></tr></thead>
-            <tbody id="admin-active-user-rows"><tr><td colspan="6" class="p-3 text-slate-500">No active users loaded.</td></tr></tbody>
+        <div id="admin-active-users-content">
+          <div class="overflow-auto border border-slate-200 rounded-xl">
+            <table id="admin-active-users-table" class="w-full text-left text-sm">
+              <thead class="text-xs uppercase bg-emerald-50 text-slate-700"><tr><th class="p-2"><button type="button" class="admin-sort-button" onclick="sortAdminPushTable('admin-active-users-table',0)">Role ↕</button></th><th class="p-2"><button type="button" class="admin-sort-button" onclick="sortAdminPushTable('admin-active-users-table',1)">Admission No. / Employee ID ↕</button></th><th class="p-2"><button type="button" class="admin-sort-button" onclick="sortAdminPushTable('admin-active-users-table',2)">Name ↕</button></th><th class="p-2"><button type="button" class="admin-sort-button" onclick="sortAdminPushTable('admin-active-users-table',3)">Class / Department ↕</button></th><th class="p-2"><button type="button" class="admin-sort-button" onclick="sortAdminPushTable('admin-active-users-table',4)">Status ↕</button></th><th class="p-2"><button type="button" class="admin-sort-button" onclick="sortAdminPushTable('admin-active-users-table',5)">Last Login ↕</button></th></tr></thead>
+              <tbody id="admin-active-user-rows"><tr><td colspan="6" class="p-3 text-slate-500">No active users loaded.</td></tr></tbody>
+            </table>
+          </div>
+          <p class="text-xs text-slate-500 mt-2">Counts come from active student, staff/teacher and administrator records. Last Login is shown only when a successful login event has been recorded; a dash does not mean the account is disabled.</p>
+        </div>
+      </section>
+      <section class="mb-2">
+        <div class="flex flex-wrap items-center justify-between gap-2 mb-2"><h3 class="font-bold text-slate-800">Registered Push Devices</h3><button type="button" id="admin-push-devices-toggle" aria-expanded="true" aria-controls="admin-push-devices-content" onclick="toggleAdminPushSection('admin-push-devices-content','admin-push-devices-toggle')" class="rounded-lg border border-slate-300 px-3 py-1 text-xs font-bold text-slate-700">Collapse ▾</button></div>
+        <div id="admin-push-devices-content" class="overflow-auto">
+          <table id="admin-push-devices-table" class="w-full text-left text-sm">
+            <thead class="text-xs uppercase bg-slate-100 text-slate-600"><tr><th class="p-2"><button type="button" class="admin-sort-button" onclick="sortAdminPushTable('admin-push-devices-table',0)">Admission No. ↕</button></th><th class="p-2"><button type="button" class="admin-sort-button" onclick="sortAdminPushTable('admin-push-devices-table',1)">Class ↕</button></th><th class="p-2"><button type="button" class="admin-sort-button" onclick="sortAdminPushTable('admin-push-devices-table',2)">Platform ↕</button></th><th class="p-2"><button type="button" class="admin-sort-button" onclick="sortAdminPushTable('admin-push-devices-table',3)">Registered ↕</button></th><th class="p-2"><button type="button" class="admin-sort-button" onclick="sortAdminPushTable('admin-push-devices-table',4)">Last Updated ↕</button></th><th class="p-2"><button type="button" class="admin-sort-button" onclick="sortAdminPushTable('admin-push-devices-table',5)">Last Login ↕</button></th><th class="p-2"><button type="button" class="admin-sort-button" onclick="sortAdminPushTable('admin-push-devices-table',6)">Last Push ↕</button></th></tr></thead>
+            <tbody id="admin-push-monitor-rows"><tr><td colspan="7" class="p-3 text-slate-500">No data loaded.</td></tr></tbody>
           </table>
         </div>
-        <p class="text-xs text-slate-500 mt-2">Counts come from active student, staff/teacher and administrator records. Last Login is shown only when a successful login event has been recorded; a dash does not mean the account is disabled.</p>
       </section>
-      <h3 class="font-bold text-slate-800 mb-2">Registered Push Devices</h3>
-      <table class="w-full text-left text-sm">
-        <thead class="text-xs uppercase bg-slate-100 text-slate-600"><tr><th class="p-2">Admission No.</th><th class="p-2">Class</th><th class="p-2">Platform</th><th class="p-2">Registered</th><th class="p-2">Last Updated</th><th class="p-2">Last Login</th><th class="p-2">Last Push</th></tr></thead>
-        <tbody id="admin-push-monitor-rows"><tr><td colspan="7" class="p-3 text-slate-500">No data loaded.</td></tr></tbody>
-      </table>
     </div>
     <p class="px-4 pb-4 text-xs text-slate-500">Shows registered devices, successful student logins, and the latest recorded push result. Students without registered devices can appear after a successful login. Delivery status means the push provider accepted or rejected the request; it cannot confirm the notification was opened.</p>
   </section>
@@ -14761,6 +14767,38 @@ window.showStudentSchoolUpiQr=async function(accountId,installmentId){
 <script>
 (function(){
   const esc = (value) => String(value ?? '').replace(/[&<>"']/g, ch => ({'&':'&amp;','<':'&lt;','>':'&gt;','"':'&quot;',"'":'&#39;'}[ch]));
+  const adminPushSortDirections = {};
+  window.toggleAdminPushSection = function(contentId, buttonId){
+    const content=document.getElementById(contentId),button=document.getElementById(buttonId);
+    if(!content||!button)return;
+    const willExpand=content.classList.contains('hidden');
+    content.classList.toggle('hidden',!willExpand);
+    button.setAttribute('aria-expanded',String(willExpand));
+    button.textContent=willExpand?'Collapse ▾':'Expand ▸';
+  };
+  window.sortAdminPushTable = function(tableId,columnIndex){
+    const table=document.getElementById(tableId),body=table?.tBodies?.[0];
+    if(!body)return;
+    const key=tableId+':'+columnIndex;
+    const ascending=adminPushSortDirections[key]!==true;
+    adminPushSortDirections[key]=ascending;
+    const rows=Array.from(body.rows).filter(row=>row.cells.length>1);
+    rows.sort((a,b)=>{
+      const av=(a.cells[columnIndex]?.innerText||'').trim();
+      const bv=(b.cells[columnIndex]?.innerText||'').trim();
+      const an=Number(av),bn=Number(bv);
+      let cmp;
+      if(av!=='—'&&bv!=='—'&&av!==''&&bv!==''&&Number.isFinite(an)&&Number.isFinite(bn))cmp=an-bn;
+      else {
+        const ad=Date.parse(av),bd=Date.parse(bv);
+        cmp=Number.isFinite(ad)&&Number.isFinite(bd)?ad-bd:av.localeCompare(bv,undefined,{numeric:true,sensitivity:'base'});
+      }
+      return ascending?cmp:-cmp;
+    });
+    rows.forEach(row=>body.appendChild(row));
+    const header=table.tHead?.rows?.[0]?.cells?.[columnIndex]?.querySelector('button');
+    if(header)header.textContent=header.textContent.replace(/[↑↓↕]/g,'').trim()+(ascending?' ↑':' ↓');
+  };
   window.openAdminPushMonitor = function(){
     const el=document.getElementById('admin-push-monitor-modal');
     if(!el)return;
