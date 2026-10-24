@@ -1737,6 +1737,43 @@
     }
   </style>
 
+
+  <style id="admin-push-monitor-mobile-fix">
+    /* Keep the Push Monitor inside the phone viewport; scroll wide tables internally. */
+    #admin-push-monitor-modal,
+    #admin-push-monitor-modal * { box-sizing: border-box; }
+    #admin-push-monitor-modal { max-width: 100vw; }
+    #admin-push-monitor-modal .overflow-auto {
+      min-width: 0;
+      max-width: 100%;
+      overscroll-behavior-x: contain;
+      -webkit-overflow-scrolling: touch;
+    }
+    #admin-active-users-table,
+    #admin-push-devices-table {
+      width: 100%;
+      min-width: 680px;
+      table-layout: auto;
+    }
+    #admin-active-users-table th,
+    #admin-active-users-table td,
+    #admin-push-devices-table th,
+    #admin-push-devices-table td { white-space: nowrap; }
+    #admin-push-monitor-modal .admin-sort-button {
+      max-width: 100%;
+      white-space: normal;
+      line-height: 1.25;
+      touch-action: manipulation;
+    }
+    @media (max-width: 640px) {
+      #admin-push-monitor-modal .p-4.overflow-auto { padding-left: 12px; padding-right: 12px; }
+      #admin-active-users-table th,
+      #admin-active-users-table td,
+      #admin-push-devices-table th,
+      #admin-push-devices-table td { padding: 8px; }
+    }
+  </style>
+
 </head>
 <body class="bg-slate-100 text-slate-800 antialiased min-h-screen min-h-screen-safe flex flex-col selection:bg-emerald-600 selection:text-white">
 
