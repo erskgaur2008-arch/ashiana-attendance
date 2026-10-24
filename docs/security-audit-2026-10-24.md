@@ -1,0 +1,35 @@
+# Production database security audit — 2026-10-24
+
+## Scope and safety
+
+Read-only inspection of production project configuration, PostgreSQL grants and RLS policies, Supabase Storage bucket visibility/policies, and Supabase security advisor findings. No production data was modified during the audit.
+
+## Confirmed observations
+
+- Direct table grants to `anon` include broad privileges on `admin_users`, `attendance_punches`, `leave_requests`, `staff`, `student_attendance`, `student_leave_requests`, and `student_roster`.
+- The advisor reports 23 RLS-enabled tables without policies. RLS-enabled tables without policies normally deny API row access, but the combination of grants and no policies is confusing and should be hardened and reviewed table by table.
+- The `staff-avatars` Storage bucket is public and has a public SELECT policy. This may be intentional for avatar rendering, but staff photos are personal data; review intended visibility and minimize data shown in avatars.
+- The `student-portal-documents` bucket is public. The existing migration explicitly made it public so student portal PDFs can open without a Supabase Auth session. Treat this as a known exposure risk until the application is migrated to signed URLs or a session-authorized download endpoint. Do not flip the bucket to private before that compatibility work, because existing document links may break.
+- `student-photos` and `fee-payment-proofs` buckets are private.
+- Security advisor flags multiple SECURITY DEFINER functions executable by `anon`. Some are intentionally required for the custom Admission Number + DOB login flow and token-based student RPCs. Do not revoke their execution indiscriminately. Audit each function for token entropy/expiry, identity binding, rate limiting, search_path safety, and returned fields.
+- Leaked-password protection is reported disabled. This should be enabled after reviewing the existing authentication model and testing the effect on account flows.
+
+## Change proposed in this PR
+
+A migration revokes direct anonymous table privileges from seven sensitive tables. It does not modify rows, change authenticated grants, change Storage visibility, or revoke intended RPC execution. Existing SECURITY DEFINER RPCs should continue to work because their execution rights are separate from direct table grants.
+
+## Required post-migration checks
+
+1. Verify the seven tables no longer grant table privileges to `anon`.
+2. Verify student login, student session startup, student portal, attendance, staff login, administrator workflows, and fee submissions continue to work through their intended RPCs.
+3. Use two test student accounts to confirm one session cannot read the other student's portal, attendance, leave requests, or fee data.
+4. Test direct unauthenticated REST table reads/writes against the sensitive tables; expect denial.
+5. Test that public document URLs are currently accessible only as an exposure confirmation in an approved test context; do not enumerate or download real personal documents.
+6. Before making `student-portal-documents` private, update upload/read code to use short-lived signed URLs or a session-authorized download endpoint and test it end-to-end.
+7. Decide whether staff avatars are meant to be public. If not, migrate consumers to signed URLs before changing the bucket to private.
+8. Review all SECURITY DEFINER function definitions and explicit grants individually; no blanket revoke.
+9. Enable leaked-password protection and run authentication regression tests.
+
+## Production deployment status
+
+This PR is a proposal only. Do not apply its migration to production until checks pass and the migration is reviewed. No production changes are made by this PR itself.
