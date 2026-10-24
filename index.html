@@ -6909,8 +6909,20 @@ async function studentDashboardSection(type){
 function studentNoticePublisherLabel(value){
   const raw=String(value||'').trim();
   if(!raw) return 'School Administration';
-  const label=raw.includes('@') ? raw.split('@')[0].replace(/[._-]+/g,' ').trim() : raw;
-  return label.split(/\s+/).filter(Boolean).map(part=>part.charAt(0).toUpperCase()+part.slice(1).toLowerCase()).join(' ') || 'School Administration';
+  const email=raw.toLowerCase();
+  const localPart=email.includes('@')?email.split('@')[0]:'';
+  const records=Array.isArray(staffDatabase)?staffDatabase:[];
+  const found=records.find(s=>{
+    const staffEmail=String(s.email||'').trim().toLowerCase();
+    const staffName=String(s.name||'').trim();
+    return (staffEmail && (staffEmail===email || (localPart && staffEmail.split('@')[0]===localPart))) ||
+      (localPart && staffName && staffName.toLowerCase()===localPart);
+  });
+  const actualName=String(found?.name||'').trim();
+  if(actualName && !actualName.includes('@')) return actualName;
+  // Do not turn an email username into a misleading person's name.
+  if(raw.includes('@')) return 'School Administration';
+  return raw;
 }
 function closeStudentDashboardSection(){
   const panel=document.getElementById("student-dashboard-panel");
@@ -13125,7 +13137,7 @@ window.addEventListener('load',async function(){
       try{
         const payloads=targets.map(target=>({
           school_code:APS_STUDENT_SCHOOL,class_name:target.class_name,section:target.section,
-          title,body,published_by:String(currentAuthUser.full_name||currentAuthUser.displayName||currentAuthUser.name||currentAuthUser.email||'ADMIN').trim(),
+          title,body,published_by:String(currentAuthUser.staffRecord?.name||currentAuthUser.staff_record?.name||currentAuthUser.full_name||currentAuthUser.displayName||currentAuthUser.name||currentAuthUser.studentRecord?.student_name||currentAuthUser.email||'School Administration').trim(),
           publish_at:new Date().toISOString(),active:true
         }));
         const {error}=await supabaseClient.from('student_notices').insert(payloads);
