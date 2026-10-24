@@ -216,6 +216,26 @@ Deno.serve(async (req: Request) => {
   const { data: userData, error: userError } = await client.auth.getUser();
   if (userError || !userData.user) return json({ error: "AUTH_REQUIRED" }, 401);
 
+  if (action === "admin-push-diagnostics") {
+    const callerEmail = String(userData.user.email || "").trim().toLowerCase();
+    if (!callerEmail) return json({ error: "ADMIN_REQUIRED" }, 403);
+    const { data: admins, error: adminError } = await service.from("admin_users")
+      .select("email").eq("active", true).ilike("email", escapeLike(callerEmail)).limit(1);
+    if (adminError || !admins?.length) return json({ error: "ADMIN_REQUIRED" }, 403);
+
+    const { data: registrations, error: registrationError } = await service
+      .from("student_push_subscriptions")
+      .select("enroll_no,class_name,section,platform,created_at,updated_at")
+      .eq("school_code", "ashiana")
+      .order("updated_at", { ascending: false })
+      .limit(500);
+    if (registrationError) {
+      console.error("Admin push diagnostics query failed:", registrationError.message);
+      return json({ error: "PUSH_DIAGNOSTICS_UNAVAILABLE" }, 500);
+    }
+    return json({ success: true, registrations: registrations || [] });
+  }
+
   if (action === "send-attendance-update") {
     const callerEmail = String(userData.user.email || "").trim().toLowerCase();
     if (!callerEmail) return json({ error: "AUTH_REQUIRED" }, 401);
