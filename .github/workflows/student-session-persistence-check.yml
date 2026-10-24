@@ -1,0 +1,43 @@
+name: Student Browser Session Validation
+
+on:
+  pull_request:
+    branches: [main]
+    paths:
+      - 'index.html'
+      - '.github/workflows/student-session-persistence-check.yml'
+  workflow_dispatch:
+
+permissions:
+  contents: read
+
+jobs:
+  student-session-static-check:
+    runs-on: ubuntu-latest
+    steps:
+      - name: Check out repository
+        uses: actions/checkout@v4
+      - name: Validate safe browser session persistence
+        run: |
+          python3 - <<'PY'
+          from pathlib import Path
+          source = Path("index.html").read_text(encoding="utf-8")
+          checks = {
+              "browser restoration reads opaque token from localStorage":
+                  'localStorage.getItem("aps_student_session_token_v1")' in source,
+              "student token is written for web/PWA":
+                  'localStorage.setItem("aps_student_session_token_v1", studentSessionToken)' in source,
+              "restoration validates token through server RPC":
+                  "student_portal_bundle_by_session" in source and "p_token: studentToken" in source,
+              "logout revokes server session":
+                  'student_session_revoke' in source,
+              "logout clears persistent token":
+                  'localStorage.removeItem("aps_student_session_token_v1")' in source,
+              "expired session clears persistent token":
+                  'localStorage.removeItem("aps_student_session_token_v1"); sessionStorage.removeItem("aps_student_session_token_v1")' in source,
+          }
+          for name, ok in checks.items():
+              print(("PASS" if ok else "FAIL") + ": " + name)
+          if not all(checks.values()):
+              raise SystemExit(1)
+          PY
