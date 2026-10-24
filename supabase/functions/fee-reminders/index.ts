@@ -117,7 +117,16 @@ Deno.serve(async(req:Request)=>{
     stats.inAppCreated++;
     await service.from("fee_reminder_attempts").update({outcome:"SENT",sent_at:new Date().toISOString()})
       .eq("fee_account_id",row.fee_account_id).eq("installment_id",row.installment_id).eq("reminder_kind","IN_APP").eq("reminder_stage",row.reminder_stage);
-    const matching=subscriptions.filter(s=>s.enroll_no?.toUpperCase()===row.enroll_no?.toUpperCase());
+    const normalizeEnroll=(value:string|undefined|null)=>String(value||"").trim().toUpperCase();
+    const matching=subscriptions.filter(s=>normalizeEnroll(s.enroll_no)===normalizeEnroll(row.enroll_no));
+    if (!matching.length) {
+      // Log counts only; do not expose student identifiers or device tokens.
+      console.warn("Fee reminder push suppressed: no matching registered device", {
+        stage: row.reminder_stage,
+        subscriptionCount: subscriptions.length,
+        candidateEnrollmentPresent: Boolean(normalizeEnroll(row.enroll_no)),
+      });
+    }
     if(!matching.length) {
       stats.pushSuppressed++;
       await service.from("fee_reminder_attempts").insert({fee_account_id:row.fee_account_id,installment_id:row.installment_id,
@@ -131,23 +140,59 @@ Deno.serve(async(req:Request)=>{
     const jobs:Promise<void>[]=[];
     for(const sub of matching) {
       if(sub.platform==="web") {
-        if(!webConfigured||!sub.subscription) { failed++; continue; }
+        if(!webConfigured||!sub.subscription) {
+          failed++;
+          console.error("Fee reminder web push unavailable", {
+            vapidConfigured: webConfigured,
+            subscriptionAvailable: Boolean(sub.subscription),
+          });
+          continue;
+        }
         jobs.push(webpush.sendNotification(sub.subscription as {endpoint:string;keys:{p256dh:string;auth:string}},
           JSON.stringify({title,body:message,category:"fee_reminder",tag:"fee:"+row.installment_id+":"+row.reminder_stage,url:"/?login=student"}))
           .then(()=>{webSent++;}).catch(async(e)=>{
-            failed++;const status=Number((e as {statusCode?:number}).statusCode||0);
+            failed++;
+            const status=Number((e as {statusCode?:number}).statusCode||0);
+            console.error("Fee reminder web push failed", { status, errorName: String((e as {name?:string}).name||"Error") });
             if(status===404||status===410) await service.from("student_push_subscriptions").delete().eq("id",sub.id);
           }));
       } else if(sub.platform==="android") {
-        if(!account||!androidToken||!sub.device_token) { failed++; continue; }
+        if(!account||!androidToken||!sub.device_token) {
+          failed++;
+          console.error("Fee reminder Android push unavailable", {
+            serviceAccountConfigured: Boolean(account),
+            accessTokenAvailable: Boolean(androidToken),
+            deviceTokenAvailable: Boolean(sub.device_token),
+          });
+          continue;
+        }
         jobs.push(sendFcm(androidToken,account.project_id,sub.device_token,title,message,row.reminder_stage).then(async result=>{
-          if(result.ok) androidSent++; else {failed++;if(result.detail==="UNREGISTERED"||result.status===404) await service.from("student_push_subscriptions").delete().eq("id",sub.id);}
+          if(result.ok) {
+            androidSent++;
+          } else {
+            failed++;
+            // FCM status and safe error code help diagnose delivery without logging tokens.
+            console.error("Fee reminder Android push failed", { status: result.status, code: result.detail || "UNKNOWN" });
+            if(result.detail==="UNREGISTERED"||result.status===404) await service.from("student_push_subscriptions").delete().eq("id",sub.id);
+          }
+        }).catch((error:unknown)=>{
+          failed++;
+          console.error("Fee reminder Android push request threw", {
+            errorName: error instanceof Error ? error.name : "UnknownError",
+          });
         }));
       }
     }
     for(let i=0;i<jobs.length;i+=20) await Promise.allSettled(jobs.slice(i,i+20));
     const sent=webSent+androidSent;
     stats.pushSent+=sent;stats.pushFailed+=failed;
+    console.info("Fee reminder delivery summary", {
+      stage: row.reminder_stage,
+      webSent,
+      androidSent,
+      failed,
+      matchedSubscriptions: matching.length,
+    });
     await service.from("fee_reminder_attempts").insert({fee_account_id:row.fee_account_id,installment_id:row.installment_id,
       reminder_kind:"PUSH",reminder_stage:row.reminder_stage,due_date:row.due_date,
       outcome:sent>0?"SENT":"FAILED",reason:sent>0?null:"NO_DELIVERY_SUCCEEDED",sent_at:sent>0?new Date().toISOString():null});
