@@ -173,7 +173,15 @@ Deno.serve(async(req:Request)=>{
             failed++;
             // FCM status and safe error code help diagnose delivery without logging tokens.
             console.error("Fee reminder Android push failed", { status: result.status, code: result.detail || "UNKNOWN" });
-            if(result.detail==="UNREGISTERED"||result.status===404) await service.from("student_push_subscriptions").delete().eq("id",sub.id);
+            if(result.detail==="UNREGISTERED"||result.status===404) {
+              // Subscription cleanup must not cause this same delivery failure to be counted twice.
+              try {
+                const {error:deleteError}=await service.from("student_push_subscriptions").delete().eq("id",sub.id);
+                if(deleteError) console.warn("Invalid Android subscription cleanup failed", { code: deleteError.code || "UNKNOWN" });
+              } catch {
+                console.warn("Invalid Android subscription cleanup threw");
+              }
+            }
           }
         }).catch((error:unknown)=>{
           failed++;
