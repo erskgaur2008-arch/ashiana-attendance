@@ -160,8 +160,7 @@ Deno.serve(async (req: Request) => {
     if (bundleError || !bundle || !enrollNo) return json({ error: "INVALID_STUDENT_SESSION" }, 401);
     const platform = String(body.platform || "unknown");
     const { error: logError } = await service.from("student_activity_monitor").insert({
-      school_code: "ashiana", role: "student", user_identifier: enrollNo,
-      user_name: String(student.student_name || student.name || "").trim() || null,
+      school_code: "ashiana",
       enroll_no: enrollNo,
       class_name: String(student.class_name || student.class || "").trim() || null,
       section: String(student.section || student.section_name || "").trim() || null,
@@ -258,7 +257,7 @@ Deno.serve(async (req: Request) => {
       return json({ error: "PUSH_DIAGNOSTICS_UNAVAILABLE" }, 500);
     }
     const { data: activity, error: activityError } = await service.from("student_activity_monitor")
-      .select("role,user_identifier,user_name,enroll_no,class_name,section,platform,event_type,status,created_at")
+      .select("enroll_no,class_name,section,platform,event_type,status,created_at")
       .eq("school_code", "ashiana").order("created_at", { ascending: false }).limit(10000);
     if (activityError) {
       console.error("Admin user activity query failed:", activityError.message);
@@ -267,12 +266,14 @@ Deno.serve(async (req: Request) => {
 
     const latestByUser = new Map<string, Record<string, unknown>>();
     for (const event of activity || []) {
-      const role = String(event.role || "student").toLowerCase();
-      const identifier = String(event.user_identifier || event.enroll_no || "").trim().toUpperCase();
+      // This production table currently records student activity only. Its actual
+      // schema has enroll_no but does not have role/user_identifier/user_name.
+      const role = "student";
+      const identifier = String(event.enroll_no || "").trim().toUpperCase();
       if (!identifier) continue;
       const key = role + ":" + identifier;
       const item = latestByUser.get(key) || {
-        role, user_identifier: identifier, user_name: event.user_name || null,
+        role, user_identifier: identifier,
         class_name: event.class_name, section: event.section, platform: event.platform,
         last_login_at: null, last_push_at: null, last_push_status: null, last_push_error: null
       };
