@@ -26,6 +26,7 @@ type StudentPushRow = {
   device_token: string | null;
   class_name: string | null;
   section: string | null;
+  enroll_no?: string | null;
 };
 
 function base64Url(value: string | Uint8Array) {
@@ -148,6 +149,27 @@ Deno.serve(async (req: Request) => {
 
   const service = createClient(url, serviceKey, { auth: { persistSession: false, autoRefreshToken: false } });
 
+  // Record successful student login only after validating the revocable session token.
+  if (action === "student-login-event") {
+    const token = String(body.sessionToken || "");
+    if (!/^[a-f0-9]{64}$/i.test(token)) return json({ error: "INVALID_STUDENT_SESSION" }, 401);
+    const anonClient = createClient(url, anon, { auth: { persistSession: false, autoRefreshToken: false } });
+    const { data: bundle, error: bundleError } = await anonClient.rpc("student_portal_bundle_by_session", { p_token: token });
+    const student = (bundle?.student || {}) as Record<string, unknown>;
+    const enrollNo = String(student.enroll_no || student.admission_no || "").trim().toUpperCase();
+    if (bundleError || !bundle || !enrollNo) return json({ error: "INVALID_STUDENT_SESSION" }, 401);
+    const platform = String(body.platform || "unknown");
+    const { error: logError } = await service.from("student_activity_monitor").insert({
+      school_code: "ashiana", enroll_no: enrollNo,
+      class_name: String(student.class_name || student.class || "").trim() || null,
+      section: String(student.section || student.section_name || "").trim() || null,
+      platform: ["android", "web"].includes(platform) ? platform : "unknown",
+      event_type: "login_success", status: "success"
+    });
+    if (logError) { console.error("Student login monitor insert failed:", logError.message); return json({ error: "ACTIVITY_LOG_UNAVAILABLE" }, 500); }
+    return json({ success: true });
+  }
+
   // Students use the existing admission-number + DOB RPC session rather than
   // Supabase Auth. Validate the credentials through the existing login RPC
   // before associating any device token/subscription with a student.
@@ -233,7 +255,25 @@ Deno.serve(async (req: Request) => {
       console.error("Admin push diagnostics query failed:", registrationError.message);
       return json({ error: "PUSH_DIAGNOSTICS_UNAVAILABLE" }, 500);
     }
-    return json({ success: true, registrations: registrations || [] });
+    const { data: activity, error: activityError } = await service.from("student_activity_monitor")
+      .select("enroll_no,class_name,section,platform,event_type,status,error_code,created_at")
+      .eq("school_code", "ashiana").order("created_at", { ascending: false }).limit(3000);
+    if (activityError) {
+      console.error("Admin student activity query failed:", activityError.message);
+      return json({ error: "STUDENT_ACTIVITY_UNAVAILABLE" }, 500);
+    }
+    const latestByStudent = new Map<string, Record<string, unknown>>();
+    for (const event of activity || []) {
+      const key = String(event.enroll_no || "").trim().toUpperCase();
+      if (!key) continue;
+      const item = latestByStudent.get(key) || { enroll_no: key, class_name: event.class_name, section: event.section, last_login_at: null, last_push_at: null, last_push_status: null, last_push_error: null };
+      if (event.event_type === "login_success" && !item.last_login_at) item.last_login_at = event.created_at;
+      if (event.event_type === "push_delivery" && !item.last_push_at) {
+        item.last_push_at = event.created_at; item.last_push_status = event.status; item.last_push_error = event.error_code || null;
+      }
+      latestByStudent.set(key, item);
+    }
+    return json({ success: true, registrations: registrations || [], activity: Array.from(latestByStudent.values()) });
   }
 
   if (action === "send-attendance-update") {
@@ -414,7 +454,7 @@ Deno.serve(async (req: Request) => {
       const rows: StudentPushRow[] = [];
       for (let offset = 0; ; offset += 1000) {
         const { data, error } = await service.from("student_push_subscriptions")
-          .select("id,platform,endpoint,subscription,device_token,class_name,section")
+          .select("id,platform,endpoint,subscription,device_token,class_name,section,enroll_no")
           .eq("school_code", schoolCode).range(offset, offset + 999);
         if (error) return json({ error: "STUDENT_SUBSCRIPTION_LOOKUP_FAILED" }, 500);
         const batch = (data || []) as StudentPushRow[];
@@ -437,16 +477,29 @@ Deno.serve(async (req: Request) => {
 
       let sentWeb = 0, sentAndroid = 0, failed = 0, skipped = 0;
       const jobs: Array<Promise<void>> = [];
+      const recordDelivery = async (row: StudentPushRow, status: "success" | "failed", errorCode: string | null = null) => {
+        const enrollNo = String(row.enroll_no || "").trim().toUpperCase();
+        if (!enrollNo) return;
+        const { error } = await service.from("student_activity_monitor").insert({
+          school_code: schoolCode, enroll_no: enrollNo, class_name: row.class_name || null,
+          section: row.section || null, platform: row.platform, event_type: "push_delivery",
+          status, error_code: errorCode ? errorCode.slice(0, 80) : null
+        });
+        if (error) console.error("Push delivery monitor insert failed:", error.message);
+      };
       for (const row of webRows) {
         if (!webPushConfigured) { skipped++; continue; }
-        jobs.push(sendWebPush(row, title, message, category, service).then((ok) => { if (ok) sentWeb++; else failed++; }));
+        jobs.push(sendWebPush(row, title, message, category, service).then(async (ok) => {
+          if (ok) { sentWeb++; await recordDelivery(row, "success"); }
+          else { failed++; await recordDelivery(row, "failed", "WEB_PUSH_FAILED"); }
+        }));
       }
       for (const row of androidRows) {
         if (!fcmAccessToken || !fcmAccount) { skipped++; continue; }
         jobs.push(sendFcm(fcmAccessToken, fcmAccount.project_id, String(row.device_token || ""), title, message, category).then(async (result) => {
-          if (result.ok) sentAndroid++;
+          if (result.ok) { sentAndroid++; await recordDelivery(row, "success"); }
           else {
-            failed++;
+            failed++; await recordDelivery(row, "failed", result.detail || ("HTTP_" + result.status));
             if (result.detail === "UNREGISTERED" || result.status === 404) {
               await service.from("student_push_subscriptions").delete().eq("id", row.id);
             }

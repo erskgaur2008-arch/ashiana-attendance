@@ -2380,6 +2380,18 @@
               if (!/^[a-f0-9]{64}$/i.test(studentSessionToken)) {
                 throw new Error("Student session could not be created. Please try signing in again.");
               }
+              // Best-effort privacy-safe activity audit. Login must continue even if diagnostics are unavailable.
+              try {
+                const activityPlatform = window.AshianaNative?.isAndroid?.() ? "android" : "web";
+                studentClient.functions.invoke("push-notifications", {
+                  body: { action: "student-login-event", sessionToken: studentSessionToken, platform: activityPlatform }
+                }).then(({ error }) => {
+                  if (error) console.warn("Student activity monitor did not record login:", error.message || "request failed");
+                }).catch(error => console.warn("Student activity monitor request failed:", error?.message || "request failed"));
+              } catch (activityError) {
+                console.warn("Student activity monitor unavailable:", activityError?.message || "request failed");
+              }
+
               var bundle = await studentClient.rpc("student_portal_bundle_by_session", {
                 p_token: studentSessionToken
               });
@@ -14725,11 +14737,11 @@ window.showStudentSchoolUpiQr=async function(accountId,installmentId){
     <div id="admin-push-monitor-status" class="px-4 pt-3 text-sm text-slate-600" role="status"></div>
     <div class="p-4 overflow-auto">
       <table class="w-full text-left text-sm">
-        <thead class="text-xs uppercase bg-slate-100 text-slate-600"><tr><th class="p-2">Admission No.</th><th class="p-2">Class</th><th class="p-2">Platform</th><th class="p-2">Registered</th><th class="p-2">Last Updated</th></tr></thead>
-        <tbody id="admin-push-monitor-rows"><tr><td colspan="5" class="p-3 text-slate-500">No data loaded.</td></tr></tbody>
+        <thead class="text-xs uppercase bg-slate-100 text-slate-600"><tr><th class="p-2">Admission No.</th><th class="p-2">Class</th><th class="p-2">Platform</th><th class="p-2">Registered</th><th class="p-2">Last Updated</th><th class="p-2">Last Login</th><th class="p-2">Last Push</th></tr></thead>
+        <tbody id="admin-push-monitor-rows"><tr><td colspan="7" class="p-3 text-slate-500">No data loaded.</td></tr></tbody>
       </table>
     </div>
-    <p class="px-4 pb-4 text-xs text-slate-500">This panel shows registered push devices only. It does not yet show successful logins or users without registered devices.</p>
+    <p class="px-4 pb-4 text-xs text-slate-500">Shows registered devices, successful student logins, and the latest recorded push result. Students without registered devices can appear after a successful login. Delivery status means the push provider accepted or rejected the request; it cannot confirm the notification was opened.</p>
   </section>
 </div>
 <script>
@@ -14758,14 +14770,34 @@ window.showStudentSchoolUpiQr=async function(accountId,installmentId){
       const {data,error}=await client.functions.invoke('push-notifications',{body:{action:'admin-push-diagnostics'}});
       if(error)throw error;
       if(!data?.success||!Array.isArray(data.registrations))throw new Error(data?.error||'Unable to load registrations.');
-      const items=data.registrations;
-      summary.textContent=items.length+' registered device record(s)';
-      rows.innerHTML=items.length?items.map(item=>'<tr class="border-b border-slate-100"><td class="p-2 font-semibold">'+esc(item.enroll_no)+'</td><td class="p-2">'+esc([item.class_name,item.section].filter(Boolean).join('-')||'—')+'</td><td class="p-2">'+esc(item.platform)+'</td><td class="p-2">'+esc(item.created_at||'—')+'</td><td class="p-2">'+esc(item.updated_at||'—')+'</td></tr>').join(''):'<tr><td colspan="5" class="p-3 text-slate-500">No registered devices found.</td></tr>';
-      status.textContent='Loaded successfully. Device tokens and subscription secrets are not displayed.';
+      const devices=data.registrations;
+      const activity=Array.isArray(data.activity)?data.activity:[];
+      const byStudent=new Map();
+      for(const item of devices){
+        const key=String(item.enroll_no||'').trim().toUpperCase();
+        if(!key)continue;
+        byStudent.set(key,{...item,enroll_no:key});
+      }
+      for(const item of activity){
+        const key=String(item.enroll_no||'').trim().toUpperCase();
+        if(!key)continue;
+        const prior=byStudent.get(key)||{enroll_no:key,class_name:item.class_name,section:item.section,platform:item.platform||'—',created_at:null,updated_at:null};
+        Object.assign(prior,{last_login_at:item.last_login_at||null,last_push_at:item.last_push_at||null,last_push_status:item.last_push_status||null,last_push_error:item.last_push_error||null});
+        byStudent.set(key,prior);
+      }
+      const items=Array.from(byStudent.values()).sort((a,b)=>String(a.enroll_no).localeCompare(String(b.enroll_no),undefined,{numeric:true}));
+      const loginCount=items.filter(item=>item.last_login_at).length;
+      summary.textContent=devices.length+' registered device record(s) · '+loginCount+' student(s) with a recorded successful login';
+      const fmt=value=>value?esc(new Date(value).toLocaleString()):'—';
+      rows.innerHTML=items.length?items.map(item=>{
+        const push=item.last_push_status?String(item.last_push_status).toUpperCase()+(item.last_push_error?' ('+String(item.last_push_error)+')':''):'—';
+        return '<tr class="border-b border-slate-100"><td class="p-2 font-semibold">'+esc(item.enroll_no)+'</td><td class="p-2">'+esc([item.class_name,item.section].filter(Boolean).join('-')||'—')+'</td><td class="p-2">'+esc(item.platform||'—')+'</td><td class="p-2">'+fmt(item.created_at)+'</td><td class="p-2">'+fmt(item.updated_at)+'</td><td class="p-2">'+fmt(item.last_login_at)+'</td><td class="p-2">'+esc(push)+(item.last_push_at?' · '+fmt(item.last_push_at):'')+'</td></tr>';
+      }).join(''):'<tr><td colspan="7" class="p-3 text-slate-500">No student activity or registered devices found yet.</td></tr>';
+      status.textContent='Loaded successfully. Device tokens, DOB passwords, and subscription secrets are not displayed.';
     }catch(error){
       status.textContent='Could not load registrations: '+String(error?.message||'Request failed');
       summary.textContent='Registration data unavailable';
-      rows.innerHTML='<tr><td colspan="5" class="p-3 text-slate-500">Unable to load data. Verify administrator access and Edge Function deployment.</td></tr>';
+      rows.innerHTML='<tr><td colspan="7" class="p-3 text-slate-500">Unable to load data. Verify administrator access and Edge Function deployment.</td></tr>';
     }
   };
 })();
