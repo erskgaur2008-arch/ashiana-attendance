@@ -5505,7 +5505,7 @@ id="admin-portal-view" class="hidden flex-col w-full space-y-4 admin-dashboard-s
         sessionStorage.removeItem(STORAGE_KEY_CURRENT_USER);
         if (String(e?.message || '').includes('STUDENT_SESSION_EXPIRED') ||
             String(e?.message || '').includes('STUDENT_SESSION_INVALID')) {
-          try { localStorage.removeItem("aps_student_session_v1"); sessionStorage.removeItem("aps_student_session_v1"); sessionStorage.removeItem("aps_student_session_token_v1"); } catch (_) {}
+          try { localStorage.removeItem("aps_student_session_v1"); localStorage.removeItem("aps_student_session_token_v1"); sessionStorage.removeItem("aps_student_session_v1"); sessionStorage.removeItem("aps_student_session_token_v1"); } catch (_) {}
           try { await window.AshianaNative?.clearStudentSessionToken?.(); } catch (_) {}
         }
         return false;
