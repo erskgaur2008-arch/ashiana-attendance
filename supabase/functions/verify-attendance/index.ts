@@ -260,6 +260,19 @@ Deno.serve(async (req: Request) => {
 
       await clear(admin, identityKey);
 
+      // Log only a successful PIN login after a valid session has been minted.
+      // Never store the PIN, auth tokens, or other credentials in the monitor.
+      const staffIdentifier = String(staff!.emp_id || "").trim().toUpperCase();
+      if (staffIdentifier) {
+        const { error: activityError } = await admin.from("student_activity_monitor").insert({
+          school_code: "ashiana", role: "staff", user_identifier: staffIdentifier,
+          user_name: String(staff!.name || "").trim() || null, enroll_no: staffIdentifier,
+          class_name: null, section: null, platform: "unknown",
+          event_type: "login_success", status: "success"
+        });
+        if (activityError) console.error("Staff login monitor insert failed:", activityError.message);
+      }
+
       return json({
         success: true,
         session: {
