@@ -35,6 +35,14 @@ jobs:
                   'localStorage.removeItem("aps_student_session_token_v1")' in source,
               "expired session clears persistent token":
                   source.count('localStorage.removeItem("aps_student_session_token_v1")') >= 2,
+              "Staff/Admin Supabase session explicitly persists in browser storage":
+                  'persistSession: true, autoRefreshToken: true, detectSessionInUrl: false, storage: window.localStorage, storageKey: "sb-oalfzgluqroqbbrulhpr-auth-token"' in source,
+              "Staff restoration verifies Supabase Auth user":
+                  "supabaseClient.auth.getUser()" in source,
+              "Staff restoration requires an active staff record":
+                  ".eq('status', 'ACTIVE')" in source and "currentAuthUser = { type: 'STAFF', staffRecord }" in source,
+              "Staff login establishes verified Supabase session":
+                  "mainClient.auth.setSession" in source and "loginResult.session.refresh_token" in source,
           }
           for name, ok in checks.items():
               print(("PASS" if ok else "FAIL") + ": " + name)
