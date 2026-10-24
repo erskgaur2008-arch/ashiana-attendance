@@ -150,7 +150,7 @@ Deno.serve(async(req:Request)=>{
         }
         jobs.push(webpush.sendNotification(sub.subscription as {endpoint:string;keys:{p256dh:string;auth:string}},
           JSON.stringify({title,body:message,category:"fee_reminder",tag:"fee:"+row.installment_id+":"+row.reminder_stage,url:"/?login=student"}))
-          .then(()=>{webSent++;}).catch(async(e)=>{
+          .then(()=>{webSent++;}).catch(async(e: unknown)=>{
             failed++;
             const status=Number((e as {statusCode?:number}).statusCode||0);
             console.error("Fee reminder web push failed", { status, errorName: String((e as {name?:string}).name||"Error") });
