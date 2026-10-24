@@ -43,3 +43,10 @@ This PR is a proposal only. Do not apply its migration to production until check
 ## Revised recommendation
 
 Do not merge/deploy solely because CI is green. First complete a test-environment compatibility run for the anonymous table grant revocation, and open a follow-up for minimizing the PII returned by the public student-login RPC. Do not blanket-revoke the session-based RPCs: the current custom student login and fee workflows depend on several of them.
+
+## Follow-up validation performed
+
+- Read-only metadata queries against the production project confirmed that all 15 targeted tables exist and currently grant the `anon` role broad direct table privileges (SELECT, INSERT, UPDATE, DELETE, TRUNCATE, REFERENCES, and TRIGGER).
+- The same read-only inspection found RLS enabled on all 15 tables and policies scoped to `authenticated`; this does not make the excessive direct grants desirable, so the migration removes the direct `anon` grants while leaving authenticated grants and policies unchanged.
+- The available `EduPunch-Test` project is not a production-schema clone: several targeted tables are absent there. Applying this migration to that project would not validate production compatibility. A metadata-only regression assertion script has been added at `supabase/tests/security_anon_table_grants.sql`; it is intended to run only after the migration is applied to a disposable test database with the matching schema.
+- No migration has been applied to either production or EduPunch-Test. Runtime regression tests against a matching schema remain required before production deployment.
