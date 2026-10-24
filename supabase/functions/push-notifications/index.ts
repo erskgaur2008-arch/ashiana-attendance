@@ -160,7 +160,9 @@ Deno.serve(async (req: Request) => {
     if (bundleError || !bundle || !enrollNo) return json({ error: "INVALID_STUDENT_SESSION" }, 401);
     const platform = String(body.platform || "unknown");
     const { error: logError } = await service.from("student_activity_monitor").insert({
-      school_code: "ashiana", enroll_no: enrollNo,
+      school_code: "ashiana", role: "student", user_identifier: enrollNo,
+      user_name: String(student.student_name || student.name || "").trim() || null,
+      enroll_no: enrollNo,
       class_name: String(student.class_name || student.class || "").trim() || null,
       section: String(student.section || student.section_name || "").trim() || null,
       platform: ["android", "web"].includes(platform) ? platform : "unknown",
@@ -256,24 +258,85 @@ Deno.serve(async (req: Request) => {
       return json({ error: "PUSH_DIAGNOSTICS_UNAVAILABLE" }, 500);
     }
     const { data: activity, error: activityError } = await service.from("student_activity_monitor")
-      .select("enroll_no,class_name,section,platform,event_type,status,error_code,created_at")
-      .eq("school_code", "ashiana").order("created_at", { ascending: false }).limit(3000);
+      .select("role,user_identifier,user_name,enroll_no,class_name,section,platform,event_type,status,error_code,created_at")
+      .eq("school_code", "ashiana").order("created_at", { ascending: false }).limit(10000);
     if (activityError) {
-      console.error("Admin student activity query failed:", activityError.message);
-      return json({ error: "STUDENT_ACTIVITY_UNAVAILABLE" }, 500);
+      console.error("Admin user activity query failed:", activityError.message);
+      return json({ error: "USER_ACTIVITY_UNAVAILABLE" }, 500);
     }
-    const latestByStudent = new Map<string, Record<string, unknown>>();
+
+    const latestByUser = new Map<string, Record<string, unknown>>();
     for (const event of activity || []) {
-      const key = String(event.enroll_no || "").trim().toUpperCase();
-      if (!key) continue;
-      const item = latestByStudent.get(key) || { enroll_no: key, class_name: event.class_name, section: event.section, last_login_at: null, last_push_at: null, last_push_status: null, last_push_error: null };
+      const role = String(event.role || "student").toLowerCase();
+      const identifier = String(event.user_identifier || event.enroll_no || "").trim().toUpperCase();
+      if (!identifier) continue;
+      const key = role + ":" + identifier;
+      const item = latestByUser.get(key) || {
+        role, user_identifier: identifier, user_name: event.user_name || null,
+        class_name: event.class_name, section: event.section, platform: event.platform,
+        last_login_at: null, last_push_at: null, last_push_status: null, last_push_error: null
+      };
       if (event.event_type === "login_success" && !item.last_login_at) item.last_login_at = event.created_at;
-      if (event.event_type === "push_delivery" && !item.last_push_at) {
+      if (role === "student" && event.event_type === "push_delivery" && !item.last_push_at) {
         item.last_push_at = event.created_at; item.last_push_status = event.status; item.last_push_error = event.error_code || null;
       }
-      latestByStudent.set(key, item);
+      latestByUser.set(key, item);
     }
-    return json({ success: true, registrations: registrations || [], activity: Array.from(latestByStudent.values()) });
+
+    // Active account totals come from the authoritative roster, not push registrations.
+    const fetchAll = async (table: string, select: string, filters: Array<[string, unknown]>) => {
+      const result: Record<string, unknown>[] = [];
+      for (let offset = 0; offset < 10000; offset += 1000) {
+        let query: any = service.from(table).select(select);
+        for (const [column, value] of filters) query = query.eq(column, value);
+        const { data, error } = await query.range(offset, offset + 999);
+        if (error) throw new Error(table + "_LOOKUP_FAILED");
+        const batch = (data || []) as Record<string, unknown>[];
+        result.push(...batch);
+        if (batch.length < 1000) break;
+      }
+      return result;
+    };
+
+    let studentAccounts: Record<string, unknown>[], staffAccounts: Record<string, unknown>[], adminAccounts: Record<string, unknown>[];
+    try {
+      studentAccounts = await fetchAll("student_roster", "enroll_no,student_name,class_name,section,status", [["school_code","ashiana"],["status","ACTIVE"]]);
+      staffAccounts = await fetchAll("staff", "emp_id,name,department,role,status", [["status","ACTIVE"]]);
+      adminAccounts = await fetchAll("admin_users", "email,active", [["active",true]]);
+    } catch (error) {
+      console.error("Admin active user lookup failed:", String((error as Error)?.message || error));
+      return json({ error: "ACTIVE_USERS_UNAVAILABLE" }, 500);
+    }
+
+    const activeUsers: Array<Record<string, unknown>> = [];
+    const addActiveUser = (user: Record<string, unknown>) => {
+      const role = String(user.role || "student").toLowerCase();
+      const identifier = String(user.user_identifier || "").trim();
+      if (!identifier) return;
+      const login = latestByUser.get(role + ":" + identifier.toUpperCase());
+      activeUsers.push({ ...user, last_login_at: login?.last_login_at || null });
+    };
+    for (const row of studentAccounts) {
+      const identifier = String(row.enroll_no || "").trim();
+      if (identifier) addActiveUser({ role: "student", user_identifier: identifier, name: row.student_name || null,
+        context: [row.class_name, row.section].filter(Boolean).join("-") || null, status: row.status });
+    }
+    for (const row of staffAccounts) {
+      const identifier = String(row.emp_id || "").trim();
+      if (identifier) addActiveUser({ role: "staff", user_identifier: identifier, name: row.name || null,
+        context: row.department || row.role || null, status: row.status });
+    }
+    for (const row of adminAccounts) {
+      const identifier = String(row.email || "").trim();
+      if (identifier) addActiveUser({ role: "admin", user_identifier: identifier, name: identifier,
+        context: "Administrator", status: "ACTIVE" });
+    }
+    const activeUserCounts = {
+      students: studentAccounts.length, staff: staffAccounts.length, administrators: adminAccounts.length,
+      total: studentAccounts.length + staffAccounts.length + adminAccounts.length,
+      withRecordedLogin: activeUsers.filter(user => Boolean(user.last_login_at)).length
+    };
+    return json({ success: true, registrations: registrations || [], activity: Array.from(latestByUser.values()), activeUsers, activeUserCounts });
   }
 
   if (action === "send-attendance-update") {
