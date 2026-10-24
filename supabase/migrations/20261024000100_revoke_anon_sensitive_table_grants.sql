@@ -10,11 +10,19 @@
 revoke all privileges on table
   public.admin_users,
   public.attendance_punches,
+  public.attendance_qr_sessions,
+  public.audit_logs,
   public.leave_requests,
   public.staff,
   public.student_attendance,
+  public.student_calendar_events,
+  public.student_class_assignments,
+  public.student_homework,
   public.student_leave_requests,
-  public.student_roster
+  public.student_notices,
+  public.student_report_cards,
+  public.student_roster,
+  public.student_timetable
 from anon;
 
 -- Verification is deliberately non-destructive. These queries should return
