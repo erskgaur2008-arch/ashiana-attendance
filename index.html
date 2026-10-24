@@ -2097,7 +2097,7 @@
           window.__ashianaMainSupabaseClient = window.supabase.createClient(
             "https://oalfzgluqroqbbrulhpr.supabase.co",
             "sb_publishable_PND9f9FKbNrxlEakSgLKYA_5EsqLHkg",
-            { auth: { persistSession: true, autoRefreshToken: true, detectSessionInUrl: false } }
+            { auth: { persistSession: true, autoRefreshToken: true, detectSessionInUrl: false, storage: window.localStorage, storageKey: "sb-oalfzgluqroqbbrulhpr-auth-token" } }
           );
           return window.__ashianaMainSupabaseClient;
         }
