@@ -257,7 +257,7 @@ Deno.serve(async (req: Request) => {
       return json({ error: "PUSH_DIAGNOSTICS_UNAVAILABLE" }, 500);
     }
     const { data: activity, error: activityError } = await service.from("student_activity_monitor")
-      .select("enroll_no,class_name,section,platform,event_type,status,created_at")
+      .select("enroll_no,class_name,section,platform,event_type,status,created_at,role,user_identifier,user_name")
       .eq("school_code", "ashiana").order("created_at", { ascending: false }).limit(10000);
     if (activityError) {
       console.error("Admin user activity query failed:", activityError.message);
@@ -266,17 +266,21 @@ Deno.serve(async (req: Request) => {
 
     const latestByUser = new Map<string, Record<string, unknown>>();
     for (const event of activity || []) {
-      // This production table currently records student activity only. Its actual
-      // schema has enroll_no but does not have role/user_identifier/user_name.
-      const role = "student";
-      const identifier = String(event.enroll_no || "").trim().toUpperCase();
+      // Prefer role-aware identifiers written by newer student/staff login flows.
+      // Fall back to enroll_no for historical student events created before the migration.
+      const roleValue = String(event.role || "student").trim().toLowerCase();
+      const role = roleValue === "teacher" ? "staff" : roleValue;
+      if (!["student", "staff", "admin"].includes(role)) continue;
+      const identifier = String(event.user_identifier || event.enroll_no || "").trim().toUpperCase();
       if (!identifier) continue;
       const key = role + ":" + identifier;
       const item = latestByUser.get(key) || {
         role, user_identifier: identifier,
+        name: event.user_name || null,
         class_name: event.class_name, section: event.section, platform: event.platform,
         last_login_at: null, last_push_at: null, last_push_status: null, last_push_error: null
       };
+      if (event.user_name && !item.name) item.name = event.user_name;
       if (event.event_type === "login_success" && !item.last_login_at) item.last_login_at = event.created_at;
       if (role === "student" && event.event_type === "push_delivery" && !item.last_push_at) {
         item.last_push_at = event.created_at; item.last_push_status = event.status; item.last_push_error = null;
