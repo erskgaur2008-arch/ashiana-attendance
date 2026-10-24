@@ -258,7 +258,7 @@ Deno.serve(async (req: Request) => {
       return json({ error: "PUSH_DIAGNOSTICS_UNAVAILABLE" }, 500);
     }
     const { data: activity, error: activityError } = await service.from("student_activity_monitor")
-      .select("role,user_identifier,user_name,enroll_no,class_name,section,platform,event_type,status,error_code,created_at")
+      .select("role,user_identifier,user_name,enroll_no,class_name,section,platform,event_type,status,created_at")
       .eq("school_code", "ashiana").order("created_at", { ascending: false }).limit(10000);
     if (activityError) {
       console.error("Admin user activity query failed:", activityError.message);
@@ -278,7 +278,7 @@ Deno.serve(async (req: Request) => {
       };
       if (event.event_type === "login_success" && !item.last_login_at) item.last_login_at = event.created_at;
       if (role === "student" && event.event_type === "push_delivery" && !item.last_push_at) {
-        item.last_push_at = event.created_at; item.last_push_status = event.status; item.last_push_error = event.error_code || null;
+        item.last_push_at = event.created_at; item.last_push_status = event.status; item.last_push_error = null;
       }
       latestByUser.set(key, item);
     }
@@ -546,7 +546,7 @@ Deno.serve(async (req: Request) => {
         const { error } = await service.from("student_activity_monitor").insert({
           school_code: schoolCode, enroll_no: enrollNo, class_name: row.class_name || null,
           section: row.section || null, platform: row.platform, event_type: "push_delivery",
-          status, error_code: errorCode ? errorCode.slice(0, 80) : null
+          status
         });
         if (error) console.error("Push delivery monitor insert failed:", error.message);
       };
