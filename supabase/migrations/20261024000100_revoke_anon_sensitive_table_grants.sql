@@ -32,9 +32,11 @@ from anon;
 -- where table_schema = 'public'
 --   and grantee = 'anon'
 --   and table_name in (
---     'admin_users','attendance_punches','leave_requests','staff',
---     'student_attendance','student_leave_requests','student_roster'
---   );
+     'admin_users','attendance_punches','attendance_qr_sessions','audit_logs',
+     'leave_requests','staff','student_attendance','student_calendar_events',
+     'student_class_assignments','student_homework','student_leave_requests',
+     'student_notices','student_report_cards','student_roster','student_timetable'
+   );
 --
 -- Do not add broad grants back to anon. Use narrowly scoped RPCs with explicit
 -- validation, or authenticated RLS policies, for required application operations.
