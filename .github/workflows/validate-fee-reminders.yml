@@ -25,4 +25,4 @@ jobs:
           deno-version: v2.x
 
       - name: Type-check fee-reminders Edge Function
-        run: deno check supabase/functions/fee-reminders/index.ts
+        run: deno --node-modules-dir=auto check supabase/functions/fee-reminders/index.ts
