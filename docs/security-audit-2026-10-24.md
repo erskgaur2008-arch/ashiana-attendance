@@ -33,3 +33,13 @@ A migration revokes direct anonymous table privileges from all 15 tables current
 ## Production deployment status
 
 This PR is a proposal only. Do not apply its migration to production until checks pass and the migration is reviewed. No production changes are made by this PR itself.
+
+## Additional function-level finding from production review
+
+- `student_login(p_school_code, p_enroll_no, p_dob_password)` is a `SECURITY DEFINER` function executable by `anon`. It returns a student object containing DOB, parent names, address, phone number, and photo path after validating the admission number and DOB-formatted password. The function currently applies a rate limit of six attempts per login key per 600-second window, which is useful protection, but the returned personal data is still broader than needed for an unauthenticated login response. Before changing its grants (which could break student login), plan a separate compatible change: return only the minimum login/session bootstrap fields, and retrieve additional student profile data through the session-bound `student_portal_bundle_by_session` RPC. Test existing ID card/profile screens before rollout.
+- `student_session_start` creates a random 32-byte session token, stores its SHA-256 hash, and sets a 30-day expiry. This is a positive token design characteristic. Review session revocation, expiration enforcement, and whether token-bearing RPCs always bind every query to the student resolved from that token.
+- `fee_submit_payment_by_session` validates the token, confirms the fee account belongs to the session's student, verifies the installment belongs to that account, caps the amount, checks remaining balance, and writes an audit record. These checks are useful; still test forged account/installment IDs and replayed UPI references with test data only.
+
+## Revised recommendation
+
+Do not merge/deploy solely because CI is green. First complete a test-environment compatibility run for the anonymous table grant revocation, and open a follow-up for minimizing the PII returned by the public student-login RPC. Do not blanket-revoke the session-based RPCs: the current custom student login and fee workflows depend on several of them.
