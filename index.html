@@ -3390,6 +3390,7 @@ id="admin-portal-view" class="hidden flex-col w-full space-y-4 admin-dashboard-s
         <button type="button" id="admin-nav-reports" onclick="window.switchAdminTab('reports')"><i data-lucide="file-spreadsheet"></i><span>Report</span></button>
         <button type="button" id="admin-nav-working-days" onclick="openMonthlyWorkingDaysCalendar()" title="Mark working days, weekly offs, and school holidays for a month"><i data-lucide="calendar-days"></i><span>Monthly Working Days</span></button>
         <button type="button" id="admin-nav-fees" onclick="openFeesAdminConsole()" title="Review fee payments and Principal confirmations"><i data-lucide="wallet"></i><span>Fees Management</span></button>
+        <button type="button" id="admin-nav-push-monitor" onclick="openAdminPushMonitor()" title="Monitor student push registrations"><i data-lucide="bell-ring"></i><span>Push Monitor</span></button>
         <button type="button" id="admin-nav-attendance-rules" onclick="window.switchAdminTab('attendance-rules')" title="Manage staff attendance calculation rules"><i data-lucide="sliders-horizontal"></i><span>Attendance Rules</span></button>
         <button type="button" id="admin-nav-leave" onclick="window.switchAdminTab('leave')" title="Faculty Leave Applications"><i data-lucide="calendar-check"></i><span>Leaves</span></button>
         <button type="button" id="admin-nav-corrections" onclick="window.switchAdminTab('corrections')" title="Manual Attendance Corrections"><i data-lucide="file-pen"></i><span>Corrections</span></button>
@@ -14710,5 +14711,65 @@ window.showStudentSchoolUpiQr=async function(accountId,installmentId){
   document.addEventListener("keydown",e=>{if(e.key==="Escape"&&!$("fees-admin-console")?.classList.contains("hidden"))window.closeFeesAdminConsole();});
 })();
 </script>
+ 
+<div id="admin-push-monitor-modal" class="hidden fixed inset-0 z-[150] bg-slate-950/70 backdrop-blur-sm p-3 items-center justify-center" onclick="closeAdminPushMonitor(event)">
+  <section class="bg-white w-full max-w-4xl max-h-[92vh] rounded-2xl shadow-2xl overflow-hidden flex flex-col" onclick="event.stopPropagation()">
+    <header class="p-4 bg-gradient-to-r from-emerald-950 to-emerald-700 text-white flex items-center justify-between">
+      <div><h2 class="font-bold text-lg">Student Push Monitor</h2><p class="text-xs text-emerald-100">Registered devices and last registration time</p></div>
+      <button type="button" onclick="closeAdminPushMonitor()" class="rounded-xl bg-white/15 px-3 py-2 text-sm font-bold">Close</button>
+    </header>
+    <div class="p-4 border-b bg-slate-50 flex flex-wrap items-center gap-2 justify-between">
+      <p id="admin-push-monitor-summary" class="text-sm text-slate-600">Load registration status to begin.</p>
+      <button type="button" onclick="loadAdminPushMonitor()" class="px-4 py-2 rounded-xl bg-emerald-700 text-white text-sm font-bold">Refresh</button>
+    </div>
+    <div id="admin-push-monitor-status" class="px-4 pt-3 text-sm text-slate-600" role="status"></div>
+    <div class="p-4 overflow-auto">
+      <table class="w-full text-left text-sm">
+        <thead class="text-xs uppercase bg-slate-100 text-slate-600"><tr><th class="p-2">Admission No.</th><th class="p-2">Class</th><th class="p-2">Platform</th><th class="p-2">Registered</th><th class="p-2">Last Updated</th></tr></thead>
+        <tbody id="admin-push-monitor-rows"><tr><td colspan="5" class="p-3 text-slate-500">No data loaded.</td></tr></tbody>
+      </table>
+    </div>
+    <p class="px-4 pb-4 text-xs text-slate-500">This panel shows registered push devices only. It does not yet show successful logins or users without registered devices.</p>
+  </section>
+</div>
+<script>
+(function(){
+  const esc = (value) => String(value ?? '').replace(/[&<>"']/g, ch => ({'&':'&amp;','<':'&lt;','>':'&gt;','"':'&quot;',"'":'&#39;'}[ch]));
+  window.openAdminPushMonitor = function(){
+    const el=document.getElementById('admin-push-monitor-modal');
+    if(!el)return;
+    el.classList.remove('hidden');el.classList.add('flex');
+    window.loadAdminPushMonitor();
+  };
+  window.closeAdminPushMonitor = function(event){
+    if(event && event.target?.id!=='admin-push-monitor-modal')return;
+    const el=document.getElementById('admin-push-monitor-modal');
+    if(el){el.classList.add('hidden');el.classList.remove('flex');}
+  };
+  window.loadAdminPushMonitor = async function(){
+    const status=document.getElementById('admin-push-monitor-status');
+    const rows=document.getElementById('admin-push-monitor-rows');
+    const summary=document.getElementById('admin-push-monitor-summary');
+    if(!status||!rows)return;
+    status.textContent='Loading registration data…';
+    try{
+      const client=window.__ashianaMainSupabaseClient;
+      if(!client?.functions?.invoke)throw new Error('Admin session is not available. Sign in again.');
+      const {data,error}=await client.functions.invoke('push-notifications',{body:{action:'admin-push-diagnostics'}});
+      if(error)throw error;
+      if(!data?.success||!Array.isArray(data.registrations))throw new Error(data?.error||'Unable to load registrations.');
+      const items=data.registrations;
+      summary.textContent=items.length+' registered device record(s)';
+      rows.innerHTML=items.length?items.map(item=>'<tr class="border-b border-slate-100"><td class="p-2 font-semibold">'+esc(item.enroll_no)+'</td><td class="p-2">'+esc([item.class_name,item.section].filter(Boolean).join('-')||'—')+'</td><td class="p-2">'+esc(item.platform)+'</td><td class="p-2">'+esc(item.created_at||'—')+'</td><td class="p-2">'+esc(item.updated_at||'—')+'</td></tr>').join(''):'<tr><td colspan="5" class="p-3 text-slate-500">No registered devices found.</td></tr>';
+      status.textContent='Loaded successfully. Device tokens and subscription secrets are not displayed.';
+    }catch(error){
+      status.textContent='Could not load registrations: '+String(error?.message||'Request failed');
+      summary.textContent='Registration data unavailable';
+      rows.innerHTML='<tr><td colspan="5" class="p-3 text-slate-500">Unable to load data. Verify administrator access and Edge Function deployment.</td></tr>';
+    }
+  };
+})();
+</script>
+
 </body>
 </html>
