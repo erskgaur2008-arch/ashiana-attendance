@@ -6,7 +6,7 @@ Read-only inspection of production project configuration, PostgreSQL grants and 
 
 ## Confirmed observations
 
-- Direct table grants to `anon` include broad privileges on `admin_users`, `attendance_punches`, `leave_requests`, `staff`, `student_attendance`, `student_leave_requests`, and `student_roster`.
+- Direct table grants to `anon` include broad privileges (including SELECT, INSERT, UPDATE, DELETE, and TRUNCATE) on 15 school tables: `admin_users`, `attendance_punches`, `attendance_qr_sessions`, `audit_logs`, `leave_requests`, `staff`, `student_attendance`, `student_calendar_events`, `student_class_assignments`, `student_homework`, `student_leave_requests`, `student_notices`, `student_report_cards`, `student_roster`, and `student_timetable`.
 - The advisor reports 23 RLS-enabled tables without policies. RLS-enabled tables without policies normally deny API row access, but the combination of grants and no policies is confusing and should be hardened and reviewed table by table.
 - The `staff-avatars` Storage bucket is public and has a public SELECT policy. This may be intentional for avatar rendering, but staff photos are personal data; review intended visibility and minimize data shown in avatars.
 - The `student-portal-documents` bucket is public. The existing migration explicitly made it public so student portal PDFs can open without a Supabase Auth session. Treat this as a known exposure risk until the application is migrated to signed URLs or a session-authorized download endpoint. Do not flip the bucket to private before that compatibility work, because existing document links may break.
@@ -16,11 +16,11 @@ Read-only inspection of production project configuration, PostgreSQL grants and 
 
 ## Change proposed in this PR
 
-A migration revokes direct anonymous table privileges from seven sensitive tables. It does not modify rows, change authenticated grants, change Storage visibility, or revoke intended RPC execution. Existing SECURITY DEFINER RPCs should continue to work because their execution rights are separate from direct table grants.
+A migration revokes direct anonymous table privileges from all 15 tables currently found with grants to `anon`. It does not modify rows, change authenticated grants, change Storage visibility, or revoke intended RPC execution. Existing SECURITY DEFINER RPCs should continue to work because their execution rights are separate from direct table grants.
 
 ## Required post-migration checks
 
-1. Verify the seven tables no longer grant table privileges to `anon`.
+1. Verify the 15 listed tables no longer grant table privileges to `anon`.
 2. Verify student login, student session startup, student portal, attendance, staff login, administrator workflows, and fee submissions continue to work through their intended RPCs.
 3. Use two test student accounts to confirm one session cannot read the other student's portal, attendance, leave requests, or fee data.
 4. Test direct unauthenticated REST table reads/writes against the sensitive tables; expect denial.
