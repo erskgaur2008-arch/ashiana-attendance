@@ -13819,6 +13819,15 @@ function addMessage(text,type){
 </div>
 <script>
 (function(){
+  // Privacy-safe diagnostics: never log admission numbers, DOBs, auth tokens, or device tokens.
+  function studentPushDiagnostic(stage, details={}){
+    console.info('[Ashiana Student Push]', {
+      stage,
+      platform: Boolean(window.AshianaNative?.isAndroid?.()) ? 'android' : 'web',
+      timestamp: new Date().toISOString(),
+      ...details
+    });
+  }
   async function registerStudentPush(options){
     const client=options?.client;
     const admissionNo=String(options?.admissionNo||'').trim().toUpperCase();
@@ -13834,9 +13843,19 @@ function addMessage(text,type){
       if(error)throw error;
       return;
     }
-    if(!('serviceWorker' in navigator)||!('PushManager' in window)||!('Notification' in window)||Notification.permission!=='granted')return;
+    if(!('serviceWorker' in navigator)||!('PushManager' in window)||!('Notification' in window)){
+      studentPushDiagnostic('registration_skipped',{reason:'web_push_unsupported'});
+      return;
+    }
+    if(Notification.permission!=='granted'){
+      studentPushDiagnostic('registration_skipped',{reason:'notification_permission_not_granted',permission:Notification.permission});
+      return;
+    }
     const {data:cfg,error:cfgError}=await client.functions.invoke('push-notifications',{body:{action:'config'}});
-    if(cfgError||!cfg?.vapidPublicKey||!cfg.webPushConfigured)return;
+    if(cfgError||!cfg?.vapidPublicKey||!cfg.webPushConfigured){
+      studentPushDiagnostic('registration_skipped',{reason:'web_push_configuration_unavailable'});
+      return;
+    }
     const value=cfg.vapidPublicKey.replace(/-/g,'+').replace(/_/g,'/');
     const padded=value+'='.repeat((4-value.length%4)%4);
     const raw=atob(padded),key=new Uint8Array(raw.length);
@@ -13847,10 +13866,17 @@ function addMessage(text,type){
     const {error}=await client.functions.invoke('push-notifications',{body:{
       action:'student-subscribe',schoolCode:'ashiana',admissionNo,dobPassword,platform:'web',subscription:sub.toJSON()
     }});
-    if(error)throw error;
+    if(error){
+      studentPushDiagnostic('registration_failed',{reason:'subscription_request_failed',code:error.code||null,status:error.status||null});
+      throw error;
+    }
+    studentPushDiagnostic('registration_succeeded');
   }
   window.__ashianaRegisterStudentPush=function(options){
-    registerStudentPush(options).catch(e=>console.warn('Student push registration failed:',e?.message||e));
+    registerStudentPush(options).catch(e=>{
+      studentPushDiagnostic('registration_failed',{reason:'unexpected_error',errorName:e?.name||'Error'});
+      console.warn('Student push registration failed; see safe diagnostic stage above.');
+    });
   };
   async function enableAshianaNotifications(){
     try{
