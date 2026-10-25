@@ -6707,7 +6707,7 @@ function studentAttendanceBuildMap(attendance){
 }
 function studentAttendanceGetMonthKeys(attendance){
   const today=studentDateToday(),current=studentAttendanceMonthKey(today);
-  const dates=(Array.isArray(attendance)?attendance:[]).map(x=>String(x.attendance_date||"").slice(0,10)).filter(x=>x.length===10&&x[4]==="-"&&x[7]==="-"&&x<=today).sort();
+  const dates=(Array.isArray(attendance)?attendance:[]).map(x=>String(x.attendance_date||"").slice(0,10)).filter(x=>/^\d{4}-\d{2}-\d{2}$/.test(x)&&x<=today&&(()=>{const d=new Date(x+"T00:00:00Z");return Number.isFinite(d.getTime())&&d.toISOString().slice(0,10)===x;})()).sort();
   const first=dates[0]?studentAttendanceMonthKey(dates[0]):current;
   const [sy,sm]=first.split("-").map(Number),[ey,em]=current.split("-").map(Number),keys=[];
   let y=sy,m=sm;
@@ -6750,7 +6750,8 @@ function renderStudentAttendancePanel(attendance,view="home",monthKey=""){
     const cards=keys.map(key=>{const x=studentAttendanceMonthSummary(key,map);return '<button type="button" onclick="studentAttendanceShowMonth(\''+key+'\')" class="w-full text-left rounded-2xl overflow-hidden border border-slate-200 bg-white shadow-sm"><div class="px-4 py-3 bg-sky-100 flex items-center justify-between"><b class="text-sm">'+studentAttendanceMonthLabel(key)+'</b><i data-lucide="arrow-right-circle" class="w-5 h-5 text-sky-600"></i></div><div class="p-3"><div class="text-center text-sm font-bold text-sky-700 mb-3">Total Classes: '+x.total+'</div><div class="grid grid-cols-3 gap-2 text-center"><div><b class="block text-rose-600">'+x.absent+'</b><span class="text-[10px] font-bold text-rose-600">ABSENT</span></div><div><b class="block text-emerald-600">'+x.present+'</b><span class="text-[10px] font-bold text-emerald-600">PRESENT</span></div><div><b class="block text-amber-500">'+x.leave+'</b><span class="text-[10px] font-bold text-amber-500">LEAVE</span></div></div></div></button>';}).join("");
     host.innerHTML='<button type="button" onclick="studentAttendanceShowView(\'home\')" class="mb-3 px-3 py-2 rounded-xl bg-white border text-xs font-bold inline-flex items-center gap-2"><i data-lucide="arrow-left" class="w-4 h-4"></i> Attendance options</button><div class="space-y-3">'+cards+'</div>';
   }else if(view==="days"){
-    const key=monthKey||studentAttendanceMonthKey(studentDateToday()),[year,month]=key.split("-").map(Number),days=new Date(year,month,0).getDate(),dayRows=[];
+    const requestedKey=/^\d{4}-(0[1-9]|1[0-2])$/.test(String(monthKey||""))?String(monthKey):studentAttendanceMonthKey(studentDateToday());
+    const key=requestedKey,[year,month]=key.split("-").map(Number),days=new Date(year,month,0).getDate(),dayRows=[];
     for(let day=1;day<=days;day++){
       const date=year+"-"+String(month).padStart(2,"0")+"-"+String(day).padStart(2,"0"),d=new Date(year,month-1,day),weekday=d.toLocaleDateString("en-IN",{weekday:"long"});
       const nonWorking=studentAttendanceIsNonWorkingDay(date),status=nonWorking?"NON-WORKING DAY":(map.get(date)||"NOT MARKED");
