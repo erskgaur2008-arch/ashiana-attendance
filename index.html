@@ -9172,11 +9172,11 @@ async function loadAdminStudentAttendance(){
           <div class="flex items-center justify-between p-2 rounded-xl border ${p.type === 'IN' ? 'bg-emerald-50/80 border-emerald-200 text-emerald-950' : 'bg-slate-50 border-slate-200 text-slate-900'}">
             <div class="flex items-center space-x-2">
               <span class="w-4 h-4 rounded-full ${p.type === 'IN' ? 'bg-ashiana-green' : 'bg-slate-700'} text-white font-bold text-[9px] flex items-center justify-center">${idx + 1}</span>
-              <span class="font-bold text-xs">PUNCH ${p.type}</span>
+              <span class="font-bold text-xs">PUNCH ${studentEscape(p.type)}</span>
             </div>
             <div class="flex items-center space-x-2">
-              <span class="font-mono text-xs font-bold text-ashiana-green">${p.timestamp}</span>
-              <span class="text-[8px] uppercase px-1 py-0.5 rounded bg-white font-semibold text-slate-500 border border-slate-200">${p.method}</span>
+              <span class="font-mono text-xs font-bold text-ashiana-green">${studentEscape(p.timestamp)}</span>
+              <span class="text-[8px] uppercase px-1 py-0.5 rounded bg-white font-semibold text-slate-500 border border-slate-200">${studentEscape(p.method)}</span>
             </div>
           </div>
         `).join('');
