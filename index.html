@@ -11265,7 +11265,7 @@ window.addEventListener('load',async function(){
         let statusBadge = `<span class="px-2 py-0.5 rounded-full text-[9px] font-bold bg-slate-100 text-slate-600">NOT MARKED</span>`;
         if (r.status === 'WORKING') statusBadge = `<span class="px-2 py-0.5 rounded-full text-[9px] font-bold bg-emerald-100 text-emerald-800 border border-emerald-300">WORKING NOW</span>`;
         else if (r.status === 'COMPLETED') statusBadge = `<span class="px-2 py-0.5 rounded-full text-[9px] font-bold bg-blue-100 text-blue-800 border border-blue-200">COMPLETED</span>`;
-        else if (r.status === 'ON LEAVE') statusBadge = `<span class="px-2 py-0.5 rounded-full text-[9px] font-bold bg-purple-100 text-purple-800 border border-purple-200">ON LEAVE (${r.leaveType || 'LEAVE'})</span>`;
+        else if (r.status === 'ON LEAVE') statusBadge = `<span class="px-2 py-0.5 rounded-full text-[9px] font-bold bg-purple-100 text-purple-800 border border-purple-200">ON LEAVE (${studentEscape(r.leaveType || 'LEAVE')})</span>`;
 
         return `
           <tr class="hover:bg-slate-50 transition-colors">
@@ -11276,10 +11276,10 @@ window.addEventListener('load',async function(){
               <div class="text-[9px] text-slate-400 font-normal">${studentEscape(r.role)}</div>
             </td>
             <td class="py-2.5 px-3 text-slate-600">${studentEscape(r.department)}</td>
-            <td class="py-2.5 px-3 font-mono font-bold ${r.firstIn !== '--:--' ? 'text-ashiana-green' : 'text-slate-400'}">${r.firstIn}</td>
-            <td class="py-2.5 px-3 font-mono font-bold ${r.lastOut !== '--:--' ? 'text-ashiana-green' : 'text-slate-400'}">${r.lastOut}</td>
+            <td class="py-2.5 px-3 font-mono font-bold ${r.firstIn !== '--:--' ? 'text-ashiana-green' : 'text-slate-400'}">${studentEscape(r.firstIn)}</td>
+            <td class="py-2.5 px-3 font-mono font-bold ${r.lastOut !== '--:--' ? 'text-ashiana-green' : 'text-slate-400'}">${studentEscape(r.lastOut)}</td>
             <td class="py-2.5 px-3 font-mono font-bold">${r.punchCount}</td>
-            <td class="py-2.5 px-3 font-mono font-bold text-slate-700">${r.workTimeStr}</td>
+            <td class="py-2.5 px-3 font-mono font-bold text-slate-700">${studentEscape(r.workTimeStr)}</td>
             <td class="py-2.5 px-3 font-mono ${r.lateMins > 0 ? 'text-ashiana-red font-bold' : 'text-slate-400'}">${r.lateMins > 0 ? r.lateMins + 'm' : '0m'}</td>
             <td class="py-2.5 px-3 text-right">${statusBadge}</td>
           </tr>
@@ -11430,8 +11430,8 @@ window.addEventListener('load',async function(){
           <td class="py-2.5 px-3 text-center font-mono font-bold ${r.absentDays > 0 ? 'text-rose-600' : 'text-slate-400'}">${r.absentDays}</td>
           <td class="py-2.5 px-3 text-center font-mono font-bold text-purple-700">${r.leaveDays}</td>
           <td class="py-2.5 px-3 text-center font-mono font-bold ${r.lateDays > 0 ? 'text-amber-700' : 'text-slate-400'}">${r.lateDays}</td>
-          <td class="py-2.5 px-3 font-mono font-bold text-slate-700">${r.totalWorkStr}</td>
-          <td class="py-2.5 px-3 font-mono text-slate-600">${r.avgDayStr}</td>
+          <td class="py-2.5 px-3 font-mono font-bold text-slate-700">${studentEscape(r.totalWorkStr)}</td>
+          <td class="py-2.5 px-3 font-mono text-slate-600">${studentEscape(r.avgDayStr)}</td>
           <td class="py-2.5 px-3 text-right">
             <span class="px-2 py-0.5 rounded-full text-[10px] font-bold font-mono ${r.attendanceRate >= 85 ? 'bg-emerald-100 text-emerald-800' : r.attendanceRate >= 70 ? 'bg-amber-100 text-amber-800' : 'bg-rose-100 text-rose-800'}">
               ${r.attendanceRate}%
@@ -11549,12 +11549,12 @@ window.addEventListener('load',async function(){
 
         return `
           <tr class="hover:bg-slate-50 transition-colors ${r.status === 'SUNDAY' ? 'bg-slate-50/60 opacity-70' : ''}">
-            <td class="py-2 px-3 font-mono font-bold text-slate-800">${r.date}</td>
-            <td class="py-2 px-3 font-semibold text-slate-600">${r.dayOfWeek}</td>
-            <td class="py-2 px-3 font-mono font-bold ${r.firstIn !== '--:--' && r.firstIn !== '--' ? 'text-ashiana-green' : 'text-slate-400'}">${r.firstIn}</td>
-            <td class="py-2 px-3 font-mono font-bold ${r.lastOut !== '--:--' && r.lastOut !== '--' ? 'text-ashiana-green' : 'text-slate-400'}">${r.lastOut}</td>
+            <td class="py-2 px-3 font-mono font-bold text-slate-800">${studentEscape(r.date)}</td>
+            <td class="py-2 px-3 font-semibold text-slate-600">${studentEscape(r.dayOfWeek)}</td>
+            <td class="py-2 px-3 font-mono font-bold ${r.firstIn !== '--:--' && r.firstIn !== '--' ? 'text-ashiana-green' : 'text-slate-400'}">${studentEscape(r.firstIn)}</td>
+            <td class="py-2 px-3 font-mono font-bold ${r.lastOut !== '--:--' && r.lastOut !== '--' ? 'text-ashiana-green' : 'text-slate-400'}">${studentEscape(r.lastOut)}</td>
             <td class="py-2 px-3 font-mono font-bold">${r.punchCount}</td>
-            <td class="py-2 px-3 font-mono font-bold text-slate-700">${r.workTimeStr}</td>
+            <td class="py-2 px-3 font-mono font-bold text-slate-700">${studentEscape(r.workTimeStr)}</td>
             <td class="py-2 px-3 font-mono ${r.lateMins > 0 ? 'text-ashiana-red font-bold' : 'text-slate-400'}">${r.lateMins > 0 ? r.lateMins + 'm' : '0m'}</td>
             <td class="py-2 px-3">${badge}</td>
             <td class="py-2 px-3 text-right text-slate-500 font-medium">${studentEscape(r.details)}</td>
