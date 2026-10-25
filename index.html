@@ -12389,10 +12389,10 @@ window.addEventListener('load',async function(){
 
         return `
           <tr class="hover:bg-slate-50 transition-colors">
-            <td class="py-2.5 px-3 font-bold text-slate-800">${l.staffName}</td>
-            <td class="py-2.5 px-3 font-medium text-slate-600">${l.type}</td>
-            <td class="py-2.5 px-3 font-mono text-slate-500 text-[10px]">${l.from} to ${l.to}</td>
-            <td class="py-2.5 px-3 text-slate-600 max-w-xs truncate" title="${l.reason}">${l.reason}</td>
+            <td class="py-2.5 px-3 font-bold text-slate-800">${studentEscape(l.staffName)}</td>
+            <td class="py-2.5 px-3 font-medium text-slate-600">${studentEscape(l.type)}</td>
+            <td class="py-2.5 px-3 font-mono text-slate-500 text-[10px]">${studentEscape(l.from)} to ${studentEscape(l.to)}</td>
+            <td class="py-2.5 px-3 text-slate-600 max-w-xs truncate" title="${studentEscape(l.reason)}">${studentEscape(l.reason)}</td>
             <td class="py-2.5 px-3">${statusBadge}</td>
             <td class="py-2.5 px-3 text-right">
               ${l.status === 'PENDING' ? `
