@@ -1,4 +1,4 @@
-const CACHE_NAME = "ashiana-attendance-v43";
+const CACHE_NAME = "ashiana-attendance-v44";
 const APP_SHELL = [
   "./",
   "./index.html",
@@ -35,9 +35,16 @@ self.addEventListener("activate", (event) => {
 });
 
 self.addEventListener("fetch", (event) => {
-  if (event.request.method !== "GET") return;
-
   const url = new URL(event.request.url);
+
+  // Never put authenticated API, session, or RPC responses in Cache Storage.
+  // Supabase is currently cross-origin, but keep this explicit so a future
+  // same-origin proxy or deployment change cannot accidentally cache them.
+  const isSupabaseHost = url.hostname === "supabase.co" || url.hostname.endsWith(".supabase.co");
+  const isSensitiveApiPath = /\/(?:auth\/v1|rest\/v1|functions\/v1|realtime\/v1|storage\/v1)\//i.test(url.pathname);
+  if (isSupabaseHost || isSensitiveApiPath) return;
+
+  if (event.request.method !== "GET") return;
   if (url.origin !== self.location.origin) return;
 
   // Keep HTML/navigation fresh so deployments are picked up promptly.
