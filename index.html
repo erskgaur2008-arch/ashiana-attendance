@@ -2920,6 +2920,9 @@ id="student-dashboard-panel-body" class="space-y-3 text-xs"></div>
             <button id="staff-drawer-profile" type="button" onclick="selectStaffDrawerProfile()" class="staff-drawer-item">
               <i data-lucide="user"></i><span>Profile</span>
             </button>
+            <button id="staff-drawer-fees" type="button" onclick="selectStaffDrawerFees()" class="staff-drawer-item hidden">
+              <i data-lucide="wallet"></i><span>Fee Confirmations</span>
+            </button>
             <div class="my-3 border-t border-slate-200"></div>
             <button type="button" onclick="selectStaffDrawerSignOut()" class="staff-drawer-item danger">
               <i data-lucide="log-out"></i><span>Sign Out</span>
@@ -8847,6 +8850,7 @@ async function loadAdminStudentAttendance(){
       if(open){
         const role=document.getElementById('staff-drawer-role');
         if(role&&currentAuthUser?.staffRecord)role.textContent=currentAuthUser.staffRecord.role||'Faculty';
+        if(typeof window.refreshStaffFeesMenu==='function')window.refreshStaffFeesMenu();
       }
       if(window.lucide)lucide.createIcons();
     }
@@ -8867,6 +8871,10 @@ async function loadAdminStudentAttendance(){
     function selectStaffDrawerProfile(){
       toggleStaffDrawer(false);
       openStaffProfileModal();
+    }
+    function selectStaffDrawerFees(){
+      toggleStaffDrawer(false);
+      if(typeof window.openPrincipalFeesConsole==='function')window.openPrincipalFeesConsole();
     }
     function selectStaffDrawerSignOut(){
       toggleStaffDrawer(false);
@@ -14378,16 +14386,16 @@ window.showStudentSchoolUpiQr=async function(accountId,installmentId){
 <div id="fees-admin-console" class="hidden fixed inset-0 z-[280] bg-slate-950/70 backdrop-blur-sm p-2 sm:p-5 items-center justify-center" role="dialog" aria-modal="true" aria-labelledby="fees-admin-title">
   <div class="w-full max-w-5xl max-h-[94dvh] overflow-y-auto rounded-2xl bg-slate-50 shadow-2xl">
     <div class="sticky top-0 z-10 flex items-center justify-between gap-3 border-b bg-white p-4">
-      <div><h2 id="fees-admin-title" class="text-lg font-extrabold text-slate-900">Fees Management</h2><p class="text-xs text-slate-500">Admin review and independent Principal confirmation</p></div>
+      <div><h2 id="fees-admin-title" class="text-lg font-extrabold text-slate-900">Fees Management</h2><p id="fees-admin-subtitle" class="text-xs text-slate-500">Admin review and independent Principal confirmation</p></div>
       <button type="button" onclick="closeFeesAdminConsole()" class="rounded-xl border px-3 py-2 text-sm font-bold">Close</button>
     </div>
     <div class="p-4 space-y-4">
       <div class="flex flex-wrap gap-2">
-        <button type="button" onclick="loadFeesReviewQueue('admin')" class="rounded-xl bg-emerald-800 px-4 py-2.5 text-xs font-bold text-white">Admin review queue</button>
+        <button type="button" data-fees-admin-only="1" onclick="loadFeesReviewQueue('admin')" class="rounded-xl bg-emerald-800 px-4 py-2.5 text-xs font-bold text-white">Admin review queue</button>
         <button type="button" onclick="loadFeesReviewQueue('principal')" class="rounded-xl bg-violet-800 px-4 py-2.5 text-xs font-bold text-white">Principal confirmation queue</button>
-        <button type="button" onclick="loadFeesReviewQueue('discount')" class="rounded-xl bg-amber-800 px-4 py-2.5 text-xs font-bold text-white">Discount approvals</button>
+        <button type="button" data-fees-admin-only="1" onclick="loadFeesReviewQueue('discount')" class="rounded-xl bg-amber-800 px-4 py-2.5 text-xs font-bold text-white">Discount approvals</button>
       </div>
-      <details class="rounded-2xl border bg-white p-4">
+      <details data-fees-admin-only="1" class="rounded-2xl border bg-white p-4">
         <summary class="cursor-pointer font-extrabold text-slate-900">Fee setup & permissions</summary>
         <p class="mt-2 text-xs text-slate-500">These actions require an authorized Admin session and are audit logged. Keep the academic-year UUID returned after saving for fee structures and account assignment.</p>
         <div class="mt-4 grid grid-cols-1 md:grid-cols-2 gap-4">
@@ -14466,7 +14474,53 @@ window.showStudentSchoolUpiQr=async function(accountId,installmentId){
   function money(p){return "₹"+(Number(p||0)/100).toLocaleString("en-IN",{minimumFractionDigits:2,maximumFractionDigits:2});}
   function setStatus(msg,bad=false){const el=$("fees-admin-status");if(el){el.textContent=msg;el.className="rounded-xl border p-3 text-xs "+(bad?"border-rose-200 bg-rose-50 text-rose-800":"bg-white text-slate-600");}}
   function getClient(){return (typeof supabaseClient!=="undefined"&&supabaseClient)||window.__ashianaMainSupabaseClient||null;}
-  window.closeFeesAdminConsole=function(){$("fees-admin-console")?.classList.add("hidden");$("fees-admin-console")?.classList.remove("flex");};
+  function setPrincipalMode(on){
+    document.querySelectorAll("#fees-admin-console [data-fees-admin-only]").forEach(el=>el.classList.toggle("hidden",!!on));
+    const title=$("fees-admin-title"),sub=$("fees-admin-subtitle");
+    if(title)title.textContent=on?"Fee Confirmations":"Fees Management";
+    if(sub)sub.textContent=on?"Principal confirmation of payments already reviewed by Admin":"Admin review and independent Principal confirmation";
+  }
+  async function feeErrorMessage(error,fallback){
+    try{
+      const res=error&&error.context;
+      if(res&&typeof res.json==="function"){const body=await res.json();if(body&&body.error)return String(body.error);}
+    }catch(_){}
+    return (error&&error.message)||fallback;
+  }
+  window.closeFeesAdminConsole=function(){$("fees-admin-console")?.classList.add("hidden");$("fees-admin-console")?.classList.remove("flex");setPrincipalMode(false);};
+  window.openPrincipalFeesConsole=async function(){
+    const panel=$("fees-admin-console");
+    try{
+      const client=getClient();
+      if(!client?.auth?.getSession){alert("Fee Confirmations could not start. Please reload the page and sign in again.");return;}
+      const {data,error}=await client.auth.getSession();
+      if(error)throw error;
+      if(!data?.session){alert("Your school session is not available. Please sign in again.");return;}
+      if(!panel)throw new Error("The Fees panel is missing from this page version. Refresh the website and try again.");
+      setPrincipalMode(true);
+      panel.classList.remove("hidden");panel.classList.add("flex");
+      await window.loadFeesReviewQueue("principal");
+    }catch(error){
+      console.error("[Fee Confirmations] Could not open:",error);
+      if(panel){panel.classList.remove("hidden");panel.classList.add("flex");setStatus("Fee Confirmations could not load: "+(error?.message||"Unexpected error."),true);}
+    }
+  };
+  let feeMenuProbe={key:"",state:null};
+  window.refreshStaffFeesMenu=async function(){
+    const btn=$("staff-drawer-fees");if(!btn)return;
+    try{
+      const user=(typeof currentAuthUser!=="undefined"&&currentAuthUser)||null;
+      const role=String(user?.staffRecord?.role||"").toLowerCase();
+      const key=String(user?.email||user?.staffRecord?.email||"").toLowerCase();
+      if(!key||!/principal/.test(role)){btn.classList.add("hidden");return;}
+      if(feeMenuProbe.key===key&&feeMenuProbe.state!==null){btn.classList.toggle("hidden",!feeMenuProbe.state);return;}
+      const client=getClient();if(!client?.functions?.invoke)return;
+      const {error}=await client.functions.invoke("fee-management",{body:{action:"principal-queue"}});
+      feeMenuProbe={key,state:!error};
+      btn.classList.toggle("hidden",!!error);
+      if(window.lucide)lucide.createIcons();
+    }catch(_){btn.classList.add("hidden");}
+  };
   window.openFeesAdminConsole=async function(){
     const panel=$("fees-admin-console");
     try{
@@ -14487,6 +14541,7 @@ window.showStudentSchoolUpiQr=async function(accountId,installmentId){
       // Open the panel before loading remote data so the user gets immediate feedback.
       panel.classList.remove("hidden");
       panel.classList.add("flex");
+      setPrincipalMode(false);
       setStatus("Opening Fees Management…");
       await Promise.all([
         window.loadFeeSetupOptions(),
@@ -14740,7 +14795,7 @@ window.showStudentSchoolUpiQr=async function(accountId,installmentId){
     try{
       const action=kind==="principal"?"principal-queue":kind==="discount"?"admin-discount-queue":"admin-queue";
       const {data,error}=await client.functions.invoke("fee-management",{body:{action}});
-      if(error)throw new Error(error.message||"Queue request failed.");
+      if(error)throw new Error(await feeErrorMessage(error,"Queue request failed."));
       const rows=kind==="discount"?(Array.isArray(data?.requests)?data.requests:[]):(Array.isArray(data?.submissions)?data.submissions:[]);
       if(!rows.length){setStatus(kind==="principal"?"No payments are awaiting Principal confirmation, or this account is not an assigned Principal.":kind==="discount"?"No discount requests are awaiting Admin review.":"No payments are awaiting Admin review.");host.innerHTML='<div class="rounded-2xl border bg-white p-5 text-center text-sm text-slate-500">No queue items returned.</div>';return;}
       if(kind==="discount"){
@@ -14780,7 +14835,7 @@ window.showStudentSchoolUpiQr=async function(accountId,installmentId){
       const isAdmin=Boolean(b.dataset.feeApprove||b.dataset.feeReject);
       const payload=isAdmin?{action:"admin-review-payment",submission_id:id,approve:!isReject,reason:isReject?reason.trim():null}:{action:"principal-confirm-payment",submission_id:id,confirm:!isReject,reason:isReject?reason.trim():null};
       const {data,error}=await client.functions.invoke("fee-management",{body:payload});
-      if(error)throw new Error(error.message||data?.error||"Review action failed.");
+      if(error)throw new Error(await feeErrorMessage(error,data?.error||"Review action failed."));
       rowMsg(isAdmin?(isReject?"Payment rejected.":"Admin review complete; awaiting Principal confirmation."):(isReject?"Payment rejected by Principal.":"Payment confirmed and receipt should now be issued."),true);
       b.closest("article")?.remove();
       setStatus("Review action saved. Queue refreshed.");
