@@ -6460,7 +6460,7 @@ window.showTeacherPortalPdfSelection=function(input,labelId='tp-attachment-name'
   if(label)label.textContent=file.name;
 }
 function teacherPortalPdfUrl(path){
-  if(typeof path!=='string'||!path||path.startsWith('/')||path.includes('\\')||/[\\u0000-\\u001f\\u007f]/.test(path)) return '';
+  if(typeof path!=='string'||!path||path.startsWith('/')||path.includes('\\')||/[\u0000-\u001f\u007f]/.test(path)) return '';
   const segments=path.split('/');
   if(segments.some(segment=>!segment||segment==='.'||segment==='..')) return '';
   return DEFAULT_SUPABASE_URL+'/storage/v1/object/public/student-portal-documents/'+segments.map(encodeURIComponent).join('/');
