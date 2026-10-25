@@ -9190,7 +9190,7 @@ async function loadAdminStudentAttendance(){
             <td class="py-2.5 px-3 font-mono ${stats.lateMinutes > 0 ? 'text-ashiana-red font-bold' : 'text-slate-400'}">${stats.lateMinutes > 0 ? stats.lateMinutes + 'm' : '0m'}</td>
             <td class="py-2.5 px-3"><span class="px-2 py-0.5 rounded-full text-[9px] font-bold ${stats.currentStatus === 'WORKING' ? 'bg-emerald-100 text-emerald-800' : 'bg-slate-100 text-slate-600'}">${studentEscape(stats.currentStatus)}</span></td>
             <td class="py-2.5 px-3 text-right">
-              <button onclick="quickTestPunch('${studentEscape(JSON.stringify(String(s.id)))}')" class="px-2 py-1 bg-emerald-50 hover:bg-ashiana-green text-ashiana-green hover:text-white rounded-lg text-[9px] font-bold transition-all border border-emerald-300">+ Mark</button>
+              <button onclick="quickTestPunch(${studentEscape(JSON.stringify(String(s.id)))})" class="px-2 py-1 bg-emerald-50 hover:bg-ashiana-green text-ashiana-green hover:text-white rounded-lg text-[9px] font-bold transition-all border border-emerald-300">+ Mark</button>
             </td>
           </tr>
         `;
@@ -9220,22 +9220,22 @@ async function loadAdminStudentAttendance(){
             <td class="py-2 px-3"><span class="px-2 py-0.5 rounded-full text-[9px] font-bold ${s.status === 'ACTIVE' ? 'bg-emerald-100 text-emerald-800' : 'bg-rose-100 text-rose-800'}">${studentEscape(s.status)}</span></td>
             <td class="py-2 px-3 text-center">
               <div class="flex items-center justify-center space-x-1.5">
-                <button onclick="printStaffIdCard('${studentEscape(JSON.stringify(String(s.id)))}', { markGenerated: true, autoPrint: true })" title="Generate / Print Staff ID Card" class="p-1 text-blue-600 hover:text-blue-800 hover:bg-blue-50 rounded-lg transition-colors">
+                <button onclick="printStaffIdCard(${studentEscape(JSON.stringify(String(s.id)))}, { markGenerated: true, autoPrint: true })" title="Generate / Print Staff ID Card" class="p-1 text-blue-600 hover:text-blue-800 hover:bg-blue-50 rounded-lg transition-colors">
                   <i data-lucide="contact" class="w-3.5 h-3.5"></i>
                 </button>
-                <button onclick="jumpToStaffReport('${studentEscape(JSON.stringify(String(s.id)))}')" title="View Dossier Report" class="p-1 text-slate-600 hover:text-ashiana-green hover:bg-emerald-50 rounded-lg transition-colors">
+                <button onclick="jumpToStaffReport(${studentEscape(JSON.stringify(String(s.id)))})" title="View Dossier Report" class="p-1 text-slate-600 hover:text-ashiana-green hover:bg-emerald-50 rounded-lg transition-colors">
                   <i data-lucide="file-text" class="w-3.5 h-3.5"></i>
                 </button>
-                <button onclick="openEditStaffModal('${studentEscape(JSON.stringify(String(s.id)))}')" title="Edit Faculty" class="p-1 text-slate-600 hover:text-ashiana-green hover:bg-emerald-50 rounded-lg transition-colors">
+                <button onclick="openEditStaffModal(${studentEscape(JSON.stringify(String(s.id)))})" title="Edit Faculty" class="p-1 text-slate-600 hover:text-ashiana-green hover:bg-emerald-50 rounded-lg transition-colors">
                   <i data-lucide="edit-3" class="w-3.5 h-3.5"></i>
                 </button>
-                <button onclick="openResetPinModal('${studentEscape(JSON.stringify(String(s.id)))}')" title="Reset PIN" class="p-1 text-amber-600 hover:text-amber-800 hover:bg-amber-50 rounded-lg transition-colors">
+                <button onclick="openResetPinModal(${studentEscape(JSON.stringify(String(s.id)))})" title="Reset PIN" class="p-1 text-amber-600 hover:text-amber-800 hover:bg-amber-50 rounded-lg transition-colors">
                   <i data-lucide="key" class="w-3.5 h-3.5"></i>
                 </button>
-                <button onclick="openDeleteStaffModal('${studentEscape(JSON.stringify(String(s.id)))}')" title="Delete Faculty" class="p-1 text-slate-400 hover:text-ashiana-red hover:bg-rose-50 rounded-lg transition-colors">
+                <button onclick="openDeleteStaffModal(${studentEscape(JSON.stringify(String(s.id)))})" title="Delete Faculty" class="p-1 text-slate-400 hover:text-ashiana-red hover:bg-rose-50 rounded-lg transition-colors">
                   <i data-lucide="trash-2" class="w-3.5 h-3.5"></i>
                 </button>
-                <button onclick="quickTestPunch('${studentEscape(JSON.stringify(String(s.id)))}')" title="Quick Mark Attendance" class="p-1 text-ashiana-green hover:bg-emerald-50 rounded-lg transition-colors">
+                <button onclick="quickTestPunch(${studentEscape(JSON.stringify(String(s.id)))})" title="Quick Mark Attendance" class="p-1 text-ashiana-green hover:bg-emerald-50 rounded-lg transition-colors">
                   <i data-lucide="check" class="w-3.5 h-3.5"></i>
                 </button>
               </div>
