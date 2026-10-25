@@ -10501,13 +10501,18 @@ window.addEventListener('load',async function(){
       validation.classList.toggle("hidden", errors.length === 0);
       validation.textContent = errors.join(" ");
       if (errors.length) { preview.classList.add("hidden"); return; }
+      // Escape every value before inserting it into this HTML preview. These values
+      // originate from editable form controls and must never be trusted as HTML.
+      const ruleText = value => String(value ?? "").replace(/[&<>"']/g, ch => ({
+        "&": "&amp;", "<": "&lt;", ">": "&gt;", '"': "&quot;", "'": "&#39;"
+      }[ch]));
       const denominator = rules.denominator === "working_days_minus_leave" ? "working days minus approved leave" : "all school working days";
       const leaveText = rules.leaveTreatment === "exclude_denominator" ? "Approved leave excluded from the attendance percentage denominator." : "Approved leave remains separate and reduces absent days.";
       const samplePresent = 18, sampleLeave = 2, sampleWorking = 22;
       const sampleDenominator = rules.denominator === "working_days_minus_leave" ? sampleWorking - sampleLeave : sampleWorking;
       const sampleRate = sampleDenominator > 0 ? Math.round(samplePresent / sampleDenominator * 100) : 0;
       preview.innerHTML = '<h4 class="font-extrabold text-slate-900 mb-2">Calculation preview (illustrative)</h4>' +
-        '<p class="text-sm text-slate-700">Schedule: <strong>' + rules.start + '–' + rules.end + '</strong>; grace: <strong>' + rules.grace + ' min</strong>; late threshold: <strong>' + rules.lateAfter + '</strong>.</p>' +
+        '<p class="text-sm text-slate-700">Schedule: <strong>' + ruleText(rules.start) + '–' + ruleText(rules.end) + '</strong>; grace: <strong>' + ruleText(rules.grace) + ' min</strong>; late threshold: <strong>' + ruleText(rules.lateAfter) + '</strong>.</p>' +
         '<p class="text-sm text-slate-700 mt-1">Percentage denominator: <strong>' + denominator + '</strong>. ' + leaveText + '</p>' +
         '<div class="grid grid-cols-2 sm:grid-cols-4 gap-2 mt-3">' +
         '<div class="rounded-lg bg-white border p-3"><span class="text-xs text-slate-500">Present</span><p class="text-lg font-black">18</p></div>' +
@@ -10515,8 +10520,8 @@ window.addEventListener('load',async function(){
         '<div class="rounded-lg bg-white border p-3"><span class="text-xs text-slate-500">Working days</span><p class="text-lg font-black">22</p></div>' +
         '<div class="rounded-lg bg-white border p-3"><span class="text-xs text-slate-500">Attendance</span><p class="text-lg font-black text-emerald-700">' + sampleRate + '%</p></div></div>' +
         '<p class="text-xs text-slate-500 mt-2">Illustrative values only; no real staff records were changed. Hour-based classification remains disabled when set to 0.</p>';
-      preview.innerHTML += '<p class="text-sm text-slate-700 mt-3">Full day: <strong>' + rules.fullDayHours + ' hours</strong>; half day: <strong>' + rules.halfDayHours + ' to less than ' + rules.fullDayHours + ' hours</strong>; short day: <strong>less than ' + rules.halfDayHours + ' hours</strong>.</p>' +
-        '<p class="text-sm text-slate-700 mt-1">Punches after <strong>' + rules.latePunchAfter + '</strong> count as a short leave. Every <strong>' + rules.shortDaysPerFullDay + ' short days</strong> make one full-day equivalent; every <strong>' + rules.shortLeavesPerFullAbsent + ' late short leaves</strong> make one full absent.</p>';
+      preview.innerHTML += '<p class="text-sm text-slate-700 mt-3">Full day: <strong>' + ruleText(rules.fullDayHours) + ' hours</strong>; half day: <strong>' + ruleText(rules.halfDayHours) + ' to less than ' + ruleText(rules.fullDayHours) + ' hours</strong>; short day: <strong>less than ' + ruleText(rules.halfDayHours) + ' hours</strong>.</p>' +
+        '<p class="text-sm text-slate-700 mt-1">Punches after <strong>' + ruleText(rules.latePunchAfter) + '</strong> count as a short leave. Every <strong>' + ruleText(rules.shortDaysPerFullDay) + ' short days</strong> make one full-day equivalent; every <strong>' + ruleText(rules.shortLeavesPerFullAbsent) + ' late short leaves</strong> make one full absent.</p>';
       preview.classList.remove("hidden");
     }
 
