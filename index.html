@@ -8990,7 +8990,7 @@ async function loadAdminStudentAttendance(){
       if (dailyRecords.length === 0) {
         container.innerHTML = `
           <div class="text-center py-8 text-slate-400 text-xs italic bg-white rounded-2xl border border-slate-200 p-4">
-            No punch logs found for ${monthName} matching filter.
+            No punch logs found for ${String(monthName ?? "").replace(/&/g, "&amp;").replace(/</g, "&lt;").replace(/>/g, "&gt;")} matching filter.
           </div>
         `;
         return;
@@ -11398,7 +11398,7 @@ window.addEventListener('load',async function(){
       // Render Table Body
       const tbody = document.getElementById("report-table-tbody");
       if (records.length === 0) {
-        tbody.innerHTML = `<tr><td colspan="12" class="text-center py-8 text-slate-400 text-xs italic">No records found for ${monthName}. Tap "Seed Sample Month Punches" to preview populated data.</td></tr>`;
+        tbody.innerHTML = `<tr><td colspan="12" class="text-center py-8 text-slate-400 text-xs italic">No records found for ${String(monthName ?? "").replace(/&/g, "&amp;").replace(/</g, "&lt;").replace(/>/g, "&gt;")}. Tap "Seed Sample Month Punches" to preview populated data.</td></tr>`;
         return;
       }
 
