@@ -74,9 +74,10 @@ Deno.serve(async(req:Request)=>{
   const expected=Deno.env.get("FEE_REMINDER_CRON_SECRET")||"";
   const provided=req.headers.get("x-fee-reminder-secret")||"";
   if(!expected||provided.length!==expected.length||!crypto.subtle) return json({error:"UNAUTHORIZED"},401);
-  let same=true;
-  for(let i=0;i<expected.length;i++) same = same && (expected.charCodeAt(i)===provided.charCodeAt(i));
-  if(!same) return json({error:"UNAUTHORIZED"},401);
+  // Compare all characters without short-circuiting on the first mismatch.
+  let diff=0;
+  for(let i=0;i<expected.length;i++) diff |= expected.charCodeAt(i) ^ provided.charCodeAt(i);
+  if(diff!==0) return json({error:"UNAUTHORIZED"},401);
   const url=Deno.env.get("SUPABASE_URL")||"";
   const serviceKey=Deno.env.get("SUPABASE_SERVICE_ROLE_KEY")||"";
   if(!url||!serviceKey) return json({error:"SERVER_CONFIGURATION_ERROR"},503);
