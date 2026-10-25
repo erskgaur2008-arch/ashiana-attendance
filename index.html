@@ -10316,12 +10316,14 @@ window.addEventListener('load',async function(){
     function renderAuditLogs() {
       const tbody = document.getElementById("audit-logs-tbody");
       if (!tbody) return;
+      // Audit-log values may contain data derived from user actions or persisted records.
+      // Escape them before inserting into HTML so they cannot be interpreted as markup.
       tbody.innerHTML = auditLogs.map(a => `
         <tr class="hover:bg-slate-50 transition-colors">
-          <td class="py-2 px-3 text-slate-400">${a.timestamp}</td>
-          <td class="py-2 px-3 font-bold text-slate-800">${a.actor}</td>
-          <td class="py-2 px-3 text-ashiana-green font-bold">${a.action}</td>
-          <td class="py-2 px-3 text-slate-500">${a.details}</td>
+          <td class="py-2 px-3 text-slate-400">${studentEscape(a.timestamp)}</td>
+          <td class="py-2 px-3 font-bold text-slate-800">${studentEscape(a.actor)}</td>
+          <td class="py-2 px-3 text-ashiana-green font-bold">${studentEscape(a.action)}</td>
+          <td class="py-2 px-3 text-slate-500">${studentEscape(a.details)}</td>
         </tr>
       `).join('');
     }
