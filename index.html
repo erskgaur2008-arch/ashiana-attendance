@@ -2920,6 +2920,9 @@ id="student-dashboard-panel-body" class="space-y-3 text-xs"></div>
             <button id="staff-drawer-profile" type="button" onclick="selectStaffDrawerProfile()" class="staff-drawer-item">
               <i data-lucide="user"></i><span>Profile</span>
             </button>
+            <button id="staff-drawer-fees" type="button" onclick="selectStaffDrawerFees()" class="staff-drawer-item hidden">
+              <i data-lucide="wallet"></i><span>Fee Confirmations</span>
+            </button>
             <div class="my-3 border-t border-slate-200"></div>
             <button type="button" onclick="selectStaffDrawerSignOut()" class="staff-drawer-item danger">
               <i data-lucide="log-out"></i><span>Sign Out</span>
@@ -6525,7 +6528,7 @@ async function saveTeacherHomework(){
   }catch(e){showToast(e.message||'Unable to publish homework.','error');}
   finally{if(btn)btn.disabled=false;}
 }
-async function loadTeacherPortalStudentsForReport(){const sel=document.getElementById('tp-student'),a=teacherPortalClass();if(!sel||!a)return;const {data,error}=await supabaseClient.from('student_roster').select('id,student_name,enroll_no').eq('school_code',APS_STUDENT_SCHOOL).eq('class_name',a.class_name).eq('section',a.section).eq('status','ACTIVE').order('roll_no').order('student_name');if(error){sel.innerHTML='<option>Unable to load students</option>';return;}sel.innerHTML='<option value="">Select student</option>'+(data||[]).map(s=>'<option value="'+s.id+'">'+studentEscape(s.student_name)+' ('+studentEscape(s.enroll_no)+')</option>').join('');}
+async function loadTeacherPortalStudentsForReport(){const sel=document.getElementById('tp-student'),a=teacherPortalClass();if(!sel||!a)return;const {data,error}=await supabaseClient.from('student_roster').select('id,student_name,enroll_no').eq('school_code',APS_STUDENT_SCHOOL).eq('class_name',a.class_name).eq('section',a.section).eq('status','ACTIVE').order('roll_no').order('student_name');if(error){sel.innerHTML='<option>Unable to load students</option>';return;}sel.innerHTML='<option value="">Select student</option>'+(data||[]).map(s=>'<option value="'+studentEscape(s.id)+'">'+studentEscape(s.student_name)+' ('+studentEscape(s.enroll_no)+')</option>').join('');}
 async function saveTeacherTimetable(){
   const a=teacherPortalClass(),day=Number(document.getElementById('tp-day')?.value),period=Number(document.getElementById('tp-period')?.value),subject=document.getElementById('tp-subject')?.value.trim(),file=document.getElementById('tp-timetable-attachment')?.files?.[0];
   if(!a||!day||!period||!subject)return showToast('Complete timetable details.','error');
@@ -8257,7 +8260,7 @@ async function loadTeacherStudentAttendance(){
 }
 async function loadAdminStudents(){
       const tbody=document.getElementById('admin-student-tbody');if(!tbody||currentAuthUser?.type!=='ADMIN'||!supabaseClient)return;const statusEl=document.getElementById('admin-student-status');if(statusEl)statusEl.textContent='Loading roster…';
-      try{const search=document.getElementById('admin-student-search')?.value?.trim()||'',cls=document.getElementById('admin-student-filter-class')?.value||'',sec=document.getElementById('admin-student-filter-section')?.value||'',stat=document.getElementById('admin-student-filter-status')?.value||'',sort=document.getElementById('admin-student-sort')?.value||'class_section_roll';let base=supabaseClient.from('student_roster').select('id,enroll_no,student_name,class_name,section,roll_no,gender,category,status,dob,mother_name,father_name,address,phone_number,mode_of_transport,photo_path,id_card_generated_at').eq('school_code',APS_STUDENT_SCHOOL);if(search)base=base.or('enroll_no.ilike.%'+search+'%,student_name.ilike.%'+search+'%,class_name.ilike.%'+search+'%,section.ilike.%'+search+'%');if(cls)base=base.eq('class_name',cls);if(sec)base=base.eq('section',sec);if(stat)base=base.eq('status',stat);let allRows=[];for(let from=0;from<5000;from+=1000){const {data,error}=await base.range(from,from+999);if(error)throw error;allRows.push(...(data||[]));if(!data||data.length<1000)break;}adminStudentRows=allRows;const sorter={class_section_roll:(a,b)=>String(a.class_name).localeCompare(String(b.class_name),undefined,{numeric:true})||String(a.section).localeCompare(String(b.section),undefined,{numeric:true})||Number(a.roll_no||999999)-Number(b.roll_no||999999)||String(a.student_name).localeCompare(String(b.student_name)),name:(a,b)=>String(a.student_name).localeCompare(String(b.student_name)),enroll:(a,b)=>String(a.enroll_no).localeCompare(String(b.enroll_no),undefined,{numeric:true}),status:(a,b)=>String(a.status).localeCompare(String(b.status))};adminStudentRows.sort(sorter[sort]||sorter.class_section_roll);tbody.innerHTML=adminStudentRows.length?adminStudentRows.map(s=>'<tr class="border-t hover:bg-slate-50"><td class="p-2"><input type="checkbox" class="admin-student-check w-3.5 h-3.5" value="'+studentEscape(s.id)+'" onchange="updateStudentSelectedCount()"></td><td class="p-2 font-semibold">'+studentEscape(s.enroll_no)+'</td><td class="p-2 font-semibold">'+studentEscape(s.student_name)+'</td><td class="p-2">'+studentEscape(s.class_name)+'</td><td class="p-2">'+studentEscape(s.section)+'</td><td class="p-2">'+studentEscape(s.gender||'Not Specified')+'</td><td class="p-2">'+studentEscape(s.category||'Not Specified')+'</td><td class="p-2">'+studentEscape(s.status==='ACTIVE'?'Active':'Inactive/Passout')+'</td><td class="p-2 whitespace-nowrap"><button type="button" onclick="editStudentById(\''+studentEscape(s.id)+'\')" class="text-blue-700 font-bold mr-2">Edit</button><button type="button" onclick="createStudentIdCardById(\''+studentEscape(s.id)+'\')" class="text-indigo-700 font-bold mr-2">Create ID Card</button><button type="button" onclick="deleteStudentById(\''+studentEscape(s.id)+'\')" class="text-rose-600 font-bold">Delete</button></td></tr>').join(''):'<tr><td colspan="9" class="p-4 text-center text-slate-400">No students found.</td></tr>';if(statusEl)statusEl.textContent=adminStudentRows.length+' student record(s) loaded.';populateStudentClassOptions();await populateStudentTeacherOptions();updateStudentSelectedCount();}catch(e){tbody.innerHTML='';if(statusEl)statusEl.textContent='Roster unavailable: '+(e.message||e);}}
+      try{const search=document.getElementById('admin-student-search')?.value?.trim()||'',cls=document.getElementById('admin-student-filter-class')?.value||'',sec=document.getElementById('admin-student-filter-section')?.value||'',stat=document.getElementById('admin-student-filter-status')?.value||'',sort=document.getElementById('admin-student-sort')?.value||'class_section_roll';let base=supabaseClient.from('student_roster').select('id,enroll_no,student_name,class_name,section,roll_no,gender,category,status,dob,mother_name,father_name,address,phone_number,mode_of_transport,photo_path,id_card_generated_at').eq('school_code',APS_STUDENT_SCHOOL);if(search)base=base.or('enroll_no.ilike.%'+search+'%,student_name.ilike.%'+search+'%,class_name.ilike.%'+search+'%,section.ilike.%'+search+'%');if(cls)base=base.eq('class_name',cls);if(sec)base=base.eq('section',sec);if(stat)base=base.eq('status',stat);let allRows=[];for(let from=0;from<5000;from+=1000){const {data,error}=await base.range(from,from+999);if(error)throw error;allRows.push(...(data||[]));if(!data||data.length<1000)break;}adminStudentRows=allRows;const sorter={class_section_roll:(a,b)=>String(a.class_name).localeCompare(String(b.class_name),undefined,{numeric:true})||String(a.section).localeCompare(String(b.section),undefined,{numeric:true})||Number(a.roll_no||999999)-Number(b.roll_no||999999)||String(a.student_name).localeCompare(String(b.student_name)),name:(a,b)=>String(a.student_name).localeCompare(String(b.student_name)),enroll:(a,b)=>String(a.enroll_no).localeCompare(String(b.enroll_no),undefined,{numeric:true}),status:(a,b)=>String(a.status).localeCompare(String(b.status))};adminStudentRows.sort(sorter[sort]||sorter.class_section_roll);tbody.innerHTML=adminStudentRows.length?adminStudentRows.map(s=>'<tr class="border-t hover:bg-slate-50"><td class="p-2"><input type="checkbox" class="admin-student-check w-3.5 h-3.5" value="'+studentEscape(s.id)+'" onchange="updateStudentSelectedCount()"></td><td class="p-2 font-semibold">'+studentEscape(s.enroll_no)+'</td><td class="p-2 font-semibold">'+studentEscape(s.student_name)+'</td><td class="p-2">'+studentEscape(s.class_name)+'</td><td class="p-2">'+studentEscape(s.section)+'</td><td class="p-2">'+studentEscape(s.gender||'Not Specified')+'</td><td class="p-2">'+studentEscape(s.category||'Not Specified')+'</td><td class="p-2">'+studentEscape(s.status==='ACTIVE'?'Active':'Inactive/Passout')+'</td><td class="p-2 whitespace-nowrap"><button type="button" onclick="editStudentById('+studentEscape(JSON.stringify(String(s.id)))+')" class="text-blue-700 font-bold mr-2">Edit</button><button type="button" onclick="createStudentIdCardById('+studentEscape(JSON.stringify(String(s.id)))+')" class="text-indigo-700 font-bold mr-2">Create ID Card</button><button type="button" onclick="deleteStudentById('+studentEscape(JSON.stringify(String(s.id)))+')" class="text-rose-600 font-bold">Delete</button></td></tr>').join(''):'<tr><td colspan="9" class="p-4 text-center text-slate-400">No students found.</td></tr>';if(statusEl)statusEl.textContent=adminStudentRows.length+' student record(s) loaded.';populateStudentClassOptions();await populateStudentTeacherOptions();updateStudentSelectedCount();}catch(e){tbody.innerHTML='';if(statusEl)statusEl.textContent='Roster unavailable: '+(e.message||e);}}
     async function adminAddStudent(event){event.preventDefault();if(currentAuthUser?.type!=='ADMIN'||!supabaseClient)return showToast('Administrator session required.','error');const v=id=>document.getElementById(id)?.value?.trim()||'';try{const {error}=await supabaseClient.from('student_roster').upsert({school_code:APS_STUDENT_SCHOOL,enroll_no:v('new-student-enroll').toUpperCase(),student_name:v('new-student-name'),class_name:v('new-student-class'),section:v('new-student-section').toUpperCase(),gender:v('new-student-gender')||'Not Specified',category:v('new-student-category')||'Not Specified',status:'ACTIVE'},{onConflict:'school_code,enroll_no'});if(error)throw error;event.target.reset();showToast('Student saved.','success');await loadAdminStudents();}catch(e){showToast('Unable to save student: '+(e.message||e),'error');}}
     async function editStudentById(id){const s=adminStudentRows.find(x=>x.id===id);if(!s)return;const map={id:'edit-student-id',enroll_no:'edit-student-enroll',student_name:'edit-student-name',class_name:'edit-student-class',section:'edit-student-section',gender:'edit-student-gender',category:'edit-student-category',status:'edit-student-status',roll_no:'edit-student-roll',dob:'edit-student-dob',mother_name:'edit-student-mother',father_name:'edit-student-father',phone_number:'edit-student-phone',address:'edit-student-address'};Object.keys(map).forEach(k=>{const el=document.getElementById(map[k]);if(el)el.value=s[k]||'';});const file=document.getElementById('edit-student-photo');if(file)file.value='';const wrap=document.getElementById('edit-student-photo-preview-wrap');if(wrap){wrap.innerHTML='<span class="text-xl font-black">'+studentEscape((s.student_name||'ST').split(/\s+/).map(x=>x[0]).join('').slice(0,2).toUpperCase())+'</span>';if(s.photo_path&&supabaseClient){const {data,error}=await supabaseClient.storage.from('student-photos').createSignedUrl(s.photo_path,3600);if(!error&&data?.signedUrl)wrap.innerHTML='<img src="'+studentEscape(data.signedUrl)+'" class="w-full h-full object-cover" alt="Student photo">';}}document.getElementById('student-edit-modal')?.classList.remove('hidden');}
     function previewStudentPhoto(event){const file=event.target.files?.[0],wrap=document.getElementById('edit-student-photo-preview-wrap');if(!file||!wrap)return;if(file.size>2*1024*1024){event.target.value='';showToast('Student photo must be 2 MB or smaller.','error');return;}if(!/^image\/(jpeg|png|webp)$/i.test(file.type)){event.target.value='';showToast('Please choose a JPG, PNG or WebP image.','error');return;}const url=URL.createObjectURL(file);wrap.innerHTML='<img src="'+url+'" class="w-full h-full object-cover" alt="Student photo preview">';wrap.dataset.objectUrl=url;}
@@ -8557,7 +8560,7 @@ async function assignClassTeacher(){const cls=document.getElementById('assign-cl
                 '<p class="text-[11px] font-bold text-slate-800">'+studentEscape(x.type)+(x.label?' <span class="font-medium text-slate-500">• '+studentEscape(x.label)+'</span>':'')+'</p>'+
                 '<p class="text-[10px] text-slate-500 truncate">'+studentEscape(x.teacher_email)+'</p>'+
               '</div>'+
-              '<button type="button" onclick="deleteAssignment(\''+studentEscape(x.id)+'\',\''+studentEscape(x.type)+'\')" class="shrink-0 text-rose-600 text-[10px] font-bold hover:underline">Delete</button>'+
+              '<button type="button" onclick="deleteAssignment('+studentEscape(JSON.stringify(String(x.id)))+','+studentEscape(JSON.stringify(String(x.type)))+')" class="shrink-0 text-rose-600 text-[10px] font-bold hover:underline">Delete</button>'+
             '</div>'
           ).join('');
 
@@ -8851,6 +8854,7 @@ async function loadAdminStudentAttendance(){
       if(open){
         const role=document.getElementById('staff-drawer-role');
         if(role&&currentAuthUser?.staffRecord)role.textContent=currentAuthUser.staffRecord.role||'Faculty';
+        if(typeof window.refreshStaffFeesMenu==='function')window.refreshStaffFeesMenu();
       }
       if(window.lucide)lucide.createIcons();
     }
@@ -8871,6 +8875,10 @@ async function loadAdminStudentAttendance(){
     function selectStaffDrawerProfile(){
       toggleStaffDrawer(false);
       openStaffProfileModal();
+    }
+    function selectStaffDrawerFees(){
+      toggleStaffDrawer(false);
+      if(typeof window.openPrincipalFeesConsole==='function')window.openPrincipalFeesConsole();
     }
     function selectStaffDrawerSignOut(){
       toggleStaffDrawer(false);
@@ -14389,16 +14397,16 @@ window.showStudentSchoolUpiQr=async function(accountId,installmentId){
 <div id="fees-admin-console" class="hidden fixed inset-0 z-[280] bg-slate-950/70 backdrop-blur-sm p-2 sm:p-5 items-center justify-center" role="dialog" aria-modal="true" aria-labelledby="fees-admin-title">
   <div class="w-full max-w-5xl max-h-[94dvh] overflow-y-auto rounded-2xl bg-slate-50 shadow-2xl">
     <div class="sticky top-0 z-10 flex items-center justify-between gap-3 border-b bg-white p-4">
-      <div><h2 id="fees-admin-title" class="text-lg font-extrabold text-slate-900">Fees Management</h2><p class="text-xs text-slate-500">Admin review and independent Principal confirmation</p></div>
+      <div><h2 id="fees-admin-title" class="text-lg font-extrabold text-slate-900">Fees Management</h2><p id="fees-admin-subtitle" class="text-xs text-slate-500">Admin review and independent Principal confirmation</p></div>
       <button type="button" onclick="closeFeesAdminConsole()" class="rounded-xl border px-3 py-2 text-sm font-bold">Close</button>
     </div>
     <div class="p-4 space-y-4">
       <div class="flex flex-wrap gap-2">
-        <button type="button" onclick="loadFeesReviewQueue('admin')" class="rounded-xl bg-emerald-800 px-4 py-2.5 text-xs font-bold text-white">Admin review queue</button>
+        <button type="button" data-fees-admin-only="1" onclick="loadFeesReviewQueue('admin')" class="rounded-xl bg-emerald-800 px-4 py-2.5 text-xs font-bold text-white">Admin review queue</button>
         <button type="button" onclick="loadFeesReviewQueue('principal')" class="rounded-xl bg-violet-800 px-4 py-2.5 text-xs font-bold text-white">Principal confirmation queue</button>
-        <button type="button" onclick="loadFeesReviewQueue('discount')" class="rounded-xl bg-amber-800 px-4 py-2.5 text-xs font-bold text-white">Discount approvals</button>
+        <button type="button" data-fees-admin-only="1" onclick="loadFeesReviewQueue('discount')" class="rounded-xl bg-amber-800 px-4 py-2.5 text-xs font-bold text-white">Discount approvals</button>
       </div>
-      <details class="rounded-2xl border bg-white p-4">
+      <details data-fees-admin-only="1" class="rounded-2xl border bg-white p-4">
         <summary class="cursor-pointer font-extrabold text-slate-900">Fee setup & permissions</summary>
         <p class="mt-2 text-xs text-slate-500">These actions require an authorized Admin session and are audit logged. Keep the academic-year UUID returned after saving for fee structures and account assignment.</p>
         <div class="mt-4 grid grid-cols-1 md:grid-cols-2 gap-4">
@@ -14477,7 +14485,53 @@ window.showStudentSchoolUpiQr=async function(accountId,installmentId){
   function money(p){return "₹"+(Number(p||0)/100).toLocaleString("en-IN",{minimumFractionDigits:2,maximumFractionDigits:2});}
   function setStatus(msg,bad=false){const el=$("fees-admin-status");if(el){el.textContent=msg;el.className="rounded-xl border p-3 text-xs "+(bad?"border-rose-200 bg-rose-50 text-rose-800":"bg-white text-slate-600");}}
   function getClient(){return (typeof supabaseClient!=="undefined"&&supabaseClient)||window.__ashianaMainSupabaseClient||null;}
-  window.closeFeesAdminConsole=function(){$("fees-admin-console")?.classList.add("hidden");$("fees-admin-console")?.classList.remove("flex");};
+  function setPrincipalMode(on){
+    document.querySelectorAll("#fees-admin-console [data-fees-admin-only]").forEach(el=>el.classList.toggle("hidden",!!on));
+    const title=$("fees-admin-title"),sub=$("fees-admin-subtitle");
+    if(title)title.textContent=on?"Fee Confirmations":"Fees Management";
+    if(sub)sub.textContent=on?"Principal confirmation of payments already reviewed by Admin":"Admin review and independent Principal confirmation";
+  }
+  async function feeErrorMessage(error,fallback){
+    try{
+      const res=error&&error.context;
+      if(res&&typeof res.json==="function"){const body=await res.json();if(body&&body.error)return String(body.error);}
+    }catch(_){}
+    return (error&&error.message)||fallback;
+  }
+  window.closeFeesAdminConsole=function(){$("fees-admin-console")?.classList.add("hidden");$("fees-admin-console")?.classList.remove("flex");setPrincipalMode(false);};
+  window.openPrincipalFeesConsole=async function(){
+    const panel=$("fees-admin-console");
+    try{
+      const client=getClient();
+      if(!client?.auth?.getSession){alert("Fee Confirmations could not start. Please reload the page and sign in again.");return;}
+      const {data,error}=await client.auth.getSession();
+      if(error)throw error;
+      if(!data?.session){alert("Your school session is not available. Please sign in again.");return;}
+      if(!panel)throw new Error("The Fees panel is missing from this page version. Refresh the website and try again.");
+      setPrincipalMode(true);
+      panel.classList.remove("hidden");panel.classList.add("flex");
+      await window.loadFeesReviewQueue("principal");
+    }catch(error){
+      console.error("[Fee Confirmations] Could not open:",error);
+      if(panel){panel.classList.remove("hidden");panel.classList.add("flex");setStatus("Fee Confirmations could not load: "+(error?.message||"Unexpected error."),true);}
+    }
+  };
+  let feeMenuProbe={key:"",state:null};
+  window.refreshStaffFeesMenu=async function(){
+    const btn=$("staff-drawer-fees");if(!btn)return;
+    try{
+      const user=(typeof currentAuthUser!=="undefined"&&currentAuthUser)||null;
+      const role=String(user?.staffRecord?.role||"").toLowerCase();
+      const key=String(user?.email||user?.staffRecord?.email||"").toLowerCase();
+      if(!key||!/principal/.test(role)){btn.classList.add("hidden");return;}
+      if(feeMenuProbe.key===key&&feeMenuProbe.state!==null){btn.classList.toggle("hidden",!feeMenuProbe.state);return;}
+      const client=getClient();if(!client?.functions?.invoke)return;
+      const {error}=await client.functions.invoke("fee-management",{body:{action:"principal-queue"}});
+      feeMenuProbe={key,state:!error};
+      btn.classList.toggle("hidden",!!error);
+      if(window.lucide)lucide.createIcons();
+    }catch(_){btn.classList.add("hidden");}
+  };
   window.openFeesAdminConsole=async function(){
     const panel=$("fees-admin-console");
     try{
@@ -14498,6 +14552,7 @@ window.showStudentSchoolUpiQr=async function(accountId,installmentId){
       // Open the panel before loading remote data so the user gets immediate feedback.
       panel.classList.remove("hidden");
       panel.classList.add("flex");
+      setPrincipalMode(false);
       setStatus("Opening Fees Management…");
       await Promise.all([
         window.loadFeeSetupOptions(),
@@ -14580,7 +14635,7 @@ window.showStudentSchoolUpiQr=async function(accountId,installmentId){
       const client=getClient(),{data,error}=await client.functions.invoke("fee-management",{body:{action:"admin-list-structures",academic_year_id:yearId,class_name:cls}});
       if(error||data?.error)throw new Error(error?.message||data?.error||"Could not load fee structures.");
       const rows=Array.isArray(data?.fee_structures)?data.fee_structures:[];
-      host.innerHTML=rows.length?'<p class="font-bold mb-1">Existing fee structures</p>'+rows.map(r=>'<div class="flex items-start justify-between gap-2 py-2 border-t"><div class="min-w-0">'+escapeHtml(r.class_name)+' · '+escapeHtml(r.fee_name)+' — '+money(r.amount_paise)+(r.is_mandatory?' · Mandatory':' · Optional')+(r.due_date?' · Due '+escapeHtml(r.due_date):'')+'</div><button type="button" class="shrink-0 rounded-lg border border-rose-300 px-2 py-1 text-xs font-bold text-rose-700" onclick="deleteFeeStructure(&quot;'+escapeHtml(r.id)+'&quot;,&quot;'+escapeHtml(r.class_name)+'&quot;,&quot;'+escapeHtml(r.fee_name)+'&quot;)">Delete</button></div>').join(""):'No fee structures found for this selection yet.';
+      host.innerHTML=rows.length?'<p class="font-bold mb-1">Existing fee structures</p>'+rows.map(r=>'<div class="flex items-start justify-between gap-2 py-2 border-t"><div class="min-w-0">'+escapeHtml(r.class_name)+' · '+escapeHtml(r.fee_name)+' — '+money(r.amount_paise)+(r.is_mandatory?' · Mandatory':' · Optional')+(r.due_date?' · Due '+escapeHtml(r.due_date):'')+'</div><button type="button" class="shrink-0 rounded-lg border border-rose-300 px-2 py-1 text-xs font-bold text-rose-700" onclick="deleteFeeStructure('+escapeHtml(JSON.stringify(String(r.id)))+','+escapeHtml(JSON.stringify(String(r.class_name)))+','+escapeHtml(JSON.stringify(String(r.fee_name)))+')">Delete</button></div>').join(""):'No fee structures found for this selection yet.';
     }catch(e){host.textContent=e?.message||"Could not load fee structures.";}
   };
   window.deleteFeeStructure=async function(id,className,feeName){
@@ -14751,7 +14806,7 @@ window.showStudentSchoolUpiQr=async function(accountId,installmentId){
     try{
       const action=kind==="principal"?"principal-queue":kind==="discount"?"admin-discount-queue":"admin-queue";
       const {data,error}=await client.functions.invoke("fee-management",{body:{action}});
-      if(error)throw new Error(error.message||"Queue request failed.");
+      if(error)throw new Error(await feeErrorMessage(error,"Queue request failed."));
       const rows=kind==="discount"?(Array.isArray(data?.requests)?data.requests:[]):(Array.isArray(data?.submissions)?data.submissions:[]);
       if(!rows.length){setStatus(kind==="principal"?"No payments are awaiting Principal confirmation, or this account is not an assigned Principal.":kind==="discount"?"No discount requests are awaiting Admin review.":"No payments are awaiting Admin review.");host.innerHTML='<div class="rounded-2xl border bg-white p-5 text-center text-sm text-slate-500">No queue items returned.</div>';return;}
       if(kind==="discount"){
@@ -14791,7 +14846,7 @@ window.showStudentSchoolUpiQr=async function(accountId,installmentId){
       const isAdmin=Boolean(b.dataset.feeApprove||b.dataset.feeReject);
       const payload=isAdmin?{action:"admin-review-payment",submission_id:id,approve:!isReject,reason:isReject?reason.trim():null}:{action:"principal-confirm-payment",submission_id:id,confirm:!isReject,reason:isReject?reason.trim():null};
       const {data,error}=await client.functions.invoke("fee-management",{body:payload});
-      if(error)throw new Error(error.message||data?.error||"Review action failed.");
+      if(error)throw new Error(await feeErrorMessage(error,data?.error||"Review action failed."));
       rowMsg(isAdmin?(isReject?"Payment rejected.":"Admin review complete; awaiting Principal confirmation."):(isReject?"Payment rejected by Principal.":"Payment confirmed and receipt should now be issued."),true);
       b.closest("article")?.remove();
       setStatus("Review action saved. Queue refreshed.");
