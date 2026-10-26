@@ -177,8 +177,10 @@ Deno.serve(async (req: Request) => {
     }
 
     if (action === "authentication-options" || action === "enable-options") {
-      const { data: credentials, error } = await admin.from("staff_webauthn_credentials")
+      let credentialQuery = admin.from("staff_webauthn_credentials")
         .select("credential_id,transports").eq("staff_id", String(staff.id));
+      if (action === "authentication-options") credentialQuery = credentialQuery.eq("enabled", true);
+      const { data: credentials, error } = await credentialQuery;
       if (error) throw error;
       if (!credentials?.length) return json({ error: "PASSKEY_NOT_REGISTERED" }, 404);
       const options = await generateAuthenticationOptions({
@@ -210,11 +212,12 @@ Deno.serve(async (req: Request) => {
       if (typeof challengeValue !== "string" || !challengeValue) return json({ error: "CHALLENGE_EXPIRED" }, 400);
 
       const { data: rows, error: credentialError } = await admin.from("staff_webauthn_credentials")
-        .select("id,credential_id,public_key,counter,transports")
+        .select("id,credential_id,public_key,counter,transports,enabled")
         .eq("staff_id", String(staff.id)).eq("credential_id", assertion.id).limit(1);
       if (credentialError) throw credentialError;
       const stored = rows?.[0];
       if (!stored) return json({ error: "PASSKEY_NOT_REGISTERED" }, 403);
+      if (body?.enable_after_verify !== true && stored.enabled !== true) return json({ error: "BIOMETRIC_DISABLED" }, 403);
 
       const result = await verifyAuthenticationResponse({
         response: assertion,
