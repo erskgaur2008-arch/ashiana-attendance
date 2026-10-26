@@ -6569,7 +6569,7 @@ function normalizeReportSubjects(list){
 }
 function computeReportTotals(list){
   let total=0,max=0,counted=0;
-  list.forEach(s=>{if(s.marks!=null&&s.max>0){total+=s.marks;max+=s.max;counted++;}});
+  list.forEach(s=>{if(s.max>0){if(s.marks!=null)total+=s.marks;max+=s.max;counted++;}});
   if(!counted)return {total:null,max:null,pct:null,grade:null};
   const pct=total*100/max;
   return {total,max,pct,grade:reportGradeFor(pct)};
@@ -6620,8 +6620,8 @@ async function downloadReportCardCsvTemplate(){
   try{
     const roster=await fetchReportRoster(a);
     if(!roster.length)return showToast('No active students found in this class.','error');
-    const head=['Admission No','Student Name',...subjects.map(s=>s+' ('+max+')'),'Remarks'];
-    const lines=[head,...roster.map(s=>[s.enroll_no||'',reportCsvSafeText(s.student_name),...subjects.map(()=>''),''])].map(r=>r.map(reportCsvCell).join(',')).join('\r\n');
+    const head=['Admission No','Student Name',...subjects.map(s=>reportCsvSafeText(s+' ('+max+')')),'Remarks'];
+    const lines=[head,...roster.map(s=>[reportCsvSafeText(s.enroll_no||''),reportCsvSafeText(s.student_name),...subjects.map(()=>''),''])].map(r=>r.map(reportCsvCell).join(',')).join('\r\n');
     const blob=new Blob(['﻿'+lines],{type:'text/csv;charset=utf-8'}),url=URL.createObjectURL(blob),el=document.createElement('a');
     el.href=url;el.download='report-card-marks-'+a.class_name+'-'+a.section+'.csv';document.body.appendChild(el);el.click();el.remove();URL.revokeObjectURL(url);
     showToast('Sheet downloaded. Fill in the marks and upload it.','success');
