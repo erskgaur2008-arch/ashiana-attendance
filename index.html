@@ -13685,6 +13685,7 @@ window.addEventListener('load',async function(){
       return true;
     }
     function clearAdminReportSubjectRows(){const host=document.getElementById('admin-report-subject-rows');if(host)host.innerHTML='';}
+    window.addAdminReportSubjectRow=addAdminReportSubjectRow;window.syncAdminReportSubjectRows=syncAdminReportSubjectRows;window.clearAdminReportSubjectRows=clearAdminReportSubjectRows;
 
     async function publishAdminStudentPortalReport(){
       const visibleRows=document.querySelectorAll('#admin-report-subject-rows .admin-report-subject-row').length;if(visibleRows&&!syncAdminReportSubjectRows())return;
