@@ -69,9 +69,17 @@ Deno.serve(async (req: Request) => {
 
     if (action === "status") {
       const { count, error } = await admin.from("staff_webauthn_credentials")
-        .select("id", { count: "exact", head: true }).eq("staff_id", String(staff.id));
+        .select("id", { count: "exact", head: true }).eq("staff_id", String(staff.id)).eq("enabled", true);
       if (error) throw error;
-      return json({ enabled: Number(count || 0) > 0, credential_count: Number(count || 0) });
+      const { count: total, error: totalError } = await admin.from("staff_webauthn_credentials")
+        .select("id", { count: "exact", head: true }).eq("staff_id", String(staff.id));
+      if (totalError) throw totalError;
+      return json({ enabled: Number(count || 0) > 0, credential_count: Number(total || 0) });
+    }
+    if (action === "disable") {
+      const { error } = await admin.from("staff_webauthn_credentials").update({ enabled: false }).eq("staff_id", String(staff.id));
+      if (error) throw error;
+      return json({ success: true, enabled: false });
     }
 
     if (action === "registration-options") {
@@ -168,7 +176,7 @@ Deno.serve(async (req: Request) => {
       return json({ success: true });
     }
 
-    if (action === "authentication-options") {
+    if (action === "authentication-options" || action === "enable-options") {
       const { data: credentials, error } = await admin.from("staff_webauthn_credentials")
         .select("credential_id,transports").eq("staff_id", String(staff.id));
       if (error) throw error;
@@ -228,6 +236,12 @@ Deno.serve(async (req: Request) => {
         counter: result.authenticationInfo.newCounter, last_used_at: new Date().toISOString(),
       }).eq("id", stored.id).eq("staff_id", String(staff.id));
       if (updateError) throw updateError;
+      if (body?.enable_after_verify === true) {
+        const { error: enableError } = await admin.from("staff_webauthn_credentials")
+          .update({ enabled: true }).eq("id", stored.id).eq("staff_id", String(staff.id));
+        if (enableError) throw enableError;
+        return json({ success: true, verified: true, enabled: true });
+      }
       // Mint a random one-time token. Only its hash is stored; verify-attendance
       // atomically consumes it so the same biometric assertion cannot authorize
       // multiple punches. Token is bound to this staff row and expires quickly.
