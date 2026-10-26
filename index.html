@@ -12419,7 +12419,7 @@ window.addEventListener('load',async function(){
                   </button>
                 </div>
               ` : `
-                <span class="text-[10px] text-slate-400 font-semibold capitalize">${l.status.toLowerCase()}</span>
+                <span class="text-[10px] text-slate-400 font-semibold capitalize">${studentEscape(String(l.status || "").toLowerCase())}</span>
               `}
             </td>
           </tr>
