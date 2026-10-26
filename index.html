@@ -8559,148 +8559,6 @@ async function loadAdminStudents(){
       setupPrintWindowBackHandling(printWin);
       printWin.document.open();
       printWin.document.write('<!doctype html><title>Preparing student ID cards…</title><body style="font:16px Arial;padding:24px">Preparing student ID cards…
-<!-- Live staff location tracker: explicit opt-in, last-known point only, foreground updates. -->
-<div id="staff-live-location-modal" class="hidden fixed inset-0 z-[240] bg-slate-950/70 backdrop-blur-sm p-3 items-center justify-center" role="dialog" aria-modal="true" aria-labelledby="staff-live-location-title">
-  <section class="bg-white w-full max-w-5xl max-h-[92dvh] rounded-2xl shadow-2xl overflow-hidden flex flex-col">
-    <header class="p-4 bg-gradient-to-r from-emerald-950 to-emerald-700 text-white flex items-center justify-between gap-3">
-      <div><h2 id="staff-live-location-title" class="font-bold text-lg">Live Staff Location</h2><p class="text-xs text-emerald-100">Work-hours sharing · last-known location only</p></div>
-      <button type="button" onclick="closeStaffLiveLocationAdmin()" class="rounded-xl bg-white/15 px-3 py-2 text-sm font-bold">Close</button>
-    </header>
-    <div class="p-3 flex flex-wrap gap-2 items-center justify-between border-b bg-slate-50">
-      <p id="staff-live-location-admin-status" class="text-sm text-slate-600">Loading locations…</p>
-      <button type="button" onclick="loadStaffLiveLocationAdmin()" class="rounded-xl bg-emerald-700 text-white px-4 py-2 text-sm font-bold">Refresh</button>
-    </div>
-    <div id="staff-live-location-map" class="w-full bg-slate-100" style="height:42dvh;min-height:220px"></div>
-    <div id="staff-live-location-list" class="p-3 overflow-auto space-y-2" style="max-height:30dvh"></div>
-    <p class="px-4 pb-3 text-xs text-slate-500">Locations update while staff sharing is enabled and the app is active. Background updates are not guaranteed by PWA/browser or Android battery controls. LIVE means updated within 2 minutes; older points are STALE.</p>
-  </section>
-</div>
-<button id="admin-live-location-launch" type="button" onclick="openStaffLiveLocationAdmin()" class="hidden fixed z-[160] right-3 bottom-24 rounded-full bg-emerald-800 text-white shadow-xl px-4 py-3 font-bold text-sm">📍 Live Staff Location</button>
-<script>
-(function(){
-  const $ = id => document.getElementById(id);
-  let watchId = null, lastSentAt = 0, adminTimer = null, map = null, mapMarkers = [];
-  let sharing = false, apiBusy = false, leafletLoading = null;
-  const client = () => window.__ashianaMainSupabaseClient || window.supabaseClient || window.supabase;
-  const esc = v => String(v ?? '').replace(/[&<>"']/g, c => ({'&':'&amp;','<':'&gt;','>':'&gt;','"':'&quot;',"'":'&#39;'}[c]));
-  async function invoke(action, extra = {}) {
-    const c = client();
-    if (!c?.functions?.invoke) throw new Error('Secure school session unavailable. Sign in again.');
-    const {data,error} = await c.functions.invoke('staff-live-location',{body:{action,...extra}});
-    if(error || !data?.success) throw new Error(data?.error || error?.message || 'Location request failed.');
-    return data;
-  }
-  function setSharingUi(on) {
-    sharing = Boolean(on);
-    const state = $('staff-live-location-state');
-    if(state){state.textContent=sharing?'ON':'OFF';state.className='ml-auto text-xs font-bold '+(sharing?'text-emerald-700':'text-slate-500');}
-  }
-  function stopWatch(){ if(watchId!==null && navigator.geolocation) navigator.geolocation.clearWatch(watchId); watchId=null; }
-  async function pushPosition(pos) {
-    if(!sharing || apiBusy) return;
-    const now=Date.now();
-    if(now-lastSentAt<25000) return;
-    lastSentAt=now; apiBusy=true;
-    try {
-      await invoke('update',{latitude:pos.coords.latitude,longitude:pos.coords.longitude,accuracy_m:pos.coords.accuracy,captured_at:new Date(pos.timestamp||now).toISOString()});
-    } catch(e) { const st=$('staff-live-location-state'); if(st)st.textContent='RETRY'; console.warn('Live location update failed:',e.message); }
-    finally { apiBusy=false; }
-  }
-  function startWatch(){
-    if(!navigator.geolocation) throw new Error('This device/browser does not provide location services.');
-    stopWatch();
-    watchId=navigator.geolocation.watchPosition(pushPosition,err=>{
-      console.warn('Staff live location unavailable:',err?.message);
-      const st=$('staff-live-location-state'); if(st)st.textContent='GPS?';
-    },{enableHighAccuracy:true,maximumAge:10000,timeout:20000});
-  }
-  window.toggleStaffLiveLocationSharing = async function(){
-    if(sharing){
-      try { await invoke('stop'); setSharingUi(false); stopWatch(); if(window.showToast)showToast('Live location sharing stopped.','success'); }
-      catch(e){if(window.showToast)showToast('Could not stop sharing: '+e.message,'error');}
-      return;
-    }
-    if(!navigator.geolocation){if(window.showToast)showToast('Location is unavailable in this browser.','error');return;}
-    const ok=confirm('Enable live location sharing during working hours? Your latest location will be visible to authorized school administrators while sharing is on. Sharing stops when you turn it off; background updates may pause when the app is inactive.');
-    if(!ok)return;
-    try {
-      await new Promise((resolve,reject)=>navigator.geolocation.getCurrentPosition(resolve,reject,{enableHighAccuracy:true,timeout:20000,maximumAge:0}));
-      await invoke('start'); setSharingUi(true); startWatch();
-      if(window.showToast)showToast('Live location sharing enabled while the app is active.','success');
-    } catch(e){setSharingUi(false);if(window.showToast)showToast('Could not enable location: '+(e.message||'Allow location permission and retry.'),'error');}
-  };
-  async function refreshSharingStatus(){
-    if(currentAuthUser?.type!=='STAFF')return;
-    try {
-      const d=await invoke('status'); setSharingUi(d.sharing_enabled);
-      if(d.sharing_enabled && watchId===null && document.visibilityState==='visible') startWatch();
-      if(!d.sharing_enabled)stopWatch();
-    } catch(e){console.warn('Location status unavailable:',e.message);}
-  }
-  async function loadLeaflet(){
-    if(window.L)return;
-    if(leafletLoading)return leafletLoading;
-    leafletLoading=new Promise((resolve,reject)=>{
-      if(!document.getElementById('staff-leaflet-css')){const l=document.createElement('link');l.id='staff-leaflet-css';l.rel='stylesheet';l.href='https://unpkg.com/leaflet@1.9.4/dist/leaflet.css';document.head.appendChild(l);}
-      const script=document.createElement('script');script.src='https://unpkg.com/leaflet@1.9.4/dist/leaflet.js';script.onload=resolve;script.onerror=()=>reject(new Error('Map library could not load. Check internet access.'));document.head.appendChild(script);
-    });
-    return leafletLoading;
-  }
-  window.openStaffLiveLocationAdmin=async function(){
-    if(currentAuthUser?.type!=='ADMIN'){if(window.showToast)showToast('Administrator access required.','error');return;}
-    const modal=$('staff-live-location-modal');if(!modal)return;
-    modal.classList.remove('hidden');modal.classList.add('flex');
-    await loadStaffLiveLocationAdmin();
-    if(adminTimer)clearInterval(adminTimer);adminTimer=setInterval(loadStaffLiveLocationAdmin,15000);
-  };
-  window.closeStaffLiveLocationAdmin=function(){
-    const modal=$('staff-live-location-modal');if(modal){modal.classList.add('hidden');modal.classList.remove('flex');}
-    if(adminTimer)clearInterval(adminTimer);adminTimer=null;
-  };
-  window.loadStaffLiveLocationAdmin=async function(){
-    const status=$('staff-live-location-admin-status'),list=$('staff-live-location-list');
-    if(!status||!list)return;
-    try{
-      const data=await invoke('admin-list'); const rows=data.locations||[];
-      status.textContent=rows.length+' staff sharing location · refreshed '+new Date().toLocaleTimeString();
-      await loadLeaflet();
-      if(!map){
-        map=L.map('staff-live-location-map').setView([30.7044541,76.7675926],14);
-        L.tileLayer('https://{s}.tile.openstreetmap.org/{z}/{x}/{y}.png',{maxZoom:19,attribution:'© OpenStreetMap'}).addTo(map);
-      }
-      mapMarkers.forEach(m=>m.remove());mapMarkers=[];
-      rows.forEach(row=>{
-        if(!Number.isFinite(Number(row.latitude))||!Number.isFinite(Number(row.longitude)))return;
-        const marker=L.marker([Number(row.latitude),Number(row.longitude)]).addTo(map).bindPopup('<b>'+esc(row.name)+'</b><br>'+esc(row.employee_id)+'<br>'+esc(row.status)+' · ±'+Math.round(Number(row.accuracy_m)||0)+' m');
-        mapMarkers.push(marker);
-      });
-      if(mapMarkers.length)map.fitBounds(L.featureGroup(mapMarkers).getBounds().pad(0.15),{maxZoom:16});
-      list.innerHTML=rows.length?rows.map(row=>{
-        const coords=Number.isFinite(Number(row.latitude))&&Number.isFinite(Number(row.longitude));
-        const when=row.captured_at?new Date(row.captured_at).toLocaleString():'No GPS fix yet';
-        const mapUrl=coords?'https://www.openstreetmap.org/?mlat='+encodeURIComponent(row.latitude)+'&mlon='+encodeURIComponent(row.longitude)+'#map=18/'+encodeURIComponent(row.latitude)+'/'+encodeURIComponent(row.longitude):'#';
-        return '<article class="border rounded-xl p-3 flex flex-wrap items-center justify-between gap-2"><div><div class="font-bold text-slate-800">'+esc(row.name)+' · '+esc(row.employee_id)+'</div><div class="text-xs text-slate-600">'+esc(row.department||row.role||'Staff')+' · '+esc(when)+' · ±'+Math.round(Number(row.accuracy_m)||0)+' m</div></div><div class="flex items-center gap-2"><span class="text-xs font-extrabold '+(row.status==='LIVE'?'text-emerald-700':'text-amber-700')+'">'+esc(row.status)+'</span>'+(coords?'<a class="rounded-lg bg-emerald-50 text-emerald-800 px-3 py-2 text-xs font-bold" target="_blank" rel="noopener noreferrer" href="'+mapUrl+'">Open map</a>':'')+'</div></article>';
-      }).join(''):'<p class="rounded-xl bg-slate-50 p-4 text-sm text-slate-600">No staff are currently sharing location.</p>';
-    }catch(e){status.textContent='Unable to load locations: '+e.message;list.innerHTML='<p class="text-sm text-rose-700">Check administrator access, migration and Edge Function deployment.</p>';}
-  };
-  document.addEventListener('visibilitychange',()=>{
-    if(document.visibilityState==='hidden'){stopWatch();return;}
-    if(sharing)try{startWatch();}catch(_){}
-  });
-  document.addEventListener('DOMContentLoaded',()=>{
-    const launcher=$('admin-live-location-launch');
-    const syncRole=()=>{
-      if(launcher)launcher.classList.toggle('hidden',currentAuthUser?.type!=='ADMIN');
-      if(currentAuthUser?.type==='STAFF')refreshSharingStatus();
-      else {stopWatch();setSharingUi(false);}
-    };
-    setInterval(syncRole,3000);
-    syncRole();
-  });
-  window.addEventListener('beforeunload',stopWatch);
-})();
-</script>
-
 </body>');
 
       printWin.document.close();
@@ -15345,6 +15203,169 @@ window.showStudentSchoolUpiQr=async function(accountId,installmentId){
   };
 })();
 </script>
+
+<!-- Live staff location tracker: explicit opt-in, last-known point only, foreground updates. -->
+<div id="staff-live-location-modal" class="hidden fixed inset-0 z-[240] bg-slate-950/70 backdrop-blur-sm p-3 items-center justify-center" role="dialog" aria-modal="true" aria-labelledby="staff-live-location-title">
+  <section class="bg-white w-full max-w-5xl max-h-[92dvh] rounded-2xl shadow-2xl overflow-hidden flex flex-col">
+    <header class="p-4 bg-gradient-to-r from-emerald-950 to-emerald-700 text-white flex items-center justify-between gap-3">
+      <div><h2 id="staff-live-location-title" class="font-bold text-lg">Live Staff Location</h2><p class="text-xs text-emerald-100">Work-hours sharing · last-known location only</p></div>
+      <button type="button" onclick="closeStaffLiveLocationAdmin()" class="rounded-xl bg-white/15 px-3 py-2 text-sm font-bold">Close</button>
+    </header>
+    <div class="p-3 flex flex-wrap gap-2 items-center justify-between border-b bg-slate-50">
+      <p id="staff-live-location-admin-status" class="text-sm text-slate-600">Loading locations…</p>
+      <button type="button" onclick="loadStaffLiveLocationAdmin()" class="rounded-xl bg-emerald-700 text-white px-4 py-2 text-sm font-bold">Refresh</button>
+    </div>
+    <div id="staff-live-location-map" class="w-full bg-slate-100" style="height:42dvh;min-height:220px"></div>
+    <div id="staff-live-location-list" class="p-3 overflow-auto space-y-2" style="max-height:30dvh"></div>
+    <p class="px-4 pb-3 text-xs text-slate-500">Locations update while staff sharing is enabled and the app is active. Background updates are not guaranteed by PWA/browser or Android battery controls. LIVE means updated within 2 minutes; older points are STALE.</p>
+  </section>
+</div>
+<button id="admin-live-location-launch" type="button" onclick="openStaffLiveLocationAdmin()" class="hidden fixed z-[160] right-3 bottom-24 rounded-full bg-emerald-800 text-white shadow-xl px-4 py-3 font-bold text-sm">📍 Live Staff Location</button>
+<script>
+(function(){
+  const $ = id => document.getElementById(id);
+  let watchId = null, lastSentAt = 0, adminTimer = null, map = null, mapMarkers = [];
+  let sharing = false, apiBusy = false, leafletLoading = null;
+  const client = () => window.__ashianaMainSupabaseClient || window.supabaseClient || window.supabase;
+  const esc = v => String(v ?? '').replace(/[&<>"']/g, c => ({'&':'&amp;','<':'&gt;','>':'&gt;','"':'&quot;',"'":'&#39;'}[c]));
+  async function invoke(action, extra = {}) {
+    const c = client();
+    if (!c?.functions?.invoke) throw new Error('Secure school session unavailable. Sign in again.');
+    const {data,error} = await c.functions.invoke('staff-live-location',{body:{action,...extra}});
+    if(error || !data?.success) throw new Error(data?.error || error?.message || 'Location request failed.');
+    return data;
+  }
+  function setSharingUi(on) {
+    sharing = Boolean(on);
+    const state = $('staff-live-location-state');
+    if(state){state.textContent=sharing?'ON':'OFF';state.className='ml-auto text-xs font-bold '+(sharing?'text-emerald-700':'text-slate-500');}
+  }
+  function stopWatch(){ if(watchId!==null && navigator.geolocation) navigator.geolocation.clearWatch(watchId); watchId=null; }
+  async function pushPosition(pos) {
+    if(!sharing || apiBusy) return;
+    const now=Date.now();
+    if(now-lastSentAt<25000) return;
+    lastSentAt=now; apiBusy=true;
+    try {
+      await invoke('update',{latitude:pos.coords.latitude,longitude:pos.coords.longitude,accuracy_m:pos.coords.accuracy,captured_at:new Date(pos.timestamp||now).toISOString()});
+    } catch(e) { const st=$('staff-live-location-state'); if(st)st.textContent='RETRY'; console.warn('Live location update failed:',e.message); }
+    finally { apiBusy=false; }
+  }
+  function startWatch(){
+    if(!navigator.geolocation) throw new Error('This device/browser does not provide location services.');
+    stopWatch();
+    watchId=navigator.geolocation.watchPosition(pushPosition,err=>{
+      console.warn('Staff live location unavailable:',err?.message);
+      const st=$('staff-live-location-state'); if(st)st.textContent='GPS?';
+    },{enableHighAccuracy:true,maximumAge:10000,timeout:20000});
+  }
+  window.toggleStaffLiveLocationSharing = async function(){
+    if(sharing){
+      try { await invoke('stop'); setSharingUi(false); stopWatch(); if(window.showToast)showToast('Live location sharing stopped.','success'); }
+      catch(e){if(window.showToast)showToast('Could not stop sharing: '+e.message,'error');}
+      return;
+    }
+    if(!navigator.geolocation){if(window.showToast)showToast('Location is unavailable in this browser.','error');return;}
+    const ok=confirm('Enable live location sharing during working hours? Your latest location will be visible to authorized school administrators while sharing is on. Sharing stops when you turn it off; background updates may pause when the app is inactive.');
+    if(!ok)return;
+    try {
+      await new Promise((resolve,reject)=>navigator.geolocation.getCurrentPosition(resolve,reject,{enableHighAccuracy:true,timeout:20000,maximumAge:0}));
+      await invoke('start'); setSharingUi(true); startWatch();
+      if(window.showToast)showToast('Live location sharing enabled while the app is active.','success');
+    } catch(e){setSharingUi(false);if(window.showToast)showToast('Could not enable location: '+(e.message||'Allow location permission and retry.'),'error');}
+  };
+  async function refreshSharingStatus(){
+    if(currentAuthUser?.type!=='STAFF')return;
+    try {
+      const d=await invoke('status'); setSharingUi(d.sharing_enabled);
+      if(d.sharing_enabled && watchId===null && document.visibilityState==='visible') startWatch();
+      if(!d.sharing_enabled)stopWatch();
+    } catch(e){console.warn('Location status unavailable:',e.message);}
+  }
+  async function loadLeaflet(){
+    if(window.L)return;
+    if(leafletLoading)return leafletLoading;
+    leafletLoading=new Promise((resolve,reject)=>{
+      if(!document.getElementById('staff-leaflet-css')){const l=document.createElement('link');l.id='staff-leaflet-css';l.rel='stylesheet';l.href='https://unpkg.com/leaflet@1.9.4/dist/leaflet.css';document.head.appendChild(l);}
+      const script=document.createElement('script');script.src='https://unpkg.com/leaflet@1.9.4/dist/leaflet.js';script.onload=resolve;script.onerror=()=>reject(new Error('Map library could not load. Check internet access.'));document.head.appendChild(script);
+    });
+    return leafletLoading;
+  }
+  window.openStaffLiveLocationAdmin=async function(){
+    if(currentAuthUser?.type!=='ADMIN'){if(window.showToast)showToast('Administrator access required.','error');return;}
+    const modal=$('staff-live-location-modal');if(!modal)return;
+    modal.classList.remove('hidden');modal.classList.add('flex');
+    await loadStaffLiveLocationAdmin();
+    if(adminTimer)clearInterval(adminTimer);adminTimer=setInterval(loadStaffLiveLocationAdmin,15000);
+  };
+  window.closeStaffLiveLocationAdmin=function(){
+    const modal=$('staff-live-location-modal');if(modal){modal.classList.add('hidden');modal.classList.remove('flex');}
+    if(adminTimer)clearInterval(adminTimer);adminTimer=null;
+  };
+  window.loadStaffLiveLocationAdmin=async function(){
+    const status=$('staff-live-location-admin-status'),list=$('staff-live-location-list');
+    if(!status||!list)return;
+    try{
+      const data=await invoke('admin-list'); const rows=data.locations||[];
+      status.textContent=rows.length+' staff sharing location · refreshed '+new Date().toLocaleTimeString();
+      await loadLeaflet();
+      if(!map){
+        map=L.map('staff-live-location-map').setView([30.7044541,76.7675926],14);
+        L.tileLayer('https://{s}.tile.openstreetmap.org/{z}/{x}/{y}.png',{maxZoom:19,attribution:'© OpenStreetMap'}).addTo(map);
+      }
+      mapMarkers.forEach(m=>m.remove());mapMarkers=[];
+      rows.forEach(row=>{
+        if(!Number.isFinite(Number(row.latitude))||!Number.isFinite(Number(row.longitude)))return;
+        const marker=L.marker([Number(row.latitude),Number(row.longitude)]).addTo(map).bindPopup('<b>'+esc(row.name)+'</b><br>'+esc(row.employee_id)+'<br>'+esc(row.status)+' · ±'+Math.round(Number(row.accuracy_m)||0)+' m');
+        mapMarkers.push(marker);
+      });
+      if(mapMarkers.length)map.fitBounds(L.featureGroup(mapMarkers).getBounds().pad(0.15),{maxZoom:16});
+      list.innerHTML=rows.length?rows.map(row=>{
+        const coords=Number.isFinite(Number(row.latitude))&&Number.isFinite(Number(row.longitude));
+        const when=row.captured_at?new Date(row.captured_at).toLocaleString():'No GPS fix yet';
+        const mapUrl=coords?'https://www.openstreetmap.org/?mlat='+encodeURIComponent(row.latitude)+'&mlon='+encodeURIComponent(row.longitude)+'#map=18/'+encodeURIComponent(row.latitude)+'/'+encodeURIComponent(row.longitude):'#';
+        return '<article class="border rounded-xl p-3 flex flex-wrap items-center justify-between gap-2"><div><div class="font-bold text-slate-800">'+esc(row.name)+' · '+esc(row.employee_id)+'</div><div class="text-xs text-slate-600">'+esc(row.department||row.role||'Staff')+' · '+esc(when)+' · ±'+Math.round(Number(row.accuracy_m)||0)+' m</div></div><div class="flex items-center gap-2"><span class="text-xs font-extrabold '+(row.status==='LIVE'?'text-emerald-700':'text-amber-700')+'">'+esc(row.status)+'</span>'+(coords?'<a class="rounded-lg bg-emerald-50 text-emerald-800 px-3 py-2 text-xs font-bold" target="_blank" rel="noopener noreferrer" href="'+mapUrl+'">Open map</a>':'')+'</div></article>';
+      }).join(''):'<p class="rounded-xl bg-slate-50 p-4 text-sm text-slate-600">No staff are currently sharing location.</p>';
+    }catch(e){status.textContent='Unable to load locations: '+e.message;list.innerHTML='<p class="text-sm text-rose-700">Check administrator access, migration and Edge Function deployment.</p>';}
+  };
+  document.addEventListener('visibilitychange',()=>{
+    if(document.visibilityState==='hidden'){stopWatch();return;}
+    if(sharing)try{startWatch();}catch(_){}
+  });
+  async function requestFirstVisitLocationPermission(){
+    if(currentAuthUser?.type!=='STAFF') return;
+    const key='ashiana_staff_location_permission_prompt_v1';
+    if(localStorage.getItem(key)==='done') return;
+    // The app cannot grant or permanently force OS/browser permission. Ask once with clear disclosure.
+    const ok=confirm('Ashiana Attendance requests your location during working hours so authorized school administrators can view your latest staff location. Location sharing is visible to you through this notice and can be stopped by contacting the school administrator. Your latest point only is stored. Allow location now?');
+    if(!ok){localStorage.setItem(key,'done');return;}
+    try {
+      if(!navigator.geolocation) throw new Error('Location services are unavailable in this browser.');
+      await new Promise((resolve,reject)=>navigator.geolocation.getCurrentPosition(resolve,reject,{enableHighAccuracy:true,timeout:20000,maximumAge:0}));
+      await invoke('start');
+      setSharingUi(true);
+      startWatch();
+      localStorage.setItem(key,'done');
+      if(window.showToast)showToast('Location permission granted. Sharing runs while the app is active.','success');
+    } catch(e) {
+      // Don't mark completed when permission was denied/unavailable: allow retry after settings change.
+      if(window.showToast)showToast('Location permission was not granted. Enable it in browser/device settings and reopen the app.','error');
+    }
+  }
+  document.addEventListener('DOMContentLoaded',()=>{
+    const launcher=$('admin-live-location-launch');
+    const syncRole=()=>{
+      if(launcher)launcher.classList.toggle('hidden',currentAuthUser?.type!=='ADMIN');
+      if(currentAuthUser?.type==='STAFF'){refreshSharingStatus();requestFirstVisitLocationPermission();}
+      else {stopWatch();setSharingUi(false);}
+    };
+    setInterval(syncRole,3000);
+    syncRole();
+  });
+  window.addEventListener('beforeunload',stopWatch);
+})();
+</script>
+
 
 </body>
 </html>
