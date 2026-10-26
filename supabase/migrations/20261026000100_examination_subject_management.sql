@@ -44,6 +44,8 @@ create table if not exists public.exam_class_subjects (
  active boolean not null default true, created_at timestamptz not null default now(), updated_at timestamptz not null default now(),
  unique(exam_id,class_name,section,subject_id)
 );
+-- Keep this migration safe if the table was created by an earlier partial rollout.
+alter table public.exam_class_subjects add column if not exists class_teacher_email text;
 create index if not exists exam_class_subjects_teacher_lookup on public.exam_class_subjects(school_code,lower(teacher_email),class_name,section) where active;
 create index if not exists school_exams_session_lookup on public.school_exams(school_code,academic_session_id,status);
 alter table public.academic_sessions enable row level security;
