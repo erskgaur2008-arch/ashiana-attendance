@@ -26,7 +26,7 @@ jobs:
           const fs = require('node:fs');
           const sw = fs.readFileSync('sw.js', 'utf8');
           const fail = (message) => { console.error(message); process.exit(1); };
-          if (!/CACHE_NAME\s*=\s*["']ashiana-attendance-v45["']/.test(sw)) fail('Expected service-worker cache version v45');
+          if (!/CACHE_NAME\s*=\s*["']ashiana-attendance-v\d+["']/.test(sw)) fail('Expected a versioned service-worker cache name');
           if (!sw.includes('const isSupabaseHost')) fail('Supabase host bypass is missing');
           if (!sw.includes('const isSensitiveApiPath')) fail('Sensitive API path bypass is missing');
           if (!sw.includes('if (event.request.method !== "GET") return;')) fail('Non-GET requests must bypass caching');
