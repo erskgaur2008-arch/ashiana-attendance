@@ -11727,7 +11727,14 @@ window.addEventListener('load',async function(){
 
         const mainTable = document.getElementById("report-main-table");
         if (!mainTable) throw new Error("Attendance report table was not found.");
-        tableWrapper.innerHTML = `<table class="w-full text-left text-xs border-collapse border border-slate-300">${mainTable.innerHTML}</table>`;
+        // Clone the already-rendered table nodes instead of reparsing serialized HTML.
+        // This preserves the report layout while avoiding a second HTML injection sink.
+        const printableTable = document.createElement("table");
+        printableTable.className = "w-full text-left text-xs border-collapse border border-slate-300";
+        for (const child of Array.from(mainTable.children)) {
+          printableTable.appendChild(child.cloneNode(true));
+        }
+        tableWrapper.replaceChildren(printableTable);
 
         if (isAshianaNativeAndroid()) {
           const printable = container.cloneNode(true);
