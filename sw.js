@@ -1,4 +1,4 @@
-const CACHE_NAME = "ashiana-attendance-v44";
+const CACHE_NAME = "ashiana-attendance-v45";
 const APP_SHELL = [
   "./",
   "./index.html",
@@ -87,17 +87,10 @@ self.addEventListener("fetch", (event) => {
     return;
   }
 
-  event.respondWith(
-    fetch(event.request)
-      .then((response) => {
-        if (response && response.ok && response.type === "basic") {
-          const copy = response.clone();
-          caches.open(CACHE_NAME).then((cache) => cache.put(event.request, copy));
-        }
-        return response;
-      })
-      .catch(() => caches.match(event.request).then((cached) => cached || caches.match("./")))
-  );
+  // Unknown same-origin GET requests are network-only. Do not cache arbitrary
+  // responses: a future API route could return private student/staff data.
+  // Only the explicit app shell, navigations, and known static assets above
+  // are eligible for Cache Storage.
 });
 
 
