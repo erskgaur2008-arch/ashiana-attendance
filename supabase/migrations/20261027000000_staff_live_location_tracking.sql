@@ -1,7 +1,7 @@
 -- Live staff location tracking (last-known point only; no breadcrumb history).
 -- All reads/writes go through the authenticated staff-live-location Edge Function.
 create table if not exists public.staff_live_locations (
-  staff_id uuid primary key references public.staff(id) on delete cascade,
+  staff_id text primary key references public.staff(id) on delete cascade,
   sharing_enabled boolean not null default false,
   latitude double precision,
   longitude double precision,
