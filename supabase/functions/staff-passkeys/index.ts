@@ -180,10 +180,18 @@ Deno.serve(async (req: Request) => {
         counter: result.authenticationInfo.newCounter, last_used_at: new Date().toISOString(),
       }).eq("id", stored.id).eq("staff_id", String(staff.id));
       if (updateError) throw updateError;
-      // Do not treat this response as permission to mark attendance yet.
-      // A follow-up server-side, one-time authorization record must be consumed by
-      // verify-attendance in the same operation as the punch.
-      return json({ success: true, verified: true, staff_id: String(staff.id), purpose: "attendance" });
+      // Mint a random one-time token. Only its hash is stored; verify-attendance
+      // atomically consumes it so the same biometric assertion cannot authorize
+      // multiple punches. Token is bound to this staff row and expires quickly.
+      const rawToken = randomChallenge() + randomChallenge();
+      const tokenHash = b64url(new Uint8Array(await crypto.subtle.digest("SHA-256", new TextEncoder().encode(rawToken))));
+      const { error: tokenError } = await admin.from("staff_webauthn_verified_sessions").insert({
+        token_hash: tokenHash,
+        staff_id: String(staff.id),
+        expires_at: new Date(Date.now() + 90_000).toISOString(),
+      });
+      if (tokenError) throw tokenError;
+      return json({ success: true, verified: true, attendance_token: rawToken, expires_in: 90 });
     }
 
     return json({ error: "UNKNOWN_ACTION" }, 400);
