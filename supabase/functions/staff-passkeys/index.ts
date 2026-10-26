@@ -72,7 +72,7 @@ Deno.serve(async (req: Request) => {
       // to be linked. Reuse the existing server-side PIN verifier and shared
       // rate-limit buckets; never trust a PIN supplied by the browser alone.
       const currentPin = String(body?.current_pin || "").trim();
-      if (!/^\\d{4}$/.test(currentPin)) return json({ error: "CURRENT_PIN_REQUIRED" }, 400);
+      if (!/^\d{4}$/.test(currentPin)) return json({ error: "CURRENT_PIN_REQUIRED" }, 400);
       const ip = requestIP(req);
       const ipDigest = await sha256Hex("staff-ip:" + ip);
       const staffDigest = await sha256Hex("staff:" + String(staff.id));
@@ -121,24 +121,28 @@ Deno.serve(async (req: Request) => {
     if (action === "registration-verify") {
       const credential = body?.credential;
       if (!credential || typeof credential.id !== "string") return json({ error: "INVALID_CREDENTIAL" }, 400);
-      const { data: challenges, error: challengeError } = await admin.from("staff_webauthn_challenges")
-        .select("id,challenge,expires_at").eq("staff_id", String(staff.id)).eq("purpose", "registration")
-        .order("created_at", { ascending: false }).limit(1);
+      const { data: savedChallenge, error: challengeError } = await admin.rpc("consume_staff_webauthn_challenge", {
+        p_staff_id: String(staff.id), p_purpose: "registration",
+      });
       if (challengeError) throw challengeError;
-      const saved = challenges?.[0];
-      if (!saved || new Date(saved.expires_at).getTime() <= now) return json({ error: "CHALLENGE_EXPIRED" }, 400);
+      if (typeof savedChallenge !== "string" || !savedChallenge) return json({ error: "CHALLENGE_EXPIRED" }, 400);
       const result = await verifyRegistrationResponse({
         response: credential,
-        expectedChallenge: saved.challenge,
+        expectedChallenge: savedChallenge,
         expectedOrigin,
         expectedRPID: rpID,
         requireUserVerification: true,
       });
-      await admin.from("staff_webauthn_challenges").delete().eq("id", saved.id);
       if (!result.verified || !result.registrationInfo) return json({ error: "PASSKEY_VERIFICATION_FAILED" }, 401);
       const info = result.registrationInfo;
       const publicKey = b64url(info.credential.publicKey);
       const credentialId = info.credential.id;
+      const { data: credentialOwner, error: ownerError } = await admin.from("staff_webauthn_credentials")
+        .select("staff_id").eq("credential_id", credentialId).maybeSingle();
+      if (ownerError) throw ownerError;
+      if (credentialOwner && String(credentialOwner.staff_id) !== String(staff.id)) {
+        return json({ error: "CREDENTIAL_ALREADY_BOUND" }, 409);
+      }
       const { error: saveError } = await admin.from("staff_webauthn_credentials").upsert({
         staff_id: String(staff.id), credential_id: credentialId, public_key: publicKey,
         counter: info.credential.counter, transports: credential.response?.transports || [],
@@ -175,12 +179,11 @@ Deno.serve(async (req: Request) => {
     if (action === "authentication-verify") {
       const assertion = body?.credential;
       if (!assertion || typeof assertion.id !== "string") return json({ error: "INVALID_CREDENTIAL" }, 400);
-      const { data: challenges, error: challengeError } = await admin.from("staff_webauthn_challenges")
-        .select("id,challenge,expires_at").eq("staff_id", String(staff.id)).eq("purpose", "attendance")
-        .order("created_at", { ascending: false }).limit(1);
+      const { data: challengeValue, error: challengeError } = await admin.rpc("consume_staff_webauthn_challenge", {
+        p_staff_id: String(staff.id), p_purpose: "attendance",
+      });
       if (challengeError) throw challengeError;
-      const savedChallenge = challenges?.[0];
-      if (!savedChallenge || new Date(savedChallenge.expires_at).getTime() <= now) return json({ error: "CHALLENGE_EXPIRED" }, 400);
+      if (typeof challengeValue !== "string" || !challengeValue) return json({ error: "CHALLENGE_EXPIRED" }, 400);
 
       const { data: rows, error: credentialError } = await admin.from("staff_webauthn_credentials")
         .select("id,credential_id,public_key,counter,transports")
@@ -191,7 +194,7 @@ Deno.serve(async (req: Request) => {
 
       const result = await verifyAuthenticationResponse({
         response: assertion,
-        expectedChallenge: savedChallenge.challenge,
+        expectedChallenge: challengeValue,
         expectedOrigin,
         expectedRPID: rpID,
         credential: {
@@ -202,8 +205,7 @@ Deno.serve(async (req: Request) => {
         },
         requireUserVerification: true,
       });
-      // Challenge is one-time even on a failed assertion.
-      await admin.from("staff_webauthn_challenges").delete().eq("id", savedChallenge.id);
+      // Challenge was atomically consumed before signature verification, so replay is blocked.
       if (!result.verified) return json({ error: "PASSKEY_VERIFICATION_FAILED" }, 401);
 
       const { error: updateError } = await admin.from("staff_webauthn_credentials").update({
