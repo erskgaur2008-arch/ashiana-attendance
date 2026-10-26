@@ -6,6 +6,7 @@ on:
     paths:
       - 'supabase/functions/fee-management/**'
       - 'supabase/migrations/20261026090000_harden_class_teacher_student_mutations.sql'
+      - 'supabase/migrations/20261026120000_harden_public_login_content_search_path.sql'
       - 'supabase/tests/teacher_student_mutation_security.sql'
       - 'supabase/migrations/20261023000*_fees_management_*.sql'
       - 'supabase/migrations/20261023170000_fee_installment_payment_selection.sql'
@@ -21,6 +22,7 @@ on:
     paths:
       - 'supabase/functions/fee-management/**'
       - 'supabase/migrations/20261026090000_harden_class_teacher_student_mutations.sql'
+      - 'supabase/migrations/20261026120000_harden_public_login_content_search_path.sql'
       - 'supabase/tests/teacher_student_mutation_security.sql'
       - 'supabase/migrations/20261023000*_fees_management_*.sql'
       - 'supabase/migrations/20261023170000_fee_installment_payment_selection.sql'
@@ -60,12 +62,15 @@ jobs:
           installment_migration = Path("supabase/migrations/20261023170000_fee_installment_payment_selection.sql")
           reminder_migration = Path("supabase/migrations/20261023190000_student_pending_fee_reminders.sql")
           teacher_mutation_migration = Path("supabase/migrations/20261026090000_harden_class_teacher_student_mutations.sql")
+          login_content_migration = Path("supabase/migrations/20261026120000_harden_public_login_content_search_path.sql")
           if installment_migration.exists():
               paths.append(installment_migration)
           if reminder_migration.exists():
               paths.append(reminder_migration)
           if teacher_mutation_migration.exists():
               paths.append(teacher_mutation_migration)
+          if login_content_migration.exists():
+              paths.append(login_content_migration)
           paths = sorted(set(paths))
           if len(paths) < 6:
               raise SystemExit(f"Expected fee foundation plus installment migration, found {len(paths)}")
