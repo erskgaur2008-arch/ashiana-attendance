@@ -16,6 +16,21 @@ create or replace function auth.jwt() returns jsonb
 language sql stable
 as $$ select jsonb_build_object('email', current_setting('request.jwt.claim.email', true)) $$;
 
+create or replace function public.public_login_home_content(p_school_code text default 'ashiana')
+returns jsonb language sql security definer
+set search_path to 'public', 'private'
+as $ select jsonb_build_object('school_code', coalesce(p_school_code,'ashiana')) $;
+
+\i supabase/migrations/20261026120000_harden_public_login_content_search_path.sql
+
+do $
+begin
+  if (select proconfig from pg_proc where oid='public.public_login_home_content(text)'::regprocedure)
+       is distinct from array['search_path=""']::text[] then
+    raise exception 'public_login_home_content must use an empty search_path';
+  end if;
+end $;
+
 create table public.staff (
   email text,
   status text,
