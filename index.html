@@ -3435,6 +3435,8 @@ id="admin-portal-view" class="hidden flex-col w-full space-y-4 admin-dashboard-s
       </div>
 
       <div class="admin-quick-actions">
+        <button type="button" id="admin-nav-examinations" onclick="openAdminExaminationConsole()" title="Manage academic sessions, exams, subjects, class assignments and report-card formats"><i data-lucide="graduation-cap"></i><span>Exams & Subjects</span></button>
+
         <button type="button" onclick="window.switchAdminTab('students')"><i data-lucide="graduation-cap"></i><span>Students</span></button>
         <button type="button" onclick="window.switchAdminTab('student-portal')" title="Student Portal Management"><i data-lucide="panels-top-left"></i><span>Student Portal</span></button>
         <button type="button" id="admin-nav-student-attendance" onclick="openAdminStudentAttendanceRecordsModal()" title="View Students Attendance"><i data-lucide="clipboard-check"></i><span>View Students Attendance</span></button>
@@ -6759,7 +6761,73 @@ function printStudentReportCard(index){
     +'<table><thead><tr><th>Subject</th><th class="c">Max Marks</th><th class="c">Marks Obtained</th><th class="c">Grade</th></tr></thead><tbody>'+rows+'</tbody>'+(t.total==null?'':'<tfoot><tr class="tot"><td>Total</td><td class="c">'+e(reportFmt(t.max))+'</td><td class="c">'+e(reportFmt(t.total))+'</td><td></td></tr></tfoot>')+'</table>'
     +(t.pct==null?'':'<div class="sum"><div>Percentage: <b>'+e(reportFmt(t.pct))+'%</b></div><div>Overall Grade: <b>'+e(grade)+'</b></div></div>')
     +(card.remarks?'<p style="font-size:13px"><b>Remarks:</b> '+e(card.remarks)+'</p>':'')
-    +'<div class="sig"><div>Class Teacher</div><div>Parent / Guardian</div><div>Principal</div></div></body></html>';
+    +'<div class="sig"><div>Class Teacher</div><div>Parent / Guardian</div><div>Principal</div></div>
+<!-- Admin Examination & Subject Management -->
+<div id="admin-examination-modal" class="hidden fixed inset-0 z-[95] bg-slate-950/70 backdrop-blur-sm p-3 sm:p-5 overflow-y-auto" role="dialog" aria-modal="true" aria-labelledby="admin-examination-title">
+  <div class="max-w-6xl mx-auto my-2 sm:my-5 bg-slate-50 rounded-2xl shadow-2xl overflow-hidden">
+    <div class="p-4 sm:p-5 bg-gradient-to-r from-emerald-950 to-emerald-800 text-white flex items-start justify-between gap-3">
+      <div><h2 id="admin-examination-title" class="text-lg sm:text-xl font-extrabold">Examination & Report Card Management</h2><p class="text-xs text-emerald-100 mt-1">Configure sessions, exams, subjects, class/section assignments and class-specific report-card formats.</p></div>
+      <button type="button" onclick="closeAdminExaminationConsole()" class="rounded-xl bg-white/10 hover:bg-white/20 px-3 py-2 font-bold" aria-label="Close examination management">✕</button>
+    </div>
+    <div class="p-3 sm:p-5 space-y-4">
+      <div id="admin-exam-status" class="hidden rounded-xl border p-3 text-sm" role="status" aria-live="polite"></div>
+      <section class="bg-white rounded-xl border border-slate-200 p-4">
+        <h3 class="font-extrabold text-slate-900">1. Academic Sessions</h3>
+        <form id="admin-exam-session-form" onsubmit="adminExamCreateSession(event)" class="mt-3 grid grid-cols-1 sm:grid-cols-4 gap-2">
+          <input id="admin-exam-session-label" required maxlength="20" pattern="[0-9]{4}-[0-9]{2}" placeholder="2026-27" class="p-2.5 border rounded-lg text-sm">
+          <input id="admin-exam-session-start" type="date" required class="p-2.5 border rounded-lg text-sm" aria-label="Session start date">
+          <input id="admin-exam-session-end" type="date" required class="p-2.5 border rounded-lg text-sm" aria-label="Session end date">
+          <button class="bg-emerald-800 hover:bg-emerald-900 text-white rounded-lg p-2.5 text-sm font-bold">Create Session</button>
+        </form>
+        <div id="admin-exam-sessions-list" class="mt-3 text-sm text-slate-600">Loading sessions…</div>
+      </section>
+      <section class="bg-white rounded-xl border border-slate-200 p-4">
+        <h3 class="font-extrabold text-slate-900">2. Subject Master</h3>
+        <form id="admin-exam-subject-form" onsubmit="adminExamCreateSubject(event)" class="mt-3 grid grid-cols-1 sm:grid-cols-3 gap-2">
+          <input id="admin-exam-subject-code" required maxlength="20" placeholder="Subject code (e.g. MAT)" class="p-2.5 border rounded-lg text-sm">
+          <input id="admin-exam-subject-name" required maxlength="80" placeholder="Subject name (e.g. Mathematics)" class="p-2.5 border rounded-lg text-sm">
+          <button class="bg-indigo-700 hover:bg-indigo-800 text-white rounded-lg p-2.5 text-sm font-bold">Add Subject</button>
+        </form>
+        <div id="admin-exam-subjects-list" class="mt-3 text-sm text-slate-600">Loading subjects…</div>
+      </section>
+      <section class="bg-white rounded-xl border border-slate-200 p-4">
+        <h3 class="font-extrabold text-slate-900">3. Create Exam</h3>
+        <form id="admin-exam-create-form" onsubmit="adminExamCreateExam(event)" class="mt-3 grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-6 gap-2">
+          <select id="admin-exam-session-select" required class="p-2.5 border rounded-lg text-sm"><option value="">Select session</option></select>
+          <input id="admin-exam-name" required maxlength="100" placeholder="Exam name" class="p-2.5 border rounded-lg text-sm">
+          <select id="admin-exam-type" class="p-2.5 border rounded-lg text-sm"><option>Unit Test</option><option>Term</option><option>Half-Yearly</option><option>Annual</option><option>Other</option></select>
+          <input id="admin-exam-start" type="date" class="p-2.5 border rounded-lg text-sm" aria-label="Exam start date">
+          <input id="admin-exam-end" type="date" class="p-2.5 border rounded-lg text-sm" aria-label="Exam end date">
+          <button class="bg-sky-700 hover:bg-sky-800 text-white rounded-lg p-2.5 text-sm font-bold">Create Exam</button>
+        </form>
+        <div id="admin-exam-exams-list" class="mt-3 text-sm text-slate-600">Loading exams…</div>
+      </section>
+      <section class="bg-white rounded-xl border border-slate-200 p-4">
+        <h3 class="font-extrabold text-slate-900">4. Link Exam → Class/Section → Subject → Teacher</h3>
+        <p class="text-xs text-slate-500 mt-1">Class teachers are managed by the existing class-teacher assignment. Selecting a subject teacher here also updates the existing teacher-subject assignment used by the teacher portal.</p>
+        <form id="admin-exam-map-form" onsubmit="adminExamMapSubject(event)" class="mt-3 grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-4 gap-2">
+          <select id="admin-exam-map-exam" required class="p-2.5 border rounded-lg text-sm"><option value="">Select exam</option></select>
+          <select id="admin-exam-map-class" required onchange="adminExamRefreshSections()" class="p-2.5 border rounded-lg text-sm"><option value="">Select class</option></select>
+          <select id="admin-exam-map-section" required class="p-2.5 border rounded-lg text-sm"><option value="">Select section</option></select>
+          <select id="admin-exam-map-subject" required class="p-2.5 border rounded-lg text-sm"><option value="">Select subject</option></select>
+          <select id="admin-exam-map-teacher" class="p-2.5 border rounded-lg text-sm"><option value="">Subject teacher (optional)</option></select>
+          <input id="admin-exam-map-max" type="number" min="1" max="1000" step="0.5" value="100" required placeholder="Maximum marks" class="p-2.5 border rounded-lg text-sm">
+          <select id="admin-exam-map-format" required class="p-2.5 border rounded-lg text-sm">
+            <option value="class_specific">Use class-specific format</option>
+            <option value="class_iii_iv_result_cum_marksheet">Classes III–IV: Result Cum Marksheet</option>
+            <option value="existing">Use existing class format</option>
+          </select>
+          <button class="bg-emerald-800 hover:bg-emerald-900 text-white rounded-lg p-2.5 text-sm font-bold">Save Linked Assignment</button>
+        </form>
+        <div class="mt-2 text-[11px] text-slate-500">The Classes III–IV format is available as a selectable template; other classes retain their own format. The actual report-card renderer will use the saved class-specific template key.</div>
+        <div id="admin-exam-mappings-list" class="mt-3 text-sm text-slate-600">Loading class/subject mappings…</div>
+      </section>
+    </div>
+    <div class="p-3 border-t bg-white flex flex-wrap justify-end gap-2"><button type="button" onclick="adminExamReload()" class="px-4 py-2 rounded-lg border font-bold text-sm">Refresh</button><button type="button" onclick="closeAdminExaminationConsole()" class="px-4 py-2 rounded-lg bg-slate-800 text-white font-bold text-sm">Close</button></div>
+  </div>
+</div>
+
+</body></html>';
   const w=window.open('','_blank');
   if(!w)return showToast('Please allow pop-ups to print the report card.','error');
   w.document.open();w.document.write(doc);w.document.close();w.focus();setTimeout(()=>{try{w.print();}catch(_){}},400);
@@ -15226,6 +15294,108 @@ window.showStudentSchoolUpiQr=async function(accountId,installmentId){
     }
   };
 })();
+
+/* Examination management UI. Database objects are installed by the paired Supabase migration. */
+(function(){
+  const $ = id => document.getElementById(id);
+  const esc = value => typeof studentEscape === 'function' ? studentEscape(String(value ?? '')) : String(value ?? '').replace(/[&<>"']/g,c=>({'&':'&amp;','<':'&lt;','>':'&gt;','"':'&quot;',"'":'&#39;'}[c]));
+  const school = () => typeof APS_STUDENT_SCHOOL === 'string' ? APS_STUDENT_SCHOOL : 'ashiana';
+  let sessions=[], subjects=[], exams=[], mappings=[], rosterClasses=[], teachers=[];
+  function status(message, bad=false){
+    const el=$('admin-exam-status'); if(!el)return;
+    el.textContent=message;el.className='rounded-xl border p-3 text-sm '+(bad?'border-rose-200 bg-rose-50 text-rose-800':'border-emerald-200 bg-emerald-50 text-emerald-800');
+  }
+  function requireAdmin(){
+    if(!window.supabaseClient || window.currentAuthUser?.type!=='ADMIN'){
+      status('Administrator session required. Sign in again with an administrator account.',true);return false;
+    }
+    return true;
+  }
+  window.openAdminExaminationConsole=async function(){
+    if(!requireAdmin())return;
+    $('admin-examination-modal')?.classList.remove('hidden');
+    document.body.classList.add('overflow-hidden');
+    await window.adminExamReload();
+  };
+  window.closeAdminExaminationConsole=function(){
+    $('admin-examination-modal')?.classList.add('hidden');document.body.classList.remove('overflow-hidden');
+  };
+  window.adminExamReload=async function(){
+    if(!requireAdmin())return;
+    status('Loading academic configuration…');
+    try{
+      const [s,u,e,m,r,t]=await Promise.all([
+        supabaseClient.from('academic_sessions').select('*').eq('school_code',school()).order('label',{ascending:false}),
+        supabaseClient.from('school_subjects').select('*').eq('school_code',school()).eq('active',true).order('subject_name'),
+        supabaseClient.from('school_exams').select('*,academic_sessions(label)').eq('school_code',school()).order('created_at',{ascending:false}),
+        supabaseClient.from('exam_class_subjects').select('*,school_subjects(subject_code,subject_name),school_exams(exam_name,academic_session_id)').eq('school_code',school()).order('class_name').order('section'),
+        supabaseClient.from('student_roster').select('class_name,section').eq('school_code',school()).eq('status','ACTIVE').limit(5000),
+        supabaseClient.from('staff').select('email,name,role,status').order('name')
+      ]);
+      for(const x of [s,u,e,m,r,t])if(x.error)throw x.error;
+      sessions=s.data||[];subjects=u.data||[];exams=e.data||[];mappings=m.data||[];rosterClasses=r.data||[];teachers=(t.data||[]).filter(x=>x.email&&(!x.status||String(x.status).toUpperCase()==='ACTIVE')&&/teacher|faculty|academic/i.test(String(x.role||'')));
+      $('admin-exam-sessions-list').innerHTML=sessions.length?sessions.map(x=>'<div class="flex flex-wrap justify-between gap-2 border-t py-2"><span class="font-semibold">'+esc(x.label)+'</span><span class="text-slate-500">'+esc(x.starts_on)+' – '+esc(x.ends_on)+(x.is_active?' · Active':'')+'</span></div>').join(''):'No academic sessions created yet.';
+      $('admin-exam-subjects-list').innerHTML=subjects.length?subjects.map(x=>'<div class="inline-flex items-center gap-2 border rounded-lg px-3 py-2 m-1"><b>'+esc(x.subject_code)+'</b><span>'+esc(x.subject_name)+'</span></div>').join(''):'No subjects created yet.';
+      $('admin-exam-exams-list').innerHTML=exams.length?exams.map(x=>'<div class="flex flex-wrap justify-between gap-2 border-t py-2"><span class="font-semibold">'+esc(x.exam_name)+' <span class="font-normal text-slate-500">· '+esc(x.exam_type)+'</span></span><span class="text-slate-500">'+esc(x.academic_sessions?.label||'Session')+' · '+esc(x.status||'Draft')+'</span></div>').join(''):'No exams created yet.';
+      $('admin-exam-mappings-list').innerHTML=mappings.length?mappings.map(x=>'<div class="flex flex-wrap justify-between gap-2 border-t py-2"><span><b>'+esc(x.class_name)+'-'+esc(x.section)+'</b> · '+esc(x.school_subjects?.subject_name||'Subject')+' · '+esc(x.school_exams?.exam_name||'Exam')+'</span><span class="text-slate-500">Max '+esc(x.max_marks)+' · '+esc(x.teacher_email||'Teacher not assigned')+' · '+esc(x.report_card_format||'class_specific')+'</span></div>').join(''):'No exam/class/subject mappings yet.';
+      fillSelect('admin-exam-session-select',sessions,x=>x.id,x=>x.label,'Select session');
+      fillSelect('admin-exam-map-exam',exams,x=>x.id,x=>(x.exam_name+' · '+(x.academic_sessions?.label||'')),'Select exam');
+      fillSelect('admin-exam-map-subject',subjects,x=>x.id,x=>(x.subject_code+' · '+x.subject_name),'Select subject');
+      const classes=[...new Set(rosterClasses.map(x=>x.class_name).filter(Boolean))].sort((a,b)=>a.localeCompare(b,undefined,{numeric:true}));
+      fillSelect('admin-exam-map-class',classes,x=>x,x=>x,'Select class');
+      fillSelect('admin-exam-map-teacher',teachers,x=>String(x.email).toLowerCase(),x=>(x.name||x.email)+' · '+x.email,'Subject teacher (optional)');
+      window.adminExamRefreshSections();
+      status('Loaded '+sessions.length+' session(s), '+subjects.length+' subject(s), '+exams.length+' exam(s), and '+mappings.length+' class/subject mapping(s).');
+    }catch(e){status('Unable to load examination configuration. Apply the paired Supabase migration first, then retry. Details: '+(e?.message||e),true);}
+  };
+  function fillSelect(id,items,value,label,placeholder){
+    const el=$(id);if(!el)return;const old=el.value;
+    el.innerHTML='<option value="">'+esc(placeholder)+'</option>'+items.map(x=>'<option value="'+esc(value(x))+'">'+esc(label(x))+'</option>').join('');
+    if(items.some(x=>String(value(x))===old))el.value=old;
+  }
+  window.adminExamRefreshSections=function(){
+    const cls=$('admin-exam-map-class')?.value||'';
+    const sections=[...new Set(rosterClasses.filter(x=>x.class_name===cls).map(x=>x.section).filter(Boolean))].sort((a,b)=>a.localeCompare(b,undefined,{numeric:true}));
+    fillSelect('admin-exam-map-section',sections,x=>x,x=>x,'Select section');
+  };
+  window.adminExamCreateSession=async function(event){
+    event.preventDefault();if(!requireAdmin())return;
+    const label=$('admin-exam-session-label').value.trim(),starts_on=$('admin-exam-session-start').value,ends_on=$('admin-exam-session-end').value;
+    if(starts_on>ends_on)return status('Session end date must be on or after the start date.',true);
+    try{const {error}=await supabaseClient.from('academic_sessions').insert({school_code:school(),label,starts_on,ends_on,is_active:false,created_by:currentAuthUser?.email||null});if(error)throw error;$('admin-exam-session-form').reset();await window.adminExamReload();status('Academic session '+label+' created.');}
+    catch(e){status('Could not create session: '+(e?.message||e),true);}
+  };
+  window.adminExamCreateSubject=async function(event){
+    event.preventDefault();if(!requireAdmin())return;
+    const subject_code=$('admin-exam-subject-code').value.trim().toUpperCase(),subject_name=$('admin-exam-subject-name').value.trim();
+    try{const {error}=await supabaseClient.from('school_subjects').insert({school_code:school(),subject_code,subject_name,active:true});if(error)throw error;$('admin-exam-subject-form').reset();await window.adminExamReload();status('Subject '+subject_name+' added.');}
+    catch(e){status('Could not add subject: '+(e?.message||e),true);}
+  };
+  window.adminExamCreateExam=async function(event){
+    event.preventDefault();if(!requireAdmin())return;
+    const academic_session_id=$('admin-exam-session-select').value,exam_name=$('admin-exam-name').value.trim(),exam_type=$('admin-exam-type').value,starts_on=$('admin-exam-start').value||null,ends_on=$('admin-exam-end').value||null;
+    if(starts_on&&ends_on&&starts_on>ends_on)return status('Exam end date must be on or after the start date.',true);
+    try{const {error}=await supabaseClient.from('school_exams').insert({school_code:school(),academic_session_id,exam_name,exam_type,starts_on,ends_on,status:'Draft',created_by:currentAuthUser?.email||null});if(error)throw error;$('admin-exam-create-form').reset();await window.adminExamReload();status('Exam '+exam_name+' created.');}
+    catch(e){status('Could not create exam: '+(e?.message||e),true);}
+  };
+  window.adminExamMapSubject=async function(event){
+    event.preventDefault();if(!requireAdmin())return;
+    const exam_id=$('admin-exam-map-exam').value,class_name=$('admin-exam-map-class').value,section=$('admin-exam-map-section').value,subject_id=$('admin-exam-map-subject').value,teacher_email=$('admin-exam-map-teacher').value||null,max_marks=Number($('admin-exam-map-max').value),report_card_format=$('admin-exam-map-format').value;
+    const exam=exams.find(x=>x.id===exam_id),subject=subjects.find(x=>x.id===subject_id);
+    if(!exam||!subject||!class_name||!section||!Number.isFinite(max_marks)||max_marks<=0)return status('Choose an exam, class, section, subject and valid maximum marks.',true);
+    try{
+      const {error}=await supabaseClient.from('exam_class_subjects').upsert({school_code:school(),exam_id,academic_session_id:exam.academic_session_id,class_name,section,subject_id,teacher_email,max_marks,report_card_format,active:true},{onConflict:'exam_id,class_name,section,subject_id'});
+      if(error)throw error;
+      if(teacher_email){
+        const {error:assignError}=await supabaseClient.from('student_subject_assignments').upsert({school_code:school(),teacher_email:teacher_email.toLowerCase(),class_name,section,subject_name:subject.subject_name,active:true},{onConflict:'school_code,teacher_email,class_name,section,subject_name'});
+        if(assignError)throw assignError;
+      }
+      await window.adminExamReload();status('Exam, class, subject and teacher link saved. Existing teacher subject permissions have been synchronised.');
+    }catch(e){status('Could not save linked assignment: '+(e?.message||e),true);}
+  };
+  document.addEventListener('keydown',e=>{if(e.key==='Escape'&&!$('admin-examination-modal')?.classList.contains('hidden'))window.closeAdminExaminationConsole();});
+})();
+
 </script>
 
 </body>
