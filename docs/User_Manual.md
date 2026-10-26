@@ -37,7 +37,6 @@ After login, the Student Portal provides:
 - **Homework** — View subject-wise homework, descriptions and due dates.
 - **Timetable** — View periods, subjects, teachers and rooms when published.
 - **Leave Request** — Enter from/to dates, reason and DOB password; submit and track requests.
-- **Report Card** — View published academic-year/term results, subject grades/marks, overall grade and remarks.
 - **School Calendar** — View published events and dates.
 - **ID Card** — Open the digital student ID card and print it from the preview.
 
@@ -83,7 +82,6 @@ Teachers can manage content for their assigned classes:
 - Homework
 - Timetable
 - Calendar Event
-- Report Card
 
 Teachers can also review student leave requests available to their assigned classes.
 
@@ -200,7 +198,6 @@ The audit/cloud area provides audit records and synchronisation controls. **Forc
 ## 9. Quick Reference
 | User | Login | Main Functions |
 |---|---|---|
-| Student | Admission No. + DOB (DDMMYYYY) | Profile, notices, attendance, homework, timetable, leave, report card, calendar, ID card |
 | Teacher/Staff | Employee ID/email + 4-digit PIN | Staff attendance, history, leave, profile; teachers also manage assigned student attendance and portal content |
 | Administrator | Authorised email + password | Live attendance, Daily QR, faculty, students, reports, leaves, corrections, audit/sync |
 

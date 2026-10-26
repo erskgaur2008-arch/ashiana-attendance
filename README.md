@@ -113,7 +113,6 @@ Dashboard requirements include:
 - Attendance.
 - Homework and timetable.
 - Leave request form and leave status.
-- Report card and school calendar.
 - Student photo and ID-card information, where enabled.
 
 ### Teacher and administrator tools
