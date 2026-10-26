@@ -107,7 +107,7 @@ function normalizeServiceAccount() {
   }
 }
 
-async function sendWebPush(row: StudentPushRow, title: string, message: string, category: string, service: ReturnType<typeof createClient>) {
+async function sendWebPush(row: StudentPushRow, title: string, message: string, category: string, service: { from: (table: string) => any }) {
   if (!row.subscription) return false;
   try {
     await webpush.sendNotification(row.subscription as WebPushSubscription, JSON.stringify({
