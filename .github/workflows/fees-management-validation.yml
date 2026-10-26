@@ -5,6 +5,7 @@ on:
     branches: [main]
     paths:
       - 'supabase/functions/fee-management/**'
+      - 'supabase/functions/push-notifications/**'
       - 'supabase/migrations/20261026090000_harden_class_teacher_student_mutations.sql'
       - 'supabase/migrations/20261026120000_harden_public_login_content_search_path.sql'
       - 'supabase/tests/teacher_student_mutation_security.sql'
@@ -21,6 +22,7 @@ on:
     branches: [main, feat/live-fees-management]
     paths:
       - 'supabase/functions/fee-management/**'
+      - 'supabase/functions/push-notifications/**'
       - 'supabase/migrations/20261026090000_harden_class_teacher_student_mutations.sql'
       - 'supabase/migrations/20261026120000_harden_public_login_content_search_path.sql'
       - 'supabase/tests/teacher_student_mutation_security.sql'
@@ -197,3 +199,16 @@ jobs:
         run: sudo apt-get update && sudo apt-get install -y postgresql-client
       - name: Apply migration and run authorization regression tests
         run: psql -v ON_ERROR_STOP=1 -f supabase/tests/teacher_student_mutation_security.sql
+  push-notifications-typecheck:
+    name: Type-check push notifications Edge Function
+    runs-on: ubuntu-latest
+    timeout-minutes: 10
+    steps:
+      - uses: actions/checkout@v4
+      - uses: denoland/setup-deno@v2
+        with:
+          deno-version: v2.x
+      - name: Install function dependencies
+        run: deno install --entrypoint supabase/functions/push-notifications/index.ts
+      - name: Type-check Edge Function
+        run: deno check --node-modules-dir=auto supabase/functions/push-notifications/index.ts
