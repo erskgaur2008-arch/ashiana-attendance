@@ -140,15 +140,24 @@ Deno.serve(async (req: Request) => {
       const { data: credentialOwner, error: ownerError } = await admin.from("staff_webauthn_credentials")
         .select("staff_id").eq("credential_id", credentialId).maybeSingle();
       if (ownerError) throw ownerError;
-      if (credentialOwner && String(credentialOwner.staff_id) !== String(staff.id)) {
-        return json({ error: "CREDENTIAL_ALREADY_BOUND" }, 409);
+      if (credentialOwner) {
+        if (String(credentialOwner.staff_id) !== String(staff.id)) {
+          return json({ error: "CREDENTIAL_ALREADY_BOUND" }, 409);
+        }
+        // Never upsert an existing credential ID: a concurrent registration must
+        // not be able to reassign that credential to another staff account.
+        return json({ success: true, already_registered: true });
       }
-      const { error: saveError } = await admin.from("staff_webauthn_credentials").upsert({
+      const { error: saveError } = await admin.from("staff_webauthn_credentials").insert({
         staff_id: String(staff.id), credential_id: credentialId, public_key: publicKey,
         counter: info.credential.counter, transports: credential.response?.transports || [],
         device_type: info.credentialDeviceType, backed_up: info.credentialBackedUp,
-      }, { onConflict: "credential_id" });
-      if (saveError) throw saveError;
+      });
+      if (saveError) {
+        // Unique credential_id is the final concurrency-safe ownership guard.
+        if (saveError.code === "23505") return json({ error: "CREDENTIAL_ALREADY_BOUND" }, 409);
+        throw saveError;
+      }
       return json({ success: true });
     }
 
