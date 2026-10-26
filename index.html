@@ -15225,7 +15225,7 @@ window.showStudentSchoolUpiQr=async function(accountId,installmentId){
 (function(){
   const $ = id => document.getElementById(id);
   let watchId = null, lastSentAt = 0, adminTimer = null, map = null, mapMarkers = [];
-  let sharing = false, apiBusy = false, leafletLoading = null;
+  let sharing = false, apiBusy = false, leafletLoading = null, firstVisitPromptRunning = false;
   const client = () => window.__ashianaMainSupabaseClient || window.supabaseClient || window.supabase;
   const esc = v => String(v ?? '').replace(/[&<>"']/g, c => ({'&':'&amp;','<':'&gt;','>':'&gt;','"':'&quot;',"'":'&#39;'}[c]));
   async function invoke(action, extra = {}) {
@@ -15333,9 +15333,10 @@ window.showStudentSchoolUpiQr=async function(accountId,installmentId){
     if(sharing)try{startWatch();}catch(_){}
   });
   async function requestFirstVisitLocationPermission(){
-    if(currentAuthUser?.type!=='STAFF') return;
+    if(currentAuthUser?.type!=='STAFF' || firstVisitPromptRunning) return;
     const key='ashiana_staff_location_permission_prompt_v1';
     if(localStorage.getItem(key)==='done') return;
+    firstVisitPromptRunning = true;
     // The app cannot grant or permanently force OS/browser permission. Ask once with clear disclosure.
     const ok=confirm('Ashiana Attendance requests your location during working hours so authorized school administrators can view your latest staff location. Location sharing is visible to you through this notice and can be stopped by contacting the school administrator. Your latest point only is stored. Allow location now?');
     if(!ok){localStorage.setItem(key,'done');return;}
@@ -15350,7 +15351,7 @@ window.showStudentSchoolUpiQr=async function(accountId,installmentId){
     } catch(e) {
       // Don't mark completed when permission was denied/unavailable: allow retry after settings change.
       if(window.showToast)showToast('Location permission was not granted. Enable it in browser/device settings and reopen the app.','error');
-    }
+    } finally { firstVisitPromptRunning = false; }
   }
   document.addEventListener('DOMContentLoaded',()=>{
     const launcher=$('admin-live-location-launch');
