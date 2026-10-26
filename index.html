@@ -6747,6 +6747,30 @@ async function importReportCsv(){
     window.__rcImport=null;
   }catch(e){if(result)result.innerHTML='<div class="p-2 rounded-xl bg-rose-50 border border-rose-200 text-rose-800 font-bold">'+studentEscape(e.message||e)+'</div>';if(btn)btn.disabled=false;}
 }
+function reportCardAdditionalSections(card,e=studentEscape){
+  const esc=typeof e==='function'?e:studentEscape;
+  const term1=card?.term1_details??card?.term_1??card?.term1??null;
+  const term2=card?.term2_details??card?.term_2??card?.term2??null;
+  const promotion=card?.promotion_status??card?.promotionStatus??card?.promoted_to??'';
+  const areas=card?.additional_scholastic_areas??card?.scholastic_areas??card?.co_scholastic_areas??card?.scholasticAreas??[];
+  const renderTerm=(title,value)=>{
+    if(value==null||value==='')return '';
+    const obj=typeof value==='object'&&!Array.isArray(value)?value:{details:value};
+    const entries=Object.entries(obj).filter(([k,v])=>v!=null&&v!=='').map(([k,v])=>'<div><span class="text-slate-500">'+esc(String(k).replace(/[_-]/g,' '))+'</span><br><b>'+esc(Array.isArray(v)?v.join(', '):String(v))+'</b></div>').join('');
+    return '<section class="rounded-lg border border-slate-200 p-3"><h3 class="font-bold mb-2">'+title+'</h3><div class="grid grid-cols-2 gap-2 text-xs">'+entries+'</div></section>';
+  };
+  const areaRows=Array.isArray(areas)?areas.map(a=>{
+    if(a==null)return '';
+    const o=typeof a==='object'?a:{area:String(a)};
+    const name=o.area??o.name??o.subject??'Scholastic Area';
+    const grade=o.grade??o.result??o.rating??'—';
+    const remark=o.remarks??o.remark??'';
+    return '<tr><td>'+esc(name)+'</td><td class="text-center">'+esc(grade)+'</td><td>'+esc(remark)+'</td></tr>';
+  }).join(''):'';
+  const scholastic=areaRows?'<section class="text-xs"><h3 class="font-bold mb-2">Additional Scholastic Areas</h3><table class="w-full"><thead><tr><th class="text-left">Area</th><th>Grade / Result</th><th class="text-left">Remarks</th></tr></thead><tbody>'+areaRows+'</tbody></table></section>':'';
+  const promotionHtml=promotion?'<section class="rounded-lg border border-slate-200 p-3 text-xs"><b>Promotion Status:</b> '+esc(promotion)+'</section>':'';
+  return renderTerm('Term 1 Details',term1)+renderTerm('Term 2 Details',term2)+scholastic+promotionHtml;
+}
 function renderStudentReportCardHtml(card,st,index){
   const list=normalizeReportSubjects(card.subjects),t=computeReportTotals(list);
   const grade=card.overall_grade||t.grade||'';
@@ -6761,6 +6785,8 @@ function renderStudentReportCardHtml(card,st,index){
     +(list.length?'<table class="w-full text-xs"><thead><tr class="text-slate-500 border-b"><th class="text-left py-1">Subject</th>'+(resultCum?'<th class="py-1">Unit Test</th><th class="py-1">Internal Assessment</th><th class="py-1">Term Exam</th>':'<th class="py-1">Max</th><th class="py-1">Marks</th>')+'<th class="py-1">Grade</th></tr></thead><tbody>'+rows+'</tbody>'+(t.total==null?'':'<tfoot><tr class="font-extrabold bg-slate-50"><td class="py-2 pl-1">Total</td>'+(resultCum?'<td class="py-2 text-center">'+studentEscape(reportFmt(list.reduce((a,s)=>a+Number(s.unit_test??s.unitTest??s.unit_test_marks??s.ut_marks??0),0)))+'</td><td class="py-2 text-center">'+studentEscape(reportFmt(list.reduce((a,s)=>a+Number(s.internal_assessment??s.internalAssessment??s.internal_assessment_marks??s.ia_marks??0),0)))+'</td><td class="py-2 text-center">'+studentEscape(reportFmt(list.reduce((a,s)=>a+Number(s.term_exam??s.termExam??s.term_exam_marks??s.exam_marks??s.marks??0),0)))+'</td>':'<td class="py-2 text-center">'+studentEscape(reportFmt(t.max))+'</td><td class="py-2 text-center">'+studentEscape(reportFmt(t.total))+'</td>')+'<td></td></tr></tfoot>')+'</table>':fallback)
     +(t.pct==null?'':'<div class="flex items-center justify-between rounded-xl bg-emerald-50 border border-emerald-200 px-3 py-2"><div class="text-xs"><span class="text-slate-500">Percentage</span><br><b class="text-base">'+studentEscape(reportFmt(t.pct))+'%</b></div><div class="text-right text-xs"><span class="text-slate-500">Overall Grade</span><br><b class="text-xl text-emerald-800">'+studentEscape(grade)+'</b></div></div>')
     +(card.remarks?'<div class="text-xs"><span class="text-slate-500">Remarks</span><p class="mt-1 whitespace-pre-wrap break-words">'+studentEscape(card.remarks)+'</p></div>':'')
+    +reportCardAdditionalSections(card,studentEscape)
+    +'<div class="grid grid-cols-3 gap-2 pt-8 text-[10px] text-center"><div class="border-t border-slate-500 pt-1">Class Teacher</div><div class="border-t border-slate-500 pt-1">Parent / Guardian</div><div class="border-t border-slate-500 pt-1">Principal</div></div>'
     +'</div></article>';
 }
 function printStudentReportCard(index){
@@ -6776,6 +6802,7 @@ function printStudentReportCard(index){
     +'<table><thead><tr><th>Subject</th>'+(resultCum?'<th class="c">Unit Test</th><th class="c">Internal Assessment</th><th class="c">Term Exam</th>':'<th class="c">Max Marks</th><th class="c">Marks Obtained</th>')+'<th class="c">Grade</th></tr></thead><tbody>'+rows+'</tbody>'+(t.total==null?'':'<tfoot><tr class="tot"><td>Total</td>'+(resultCum?'<td class="c">'+e(reportFmt(list.reduce((a,s)=>a+Number(s.unit_test??s.unitTest??s.unit_test_marks??s.ut_marks??0),0)))+'</td><td class="c">'+e(reportFmt(list.reduce((a,s)=>a+Number(s.internal_assessment??s.internalAssessment??s.internal_assessment_marks??s.ia_marks??0),0)))+'</td><td class="c">'+e(reportFmt(list.reduce((a,s)=>a+Number(s.term_exam??s.termExam??s.term_exam_marks??s.exam_marks??s.marks??0),0)))+'</td>':'<td class="c">'+e(reportFmt(t.max))+'</td><td class="c">'+e(reportFmt(t.total))+'</td>')+'<td></td></tr></tfoot>')+'</table>'
     +(t.pct==null?'':'<div class="sum"><div>Percentage: <b>'+e(reportFmt(t.pct))+'%</b></div><div>Overall Grade: <b>'+e(grade)+'</b></div></div>')
     +(card.remarks?'<p style="font-size:13px"><b>Remarks:</b> '+e(card.remarks)+'</p>':'')
+    +reportCardAdditionalSections(card,e).replace(/class="text-xs"/g,'style="font-size:12px"').replace(/class="rounded-lg border border-slate-200 p-3"/g,'style="border:1px solid #ccc;border-radius:6px;padding:10px;margin-top:10px"').replace(/class="font-bold mb-2"/g,'style="font-weight:bold;margin-bottom:8px"').replace(/class="grid grid-cols-2 gap-2 text-xs"/g,'style="display:grid;grid-template-columns:1fr 1fr;gap:8px;font-size:12px"').replace(/class="w-full"/g,'style="width:100%;border-collapse:collapse"').replace(/class="text-left"/g,'style="text-align:left"').replace(/class="text-center"/g,'style="text-align:center"')
     +'<div class="sig"><div>Class Teacher</div><div>Parent / Guardian</div><div>Principal</div></div></body></html>';
   const w=window.open('','_blank');
   if(!w)return showToast('Please allow pop-ups to print the report card.','error');
