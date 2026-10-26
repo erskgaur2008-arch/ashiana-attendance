@@ -13013,9 +13013,30 @@ window.addEventListener('load',async function(){
             closeStudentDashboardSection();
             return;
           }
+
           const dashboardViews = ["student-portal-view", "staff-portal-view", "admin-portal-view"];
           const visibleDashboard = dashboardViews.map(id => document.getElementById(id)).find(el => el && !el.classList.contains("hidden"));
           if (visibleDashboard) {
+            // Reuse the portal's own Back control for any inner screen. This
+            // covers admin and staff pages without hard-coding every module.
+            const visible = el => {
+              if (!el || !el.isConnected || el.disabled) return false;
+              const style = window.getComputedStyle(el);
+              return style.display !== "none" && style.visibility !== "hidden" &&
+                !el.classList.contains("hidden") && el.getClientRects().length > 0;
+            };
+            const backControl = Array.from(visibleDashboard.querySelectorAll(
+              'button, [role="button"], a[role="button"], [data-back], [aria-label*="back" i], [title*="back" i]'
+            )).find(el => visible(el) && (
+              el.hasAttribute("data-back") ||
+              /(^|\\s)(back|go back|return)(\\s|$)/i.test((el.innerText || el.textContent || "").trim()) ||
+              /back|return/i.test((el.getAttribute("aria-label") || "") + " " + (el.getAttribute("title") || ""))
+            ));
+            if (backControl) {
+              backControl.click();
+              return;
+            }
+
             // At a portal root, keep the app alive; never log out or clear its session.
             try { history.pushState({ ashianaApp: true, root: true }, "", location.href); } catch (_) {}
             return;
