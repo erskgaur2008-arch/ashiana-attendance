@@ -15335,23 +15335,32 @@ window.showStudentSchoolUpiQr=async function(accountId,installmentId){
   async function requestFirstVisitLocationPermission(){
     if(currentAuthUser?.type!=='STAFF' || firstVisitPromptRunning) return;
     const key='ashiana_staff_location_permission_prompt_v1';
-    if(localStorage.getItem(key)==='done' || sessionStorage.getItem(key)==='attempted') return;
-    sessionStorage.setItem(key,'attempted');
+    if(sessionStorage.getItem(key)==='attempted') return;
     firstVisitPromptRunning = true;
-    // The app cannot grant or permanently force OS/browser permission. Ask once with clear disclosure.
-    const ok=confirm('Ashiana Attendance requests your location during working hours so authorized school administrators can view your latest staff location. Location sharing is visible to you through this notice and can be stopped by contacting the school administrator. Your latest point only is stored. Allow location now?');
-    if(!ok){localStorage.setItem(key,'done');return;}
+    sessionStorage.setItem(key,'attempted');
     try {
+      // Re-check the server state on every new app session. A stale local flag must
+      // never prevent recovery when the server row was absent or a previous start failed.
+      const status = await invoke('status');
+      if(status.sharing_enabled){
+        localStorage.setItem(key,'done');
+        setSharingUi(true);
+        if(watchId===null && document.visibilityState==='visible') startWatch();
+        return;
+      }
+      const ok=confirm('Ashiana Attendance requests your location during working hours so authorized school administrators can view your latest staff location. Only your latest point is stored. You can decline; location will not be shared unless you approve this request. Allow location sharing now?');
+      if(!ok) return;
       if(!navigator.geolocation) throw new Error('Location services are unavailable in this browser.');
       await new Promise((resolve,reject)=>navigator.geolocation.getCurrentPosition(resolve,reject,{enableHighAccuracy:true,timeout:20000,maximumAge:0}));
       await invoke('start');
       setSharingUi(true);
       startWatch();
       localStorage.setItem(key,'done');
-      if(window.showToast)showToast('Location permission granted. Sharing runs while the app is active.','success');
+      if(window.showToast)showToast('Location sharing enabled. The app must remain active for updates.','success');
     } catch(e) {
-      // Don't mark completed when permission was denied/unavailable: allow retry after settings change.
-      if(window.showToast)showToast('Location permission was not granted. Enable it in browser/device settings and reopen the app.','error');
+      setSharingUi(false);
+      if(window.showToast)showToast('Location sharing is not active: '+(e.message||'Allow location in device/browser settings, then reopen the app.'),'error');
+      console.warn('First-visit location sharing failed:',e);
     } finally { firstVisitPromptRunning = false; }
   }
   document.addEventListener('DOMContentLoaded',()=>{
