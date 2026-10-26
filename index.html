@@ -6568,7 +6568,11 @@ function normalizeReportSubjects(list){
     const marks=absent?null:reportNum(s?.marks);
     const max=reportNum(s?.max);
     const grade=String(s?.grade??'').trim();
-    return {subject,marks,max,grade,absent};
+    // Preserve assessment components used by the Result Cum Marksheet.
+    const unit_test=reportNum(s?.unit_test??s?.unitTest??s?.unit_test_marks??s?.ut_marks);
+    const internal_assessment=reportNum(s?.internal_assessment??s?.internalAssessment??s?.internal_assessment_marks??s?.ia_marks);
+    const term_exam=reportNum(s?.term_exam??s?.termExam??s?.term_exam_marks??s?.exam_marks);
+    return {subject,marks,max,grade,absent,...(unit_test!==null?{unit_test}:{}),...(internal_assessment!==null?{internal_assessment}:{}),...(term_exam!==null?{term_exam}:{})};
   }).filter(s=>s.subject);
 }
 function computeReportTotals(list){
@@ -6604,12 +6608,16 @@ function renderReportCsvEditor(host){
     +'<div class="grid grid-cols-2 gap-2"><input id="rc-year" value="2026-27" placeholder="Academic year" class="p-2 border rounded"><input id="rc-term" placeholder="Term (e.g. Term 1)" class="p-2 border rounded"></div>'
     +'<div><label class="text-[10px] font-bold text-slate-500">Subjects (comma separated)'+(a.isClassTeacher?'':' — your assigned subjects')+'</label><textarea id="rc-subjects" rows="2" class="w-full p-2 border rounded text-xs"'+readonly+'></textarea></div>'
     +'<div class="grid grid-cols-2 gap-2 items-end"><div><label class="text-[10px] font-bold text-slate-500">Maximum marks per subject</label><input id="rc-max" type="number" min="1" value="100" class="w-full p-2 border rounded"></div><label class="text-xs flex items-center gap-2 pb-2"><input id="rc-publish" type="checkbox" checked> Publish to students</label></div>'
+    +'<div><label for="rc-format" class="text-[10px] font-bold text-slate-500">Report-card format</label><select id="rc-format" class="w-full p-2 border rounded"><option value="standard">Standard Report Card</option><option value="result_cum_marksheet">Result Cum Marksheet (Classes III–IV only)</option></select><p id="rc-format-help" class="text-[10px] text-slate-500 mt-1">Standard format preserves the existing marksheet layout.</p></div>'
     +'<div class="p-3 rounded-xl border bg-slate-50 text-xs space-y-2"><div class="font-bold">Step 1 — Download the sheet</div><div class="text-slate-500">Contains every student of this class. Open it in Excel or Google Sheets and type the marks. Leave a cell empty if not entered, or write AB for absent.</div><button type="button" onclick="downloadReportCardCsvTemplate()" class="w-full p-2.5 bg-slate-800 text-white rounded-xl font-bold">Download CSV sheet</button></div>'
     +'<div class="p-3 rounded-xl border bg-slate-50 text-xs space-y-2"><div class="font-bold">Step 2 — Upload the filled sheet</div><input id="rc-file" type="file" accept=".csv,text/csv" onchange="handleReportCsvFile(this)" class="w-full text-xs"></div>'
     +'<div id="rc-preview" class="text-xs"></div>'
     +'<button type="button" id="rc-import-btn" onclick="importReportCsv()" disabled class="w-full p-2.5 bg-cyan-700 text-white rounded-xl font-bold disabled:opacity-40">Step 3 — Import report cards</button>'
     +'<div id="rc-result" class="text-xs"></div></div>';
   document.getElementById('rc-subjects').value=subjectsDefault;
+  const format=document.getElementById('rc-format'),formatHelp=document.getElementById('rc-format-help');
+  const allowedResultCum=/^(III|IV|3|4|Class III|Class IV|Class 3|Class 4)$/i.test(String(a.class_name||'').trim());
+  if(format){const option=format.querySelector('option[value="result_cum_marksheet"]');if(option)option.disabled=!allowedResultCum;if(!allowedResultCum)format.value='standard';format.addEventListener('change',()=>{if(format.value==='result_cum_marksheet'&&!allowedResultCum){format.value='standard';showToast('Result Cum Marksheet is available only for Classes III–IV.','error');}if(formatHelp)formatHelp.textContent=format.value==='result_cum_marksheet'?'Result Cum Marksheet selected. Use assessment-specific marks data for Unit Test, Internal Assessment and Term Exam.':'Standard format preserves the existing marksheet layout.';});}
   window.__rcImport=null;
 }
 async function fetchReportRoster(a){
@@ -6683,7 +6691,10 @@ async function handleReportCsvFile(input){
       if(!errs.length&&!subjects.length)errs.push('No marks entered');
       rows.push({line:n+2,student:st||null,rawId,name:st?.student_name||String(r[nameCol]??''),subjects,remarks:remCol>=0?String(r[remCol]??'').trim().slice(0,500):'',errors:errs});
     });
-    window.__rcImport={term,year,cols,rows,publish:!!document.getElementById('rc-publish')?.checked,classKey:a.class_name+'|'+a.section,blocked:fileErrors.length>0};
+    const selectedFormat=document.getElementById('rc-format')?.value==='result_cum_marksheet'?'result_cum_marksheet':'standard';
+    const classAllowsResultCum=/^(III|IV|3|4|Class III|Class IV|Class 3|Class 4)$/i.test(String(a.class_name||'').trim());
+    if(selectedFormat==='result_cum_marksheet'&&!classAllowsResultCum)throw Error('Result Cum Marksheet is restricted to Classes III–IV.');
+    window.__rcImport={term,year,cols,rows,publish:!!document.getElementById('rc-publish')?.checked,report_card_format:selectedFormat,classKey:a.class_name+'|'+a.section,blocked:fileErrors.length>0};
     const ok=rows.filter(r=>!r.errors.length),bad=rows.length-ok.length;
     const head='<div class="p-2 rounded-xl '+(bad?'bg-amber-50 border border-amber-200':'bg-emerald-50 border border-emerald-200')+' font-bold">'+ok.length+' student(s) ready to import'+(bad?' • '+bad+' row(s) with problems (they will be skipped)':'')+'</div>';
     const fe=fileErrors.length?'<div class="mt-2 p-2 rounded-xl bg-rose-50 border border-rose-200 text-rose-800">'+fileErrors.map(studentEscape).join('<br>')+'</div>':'';
@@ -6718,7 +6729,7 @@ async function importReportCsv(){
       r.subjects.forEach(s=>merged.set(s.subject.toLowerCase(),s));
       const list=[...merged.values()].map(s=>({subject:s.subject,max:s.max,marks:s.marks,grade:s.grade,...(s.absent?{absent:true}:{})}));
       const t=computeReportTotals(normalizeReportSubjects(list));
-      return {student:r.student,row:{school_code:APS_STUDENT_SCHOOL,student_id:r.student.id,academic_year:job.year,term:job.term,subjects:list,overall_grade:t.grade,remarks:r.remarks||old?.remarks||null,published:publish,published_by:email}};
+      return {student:r.student,row:{school_code:APS_STUDENT_SCHOOL,student_id:r.student.id,academic_year:job.year,term:job.term,subjects:list,overall_grade:t.grade,remarks:r.remarks||old?.remarks||null,report_card_format:job.report_card_format||old?.report_card_format||'standard',published:publish,published_by:email}};
     });
     let saved=0;const failed=[];
     const conflict='school_code,student_id,academic_year,term';
