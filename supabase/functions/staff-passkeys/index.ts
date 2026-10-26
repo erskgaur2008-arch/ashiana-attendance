@@ -67,6 +67,13 @@ Deno.serve(async (req: Request) => {
     const action = String(body?.action || "");
     const now = Date.now();
 
+    if (action === "status") {
+      const { count, error } = await admin.from("staff_webauthn_credentials")
+        .select("id", { count: "exact", head: true }).eq("staff_id", String(staff.id));
+      if (error) throw error;
+      return json({ enabled: Number(count || 0) > 0, credential_count: Number(count || 0) });
+    }
+
     if (action === "registration-options") {
       // Re-authenticate with the current PIN before allowing a new authenticator
       // to be linked. Reuse the existing server-side PIN verifier and shared
