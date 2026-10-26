@@ -13365,8 +13365,9 @@ window.addEventListener('load',async function(){
           '<span class="text-[9px] font-bold px-1.5 py-0.5 rounded-full bg-emerald-50 text-emerald-700">'+studentEscape(scopeText)+'</span>'+
           '</div><p class="text-[10px] text-slate-600 mt-1">'+studentEscape(x.description||'')+'</p>'+
           (x.scopes.length>1?'<p class="text-[9px] text-slate-400 mt-1">'+studentEscape(scopeDetail)+'</p>':'')+
-          '</div><button type="button" onclick="deleteAdminStudentPortalCalendarTopic('+studentEscape(JSON.stringify(x.ids))+')" class="shrink-0 text-[10px] font-extrabold text-rose-600">Delete</button></div>';
+          '</div><button type="button" data-delete-calendar-topic="true" data-topic-ids="'+studentEscape(JSON.stringify(x.ids))+'" class="shrink-0 text-[10px] font-extrabold text-rose-600">Delete</button></div>';
       }).join('')||'<div class="text-xs text-slate-400 p-4 text-center">No calendar topics for this target.</div>';
+      document.querySelectorAll('button[data-delete-calendar-topic]').forEach(button=>button.addEventListener('click',()=>{try{deleteAdminStudentPortalCalendarTopic(JSON.parse(button.dataset.topicIds||'[]'));}catch(_){showToast('Invalid calendar topic selection.','error');}}));
     }
 
     async function publishAdminStudentPortalCalendar(){
