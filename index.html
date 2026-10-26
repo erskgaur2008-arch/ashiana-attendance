@@ -7864,6 +7864,7 @@ async function refreshStudentPortalData(){
     }
 
     let pendingStaffPwaPasskeyOptions = null;
+    let pendingStaffPwaRegistrationOptions = null;
 
     function isStaffPwaPasskeyAvailable() {
       return !window.AshianaNative?.isAndroid?.()
@@ -7898,15 +7899,30 @@ async function refreshStudentPortalData(){
       }
       if (button) { button.disabled = true; button.classList.add('opacity-60'); }
       try {
-        if (status) status.textContent = 'Preparing secure device registration…';
-        const { options } = await callStaffPasskeys('registration-options', { current_pin: pin });
+        let options = pendingStaffPwaRegistrationOptions;
+        if (!options) {
+          if (status) status.textContent = 'Preparing secure registration. Tap the button again when it says Continue to open your device biometric prompt.';
+          const prepared = await callStaffPasskeys('registration-options', { current_pin: pin });
+          options = prepared?.options || null;
+          if (!options?.challenge) throw new Error('The server did not return registration options.');
+          pendingStaffPwaRegistrationOptions = options;
+          if (button) button.querySelector('span').textContent = 'Continue to Device Biometric';
+          if (status) status.textContent = 'Ready. Tap Continue to Device Biometric to open the fingerprint, Face ID, or passkey prompt.';
+          return;
+        }
+        // No network await before this call: preserve the direct user gesture
+        // required by Safari/iOS WebAuthn implementations.
+        pendingStaffPwaRegistrationOptions = null;
         const credential = await window.SimpleWebAuthnBrowser.startRegistration({ optionsJSON: options });
         await callStaffPasskeys('registration-verify', { credential });
         const input = document.getElementById('staff-passkey-current-pin');
         if (input) input.value = '';
+        if (button) button.querySelector('span').textContent = 'Register Biometric on This Device';
         if (status) status.textContent = 'Biometric passkey registered successfully on this device.';
         showToast('PWA biometric verification registered.', 'success');
       } catch (error) {
+        pendingStaffPwaRegistrationOptions = null;
+        if (button) button.querySelector('span').textContent = 'Register Biometric on This Device';
         if (status) status.textContent = 'Registration failed: ' + String(error?.message || error);
         showToast('Biometric registration failed: ' + String(error?.message || error), 'error');
       } finally {
