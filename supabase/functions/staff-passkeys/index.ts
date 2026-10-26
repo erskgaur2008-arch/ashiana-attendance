@@ -27,6 +27,11 @@ const fromB64url = (value: string) => {
   return Uint8Array.from(raw, c => c.charCodeAt(0));
 };
 const randomChallenge = () => b64url(crypto.getRandomValues(new Uint8Array(32)));
+const sha256Hex = async (value: string) => {
+  const digest = new Uint8Array(await crypto.subtle.digest("SHA-256", new TextEncoder().encode(value)));
+  return Array.from(digest, byte => byte.toString(16).padStart(2, "0")).join("");
+};
+const requestIP = (req: Request) => req.headers.get("cf-connecting-ip") || req.headers.get("x-real-ip") || "unknown";
 const rpID = "erskgaur2008-arch.github.io";
 const expectedOrigin = "https://erskgaur2008-arch.github.io";
 const rpName = "Ashiana Public School Attendance";
@@ -63,6 +68,31 @@ Deno.serve(async (req: Request) => {
     const now = Date.now();
 
     if (action === "registration-options") {
+      // Re-authenticate with the current PIN before allowing a new authenticator
+      // to be linked. Reuse the existing server-side PIN verifier and shared
+      // rate-limit buckets; never trust a PIN supplied by the browser alone.
+      const currentPin = String(body?.current_pin || "").trim();
+      if (!/^\\d{4}$/.test(currentPin)) return json({ error: "CURRENT_PIN_REQUIRED" }, 400);
+      const ip = requestIP(req);
+      const ipDigest = await sha256Hex("staff-ip:" + ip);
+      const staffDigest = await sha256Hex("staff:" + String(staff.id));
+      const ipLimit = await admin.rpc("consume_staff_login_attempt", {
+        p_login_key: ipDigest, p_max_attempts: 60, p_window_seconds: 600,
+      });
+      if (ipLimit.error) throw ipLimit.error;
+      if (ipLimit.data?.allowed === false) return json({ error: "RATE_LIMIT", retry_after_seconds: ipLimit.data.retry_after_seconds || 600 }, 429);
+      const staffLimit = await admin.rpc("consume_staff_login_attempt", {
+        p_login_key: staffDigest, p_max_attempts: 5, p_window_seconds: 900,
+      });
+      if (staffLimit.error) throw staffLimit.error;
+      if (staffLimit.data?.allowed === false) return json({ error: "RATE_LIMIT", retry_after_seconds: staffLimit.data.retry_after_seconds || 900 }, 429);
+      const pinCheck = await admin.rpc("verify_staff_pin_internal", {
+        p_staff_id: staff.id, p_pin: currentPin,
+      });
+      if (pinCheck.error) throw pinCheck.error;
+      if (pinCheck.data !== true) return json({ error: "INVALID_PIN" }, 401);
+      await admin.rpc("clear_staff_login_attempt", { p_login_key: staffDigest });
+
       const { data: existing, error } = await admin.from("staff_webauthn_credentials")
         .select("credential_id").eq("staff_id", String(staff.id));
       if (error) throw error;
