@@ -373,6 +373,9 @@ Deno.serve(async (req: Request) => {
       });
       if (passkeyError) throw passkeyError;
       if (passkeyOk !== true) return json({ error: "PASSKEY_VERIFICATION_REQUIRED_OR_EXPIRED" }, 401);
+      // Successful passkey proof clears the same per-staff failure bucket used
+      // by PIN verification, so normal repeated punches do not lock out staff.
+      await clear(admin, key);
     } else {
       const { data: pinOk, error: pinError } = await admin.rpc("verify_staff_pin_internal", { p_staff_id: staff.id, p_pin: pin });
       if (pinError) throw pinError;
