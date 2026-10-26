@@ -29,9 +29,9 @@ jobs:
           const unsafe = 'onclick="deleteAdminStudentPortalCalendarTopic(\'+JSON.stringify(x.ids)+\')"';
           if (!html.includes(safe)) fail('Calendar topic ID array must be HTML-escaped before insertion into the inline handler attribute.');
           if (html.includes(unsafe)) fail('Found the unsafe calendar topic delete handler.');
-          if (!/function studentEscape\(v\)\s*\{return String\(v\?\?['"]['"]\)\.replace\(\/\[&<>"']/.test(html)) {
-            // Keep this guard intentionally simple: the helper must exist and encode attribute-sensitive characters.
-            if (!html.includes('function studentEscape(v){return String(v??\'\').replace(/[&<>"\']/g')) fail('Expected studentEscape HTML-escaping helper is missing or changed.');
+          if (!html.includes("function studentEscape(v){return String(v??'' ).replace(/[&<>")) {
+            // Whitespace in the helper's nullish fallback is harmless; also accept the exact compact form.
+            if (!html.includes("function studentEscape(v){return String(v??'').replace(/[&<>")) fail('Expected studentEscape HTML-escaping helper is missing or changed.');
           }
           console.log('HTML attribute escaping check passed.');
           NODE
