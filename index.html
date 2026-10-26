@@ -7733,12 +7733,12 @@ async function refreshStudentPortalData(){
           pendingStaffPwaPasskeyOptions = null;
         }
         if (window.lucide) lucide.createIcons();
-        if (androidApp && biometricReady) {
-          // Keep the existing native Android biometric flow unchanged.
+        if (androidApp && biometricEnabled && biometricReady) {
+          // Trigger the native biometric prompt only when the setting is enabled.
           setTimeout(() => submitScannedAttendanceBiometric(), 120);
         } else if (!androidApp && pwaPasskeyReady) {
           // WebAuthn options are prefetched; the authenticator starts only on the user's tap.
-        } else if (pinInput && (androidApp || !androidApp)) {
+        } else if (pinInput) {
           // Open Android's numeric keyboard immediately when biometric is disabled.
           pinInput.setAttribute('inputmode', 'numeric');
           pinInput.setAttribute('pattern', '[0-9]{4}');
