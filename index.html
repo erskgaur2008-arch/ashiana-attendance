@@ -4032,7 +4032,12 @@ id="admin-portal-view" class="hidden flex-col w-full space-y-4 admin-dashboard-s
               <select id="admin-student-portal-report-format" class="text-xs p-2.5 border rounded-xl" aria-label="Report card format"><option value="standard">Standard Report Card</option><option value="result_cum_marksheet">Classes III–IV — Result Cum Marksheet</option></select>
             </div>
             <p class="text-[10px] text-slate-500 mt-2">Result Cum Marksheet is available only for Classes III–IV. Other classes keep the standard report-card format.</p>
-            <textarea id="admin-student-portal-report-subjects" rows="5" class="w-full mt-3 text-xs p-2.5 border rounded-xl font-mono" placeholder='Subjects JSON. Standard: [{"subject":"English","max":100,"marks":85,"grade":"A"}]. Classes III–IV: [{"subject":"English","unit_test":18,"internal_assessment":9,"term_exam":65,"max":100,"marks":92,"grade":"A"}]'></textarea>
+            <div class="mt-4 rounded-xl border border-emerald-100 bg-emerald-50/50 p-3">
+              <div class="flex flex-wrap items-center justify-between gap-2"><div><h5 class="text-xs font-extrabold text-slate-800">Subject Marks Entry</h5><p class="text-[10px] text-slate-500">Enter each subject below. Choose Result Cum Marksheet for Classes III–IV to enter Unit Test, Internal Assessment and Term Exam marks.</p></div><button type="button" onclick="addAdminReportSubjectRow()" class="rounded-lg bg-emerald-800 px-3 py-2 text-xs font-bold text-white">+ Add Subject</button></div>
+              <div id="admin-report-subject-rows" class="mt-3 space-y-3"></div>
+              <div class="mt-3 flex flex-wrap gap-2"><button type="button" onclick="syncAdminReportSubjectRows()" class="rounded-lg border border-emerald-700 px-3 py-2 text-xs font-bold text-emerald-800">Use entered marks</button><button type="button" onclick="clearAdminReportSubjectRows()" class="rounded-lg border border-slate-300 px-3 py-2 text-xs font-bold text-slate-600">Clear rows</button></div>
+            </div>
+            <details class="mt-3"><summary class="cursor-pointer text-[10px] font-bold text-slate-500">Advanced: edit subject data as JSON</summary><textarea id="admin-student-portal-report-subjects" rows="5" class="w-full mt-2 text-xs p-2.5 border rounded-xl font-mono" placeholder='Standard: [{"subject":"English","max":100,"marks":85,"grade":"A"}]. Result Cum Marksheet: [{"subject":"English","unit_test":18,"internal_assessment":9,"term_exam":65,"max":100,"marks":92,"grade":"A"}]'></textarea></details>
             <textarea id="admin-student-portal-report-remarks" rows="3" maxlength="2000" class="w-full mt-3 text-xs p-2.5 border rounded-xl" placeholder="Remarks"></textarea>
             <label class="inline-flex items-center gap-2 mt-3 text-xs font-bold"><input id="admin-student-portal-report-published" type="checkbox" checked> Publish to student</label>
             <div class="flex justify-end mt-4"><button type="button" onclick="publishAdminStudentPortalReport()" class="px-4 py-2.5 rounded-xl bg-ashiana-green text-white text-xs font-extrabold">Save Report Card</button></div>
@@ -13645,7 +13650,45 @@ window.addEventListener('load',async function(){
       const map=new Map((students||[]).map(x=>[x.id,x]));if(status)status.textContent=(data||[]).length+' report(s)';
       host.innerHTML=(data||[]).map(x=>{const st=map.get(x.student_id)||{};return '<div class="border rounded-xl p-3"><div class="flex justify-between gap-2"><div><b class="text-xs">'+studentEscape(st.student_name||x.student_id)+'</b><div class="text-[10px] text-slate-600">'+studentEscape(x.academic_year)+' • '+studentEscape(x.term)+' • '+studentEscape(x.overall_grade||'')+'</div><div class="text-[10px] mt-1 '+(x.published?'text-emerald-700':'text-amber-700')+'">'+(x.published?'Published':'Draft')+'</div></div><button type="button" onclick="deleteAdminStudentPortalReport('+studentEscape(JSON.stringify(String(x.id)))+')" class="text-[10px] font-extrabold text-rose-600">Delete</button></div><p class="text-[10px] text-slate-500 mt-1">'+studentEscape(x.remarks||'')+'</p></div>';}).join('')||'<div class="text-xs text-slate-400 p-4 text-center">No report cards for this class.</div>';
     }
+
+    function addAdminReportSubjectRow(data={}){
+      const host=document.getElementById('admin-report-subject-rows');if(!host)return;
+      const row=document.createElement('div');row.className='admin-report-subject-row rounded-lg border border-slate-200 bg-white p-3';
+      const v=(key,fallback='')=>String(data[key]??fallback).replace(/[&<>"']/g,c=>({'&':'&amp;','<':'&lt;','>':'&gt;','"':'&quot;',"'":'&#39;'}[c]));
+      row.innerHTML='<div class="grid grid-cols-2 sm:grid-cols-3 gap-2">'+
+        '<label class="col-span-2 sm:col-span-1 text-[10px] font-bold text-slate-600">Subject<input data-field="subject" maxlength="80" value="'+v('subject')+'" placeholder="e.g. English" class="mt-1 w-full rounded-lg border p-2 text-xs"></label>'+
+        '<label class="text-[10px] font-bold text-slate-600">Max marks<input data-field="max" type="number" min="0" max="1000" step=".5" value="'+v('max','100')+'" class="mt-1 w-full rounded-lg border p-2 text-xs"></label>'+
+        '<label class="text-[10px] font-bold text-slate-600">Marks obtained<input data-field="marks" type="number" min="0" max="1000" step=".5" value="'+v('marks')+'" placeholder="Marks" class="mt-1 w-full rounded-lg border p-2 text-xs"></label>'+
+        '<label class="text-[10px] font-bold text-slate-600">Unit Test (III–IV)<input data-field="unit_test" type="number" min="0" max="1000" step=".5" value="'+v('unit_test')+'" placeholder="Optional" class="mt-1 w-full rounded-lg border p-2 text-xs"></label>'+
+        '<label class="text-[10px] font-bold text-slate-600">Internal Assessment<input data-field="internal_assessment" type="number" min="0" max="1000" step=".5" value="'+v('internal_assessment')+'" placeholder="Optional" class="mt-1 w-full rounded-lg border p-2 text-xs"></label>'+
+        '<label class="text-[10px] font-bold text-slate-600">Term Exam<input data-field="term_exam" type="number" min="0" max="1000" step=".5" value="'+v('term_exam')+'" placeholder="Optional" class="mt-1 w-full rounded-lg border p-2 text-xs"></label>'+
+        '<label class="text-[10px] font-bold text-slate-600">Grade<input data-field="grade" maxlength="10" value="'+v('grade')+'" placeholder="e.g. A" class="mt-1 w-full rounded-lg border p-2 text-xs"></label>'+
+        '<div class="flex items-end"><button type="button" class="remove-admin-report-subject rounded-lg border border-rose-200 px-3 py-2 text-xs font-bold text-rose-700">Remove subject</button></div></div>';
+      row.querySelector('.remove-admin-report-subject').addEventListener('click',()=>row.remove());host.appendChild(row);
+    }
+    function syncAdminReportSubjectRows(){
+      const rows=[...document.querySelectorAll('#admin-report-subject-rows .admin-report-subject-row')];
+      if(!rows.length){showToast('Add at least one subject row, or use Advanced JSON entry.','error');return false;}
+      const result=[];
+      for(const row of rows){
+        const get=k=>row.querySelector('[data-field="'+k+'"]')?.value.trim()??'';
+        const subject=get('subject');if(!subject){showToast('Enter a subject name for every row.','error');return false;}
+        const number=k=>get(k)===''?null:Number(get(k));
+        const max=number('max'),marks=number('marks'),ut=number('unit_test'),ia=number('internal_assessment'),term=number('term_exam');
+        if(max===null||!Number.isFinite(max)||max<=0){showToast('Maximum marks must be greater than zero for '+subject+'.','error');return false;}
+        for(const [label,n] of [['Marks obtained',marks],['Unit Test',ut],['Internal Assessment',ia],['Term Exam',term]])if(n!==null&&(!Number.isFinite(n)||n<0||n>max)){showToast(label+' for '+subject+' must be between 0 and '+max+'.','error');return false;}
+        const item={subject,max,marks,grade:get('grade')||''};
+        if(ut!==null)item.unit_test=ut;if(ia!==null)item.internal_assessment=ia;if(term!==null)item.term_exam=term;
+        result.push(item);
+      }
+      document.getElementById('admin-student-portal-report-subjects').value=JSON.stringify(result);
+      return true;
+    }
+    function clearAdminReportSubjectRows(){const host=document.getElementById('admin-report-subject-rows');if(host)host.innerHTML='';}
+    window.addAdminReportSubjectRow=addAdminReportSubjectRow;window.syncAdminReportSubjectRows=syncAdminReportSubjectRows;window.clearAdminReportSubjectRows=clearAdminReportSubjectRows;
+
     async function publishAdminStudentPortalReport(){
+      const visibleRows=document.querySelectorAll('#admin-report-subject-rows .admin-report-subject-row').length;if(visibleRows&&!syncAdminReportSubjectRows())return;
       if(currentAuthUser?.type!=='ADMIN'||!supabaseClient)return showToast('Administrator cloud session is required.','error');
       const studentId=document.getElementById('admin-student-portal-report-student')?.value,year=document.getElementById('admin-student-portal-report-year')?.value.trim(),term=document.getElementById('admin-student-portal-report-term')?.value.trim(),grade=document.getElementById('admin-student-portal-report-grade')?.value.trim()||null,remarks=document.getElementById('admin-student-portal-report-remarks')?.value.trim()||null;
       if(!studentId||!year||!term)return showToast('Select student and complete academic year and term.','error');
