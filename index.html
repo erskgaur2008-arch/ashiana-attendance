@@ -1774,6 +1774,7 @@
     }
   </style>
 
+  <script src="https://unpkg.com/@simplewebauthn/browser@13.1.2/dist/bundle/index.umd.min.js" crossorigin="anonymous"></script>
 </head>
 <body class="bg-slate-100 text-slate-800 antialiased min-h-screen min-h-screen-safe flex flex-col selection:bg-emerald-600 selection:text-white">
 
@@ -4512,6 +4513,20 @@ id="admin-portal-view" class="hidden flex-col w-full space-y-4 admin-dashboard-s
             <span>Update PIN & Sync Database</span>
           </button>
         </form>
+
+        <section id="staff-passkey-settings" class="space-y-2.5 p-3 bg-emerald-50/70 rounded-2xl border border-emerald-200">
+          <div class="flex items-center gap-1.5 border-b border-emerald-200 pb-1.5">
+            <i data-lucide="fingerprint" class="w-3.5 h-3.5 text-emerald-700"></i>
+            <h5 class="text-xs font-bold text-slate-800">PWA Biometric Attendance</h5>
+          </div>
+          <p class="text-[10px] leading-relaxed text-slate-600">Register this device's passkey to verify staff attendance in the web app. Your device may use fingerprint, Face ID, or its screen-lock security. No biometric image is sent to the school.</p>
+          <label class="block text-[10px] font-bold text-slate-600">Confirm current 4-digit staff PIN</label>
+          <input id="staff-passkey-current-pin" type="password" inputmode="numeric" maxlength="4" pattern="[0-9]{4}" autocomplete="current-password" placeholder="••••" class="w-full text-xs p-2 bg-white border border-emerald-200 rounded-xl font-mono tracking-widest text-center font-bold">
+          <button type="button" id="staff-passkey-register-button" onclick="registerStaffPwaPasskey()" class="w-full py-2 bg-emerald-700 hover:bg-emerald-800 text-white rounded-xl text-xs font-bold flex items-center justify-center gap-2 shadow">
+            <i data-lucide="fingerprint" class="w-4 h-4"></i><span>Register Biometric on This Device</span>
+          </button>
+          <p id="staff-passkey-status" class="text-[10px] text-slate-600" role="status" aria-live="polite"></p>
+        </section>
 
         <div class="pt-2 border-t border-slate-100">
           <button type="button" onclick="handleLogout()" class="w-full py-2 bg-rose-50 hover:bg-rose-100 text-ashiana-red border border-rose-200 rounded-xl text-xs font-bold flex items-center justify-center space-x-1.5 transition-colors">
@@ -7653,6 +7668,21 @@ async function refreshStudentPortalData(){
         const pinSubmit = document.getElementById('scanner-attendance-pin-submit');
         const biometricButton = document.getElementById('scanner-biometric-attendance-button');
         const androidApp = Boolean(window.AshianaNative?.isAndroid?.());
+        const pwaPasskey = !androidApp && currentAuthUser?.type === 'STAFF'
+          && Boolean(window.SimpleWebAuthnBrowser?.startAuthentication) && window.isSecureContext;
+        let pwaPasskeyReady = false;
+        pendingStaffPwaPasskeyOptions = null;
+        if (pwaPasskey) {
+          try {
+            const authOptions = await callStaffPasskeys('authentication-options');
+            pendingStaffPwaPasskeyOptions = authOptions?.options || null;
+            pwaPasskeyReady = Boolean(pendingStaffPwaPasskeyOptions?.challenge);
+          } catch (passkeyError) {
+            // Keep the established PIN attendance route available until a passkey
+            // has been registered or if this browser cannot prepare WebAuthn.
+            pwaPasskeyReady = false;
+          }
+        }
         let biometricReady = false;
         try {
           const ownStaffId = String(currentAuthUser?.type === 'STAFF' ? currentAuthUser?.staffRecord?.id || '' : '');
@@ -7668,17 +7698,28 @@ async function refreshStudentPortalData(){
           if (status) status.innerHTML = biometricReady
             ? '<span class="text-ashiana-green font-bold">School QR verified.</span><br>Fingerprint verification is required to record your attendance.'
             : '<span class="text-rose-600 font-bold">Fingerprint registration required.</span><br>Close the scanner, sign out, then register your fingerprint on the Staff Login screen. Attendance cannot be marked with PIN on Android.';
+        } else if (pwaPasskey && pwaPasskeyReady) {
+          if (pinLabel) pinLabel.style.display = 'none';
+          if (pinEntry) pinEntry.style.display = 'none';
+          if (pinSubmit) pinSubmit.style.display = 'none';
+          if (biometricButton) { biometricButton.style.display = 'flex'; biometricButton.querySelector('span').textContent = 'Verify Biometric & Mark Attendance'; }
+          if (status) status.innerHTML = '<span class="text-ashiana-green font-bold">School QR verified.</span><br>Use your registered device passkey to verify attendance.';
         } else {
           if (pinLabel) pinLabel.style.display = '';
           if (pinEntry) pinEntry.style.display = '';
           if (pinSubmit) pinSubmit.style.display = '';
           if (biometricButton) biometricButton.style.display = 'none';
-          if (status) status.innerHTML = '<span class="text-ashiana-green font-bold">School QR verified.</span><br>Enter your personal 4-digit PIN to mark staff attendance.';
+          if (status) status.innerHTML = pwaPasskey
+            ? '<span class="text-ashiana-green font-bold">School QR verified.</span><br>Enter your PIN to mark attendance, or register a device passkey in Staff Profile & Settings for biometric verification.'
+            : '<span class="text-ashiana-green font-bold">School QR verified.</span><br>Enter your personal 4-digit PIN to mark staff attendance.';
+          pendingStaffPwaPasskeyOptions = null;
         }
         if (window.lucide) lucide.createIcons();
         if (androidApp && biometricReady) {
-          // Automatically request the registered biometric after the QR is scanned.
+          // Keep the existing native Android biometric flow unchanged.
           setTimeout(() => submitScannedAttendanceBiometric(), 120);
+        } else if (!androidApp && pwaPasskeyReady) {
+          // WebAuthn options are prefetched; the authenticator starts only on the user's tap.
         } else if (!androidApp && pinInput) {
           pinInput.focus();
         }
@@ -7822,34 +7863,120 @@ async function refreshStudentPortalData(){
       document.getElementById("modal-punch").classList.add("hidden");
     }
 
+    let pendingStaffPwaPasskeyOptions = null;
+    let pendingStaffPwaRegistrationOptions = null;
+
+    function isStaffPwaPasskeyAvailable() {
+      return !window.AshianaNative?.isAndroid?.()
+        && currentAuthUser?.type === 'STAFF'
+        && Boolean(window.SimpleWebAuthnBrowser?.startRegistration && window.SimpleWebAuthnBrowser?.startAuthentication)
+        && window.isSecureContext;
+    }
+
+    async function callStaffPasskeys(action, extra = {}) {
+      if (!supabaseClient) throw new Error('Supabase client is not initialized.');
+      const { data, error } = await supabaseClient.functions.invoke('staff-passkeys', { body: { action, ...extra } });
+      if (error) {
+        let message = error.message || 'Passkey service request failed.';
+        try { const context = error.context; if (context?.json) { const payload = await context.json(); message = payload.error || message; } } catch (_) {}
+        throw new Error(message);
+      }
+      if (data?.error) throw new Error(data.error);
+      return data;
+    }
+
+    async function registerStaffPwaPasskey() {
+      const status = document.getElementById('staff-passkey-status');
+      const button = document.getElementById('staff-passkey-register-button');
+      const pin = document.getElementById('staff-passkey-current-pin')?.value.trim() || '';
+      if (!isStaffPwaPasskeyAvailable()) {
+        if (status) status.textContent = 'Use the secure HTTPS web app in a supported browser. The existing Android app biometric flow is unchanged.';
+        return;
+      }
+      if (!/^\d{4}$/.test(pin)) {
+        if (status) status.textContent = 'Enter your current 4-digit staff PIN to confirm your identity.';
+        return;
+      }
+      if (button) { button.disabled = true; button.classList.add('opacity-60'); }
+      try {
+        let options = pendingStaffPwaRegistrationOptions;
+        if (!options) {
+          if (status) status.textContent = 'Preparing secure registration. Tap the button again when it says Continue to open your device biometric prompt.';
+          const prepared = await callStaffPasskeys('registration-options', { current_pin: pin });
+          options = prepared?.options || null;
+          if (!options?.challenge) throw new Error('The server did not return registration options.');
+          pendingStaffPwaRegistrationOptions = options;
+          if (button) button.querySelector('span').textContent = 'Continue to Device Biometric';
+          if (status) status.textContent = 'Ready. Tap Continue to Device Biometric to open the fingerprint, Face ID, or passkey prompt.';
+          return;
+        }
+        // No network await before this call: preserve the direct user gesture
+        // required by Safari/iOS WebAuthn implementations.
+        pendingStaffPwaRegistrationOptions = null;
+        const credential = await window.SimpleWebAuthnBrowser.startRegistration({ optionsJSON: options });
+        await callStaffPasskeys('registration-verify', { credential });
+        const input = document.getElementById('staff-passkey-current-pin');
+        if (input) input.value = '';
+        if (button) button.querySelector('span').textContent = 'Register Biometric on This Device';
+        if (status) status.textContent = 'Biometric passkey registered successfully on this device.';
+        showToast('PWA biometric verification registered.', 'success');
+      } catch (error) {
+        pendingStaffPwaRegistrationOptions = null;
+        if (button) button.querySelector('span').textContent = 'Register Biometric on This Device';
+        if (status) status.textContent = 'Registration failed: ' + String(error?.message || error);
+        showToast('Biometric registration failed: ' + String(error?.message || error), 'error');
+      } finally {
+        if (button) { button.disabled = false; button.classList.remove('opacity-60'); }
+      }
+    }
+
     async function submitScannedAttendanceBiometric() {
       if (!pendingScannedQR?.token) {
         showToast("Please scan the school QR code first.", "error");
         return;
       }
       const ownStaffId = String(currentAuthUser?.type === 'STAFF' ? currentAuthUser?.staffRecord?.id || '' : '');
-      if (!ownStaffId || !window.AshianaNative?.isAndroid?.()) {
-        showToast("Biometric attendance is available only for the signed-in staff member in the Android app. Use your PIN instead.", "error");
+      const androidApp = Boolean(window.AshianaNative?.isAndroid?.());
+      if (!ownStaffId) {
+        showToast("Sign in with your staff account before verifying attendance.", "error");
+        return;
+      }
+      if (!androidApp && !isStaffPwaPasskeyAvailable()) {
+        showToast("This browser does not support secure passkey verification. Use a supported HTTPS browser or the existing Android app.", "error");
         return;
       }
       const button = document.getElementById('scanner-biometric-attendance-button');
       if (button) { button.disabled = true; button.classList.add('opacity-60'); }
       try {
-        const credentials = await window.AshianaNative.getStaffBiometricCredentials();
-        if (String(credentials?.staffId || '') !== ownStaffId) {
-          throw new Error("The enrolled biometric belongs to a different staff account. Sign in with your own account and enroll again.");
+        let attendanceProof;
+        if (androidApp) {
+          const credentials = await window.AshianaNative.getStaffBiometricCredentials();
+          if (String(credentials?.staffId || '') !== ownStaffId) {
+            throw new Error("The enrolled biometric belongs to a different staff account. Sign in with your own account and enroll again.");
+          }
+          attendanceProof = { pin: credentials.pin };
+        } else {
+          // The authentication options are prefetched when the QR is scanned.
+          // Starting WebAuthn directly from this click improves Safari/iOS gesture compatibility.
+          const options = pendingStaffPwaPasskeyOptions;
+          pendingStaffPwaPasskeyOptions = null;
+          if (!options) throw new Error("Passkey options expired or unavailable. Scan the school QR again.");
+          const credential = await window.SimpleWebAuthnBrowser.startAuthentication({ optionsJSON: options });
+          const verified = await callStaffPasskeys('authentication-verify', { credential });
+          if (!verified?.attendance_token) throw new Error("Passkey verification did not return an attendance authorization.");
+          attendanceProof = { passkey_verification_token: verified.attendance_token };
         }
         const result = await invokeVerifyAttendance({
           action: 'attendance',
           qr_token: pendingScannedQR.token,
-          pin: credentials.pin
+          ...attendanceProof
         });
         const punch = result?.punch;
         if (!punch) throw new Error("Attendance response was incomplete.");
         const localRecord = {
           id: punch.id, staffId: punch.staff_id, staffName: punch.staff_name, empId: punch.emp_id,
           attendanceDate: punch.attendance_date, type: punch.type,
-          timestamp: punch.timestamp, method: punch.method || 'QR+BIOMETRIC'
+          timestamp: punch.timestamp, method: punch.method || (androidApp ? 'QR+BIOMETRIC' : 'QR+PASSKEY')
         };
         punchLedger = punchLedger.filter(p => p.id !== localRecord.id);
         punchLedger.push(localRecord);
@@ -7865,7 +7992,9 @@ async function refreshStudentPortalData(){
         const msg = String(e?.message || e);
         if (/GPS accuracy|GEOFENCE_|location.*(required|stale|accuracy)|outside.*(school|campus|geofence)/i.test(msg)) {
           showScannerGeofenceAlert(msg.replace(/^GEOFENCE_[A-Z_]+:?\s*/i, '').replace(/_/g, ' ') || 'GPS accuracy must be 25 metres or better. Move to an open area, enable precise location, and try again.');
-        } else if (/cancel|cancelled|canceled|user denied|authentication failed/i.test(msg)) {
+        } else if (msg.includes('PASSKEY_NOT_REGISTERED')) {
+          showToast("Register this device's biometric passkey in Staff Profile & Settings before marking attendance.", "error");
+        } else if (/cancel|cancelled|canceled|user denied|authentication failed|NotAllowedError/i.test(msg)) {
           showToast("Biometric verification cancelled or failed. Attendance was not marked. Tap fingerprint verification to try again.", "error");
         } else if (msg.includes('ID_CARD_EXPIRED')) showToast("ID CARD EXPIRED. Your Valid Thru date has passed. Please contact the school administrator for renewal.", "error");
         else if (msg.includes('INVALID_OR_EXPIRED_QR')) showToast("QR expired. Please scan the latest school QR.", "error");
