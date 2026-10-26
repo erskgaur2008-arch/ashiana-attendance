@@ -6736,7 +6736,7 @@ function studentAttendanceMonthSummary(key,attendanceMap){
 function renderStudentAttendancePanel(attendance,view="home",monthKey=""){
   const host=document.getElementById("student-dashboard-panel-body");
   if(!host)return;
-  const rows=Array.isArray(attendance)?attendance:[],map=studentAttendanceBuildMap(rows),keys=studentAttendanceGetMonthKeys(rows);
+  const rows=Array.isArray(attendance)?attendance:[],map=studentAttendanceBuildMap(rows),keys=studentAttendanceGetMonthKeys(rows).filter(key=>/^\d{4}-(0[1-9]|1[0-2])$/.test(String(key)));
   const overall={present:0,absent:0,leave:0,total:0};
   keys.forEach(key=>{const x=studentAttendanceMonthSummary(key,map);overall.present+=x.present;overall.absent+=x.absent;overall.leave+=x.leave;overall.total+=x.total;});
   const metric=(label,value,theme,icon)=>'<div class="rounded-2xl border p-4 '+theme+'"><div class="flex items-center gap-2"><i data-lucide="'+icon+'" class="w-4 h-4"></i><span class="text-xs font-semibold">'+label+'</span></div><div class="text-2xl font-black mt-2">'+value+'</div></div>';
