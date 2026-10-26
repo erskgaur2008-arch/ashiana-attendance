@@ -25,10 +25,17 @@ jobs:
           const fs = require('node:fs');
           const html = fs.readFileSync('index.html', 'utf8');
           const fail = (message) => { console.error(message); process.exit(1); };
-          const safe = 'onclick="deleteAdminStudentPortalCalendarTopic(\'+studentEscape(JSON.stringify(x.ids))+\')"';
-          const unsafe = 'onclick="deleteAdminStudentPortalCalendarTopic(\'+JSON.stringify(x.ids)+\')"';
-          if (!html.includes(safe)) fail('Calendar topic ID array must be HTML-escaped before insertion into the inline handler attribute.');
-          if (html.includes(unsafe)) fail('Found the unsafe calendar topic delete handler.');
+          if (!html.includes('data-delete-calendar-topic="true" data-topic-ids="')) fail('Calendar delete control must use data attributes.');
+          if (html.includes('onclick="deleteAdminStudentPortalCalendarTopic(')) fail('Calendar delete must not interpolate values into inline JavaScript.');
+          if (!html.includes("JSON.parse(button.dataset.topicIds||'[]')")) fail('Calendar delete listener must parse the data attribute safely.');
+          if (!html.includes('data-delete-fee-structure="true" data-fee-id="')) fail('Fee delete control must use data attributes.');
+          if (html.includes('onclick="deleteFeeStructure(')) fail('Fee delete must not interpolate database values into inline JavaScript.');
+          if (!html.includes('button.dataset.feeId,button.dataset.feeClass,button.dataset.feeName')) fail('Fee delete event listener is missing.');
+          if (!html.includes('data-staff-comm-thread-id="')) fail('Staff communications must use a data attribute for thread IDs.');
+          if (html.includes('onclick="openStaffCommThread(')) fail('Staff communication thread IDs must not be interpolated into inline JavaScript.');
+          if (!html.includes('button.dataset.staffCommThreadId')) fail('Staff communication thread listener is missing.');
+          if (!html.includes('printableTable.appendChild(child.cloneNode(true))')) fail('Report print path must clone DOM instead of reparsing table HTML.');
+          if (!html.includes('tableWrapper.replaceChildren(printableTable)')) fail('Report print DOM replacement is missing.');
           if (!html.includes("function studentEscape(v){return String(v??'' ).replace(/[&<>") &&
               !html.includes("function studentEscape(v){return String(v??'').replace(/[&<>")) {
             fail('Expected studentEscape HTML-escaping helper is missing or changed.');
