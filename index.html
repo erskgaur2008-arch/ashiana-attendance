@@ -7670,6 +7670,19 @@ async function refreshStudentPortalData(){
         const androidApp = Boolean(window.AshianaNative?.isAndroid?.());
         const pwaPasskey = !androidApp && currentAuthUser?.type === 'STAFF'
           && Boolean(window.SimpleWebAuthnBrowser?.startAuthentication) && window.isSecureContext;
+        let pwaPasskeyReady = false;
+        pendingStaffPwaPasskeyOptions = null;
+        if (pwaPasskey) {
+          try {
+            const authOptions = await callStaffPasskeys('authentication-options');
+            pendingStaffPwaPasskeyOptions = authOptions?.options || null;
+            pwaPasskeyReady = Boolean(pendingStaffPwaPasskeyOptions?.challenge);
+          } catch (passkeyError) {
+            // Keep the established PIN attendance route available until a passkey
+            // has been registered or if this browser cannot prepare WebAuthn.
+            pwaPasskeyReady = false;
+          }
+        }
         let biometricReady = false;
         try {
           const ownStaffId = String(currentAuthUser?.type === 'STAFF' ? currentAuthUser?.staffRecord?.id || '' : '');
@@ -7685,7 +7698,7 @@ async function refreshStudentPortalData(){
           if (status) status.innerHTML = biometricReady
             ? '<span class="text-ashiana-green font-bold">School QR verified.</span><br>Fingerprint verification is required to record your attendance.'
             : '<span class="text-rose-600 font-bold">Fingerprint registration required.</span><br>Close the scanner, sign out, then register your fingerprint on the Staff Login screen. Attendance cannot be marked with PIN on Android.';
-        } else if (pwaPasskey) {
+        } else if (pwaPasskey && pwaPasskeyReady) {
           if (pinLabel) pinLabel.style.display = 'none';
           if (pinEntry) pinEntry.style.display = 'none';
           if (pinSubmit) pinSubmit.style.display = 'none';
@@ -7696,14 +7709,17 @@ async function refreshStudentPortalData(){
           if (pinEntry) pinEntry.style.display = '';
           if (pinSubmit) pinSubmit.style.display = '';
           if (biometricButton) biometricButton.style.display = 'none';
-          if (status) status.innerHTML = '<span class="text-ashiana-green font-bold">School QR verified.</span><br>Enter your personal 4-digit PIN to mark staff attendance.';
+          if (status) status.innerHTML = pwaPasskey
+            ? '<span class="text-ashiana-green font-bold">School QR verified.</span><br>Enter your PIN to mark attendance, or register a device passkey in Staff Profile & Settings for biometric verification.'
+            : '<span class="text-ashiana-green font-bold">School QR verified.</span><br>Enter your personal 4-digit PIN to mark staff attendance.';
+          pendingStaffPwaPasskeyOptions = null;
         }
         if (window.lucide) lucide.createIcons();
         if (androidApp && biometricReady) {
           // Keep the existing native Android biometric flow unchanged.
           setTimeout(() => submitScannedAttendanceBiometric(), 120);
-        } else if (!androidApp && pwaPasskey) {
-          // WebAuthn must begin from a user gesture; keep the button user-initiated.
+        } else if (!androidApp && pwaPasskeyReady) {
+          // WebAuthn options are prefetched; the authenticator starts only on the user's tap.
         } else if (!androidApp && pinInput) {
           pinInput.focus();
         }
@@ -7847,6 +7863,8 @@ async function refreshStudentPortalData(){
       document.getElementById("modal-punch").classList.add("hidden");
     }
 
+    let pendingStaffPwaPasskeyOptions = null;
+
     function isStaffPwaPasskeyAvailable() {
       return !window.AshianaNative?.isAndroid?.()
         && currentAuthUser?.type === 'STAFF'
@@ -7922,7 +7940,11 @@ async function refreshStudentPortalData(){
           }
           attendanceProof = { pin: credentials.pin };
         } else {
-          const { options } = await callStaffPasskeys('authentication-options');
+          // The authentication options are prefetched when the QR is scanned.
+          // Starting WebAuthn directly from this click improves Safari/iOS gesture compatibility.
+          const options = pendingStaffPwaPasskeyOptions;
+          pendingStaffPwaPasskeyOptions = null;
+          if (!options) throw new Error("Passkey options expired or unavailable. Scan the school QR again.");
           const credential = await window.SimpleWebAuthnBrowser.startAuthentication({ optionsJSON: options });
           const verified = await callStaffPasskeys('authentication-verify', { credential });
           if (!verified?.attendance_token) throw new Error("Passkey verification did not return an attendance authorization.");
