@@ -15208,15 +15208,34 @@ window.showStudentSchoolUpiQr=async function(accountId,installmentId){
 <div id="staff-live-location-modal" class="hidden fixed inset-0 z-[240] bg-slate-950/70 backdrop-blur-sm p-3 items-center justify-center" role="dialog" aria-modal="true" aria-labelledby="staff-live-location-title">
   <section class="bg-white w-full max-w-5xl max-h-[92dvh] rounded-2xl shadow-2xl overflow-hidden flex flex-col">
     <header class="p-4 bg-gradient-to-r from-emerald-950 to-emerald-700 text-white flex items-center justify-between gap-3">
-      <div><h2 id="staff-live-location-title" class="font-bold text-lg">Live Staff Location</h2><p class="text-xs text-emerald-100">Work-hours sharing · last-known location only</p></div>
+      <div><h2 id="staff-live-location-title" class="font-bold text-lg">Live Staff Location</h2><p class="text-xs text-emerald-100">Work-hours sharing · latest available location only</p></div>
       <button type="button" onclick="closeStaffLiveLocationAdmin()" class="rounded-xl bg-white/15 px-3 py-2 text-sm font-bold">Close</button>
     </header>
     <div class="p-3 flex flex-wrap gap-2 items-center justify-between border-b bg-slate-50">
-      <p id="staff-live-location-admin-status" class="text-sm text-slate-600">Loading locations…</p>
+      <p id="staff-live-location-admin-status" class="text-sm text-slate-600" aria-live="polite">Loading locations…</p>
       <button type="button" onclick="loadStaffLiveLocationAdmin()" class="rounded-xl bg-emerald-700 text-white px-4 py-2 text-sm font-bold">Refresh</button>
     </div>
-    <div id="staff-live-location-map" class="w-full bg-slate-100" style="height:42dvh;min-height:220px"></div>
-    <div id="staff-live-location-list" class="p-3 overflow-auto space-y-2" style="max-height:30dvh"></div>
+    <div class="border-b bg-white p-3">
+      <div class="mb-2 flex flex-wrap items-center justify-between gap-2">
+        <h3 class="font-bold text-slate-800">Selected staff on Google Maps</h3>
+        <span id="staff-live-location-selected" class="text-xs text-slate-500">Select TRACK beside a staff member</span>
+      </div>
+      <iframe id="staff-live-location-map" title="Selected staff location on Google Maps" class="w-full rounded-xl border bg-slate-100" style="height:36dvh;min-height:220px" loading="lazy" referrerpolicy="no-referrer-when-downgrade" src="https://maps.google.com/maps?q=30.7044541%2C76.7675926&z=13&output=embed"></iframe>
+      <p class="mt-2 text-xs text-slate-500">The map shows only the staff member selected below. Location sharing must be enabled by that staff member.</p>
+    </div>
+    <div class="p-3 overflow-auto" style="max-height:34dvh">
+      <h3 class="font-bold text-slate-800 mb-2">Staff sharing location</h3>
+      <div class="overflow-x-auto">
+        <table class="w-full min-w-[420px] text-left text-sm">
+          <thead class="sticky top-0 bg-slate-100 text-slate-600">
+            <tr><th class="p-2">Staff-ID</th><th class="p-2">NAME</th><th class="p-2">STATUS</th><th class="p-2 text-right">ACTION</th></tr>
+          </thead>
+          <tbody id="staff-live-location-list">
+            <tr><td colspan="4" class="p-3 text-slate-500">Loading staff who share location…</td></tr>
+          </tbody>
+        </table>
+      </div>
+    </div>
     <p class="px-4 pb-3 text-xs text-slate-500">Locations update while staff sharing is enabled and the app is active. Background updates are not guaranteed by PWA/browser or Android battery controls. LIVE means updated within 2 minutes; older points are STALE.</p>
   </section>
 </div>
@@ -15224,10 +15243,11 @@ window.showStudentSchoolUpiQr=async function(accountId,installmentId){
 <script>
 (function(){
   const $ = id => document.getElementById(id);
-  let watchId = null, lastSentAt = 0, adminTimer = null, map = null, mapMarkers = [];
-  let sharing = false, apiBusy = false, leafletLoading = null, firstVisitPromptRunning = false;
+  let watchId = null, lastSentAt = 0, adminTimer = null;
+  let sharing = false, apiBusy = false, firstVisitPromptRunning = false;
+  let adminLocationRows = [];
   const client = () => window.__ashianaMainSupabaseClient || window.supabaseClient || window.supabase;
-  const esc = v => String(v ?? '').replace(/[&<>"']/g, c => ({'&':'&amp;','<':'&gt;','>':'&gt;','"':'&quot;',"'":'&#39;'}[c]));
+  const esc = v => String(v ?? '').replace(/[&<>"']/g, c => ({'&':'&amp;','<':'&lt;','>':'&gt;','"':'&quot;',"'":'&#39;'}[c]));
   async function invoke(action, extra = {}) {
     const c = client();
     if (!c?.functions?.invoke) throw new Error('Secure school session unavailable. Sign in again.');
@@ -15282,15 +15302,32 @@ window.showStudentSchoolUpiQr=async function(accountId,installmentId){
       if(!d.sharing_enabled)stopWatch();
     } catch(e){console.warn('Location status unavailable:',e.message);}
   }
-  async function loadLeaflet(){
-    if(window.L)return;
-    if(leafletLoading)return leafletLoading;
-    leafletLoading=new Promise((resolve,reject)=>{
-      if(!document.getElementById('staff-leaflet-css')){const l=document.createElement('link');l.id='staff-leaflet-css';l.rel='stylesheet';l.href='https://unpkg.com/leaflet@1.9.4/dist/leaflet.css';document.head.appendChild(l);}
-      const script=document.createElement('script');script.src='https://unpkg.com/leaflet@1.9.4/dist/leaflet.js';script.onload=resolve;script.onerror=()=>reject(new Error('Map library could not load. Check internet access.'));document.head.appendChild(script);
-    });
-    return leafletLoading;
+  function hasCoordinates(row) {
+    return row.latitude !== null && row.latitude !== undefined && row.longitude !== null && row.longitude !== undefined &&
+      String(row.latitude).trim() !== '' && String(row.longitude).trim() !== '' &&
+      Number.isFinite(Number(row.latitude)) && Number.isFinite(Number(row.longitude)) &&
+      Number(row.latitude) >= -90 && Number(row.latitude) <= 90 &&
+      Number(row.longitude) >= -180 && Number(row.longitude) <= 180;
   }
+  window.trackStaffLiveLocation = function(index) {
+    const row = adminLocationRows[Number(index)];
+    if(!row || !hasCoordinates(row)) {
+      if(window.showToast)showToast('This staff member has not shared a GPS location yet.','error');
+      return;
+    }
+    const lat=Number(row.latitude), lng=Number(row.longitude);
+    const map=$('staff-live-location-map');
+    if(map) map.src='https://maps.google.com/maps?q='+encodeURIComponent(lat+','+lng)+'&z=17&output=embed';
+    const selected=$('staff-live-location-selected');
+    if(selected) selected.textContent=(row.employee_id||'Staff')+' · '+(row.name||'')+' · '+row.status;
+    const list=$('staff-live-location-list');
+    if(list) list.querySelectorAll('[data-track-index]').forEach(btn=>{
+      const active=Number(btn.getAttribute('data-track-index'))===Number(index);
+      btn.className='rounded-lg px-3 py-2 text-xs font-extrabold '+(active?'bg-emerald-800 text-white':'bg-emerald-50 text-emerald-800 hover:bg-emerald-100');
+      btn.textContent=active?'TRACKING':'TRACK';
+      btn.setAttribute('aria-pressed',active?'true':'false');
+    });
+  };
   window.openStaffLiveLocationAdmin=async function(){
     if(currentAuthUser?.type!=='ADMIN'){if(window.showToast)showToast('Administrator access required.','error');return;}
     const modal=$('staff-live-location-modal');if(!modal)return;
@@ -15306,27 +15343,32 @@ window.showStudentSchoolUpiQr=async function(accountId,installmentId){
     const status=$('staff-live-location-admin-status'),list=$('staff-live-location-list');
     if(!status||!list)return;
     try{
-      const data=await invoke('admin-list'); const rows=data.locations||[];
+      const data=await invoke('admin-list');
+      const rows=Array.isArray(data.locations)?data.locations:[];
+      adminLocationRows=rows;
       status.textContent=rows.length+' staff sharing location · refreshed '+new Date().toLocaleTimeString();
-      await loadLeaflet();
-      if(!map){
-        map=L.map('staff-live-location-map').setView([30.7044541,76.7675926],14);
-        L.tileLayer('https://{s}.tile.openstreetmap.org/{z}/{x}/{y}.png',{maxZoom:19,attribution:'© OpenStreetMap'}).addTo(map);
+      if(!rows.length) {
+        list.innerHTML='<tr><td colspan="4" class="p-4 text-sm text-slate-600">No staff are currently sharing location.</td></tr>';
+        $('staff-live-location-selected').textContent='No staff sharing location';
+        return;
       }
-      mapMarkers.forEach(m=>m.remove());mapMarkers=[];
-      rows.forEach(row=>{
-        if(!Number.isFinite(Number(row.latitude))||!Number.isFinite(Number(row.longitude)))return;
-        const marker=L.marker([Number(row.latitude),Number(row.longitude)]).addTo(map).bindPopup('<b>'+esc(row.name)+'</b><br>'+esc(row.employee_id)+'<br>'+esc(row.status)+' · ±'+Math.round(Number(row.accuracy_m)||0)+' m');
-        mapMarkers.push(marker);
-      });
-      if(mapMarkers.length)map.fitBounds(L.featureGroup(mapMarkers).getBounds().pad(0.15),{maxZoom:16});
-      list.innerHTML=rows.length?rows.map(row=>{
-        const coords=Number.isFinite(Number(row.latitude))&&Number.isFinite(Number(row.longitude));
+      const selectedLabel=$('staff-live-location-selected')?.textContent||'';
+      list.innerHTML=rows.map((row,index)=>{
+        const coords=hasCoordinates(row);
         const when=row.captured_at?new Date(row.captured_at).toLocaleString():'No GPS fix yet';
-        const mapUrl=coords?'https://www.openstreetmap.org/?mlat='+encodeURIComponent(row.latitude)+'&mlon='+encodeURIComponent(row.longitude)+'#map=18/'+encodeURIComponent(row.latitude)+'/'+encodeURIComponent(row.longitude):'#';
-        return '<article class="border rounded-xl p-3 flex flex-wrap items-center justify-between gap-2"><div><div class="font-bold text-slate-800">'+esc(row.name)+' · '+esc(row.employee_id)+'</div><div class="text-xs text-slate-600">'+esc(row.department||row.role||'Staff')+' · '+esc(when)+' · ±'+Math.round(Number(row.accuracy_m)||0)+' m</div></div><div class="flex items-center gap-2"><span class="text-xs font-extrabold '+(row.status==='LIVE'?'text-emerald-700':'text-amber-700')+'">'+esc(row.status)+'</span>'+(coords?'<a class="rounded-lg bg-emerald-50 text-emerald-800 px-3 py-2 text-xs font-bold" target="_blank" rel="noopener noreferrer" href="'+mapUrl+'">Open map</a>':'')+'</div></article>';
-      }).join(''):'<p class="rounded-xl bg-slate-50 p-4 text-sm text-slate-600">No staff are currently sharing location.</p>';
-    }catch(e){status.textContent='Unable to load locations: '+e.message;list.innerHTML='<p class="text-sm text-rose-700">Check administrator access, migration and Edge Function deployment.</p>';}
+        const selected=selectedLabel.startsWith((row.employee_id||'Staff')+' · '+(row.name||'')+' ·');
+        return '<tr class="border-t hover:bg-slate-50"><td class="p-2 font-semibold text-slate-800">'+esc(row.employee_id||'—')+'</td><td class="p-2"><div class="font-semibold text-slate-800">'+esc(row.name||'Unknown')+'</div><div class="text-xs text-slate-500">'+esc(row.department||row.role||'Staff')+' · '+esc(when)+'</div></td><td class="p-2"><span class="text-xs font-extrabold '+(row.status==='LIVE'?'text-emerald-700':'text-amber-700')+'">'+esc(row.status||'UNKNOWN')+'</span><div class="text-xs text-slate-500">±'+Math.round(Number(row.accuracy_m)||0)+' m</div></td><td class="p-2 text-right"><button type="button" data-track-index="'+index+'" aria-label="Track '+esc(row.employee_id||'staff')+'" aria-pressed="'+(selected?'true':'false')+'" '+(coords?'':'disabled')+' onclick="trackStaffLiveLocation('+index+')" class="rounded-lg px-3 py-2 text-xs font-extrabold '+(selected?'bg-emerald-800 text-white':'bg-emerald-50 text-emerald-800 hover:bg-emerald-100 disabled:cursor-not-allowed disabled:opacity-40')+'">'+(selected?'TRACKING':'TRACK')+'</button></td></tr>';
+      }).join('');
+      // Keep the currently tracked employee selected after automatic refresh.
+      const selected = rows.findIndex(row => {
+        const label=$('staff-live-location-selected')?.textContent||'';
+        return label.startsWith((row.employee_id||'Staff')+' · '+(row.name||'')+' ·');
+      });
+      if(selected>=0) window.trackStaffLiveLocation(selected);
+    }catch(e){
+      status.textContent='Unable to load locations: '+e.message;
+      list.innerHTML='<tr><td colspan="4" class="p-3 text-sm text-rose-700">Check administrator access, migration and Edge Function deployment.</td></tr>';
+    }
   };
   document.addEventListener('visibilitychange',()=>{
     if(document.visibilityState==='hidden'){stopWatch();return;}
@@ -15339,8 +15381,6 @@ window.showStudentSchoolUpiQr=async function(accountId,installmentId){
     firstVisitPromptRunning = true;
     sessionStorage.setItem(key,'attempted');
     try {
-      // Re-check the server state on every new app session. A stale local flag must
-      // never prevent recovery when the server row was absent or a previous start failed.
       const status = await invoke('status');
       if(status.sharing_enabled){
         localStorage.setItem(key,'done');
@@ -15376,7 +15416,6 @@ window.showStudentSchoolUpiQr=async function(accountId,installmentId){
   window.addEventListener('beforeunload',stopWatch);
 })();
 </script>
-
 
 </body>
 </html>
