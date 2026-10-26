@@ -5,6 +5,8 @@ on:
     branches: [main]
     paths:
       - 'supabase/functions/fee-management/**'
+      - 'supabase/migrations/20261026090000_harden_class_teacher_student_mutations.sql'
+      - 'supabase/tests/teacher_student_mutation_security.sql'
       - 'supabase/migrations/20261023000*_fees_management_*.sql'
       - 'supabase/migrations/20261023170000_fee_installment_payment_selection.sql'
       - 'supabase/migrations/20261023190000_student_pending_fee_reminders.sql'
@@ -18,6 +20,8 @@ on:
     branches: [main, feat/live-fees-management]
     paths:
       - 'supabase/functions/fee-management/**'
+      - 'supabase/migrations/20261026090000_harden_class_teacher_student_mutations.sql'
+      - 'supabase/tests/teacher_student_mutation_security.sql'
       - 'supabase/migrations/20261023000*_fees_management_*.sql'
       - 'supabase/migrations/20261023170000_fee_installment_payment_selection.sql'
       - 'supabase/migrations/20261023190000_student_pending_fee_reminders.sql'
@@ -55,10 +59,13 @@ jobs:
           paths = sorted(Path("supabase/migrations").glob("20261023000*_fees_management_*.sql"))
           installment_migration = Path("supabase/migrations/20261023170000_fee_installment_payment_selection.sql")
           reminder_migration = Path("supabase/migrations/20261023190000_student_pending_fee_reminders.sql")
+          teacher_mutation_migration = Path("supabase/migrations/20261026090000_harden_class_teacher_student_mutations.sql")
           if installment_migration.exists():
               paths.append(installment_migration)
           if reminder_migration.exists():
               paths.append(reminder_migration)
+          if teacher_mutation_migration.exists():
+              paths.append(teacher_mutation_migration)
           paths = sorted(set(paths))
           if len(paths) < 6:
               raise SystemExit(f"Expected fee foundation plus installment migration, found {len(paths)}")
@@ -85,6 +92,7 @@ jobs:
           test -s supabase/config.toml
           grep -q 'verify_jwt = false' supabase/config.toml
           test -s supabase/tests/fees_management_security.sql
+          test -s supabase/tests/teacher_student_mutation_security.sql
           grep -q "studentDashboardSection('fees')" index.html
           grep -q "submitStudentFeePayment" index.html
           grep -q "data-installment-id" index.html
@@ -153,5 +161,7 @@ jobs:
           done
       - name: Run fee security assertions
         run: psql -v ON_ERROR_STOP=1 -f supabase/tests/fees_management_security.sql
+      - name: Test class-teacher student mutation authorization
+        run: psql -v ON_ERROR_STOP=1 -f supabase/tests/teacher_student_mutation_security.sql
       - name: Run synthetic payment approval and receipt smoke test
         run: psql -v ON_ERROR_STOP=1 -f supabase/tests/fees_management_rpc_smoke.sql
