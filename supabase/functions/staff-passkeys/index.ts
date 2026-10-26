@@ -69,9 +69,17 @@ Deno.serve(async (req: Request) => {
 
     if (action === "status") {
       const { count, error } = await admin.from("staff_webauthn_credentials")
-        .select("id", { count: "exact", head: true }).eq("staff_id", String(staff.id));
+        .select("id", { count: "exact", head: true }).eq("staff_id", String(staff.id)).eq("enabled", true);
       if (error) throw error;
-      return json({ enabled: Number(count || 0) > 0, credential_count: Number(count || 0) });
+      const { count: total, error: totalError } = await admin.from("staff_webauthn_credentials")
+        .select("id", { count: "exact", head: true }).eq("staff_id", String(staff.id));
+      if (totalError) throw totalError;
+      return json({ enabled: Number(count || 0) > 0, credential_count: Number(total || 0) });
+    }
+    if (action === "disable") {
+      const { error } = await admin.from("staff_webauthn_credentials").update({ enabled: false }).eq("staff_id", String(staff.id));
+      if (error) throw error;
+      return json({ success: true, enabled: false });
     }
 
     if (action === "registration-options") {
@@ -168,9 +176,11 @@ Deno.serve(async (req: Request) => {
       return json({ success: true });
     }
 
-    if (action === "authentication-options") {
-      const { data: credentials, error } = await admin.from("staff_webauthn_credentials")
+    if (action === "authentication-options" || action === "enable-options") {
+      let credentialQuery = admin.from("staff_webauthn_credentials")
         .select("credential_id,transports").eq("staff_id", String(staff.id));
+      if (action === "authentication-options") credentialQuery = credentialQuery.eq("enabled", true);
+      const { data: credentials, error } = await credentialQuery;
       if (error) throw error;
       if (!credentials?.length) return json({ error: "PASSKEY_NOT_REGISTERED" }, 404);
       const options = await generateAuthenticationOptions({
@@ -202,11 +212,12 @@ Deno.serve(async (req: Request) => {
       if (typeof challengeValue !== "string" || !challengeValue) return json({ error: "CHALLENGE_EXPIRED" }, 400);
 
       const { data: rows, error: credentialError } = await admin.from("staff_webauthn_credentials")
-        .select("id,credential_id,public_key,counter,transports")
+        .select("id,credential_id,public_key,counter,transports,enabled")
         .eq("staff_id", String(staff.id)).eq("credential_id", assertion.id).limit(1);
       if (credentialError) throw credentialError;
       const stored = rows?.[0];
       if (!stored) return json({ error: "PASSKEY_NOT_REGISTERED" }, 403);
+      if (body?.enable_after_verify !== true && stored.enabled !== true) return json({ error: "BIOMETRIC_DISABLED" }, 403);
 
       const result = await verifyAuthenticationResponse({
         response: assertion,
@@ -228,6 +239,12 @@ Deno.serve(async (req: Request) => {
         counter: result.authenticationInfo.newCounter, last_used_at: new Date().toISOString(),
       }).eq("id", stored.id).eq("staff_id", String(staff.id));
       if (updateError) throw updateError;
+      if (body?.enable_after_verify === true) {
+        const { error: enableError } = await admin.from("staff_webauthn_credentials")
+          .update({ enabled: true }).eq("id", stored.id).eq("staff_id", String(staff.id));
+        if (enableError) throw enableError;
+        return json({ success: true, verified: true, enabled: true });
+      }
       // Mint a random one-time token. Only its hash is stored; verify-attendance
       // atomically consumes it so the same biometric assertion cannot authorize
       // multiple punches. Token is bound to this staff row and expires quickly.
