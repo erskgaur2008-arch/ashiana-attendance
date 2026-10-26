@@ -15215,26 +15215,29 @@ window.showStudentSchoolUpiQr=async function(accountId,installmentId){
       <p id="staff-live-location-admin-status" class="text-sm text-slate-600" aria-live="polite">Loading locations…</p>
       <button type="button" onclick="loadStaffLiveLocationAdmin()" class="rounded-xl bg-emerald-700 text-white px-4 py-2 text-sm font-bold">Refresh</button>
     </div>
-    <div class="border-b bg-white p-3">
-      <div class="mb-2 flex flex-wrap items-center justify-between gap-2">
-        <h3 class="font-bold text-slate-800">Selected staff on Google Maps</h3>
-        <span id="staff-live-location-selected" class="text-xs text-slate-500">Select TRACK beside a staff member</span>
-      </div>
-      <iframe id="staff-live-location-map" title="Selected staff location on Google Maps" class="w-full rounded-xl border bg-slate-100" style="height:36dvh;min-height:220px" loading="lazy" referrerpolicy="no-referrer-when-downgrade" src="https://maps.google.com/maps?q=30.7044541%2C76.7675926&z=13&output=embed"></iframe>
-      <p class="mt-2 text-xs text-slate-500">The map shows only the staff member selected below. Location sharing must be enabled by that staff member.</p>
-    </div>
-    <div class="p-3 overflow-auto" style="max-height:34dvh">
+    <div id="staff-live-location-list-view" class="p-3 overflow-auto flex-1 min-h-0">
       <h3 class="font-bold text-slate-800 mb-2">Staff sharing location</h3>
-      <div class="overflow-x-auto">
-        <table class="w-full min-w-[420px] text-left text-sm">
+      <p class="text-xs text-slate-500 mb-3">Select TRACK to open that staff member's location on Google Maps.</p>
+      <div class="w-full">
+        <table class="w-full table-fixed text-left text-xs sm:text-sm">
+          <colgroup><col style="width:25%"><col style="width:31%"><col style="width:19%"><col style="width:25%"></colgroup>
           <thead class="sticky top-0 bg-slate-100 text-slate-600">
-            <tr><th class="p-2">Staff-ID</th><th class="p-2">NAME</th><th class="p-2">STATUS</th><th class="p-2 text-right">ACTION</th></tr>
+            <tr><th class="p-2 break-words">Staff-ID</th><th class="p-2 break-words">NAME</th><th class="p-2 break-words">STATUS</th><th class="p-2 text-right">ACTION</th></tr>
           </thead>
           <tbody id="staff-live-location-list">
             <tr><td colspan="4" class="p-3 text-slate-500">Loading staff who share location…</td></tr>
           </tbody>
         </table>
       </div>
+    </div>
+    <div id="staff-live-location-map-view" class="hidden p-3 overflow-auto flex-1 min-h-0">
+      <button type="button" onclick="showStaffLiveLocationList()" class="mb-3 rounded-xl border border-emerald-200 bg-emerald-50 px-4 py-2 text-sm font-bold text-emerald-800">← Back to staff list</button>
+      <div class="mb-2 flex flex-col gap-1">
+        <h3 class="font-bold text-slate-800">Tracking staff on Google Maps</h3>
+        <span id="staff-live-location-selected" class="text-sm text-slate-500">Select TRACK beside a staff member</span>
+      </div>
+      <iframe id="staff-live-location-map" title="Selected staff location on Google Maps" class="w-full rounded-xl border bg-slate-100" style="height:48dvh;min-height:260px;max-height:520px" loading="lazy" referrerpolicy="no-referrer-when-downgrade" src="about:blank"></iframe>
+      <p class="mt-2 text-xs text-slate-500">Shows the selected staff member's latest available location. Location sharing must be enabled by that staff member.</p>
     </div>
     <p class="px-4 pb-3 text-xs text-slate-500">Locations update while staff sharing is enabled and the app is active. Background updates are not guaranteed by PWA/browser or Android battery controls. LIVE means updated within 2 minutes; older points are STALE.</p>
   </section>
@@ -15309,6 +15312,13 @@ window.showStudentSchoolUpiQr=async function(accountId,installmentId){
       Number(row.latitude) >= -90 && Number(row.latitude) <= 90 &&
       Number(row.longitude) >= -180 && Number(row.longitude) <= 180;
   }
+  window.showStaffLiveLocationList = function(){
+    const listView=$('staff-live-location-list-view'),mapView=$('staff-live-location-map-view');
+    if(listView)listView.classList.remove('hidden');
+    if(mapView)mapView.classList.add('hidden');
+    const map=$('staff-live-location-map');
+    if(map)map.src='about:blank';
+  };
   window.trackStaffLiveLocation = function(index) {
     const row = adminLocationRows[Number(index)];
     if(!row || !hasCoordinates(row)) {
@@ -15316,6 +15326,9 @@ window.showStudentSchoolUpiQr=async function(accountId,installmentId){
       return;
     }
     const lat=Number(row.latitude), lng=Number(row.longitude);
+    const listView=$('staff-live-location-list-view'),mapView=$('staff-live-location-map-view');
+    if(listView)listView.classList.add('hidden');
+    if(mapView)mapView.classList.remove('hidden');
     const map=$('staff-live-location-map');
     if(map) map.src='https://maps.google.com/maps?q='+encodeURIComponent(lat+','+lng)+'&z=17&output=embed';
     const selected=$('staff-live-location-selected');
@@ -15337,6 +15350,7 @@ window.showStudentSchoolUpiQr=async function(accountId,installmentId){
   };
   window.closeStaffLiveLocationAdmin=function(){
     const modal=$('staff-live-location-modal');if(modal){modal.classList.add('hidden');modal.classList.remove('flex');}
+    window.showStaffLiveLocationList();
     if(adminTimer)clearInterval(adminTimer);adminTimer=null;
   };
   window.loadStaffLiveLocationAdmin=async function(){
@@ -15357,7 +15371,7 @@ window.showStudentSchoolUpiQr=async function(accountId,installmentId){
         const coords=hasCoordinates(row);
         const when=row.captured_at?new Date(row.captured_at).toLocaleString():'No GPS fix yet';
         const selected=selectedLabel.startsWith((row.employee_id||'Staff')+' · '+(row.name||'')+' ·');
-        return '<tr class="border-t hover:bg-slate-50"><td class="p-2 font-semibold text-slate-800">'+esc(row.employee_id||'—')+'</td><td class="p-2"><div class="font-semibold text-slate-800">'+esc(row.name||'Unknown')+'</div><div class="text-xs text-slate-500">'+esc(row.department||row.role||'Staff')+' · '+esc(when)+'</div></td><td class="p-2"><span class="text-xs font-extrabold '+(row.status==='LIVE'?'text-emerald-700':'text-amber-700')+'">'+esc(row.status||'UNKNOWN')+'</span><div class="text-xs text-slate-500">±'+Math.round(Number(row.accuracy_m)||0)+' m</div></td><td class="p-2 text-right"><button type="button" data-track-index="'+index+'" aria-label="Track '+esc(row.employee_id||'staff')+'" aria-pressed="'+(selected?'true':'false')+'" '+(coords?'':'disabled')+' onclick="trackStaffLiveLocation('+index+')" class="rounded-lg px-3 py-2 text-xs font-extrabold '+(selected?'bg-emerald-800 text-white':'bg-emerald-50 text-emerald-800 hover:bg-emerald-100 disabled:cursor-not-allowed disabled:opacity-40')+'">'+(selected?'TRACKING':'TRACK')+'</button></td></tr>';
+        return '<tr class="border-t hover:bg-slate-50 align-middle"><td class="p-2 break-words font-semibold text-slate-800">'+esc(row.employee_id||'—')+'</td><td class="p-2 break-words"><div class="font-semibold text-slate-800">'+esc(row.name||'Unknown')+'</div><div class="text-[10px] leading-tight text-slate-500">'+esc(row.department||row.role||'Staff')+'<br>'+esc(when)+'</div></td><td class="p-2 break-words"><span class="text-[10px] sm:text-xs font-extrabold '+(row.status==='LIVE'?'text-emerald-700':'text-amber-700')+'">'+esc(row.status||'UNKNOWN')+'</span><div class="text-[10px] text-slate-500">±'+Math.round(Number(row.accuracy_m)||0)+' m</div></td><td class="p-2 text-right"><button type="button" data-track-index="'+index+'" aria-label="Track '+esc(row.employee_id||'staff')+'" aria-pressed="'+(selected?'true':'false')+'" '+(coords?'':'disabled')+' onclick="trackStaffLiveLocation('+index+')" class="w-full max-w-[92px] rounded-lg px-2 py-2 text-[10px] sm:text-xs font-extrabold whitespace-nowrap '+(selected?'bg-emerald-800 text-white':'bg-emerald-50 text-emerald-800 hover:bg-emerald-100 disabled:cursor-not-allowed disabled:opacity-40')+'">'+(selected?'TRACKING':'TRACK')+'</button></td></tr>';
       }).join('');
       // Keep the currently tracked employee selected after automatic refresh.
       const selected = rows.findIndex(row => {
