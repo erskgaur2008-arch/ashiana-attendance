@@ -2920,6 +2920,9 @@ id="student-dashboard-panel-body" class="space-y-3 text-xs"></div>
             <button id="staff-drawer-profile" type="button" onclick="selectStaffDrawerProfile()" class="staff-drawer-item">
               <i data-lucide="user"></i><span>Profile</span>
             </button>
+            <button id="staff-drawer-biometric" type="button" onclick="selectStaffDrawerBiometric()" class="staff-drawer-item">
+              <i data-lucide="fingerprint"></i><span id="staff-drawer-biometric-label">Biometric Status</span><span id="staff-drawer-biometric-indicator" class="ml-auto text-[10px] font-bold text-slate-500">Checking…</span>
+            </button>
             <button id="staff-drawer-fees" type="button" onclick="selectStaffDrawerFees()" class="staff-drawer-item hidden">
               <i data-lucide="wallet"></i><span>Fee Confirmations</span>
             </button>
@@ -8965,6 +8968,7 @@ async function loadAdminStudentAttendance(){
         const role=document.getElementById('staff-drawer-role');
         if(role&&currentAuthUser?.staffRecord)role.textContent=currentAuthUser.staffRecord.role||'Faculty';
         if(typeof window.refreshStaffFeesMenu==='function')window.refreshStaffFeesMenu();
+        refreshStaffBiometricMenuStatus();
       }
       if(window.lucide)lucide.createIcons();
     }
@@ -8985,6 +8989,30 @@ async function loadAdminStudentAttendance(){
     function selectStaffDrawerProfile(){
       toggleStaffDrawer(false);
       openStaffProfileModal();
+    }
+    async function refreshStaffBiometricMenuStatus(){
+      const label=document.getElementById("staff-drawer-biometric-label");
+      const indicator=document.getElementById("staff-drawer-biometric-indicator");
+      const item=document.getElementById("staff-drawer-biometric");
+      if(!label||!indicator||!item)return;
+      if(currentAuthUser?.type!=="STAFF"){item.classList.add("hidden");return;}
+      item.classList.remove("hidden");
+      try{
+        const result=await callStaffPasskeys("status");
+        const enabled=!!result?.enabled;
+        label.textContent=enabled?"Enabled Biometric":"Enable Biometric";
+        indicator.textContent=enabled?"ON":"OFF";
+        indicator.className="ml-auto text-[10px] font-extrabold "+(enabled?"text-emerald-700":"text-slate-500");
+        item.setAttribute("aria-label",enabled?"Biometric attendance enabled":"Biometric attendance not enabled");
+      }catch(error){
+        label.textContent="Biometric Status";indicator.textContent="Unavailable";
+        indicator.className="ml-auto text-[10px] font-bold text-amber-700";
+      }
+    }
+    function selectStaffDrawerBiometric(){
+      toggleStaffDrawer(false);
+      openStaffProfileModal();
+      setTimeout(()=>document.getElementById("staff-passkey-settings")?.scrollIntoView({behavior:"smooth",block:"center"}),150);
     }
     function selectStaffDrawerFees(){
       toggleStaffDrawer(false);
