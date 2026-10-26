@@ -23,6 +23,7 @@ begin
     where lower(trim(coalesce(st.email,''))) = v_email
       and st.status = 'ACTIVE'
       and lower(trim(coalesce(st.role,''))) ~* '(^|[^a-z])(teacher|tgt|pgt|prt|pet|special educator|pre-primary teacher)([^a-z]|$)'
+      and lower(trim(coalesce(st.role,''))) !~* 'subject[[:space:]_-]*teacher'
   ) then
     return jsonb_build_object('success',false,'code','NOT_AUTHORIZED','message','An active teaching staff account is required.');
   end if;
@@ -77,6 +78,7 @@ begin
     where lower(trim(coalesce(st.email,''))) = v_email
       and st.status = 'ACTIVE'
       and lower(trim(coalesce(st.role,''))) ~* '(^|[^a-z])(teacher|tgt|pgt|prt|pet|special educator|pre-primary teacher)([^a-z]|$)'
+      and lower(trim(coalesce(st.role,''))) !~* 'subject[[:space:]_-]*teacher'
   ) then
     return jsonb_build_object('success',false,'code','NOT_AUTHORIZED','message','An active teaching staff account is required.');
   end if;
@@ -140,6 +142,7 @@ begin
     where lower(trim(coalesce(st.email,''))) = v_email
       and st.status = 'ACTIVE'
       and lower(trim(coalesce(st.role,''))) ~* '(^|[^a-z])(teacher|tgt|pgt|prt|pet|special educator|pre-primary teacher)([^a-z]|$)'
+      and lower(trim(coalesce(st.role,''))) !~* 'subject[[:space:]_-]*teacher'
   ) then
     return jsonb_build_object('success',false,'code','NOT_AUTHORIZED','message','An active teaching staff account is required.');
   end if;
@@ -210,6 +213,7 @@ begin
     where lower(trim(coalesce(st.email,''))) = v_email
       and st.status = 'ACTIVE'
       and lower(trim(coalesce(st.role,''))) ~* '(^|[^a-z])(teacher|tgt|pgt|prt|pet|special educator|pre-primary teacher)([^a-z]|$)'
+      and lower(trim(coalesce(st.role,''))) !~* 'subject[[:space:]_-]*teacher'
   ) then
     return jsonb_build_object('success',false,'code','NOT_AUTHORIZED','message','An active teaching staff account is required.');
   end if;
