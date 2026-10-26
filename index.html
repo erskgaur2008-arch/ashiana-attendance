@@ -9032,10 +9032,10 @@ async function loadAdminStudentAttendance(){
                 <div>
                   <div class="text-xs font-bold text-slate-800 flex items-center space-x-1.5">
                     <span>${dateFormatted}</span>
-                    <span class="text-[10px] text-slate-400 font-normal">(${item.dayOfWeek})</span>
+                    <span class="text-[10px] text-slate-400 font-normal">(${studentEscape(item.dayOfWeek)})</span>
                     ${item.isToday ? '<span class="text-[8px] bg-emerald-100 text-ashiana-green px-1.5 py-0.2 rounded font-bold uppercase">Today</span>' : ''}
                   </div>
-                  <span class="text-[9px] text-slate-400 font-mono">${item.dateStr}</span>
+                  <span class="text-[9px] text-slate-400 font-mono">${studentEscape(item.dateStr)}</span>
                 </div>
               </div>
               <div class="text-right">
