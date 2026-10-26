@@ -1,0 +1,67 @@
+name: Examination Report Card Validation
+
+on:
+  push:
+    branches:
+      - test/exam-report-card-validation
+      - fix/exam-report-card-pending-validation
+  pull_request:
+    branches: [main, feature/admin-exam-subject-management]
+    paths:
+      - 'index.html'
+      - 'admin-examinations.js'
+      - 'supabase/migrations/*examination*.sql'
+      - '.github/workflows/exam-report-card-validation.yml'
+  workflow_dispatch:
+
+permissions:
+  contents: read
+
+jobs:
+  report-card-validation:
+    runs-on: ubuntu-latest
+    timeout-minutes: 5
+    steps:
+      - uses: actions/checkout@v4
+      - uses: actions/setup-node@v4
+        with:
+          node-version: '22'
+      - name: Validate report-card rendering and data fields
+        run: |
+          set -euo pipefail
+          node <<'NODE'
+          const fs = require('node:fs');
+          const html = fs.readFileSync('index.html', 'utf8');
+          const js = fs.readFileSync('admin-examinations.js', 'utf8');
+          const checks = [
+            ['student report-card renderer', html.includes('function renderStudentReportCardHtml')],
+            ['print report-card renderer', html.includes('function printStudentReportCard')],
+            ['format selector', html.includes('id="rc-format"')],
+            ['format persistence', html.includes('report_card_format:job.report_card_format')],
+            ['Unit Test normalization', html.includes('const unit_test=reportNum')],
+            ['Internal Assessment normalization', html.includes('const internal_assessment=reportNum')],
+            ['Term Exam normalization', html.includes('const term_exam=reportNum')],
+            ['Term 1 section renderer', html.includes('Term 1 Details')],
+            ['Term 2 section renderer', html.includes('Term 2 Details')],
+            ['additional scholastic renderer', html.includes('Additional Scholastic Areas')],
+            ['promotion status renderer', html.includes('Promotion Status')],
+            ['signature sections', ['Class Teacher','Parent / Guardian','Principal'].every(x => html.includes(x))],
+            ['exam format mapping UI', js.includes('admin-exam-map-format')],
+            ['class III-IV format restriction', js.includes('class_iii_iv_result_cum_marksheet')],
+          ];
+          for (const [name, ok] of checks) console.log((ok ? 'PASS ' : 'FAIL ') + name);
+          if (checks.some(([,ok]) => !ok)) process.exit(1);
+          console.log('All examination/report-card static validation checks passed.');
+          NODE
+      - name: Check JavaScript syntax in extracted report-card helpers
+        run: |
+          node <<'NODE'
+          const fs = require('node:fs');
+          const html = fs.readFileSync('index.html', 'utf8');
+          const helperStart = html.indexOf('function reportCardAdditionalSections');
+          const helperEnd = html.indexOf('function renderStudentReportCardHtml', helperStart);
+          if (helperStart < 0 || helperEnd < 0) throw new Error('Report-card helper boundaries not found');
+          const helper = html.slice(helperStart, helperEnd);
+          new Function('studentEscape', helper + '; return reportCardAdditionalSections;');
+          console.log('Report-card helper syntax passed.');
+          NODE
