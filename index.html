@@ -9047,11 +9047,11 @@ async function loadAdminStudentAttendance(){
             <div class="grid grid-cols-3 gap-1.5 text-center text-xs py-1">
               <div class="bg-slate-50 p-1.5 rounded-xl border border-slate-100">
                 <span class="text-[8px] uppercase font-bold text-slate-400 block">First IN</span>
-                <span class="font-mono font-bold ${item.firstIn ? 'text-ashiana-green' : 'text-slate-400'}">${item.firstIn || '--:--'}</span>
+                <span class="font-mono font-bold ${item.firstIn ? 'text-ashiana-green' : 'text-slate-400'}">${studentEscape(item.firstIn || '--:--')}</span>
               </div>
               <div class="bg-slate-50 p-1.5 rounded-xl border border-slate-100">
                 <span class="text-[8px] uppercase font-bold text-slate-400 block">Last OUT</span>
-                <span class="font-mono font-bold ${item.lastOut ? 'text-ashiana-green' : 'text-slate-400'}">${item.lastOut || '--:--'}</span>
+                <span class="font-mono font-bold ${item.lastOut ? 'text-ashiana-green' : 'text-slate-400'}">${studentEscape(item.lastOut || '--:--')}</span>
               </div>
               <div class="bg-slate-50 p-1.5 rounded-xl border border-slate-100">
                 <span class="text-[8px] uppercase font-bold text-slate-400 block">Total Work</span>
@@ -9067,7 +9067,7 @@ async function loadAdminStudentAttendance(){
                   <span>${item.punches.length} punch logs:</span>
                   ${item.punches.map(p => `
                     <span class="px-1.5 py-0.5 rounded ${p.type === 'IN' ? 'bg-emerald-50 text-emerald-800 border border-emerald-200 font-bold' : 'bg-slate-100 text-slate-700'}">
-                      ${p.type} ${p.timestamp}
+                      ${studentEscape(p.type)} ${studentEscape(p.timestamp)}
                     </span>
                   `).join(' ')}
                 </div>
@@ -9081,7 +9081,7 @@ async function loadAdminStudentAttendance(){
             ` : item.status === 'ON LEAVE' ? `
               <div class="mt-1 text-[10px] text-purple-700 font-medium px-1 flex items-center space-x-1">
                 <i data-lucide="calendar-off" class="w-3 h-3"></i>
-                <span>Leave: ${item.leaveType || 'Approved Absence'}</span>
+                <span>Leave: ${studentEscape(item.leaveType || 'Approved Absence')}</span>
               </div>
             ` : ''}
           </div>
