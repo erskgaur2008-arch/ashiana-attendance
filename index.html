@@ -6760,9 +6760,12 @@ function printStudentReportCard(index){
     +(t.pct==null?'':'<div class="sum"><div>Percentage: <b>'+e(reportFmt(t.pct))+'%</b></div><div>Overall Grade: <b>'+e(grade)+'</b></div></div>')
     +(card.remarks?'<p style="font-size:13px"><b>Remarks:</b> '+e(card.remarks)+'</p>':'')
     +'<div class="sig"><div>Class Teacher</div><div>Parent / Guardian</div><div>Principal</div></div></body></html>';
-  const w=window.open('','_blank');
-  if(!w)return showToast('Please allow pop-ups to print the report card.','error');
-  w.document.open();w.document.write(doc);w.document.close();w.focus();setTimeout(()=>{try{w.print();}catch(_){}},400);
+  let w=null;try{w=window.open('','_blank');}catch(_){}
+  if(w){w.document.open();w.document.write(doc);w.document.close();w.focus();setTimeout(()=>{try{w.print();}catch(_){}},400);return;}
+  // Pop-ups are blocked (common in the Android app and mobile browsers): print from a hidden frame instead.
+  const f=document.createElement('iframe');f.style.cssText='position:fixed;right:0;bottom:0;width:0;height:0;border:0;';f.setAttribute('aria-hidden','true');document.body.appendChild(f);
+  const d=f.contentWindow.document;d.open();d.write(doc);d.close();
+  setTimeout(()=>{try{f.contentWindow.focus();f.contentWindow.print();}catch(_){showToast('Printing is not available on this device.','error');}setTimeout(()=>f.remove(),4000);},400);
 }
 async function loadTeacherLeaveRequests(){
   const host=document.getElementById('teacher-leave-requests');
