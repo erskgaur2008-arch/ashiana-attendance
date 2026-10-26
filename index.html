@@ -3448,6 +3448,7 @@ id="admin-portal-view" class="hidden flex-col w-full space-y-4 admin-dashboard-s
         <button type="button" id="admin-nav-student-attendance" onclick="openAdminStudentAttendanceRecordsModal()" title="View Students Attendance"><i data-lucide="clipboard-check"></i><span>View Students Attendance</span></button>
         <button type="button" onclick="openAdminStudentAttendanceReport()" title="Students Attendance Report"><i data-lucide="clipboard-list"></i><span>Attendance Report</span></button><button type="button" onclick="openAdminAttendanceAnalytics()" title="Advanced Attendance Analytics"><i data-lucide="chart-no-axes-combined"></i><span>Analytics 2.0</span></button>
         <button type="button" onclick="window.switchAdminTab('directory')"><i data-lucide="users"></i><span>Faculty</span></button>
+        <button type="button" id="admin-live-location-launch" onclick="openStaffLiveLocationAdmin()" title="View live staff locations"><i data-lucide="map-pin"></i><span>Live Staff Location</span></button>
         <button type="button" onclick="openStaffAdminCommunication()" title="Staff ↔ Administration Communication"><i data-lucide="messages-square"></i><span>Communication</span></button>
         <button type="button" onclick="window.switchAdminTab('live')"><i data-lucide="radio"></i><span>Live Attendance</span></button>
         <button type="button" onclick="window.switchAdminTab('qr')"><i data-lucide="qr-code"></i><span>Daily QR</span></button>
@@ -15219,7 +15220,7 @@ window.showStudentSchoolUpiQr=async function(accountId,installmentId){
     <p class="px-4 pb-3 text-xs text-slate-500">Locations update while staff sharing is enabled and the app is active. Background updates are not guaranteed by PWA/browser or Android battery controls. LIVE means updated within 2 minutes; older points are STALE.</p>
   </section>
 </div>
-<button id="admin-live-location-launch" type="button" onclick="openStaffLiveLocationAdmin()" class="hidden fixed z-[160] right-3 bottom-24 rounded-full bg-emerald-800 text-white shadow-xl px-4 py-3 font-bold text-sm">📍 Live Staff Location</button>
+
 <script>
 (function(){
   const $ = id => document.getElementById(id);
