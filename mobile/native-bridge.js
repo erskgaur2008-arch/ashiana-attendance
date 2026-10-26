@@ -6,6 +6,7 @@ import { LocalNotifications } from "@capacitor/local-notifications";
 import { NativeBiometric, AccessControl } from "@capgo/capacitor-native-biometric";
 import { SecureStorage } from "@aparajita/capacitor-secure-storage";
 import { Geolocation } from "@capacitor/geolocation";
+import { App } from "@capacitor/app";
 
 function isNativeAndroid() {
   return Boolean(window.Capacitor?.isNativePlatform?.() && window.Capacitor?.getPlatform?.() === "android");
@@ -286,6 +287,14 @@ async function disableStaffBiometric() {
   }
   window.localStorage.removeItem(STAFF_BIOMETRIC_POINTER_KEY);
   return true;
+}
+
+// Handle Android hardware Back inside the web app instead of letting Capacitor
+// immediately terminate the activity. The page decides which view/modal to close.
+if (isNativeAndroid()) {
+  App.addListener("backButton", () => {
+    window.dispatchEvent(new CustomEvent("ashiana:native-back"));
+  }).catch(error => console.warn("Android Back handler registration failed:", error));
 }
 
 window.AshianaNative = Object.freeze({

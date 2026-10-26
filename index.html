@@ -12984,31 +12984,49 @@ window.addEventListener('load',async function(){
     }
 
     // Android/browser Back handling for the single-page app.
-    // Back closes the currently open modal first. At the app root we keep a
-    // history sentinel so the system Back button does not accidentally close
-    // the PWA/browser tab; the user can use Sign Out to leave the session.
+    // The native Capacitor event is essential: Android otherwise exits the
+    // activity before browser popstate can handle an in-app screen.
     function setupAppBackButtonHandling() {
       try {
         history.replaceState({ ashianaApp: true, root: true }, "", location.href);
         history.pushState({ ashianaApp: true, root: true }, "", location.href);
 
-        window.addEventListener("popstate", function () {
+        const handleAppBack = () => {
           if (window.__ashianaActivePrintFrame) {
             try { window.__ashianaActivePrintFrame.remove(); } catch (_) {}
             window.__ashianaActivePrintFrame = null;
+            return;
           }
           const visibleModal = Array.from(document.querySelectorAll('[id$="-modal"]'))
             .find(el => !el.classList.contains("hidden"));
-
-          if (visibleModal?.id === "staff-id-card-preview-modal") {
-            closeStaffIdCardPreview();
-          } else if (visibleModal) {
-            visibleModal.classList.add("hidden");
-            visibleModal.classList.remove("flex");
+          if (visibleModal) {
+            if (visibleModal.id === "staff-id-card-preview-modal") closeStaffIdCardPreview();
+            else {
+              visibleModal.classList.add("hidden");
+              visibleModal.classList.remove("flex");
+            }
+            document.body.classList.toggle("overflow-hidden", Array.from(document.querySelectorAll('[id$="-modal"]')).some(el => !el.classList.contains("hidden")));
+            return;
           }
-          document.body.classList.toggle("overflow-hidden", Array.from(document.querySelectorAll('[id$="-modal"]')).some(el => !el.classList.contains("hidden")));
+          const studentPanel = document.getElementById("student-dashboard-panel");
+          if (studentPanel && !studentPanel.classList.contains("hidden")) {
+            closeStudentDashboardSection();
+            return;
+          }
+          const dashboardViews = ["student-portal-view", "staff-portal-view", "admin-portal-view"];
+          const visibleDashboard = dashboardViews.map(id => document.getElementById(id)).find(el => el && !el.classList.contains("hidden"));
+          if (visibleDashboard) {
+            // At a portal root, keep the app alive; never log out or clear its session.
+            try { history.pushState({ ashianaApp: true, root: true }, "", location.href); } catch (_) {}
+            return;
+          }
+          try { history.pushState({ ashianaApp: true, root: true }, "", location.href); } catch (_) {}
+        };
 
-          history.pushState({ ashianaApp: true, root: true }, "", location.href);
+        window.addEventListener("ashiana:native-back", handleAppBack);
+        window.addEventListener("popstate", () => {
+          handleAppBack();
+          try { history.pushState({ ashianaApp: true, root: true }, "", location.href); } catch (_) {}
         });
       } catch (e) {
         console.warn("Back button handler could not be initialized:", e);
