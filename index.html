@@ -15319,7 +15319,7 @@ window.showStudentSchoolUpiQr=async function(accountId,installmentId){
     const map=$('staff-live-location-map');
     if(map)map.src='about:blank';
   };
-  window.trackStaffLiveLocation = function(index) {
+  window.trackStaffLiveLocation = function(index, showMap = true) {
     const row = adminLocationRows[Number(index)];
     if(!row || !hasCoordinates(row)) {
       if(window.showToast)showToast('This staff member has not shared a GPS location yet.','error');
@@ -15327,8 +15327,7 @@ window.showStudentSchoolUpiQr=async function(accountId,installmentId){
     }
     const lat=Number(row.latitude), lng=Number(row.longitude);
     const listView=$('staff-live-location-list-view'),mapView=$('staff-live-location-map-view');
-    if(listView)listView.classList.add('hidden');
-    if(mapView)mapView.classList.remove('hidden');
+    if(showMap){if(listView)listView.classList.add('hidden');if(mapView)mapView.classList.remove('hidden');}
     const map=$('staff-live-location-map');
     if(map) map.src='https://maps.google.com/maps?q='+encodeURIComponent(lat+','+lng)+'&z=17&output=embed';
     const selected=$('staff-live-location-selected');
@@ -15378,7 +15377,7 @@ window.showStudentSchoolUpiQr=async function(accountId,installmentId){
         const label=$('staff-live-location-selected')?.textContent||'';
         return label.startsWith((row.employee_id||'Staff')+' · '+(row.name||'')+' ·');
       });
-      if(selected>=0) window.trackStaffLiveLocation(selected);
+      if(selected>=0) window.trackStaffLiveLocation(selected, false);
     }catch(e){
       status.textContent='Unable to load locations: '+e.message;
       list.innerHTML='<tr><td colspan="4" class="p-3 text-sm text-rose-700">Check administrator access, migration and Edge Function deployment.</td></tr>';
