@@ -4032,6 +4032,7 @@ id="admin-portal-view" class="hidden flex-col w-full space-y-4 admin-dashboard-s
             <textarea id="admin-student-portal-report-remarks" rows="3" maxlength="2000" class="w-full mt-3 text-xs p-2.5 border rounded-xl" placeholder="Remarks"></textarea>
             <label class="inline-flex items-center gap-2 mt-3 text-xs font-bold"><input id="admin-student-portal-report-published" type="checkbox" checked> Publish to student</label>
             <div class="flex justify-end mt-4"><button type="button" onclick="publishAdminStudentPortalReport()" class="px-4 py-2.5 rounded-xl bg-ashiana-green text-white text-xs font-extrabold">Save Report Card</button></div>
+            <div id="admin-report-csv-host"></div>
           </div>
           <div class="bg-white rounded-2xl border p-4 sm:p-5"><div class="flex justify-between"><h4 class="text-sm font-extrabold">Report Cards</h4><button type="button" onclick="loadAdminStudentPortalReports()" class="text-[10px] font-extrabold text-emerald-700">Refresh</button></div><div id="admin-student-portal-report-list" class="mt-3 space-y-2"></div></div>
         </div>
@@ -6766,6 +6767,122 @@ function printStudentReportCard(index){
   const f=document.createElement('iframe');f.style.cssText='position:fixed;right:0;bottom:0;width:0;height:0;border:0;';f.setAttribute('aria-hidden','true');document.body.appendChild(f);
   const d=f.contentWindow.document;d.open();d.write(doc);d.close();
   setTimeout(()=>{try{f.contentWindow.focus();f.contentWindow.print();}catch(_){showToast('Printing is not available on this device.','error');}setTimeout(()=>f.remove(),4000);},400);
+}
+/* ===== Report cards: CSV import for Admin (uses the same grading/parsing helpers as the teacher import) ===== */
+function adminReportClass(){return (typeof adminStudentPortalRequiresSingleTarget==='function'&&adminStudentPortalRequiresSingleTarget())?adminStudentPortalTarget():null;}
+function renderAdminReportCsvEditor(){
+  const host=document.getElementById('admin-report-csv-host');
+  if(!host||host.dataset.ready==='1')return;
+  host.dataset.ready='1';
+  host.innerHTML='<div class="mt-4 p-3 sm:p-4 rounded-2xl border border-emerald-200 bg-emerald-50/60 space-y-3 text-xs">'
+    +'<div><h4 class="text-sm font-extrabold text-emerald-900">Import a whole class from CSV</h4><p class="text-[11px] text-slate-600 mt-1">Select one class/section above and fill Academic year and Term in the form. Then: 1) download the sheet, 2) fill in the marks, 3) upload and import. Write <b>AB</b> for absent. A different maximum can go in the heading, e.g. <b>Science (80)</b>.</p></div>'
+    +'<div class="grid grid-cols-1 sm:grid-cols-3 gap-2"><label class="sm:col-span-2 text-[10px] font-bold text-slate-600">Subjects (comma separated)<textarea id="arc-subjects" rows="2" class="mt-1 w-full p-2 border rounded-xl text-xs font-normal">English, Hindi, Mathematics, Science, Social Science</textarea></label><label class="text-[10px] font-bold text-slate-600">Maximum marks per subject<input id="arc-max" type="number" min="1" value="100" class="mt-1 w-full p-2 border rounded-xl text-xs font-normal"></label></div>'
+    +'<div class="flex flex-wrap gap-2"><button type="button" onclick="downloadAdminReportCsvTemplate()" class="px-3 py-2 rounded-xl bg-white border border-emerald-300 text-emerald-800 font-extrabold">Step 1 — Download sheet</button><label class="px-3 py-2 rounded-xl bg-emerald-700 text-white font-extrabold cursor-pointer">Step 2 — Upload filled sheet<input id="arc-file" type="file" accept=".csv,text/csv" class="hidden" onchange="handleAdminReportCsvFile(this)"></label></div>'
+    +'<div id="arc-preview"></div>'
+    +'<button type="button" id="arc-import-btn" onclick="importAdminReportCsv()" disabled class="w-full p-2.5 bg-emerald-800 text-white rounded-xl font-extrabold disabled:opacity-40">Step 3 — Import report cards</button>'
+    +'<div id="arc-result"></div></div>';
+  window.__arcImport=null;
+}
+async function downloadAdminReportCsvTemplate(){
+  const a=adminReportClass();if(!a)return showToast('Select exactly one class and section first.','error');
+  const subjects=[...new Set(String(document.getElementById('arc-subjects')?.value||'').split(/[,\n]/).map(x=>x.trim()).filter(Boolean))];
+  if(!subjects.length)return showToast('Enter at least one subject.','error');
+  const max=reportNum(document.getElementById('arc-max')?.value)||100;
+  try{
+    const roster=await fetchReportRoster(a);
+    if(!roster.length)return showToast('No active students found in this class.','error');
+    const head=['Admission No','Student Name',...subjects.map(s=>reportCsvSafeText(s+' ('+max+')')),'Remarks'];
+    const lines=[head,...roster.map(s=>[reportCsvSafeText(s.enroll_no||''),reportCsvSafeText(s.student_name),...subjects.map(()=>''),''])].map(r=>r.map(reportCsvCell).join(',')).join('\r\n');
+    const blob=new Blob(['﻿'+lines],{type:'text/csv;charset=utf-8'}),url=URL.createObjectURL(blob),el=document.createElement('a');
+    el.href=url;el.download='report-card-marks-'+a.class_name+'-'+a.section+'.csv';document.body.appendChild(el);el.click();el.remove();URL.revokeObjectURL(url);
+    showToast('Sheet downloaded. Fill in the marks and upload it.','success');
+  }catch(e){showToast('Could not prepare the sheet: '+(e.message||e),'error');}
+}
+async function handleAdminReportCsvFile(input){
+  const file=input?.files?.[0],preview=document.getElementById('arc-preview'),btn=document.getElementById('arc-import-btn'),result=document.getElementById('arc-result');
+  window.__arcImport=null;if(btn)btn.disabled=true;if(result)result.innerHTML='';
+  if(!file||!preview)return;
+  const a=adminReportClass();if(!a){preview.innerHTML='<div class="text-rose-700 font-bold">Select exactly one class and section first.</div>';input.value='';return;}
+  const term=String(document.getElementById('admin-student-portal-report-term')?.value||'').trim(),year=String(document.getElementById('admin-student-portal-report-year')?.value||'').trim();
+  if(!term||!year){preview.innerHTML='<div class="text-rose-700 font-bold">Fill Academic year and Term in the form above, then upload the file again.</div>';input.value='';return;}
+  if(file.size>2*1024*1024){preview.innerHTML='<div class="text-rose-700 font-bold">File is too large (max 2 MB).</div>';input.value='';return;}
+  preview.innerHTML='<div class="text-slate-500">Reading file…</div>';
+  try{
+    const defMax=reportNum(document.getElementById('arc-max')?.value)||100;
+    const table=parseReportCsv(await file.text());
+    if(table.length<2)throw Error('The file has no student rows.');
+    const header=table[0].map(h=>String(h||'').trim()),lower=header.map(h=>h.toLowerCase());
+    const idCol=lower.findIndex(h=>['admission no','admission number','admission no.','enroll no','enrollment no','enrol no'].includes(h));
+    if(idCol<0)throw Error('Column "Admission No" not found. Please use the downloaded sheet.');
+    const nameCol=lower.indexOf('student name'),remCol=lower.indexOf('remarks'),cols=[];
+    header.forEach((h,i)=>{
+      if(i===idCol||i===nameCol||i===remCol||!h)return;
+      const m=h.match(/^(.*?)\s*\((\d+(?:\.\d+)?)\)\s*$/),subject=(m?m[1]:h).trim(),max=m?Number(m[2]):defMax;
+      if(subject&&max>0)cols.push({i,subject,max});
+    });
+    if(!cols.length)throw Error('No subject columns found.');
+    const roster=await fetchReportRoster(a),byKey=new Map(roster.map(s=>[reportStudentKey(s.enroll_no),s])),seen=new Set(),rows=[];
+    table.slice(1).forEach((r,n)=>{
+      const rawId=String(r[idCol]??'').trim(),st=byKey.get(reportStudentKey(rawId)),errs=[];
+      if(!rawId)errs.push('Admission No is empty');else if(!st)errs.push('Admission No "'+rawId+'" is not in this class');else if(seen.has(st.id))errs.push('Student appears twice in the file');
+      if(st)seen.add(st.id);
+      const subjects=[];
+      cols.forEach(c=>{
+        const raw=String(r[c.i]??'').trim();
+        if(raw===''){errs.push(c.subject+': mark is blank; enter a mark or AB for absent');return;}
+        if(/^(ab|absent|a)$/i.test(raw)){subjects.push({subject:c.subject,max:c.max,marks:null,grade:'AB',absent:true});return;}
+        const v=Number(raw);
+        if(!Number.isFinite(v)||v<0)errs.push(c.subject+': "'+raw+'" is not a valid mark');
+        else if(v>c.max)errs.push(c.subject+': '+raw+' is more than the maximum '+c.max);
+        else subjects.push({subject:c.subject,max:c.max,marks:v,grade:reportGradeFor(v*100/c.max),absent:false});
+      });
+      if(!errs.length&&!subjects.length)errs.push('No marks entered');
+      rows.push({line:n+2,student:st||null,rawId,name:st?.student_name||String(r[nameCol]??''),subjects,remarks:remCol>=0?String(r[remCol]??'').trim().slice(0,500):'',errors:errs});
+    });
+    window.__arcImport={term,year,rows,classKey:a.class_name+'|'+a.section};
+    const ok=rows.filter(r=>!r.errors.length),bad=rows.length-ok.length;
+    const head='<div class="p-2 rounded-xl '+(bad?'bg-amber-50 border border-amber-200':'bg-emerald-50 border border-emerald-200')+' font-bold">'+ok.length+' student(s) ready to import'+(bad?' • '+bad+' row(s) with problems (they will be skipped)':'')+'</div>';
+    const probs=rows.filter(r=>r.errors.length).slice(0,15).map(r=>'<li>Row '+studentEscape(r.line)+(r.name?' ('+studentEscape(r.name)+')':'')+': '+r.errors.map(studentEscape).join('; ')+'</li>').join('');
+    const body=ok.slice(0,40).map(r=>{const t=computeReportTotals(r.subjects);return '<tr><td class="px-2 py-1 border">'+studentEscape(r.rawId)+'</td><td class="px-2 py-1 border font-bold">'+studentEscape(r.name)+'</td><td class="px-2 py-1 border text-center">'+r.subjects.length+'</td><td class="px-2 py-1 border text-center font-bold">'+(t.pct==null?'—':studentEscape(reportFmt(t.pct))+'% '+studentEscape(t.grade))+'</td></tr>';}).join('');
+    preview.innerHTML=head+(probs?'<ul class="mt-2 p-2 rounded-xl bg-rose-50 border border-rose-200 text-rose-800 list-disc pl-6">'+probs+'</ul>':'')
+      +(body?'<div class="mt-2 overflow-x-auto max-h-72 border rounded-xl"><table class="w-full text-[10px] border-collapse"><thead class="bg-slate-100 sticky top-0"><tr><th class="px-2 py-1 border">Adm. No</th><th class="px-2 py-1 border">Student</th><th class="px-2 py-1 border">Subjects</th><th class="px-2 py-1 border">Result</th></tr></thead><tbody>'+body+'</tbody></table></div>'+(ok.length>40?'<div class="text-[10px] text-slate-400 mt-1">…and '+(ok.length-40)+' more</div>':''):'');
+    if(btn)btn.disabled=ok.length===0;
+  }catch(e){preview.innerHTML='<div class="p-2 rounded-xl bg-rose-50 border border-rose-200 text-rose-800 font-bold">'+studentEscape(e.message||e)+'</div>';}
+}
+async function importAdminReportCsv(){
+  const job=window.__arcImport,btn=document.getElementById('arc-import-btn'),result=document.getElementById('arc-result'),a=adminReportClass();
+  if(currentAuthUser?.type!=='ADMIN'||!supabaseClient)return showToast('Administrator cloud session is required.','error');
+  if(!job||!a||job.classKey!==a.class_name+'|'+a.section)return showToast('Please upload the file again.','error');
+  const ok=job.rows.filter(r=>!r.errors.length);if(!ok.length)return;
+  const publish=!!document.getElementById('admin-student-portal-report-published')?.checked,email=String(currentAuthUser.email||'ADMIN').trim().toLowerCase();
+  if(!confirm('Import report cards for '+ok.length+' student(s) — '+job.term+' '+job.year+(publish?' and publish them to students?':' as drafts (not visible to students)?')))return;
+  if(btn)btn.disabled=true;if(result)result.innerHTML='<div class="text-slate-500">Importing…</div>';
+  try{
+    const ids=ok.map(r=>r.student.id),existing=new Map();
+    for(let i=0;i<ids.length;i+=100){
+      const {data,error}=await supabaseClient.from('student_report_cards').select('student_id,subjects,remarks').eq('school_code',APS_STUDENT_SCHOOL).eq('academic_year',job.year).eq('term',job.term).in('student_id',ids.slice(i,i+100));
+      if(error)throw error;(data||[]).forEach(x=>existing.set(x.student_id,x));
+    }
+    const payloads=ok.map(r=>{
+      const old=existing.get(r.student.id),merged=new Map();
+      normalizeReportSubjects(old?.subjects).forEach(s=>merged.set(s.subject.toLowerCase(),s));
+      r.subjects.forEach(s=>merged.set(s.subject.toLowerCase(),s));
+      const list=[...merged.values()].map(s=>({subject:s.subject,max:s.max,marks:s.marks,grade:s.grade,...(s.absent?{absent:true}:{})}));
+      const t=computeReportTotals(normalizeReportSubjects(list));
+      return {student:r.student,row:{school_code:APS_STUDENT_SCHOOL,student_id:r.student.id,academic_year:job.year,term:job.term,subjects:list,overall_grade:t.grade,remarks:r.remarks||old?.remarks||null,published:publish,published_by:email}};
+    });
+    let saved=0;const failed=[],conflict='school_code,student_id,academic_year,term';
+    for(let i=0;i<payloads.length;i+=50){
+      const chunk=payloads.slice(i,i+50),{error}=await supabaseClient.from('student_report_cards').upsert(chunk.map(p=>p.row),{onConflict:conflict});
+      if(!error){saved+=chunk.length;continue;}
+      for(const p of chunk){const {error:e2}=await supabaseClient.from('student_report_cards').upsert(p.row,{onConflict:conflict});if(e2)failed.push(p.student.student_name+': '+(e2.message||e2));else saved++;}
+    }
+    const skipped=job.rows.length-ok.length;
+    if(result)result.innerHTML='<div class="p-2 rounded-xl '+(failed.length?'bg-amber-50 border border-amber-200':'bg-emerald-50 border border-emerald-200')+' font-bold">'+saved+' report card(s) saved'+(publish?' and published':' as drafts')+(skipped?' • '+skipped+' skipped (problems in file)':'')+(failed.length?' • '+failed.length+' could not be saved':'')+'</div>'+(failed.length?'<ul class="mt-2 p-2 rounded-xl bg-rose-50 border border-rose-200 text-rose-800 list-disc pl-6">'+failed.slice(0,10).map(f=>'<li>'+studentEscape(f)+'</li>').join('')+'</ul>':'');
+    showToast(saved+' report card(s) saved.',failed.length?'info':'success');
+    window.__arcImport=null;
+    if(typeof loadAdminStudentPortalReports==='function')loadAdminStudentPortalReports();
+  }catch(e){if(result)result.innerHTML='<div class="p-2 rounded-xl bg-rose-50 border border-rose-200 text-rose-800 font-bold">'+studentEscape(e.message||e)+'</div>';if(btn)btn.disabled=false;}
 }
 async function loadTeacherLeaveRequests(){
   const host=document.getElementById('teacher-leave-requests');
@@ -13633,6 +13750,7 @@ window.addEventListener('load',async function(){
       sel.innerHTML='<option value="">Select student</option>'+(data||[]).map(x=>'<option value="'+studentEscape(x.id)+'">'+studentEscape(x.student_name)+' ('+studentEscape(x.enroll_no)+')</option>').join('');
     }
     async function loadAdminStudentPortalReports(){
+      if(typeof renderAdminReportCsvEditor==='function')renderAdminReportCsvEditor();
       const host=document.getElementById('admin-student-portal-report-list'),status=document.getElementById('admin-student-portal-report-status');if(!host||!supabaseClient||currentAuthUser?.type!=='ADMIN')return;
       const target=adminStudentPortalTarget();if(!adminStudentPortalRequiresSingleTarget()){host.innerHTML='<div class="text-xs text-amber-700 bg-amber-50 rounded-xl p-3">Select exactly one class/section to view report cards.</div>';return;}
       const {data:students}=await supabaseClient.from('student_roster').select('id,student_name,enroll_no').eq('school_code',APS_STUDENT_SCHOOL).eq('status','ACTIVE').eq('class_name',target.class_name).eq('section',target.section);
