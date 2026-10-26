@@ -184,7 +184,8 @@ Deno.serve(async (req: Request) => {
       // atomically consumes it so the same biometric assertion cannot authorize
       // multiple punches. Token is bound to this staff row and expires quickly.
       const rawToken = randomChallenge() + randomChallenge();
-      const tokenHash = b64url(new Uint8Array(await crypto.subtle.digest("SHA-256", new TextEncoder().encode(rawToken))));
+      const tokenDigest = new Uint8Array(await crypto.subtle.digest("SHA-256", new TextEncoder().encode(rawToken)));
+      const tokenHash = Array.from(tokenDigest, byte => byte.toString(16).padStart(2, "0")).join("");
       const { error: tokenError } = await admin.from("staff_webauthn_verified_sessions").insert({
         token_hash: tokenHash,
         staff_id: String(staff.id),
