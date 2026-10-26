@@ -70,6 +70,13 @@ drop policy if exists exam_class_subjects_teacher_select on public.exam_class_su
 create policy exam_class_subjects_teacher_select on public.exam_class_subjects for select to authenticated using(school_code='ashiana' and (exists(select 1 from public.student_class_assignments a where a.school_code=exam_class_subjects.school_code and a.class_name=exam_class_subjects.class_name and a.section=exam_class_subjects.section and lower(a.teacher_email)=lower(coalesce(auth.jwt()->>'email','')) and a.active) or lower(coalesce(exam_class_subjects.teacher_email,''))=lower(coalesce(auth.jwt()->>'email','')) or lower(coalesce(exam_class_subjects.class_teacher_email,''))=lower(coalesce(auth.jwt()->>'email','')) or exists(select 1 from public.student_subject_assignments sa where sa.school_code=exam_class_subjects.school_code and sa.class_name=exam_class_subjects.class_name and sa.section=exam_class_subjects.section and lower(sa.teacher_email)=lower(coalesce(auth.jwt()->>'email','')) and sa.active)));
 
 -- Persist the report-card layout choice without modifying existing report-card data.
-alter table public.student_report_cards
-  add column if not exists report_card_format text not null default 'standard'
-  check (report_card_format in ('standard','result_cum_marksheet'));
+-- Some isolated test projects do not include the legacy report-card table; production
+-- has it, so add the format column there without blocking schema-only test deployments.
+do $
+begin
+  if to_regclass('public.student_report_cards') is not null then
+    alter table public.student_report_cards
+      add column if not exists report_card_format text not null default 'standard'
+      check (report_card_format in ('standard','result_cum_marksheet'));
+  end if;
+end $;
