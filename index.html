@@ -3435,6 +3435,8 @@ id="admin-portal-view" class="hidden flex-col w-full space-y-4 admin-dashboard-s
       </div>
 
       <div class="admin-quick-actions">
+        <button type="button" id="admin-nav-examinations" onclick="openAdminExaminationConsole()" title="Manage academic sessions, exams, subjects, class assignments and report-card formats"><i data-lucide="graduation-cap"></i><span>Exams & Subjects</span></button>
+
         <button type="button" onclick="window.switchAdminTab('students')"><i data-lucide="graduation-cap"></i><span>Students</span></button>
         <button type="button" onclick="window.switchAdminTab('student-portal')" title="Student Portal Management"><i data-lucide="panels-top-left"></i><span>Student Portal</span></button>
         <button type="button" id="admin-nav-student-attendance" onclick="openAdminStudentAttendanceRecordsModal()" title="View Students Attendance"><i data-lucide="clipboard-check"></i><span>View Students Attendance</span></button>
@@ -4027,8 +4029,15 @@ id="admin-portal-view" class="hidden flex-col w-full space-y-4 admin-dashboard-s
               <input id="admin-student-portal-report-year" type="text" maxlength="20" value="2026-27" class="text-xs p-2.5 border rounded-xl" placeholder="Academic year">
               <input id="admin-student-portal-report-term" type="text" maxlength="50" class="text-xs p-2.5 border rounded-xl" placeholder="Term">
               <input id="admin-student-portal-report-grade" type="text" maxlength="30" class="text-xs p-2.5 border rounded-xl" placeholder="Overall grade">
+              <select id="admin-student-portal-report-format" class="text-xs p-2.5 border rounded-xl" aria-label="Report card format"><option value="standard">Standard Report Card</option><option value="result_cum_marksheet">Classes III–IV — Result Cum Marksheet</option></select>
             </div>
-            <textarea id="admin-student-portal-report-subjects" rows="5" class="w-full mt-3 text-xs p-2.5 border rounded-xl font-mono" placeholder='Subjects JSON, e.g. [{"subject":"English","marks":85,"grade":"A"}]'></textarea>
+            <p class="text-[10px] text-slate-500 mt-2">Result Cum Marksheet is available only for Classes III–IV. Other classes keep the standard report-card format.</p>
+            <div class="mt-4 rounded-xl border border-emerald-100 bg-emerald-50/50 p-3">
+              <div class="flex flex-wrap items-center justify-between gap-2"><div><h5 class="text-xs font-extrabold text-slate-800">Subject Marks Entry</h5><p class="text-[10px] text-slate-500">Enter each subject below. Choose Result Cum Marksheet for Classes III–IV to enter Unit Test, Internal Assessment and Term Exam marks.</p></div><button type="button" onclick="addAdminReportSubjectRow()" class="rounded-lg bg-emerald-800 px-3 py-2 text-xs font-bold text-white">+ Add Subject</button></div>
+              <div id="admin-report-subject-rows" class="mt-3 space-y-3"></div>
+              <div class="mt-3 flex flex-wrap gap-2"><button type="button" onclick="syncAdminReportSubjectRows()" class="rounded-lg border border-emerald-700 px-3 py-2 text-xs font-bold text-emerald-800">Use entered marks</button><button type="button" onclick="clearAdminReportSubjectRows()" class="rounded-lg border border-slate-300 px-3 py-2 text-xs font-bold text-slate-600">Clear rows</button></div>
+            </div>
+            <details class="mt-3"><summary class="cursor-pointer text-[10px] font-bold text-slate-500">Advanced: edit subject data as JSON</summary><textarea id="admin-student-portal-report-subjects" rows="5" class="w-full mt-2 text-xs p-2.5 border rounded-xl font-mono" placeholder='Standard: [{"subject":"English","max":100,"marks":85,"grade":"A"}]. Result Cum Marksheet: [{"subject":"English","unit_test":18,"internal_assessment":9,"term_exam":65,"max":100,"marks":92,"grade":"A"}]'></textarea></details>
             <textarea id="admin-student-portal-report-remarks" rows="3" maxlength="2000" class="w-full mt-3 text-xs p-2.5 border rounded-xl" placeholder="Remarks"></textarea>
             <label class="inline-flex items-center gap-2 mt-3 text-xs font-bold"><input id="admin-student-portal-report-published" type="checkbox" checked> Publish to student</label>
             <div class="flex justify-end mt-4"><button type="button" onclick="publishAdminStudentPortalReport()" class="px-4 py-2.5 rounded-xl bg-ashiana-green text-white text-xs font-extrabold">Save Report Card</button></div>
@@ -6706,7 +6715,7 @@ async function importReportCsv(){
   try{
     const ids=ok.map(r=>r.student.id),existing=new Map();
     for(let i=0;i<ids.length;i+=100){
-      const {data,error}=await supabaseClient.from('student_report_cards').select('student_id,subjects,remarks').eq('school_code',APS_STUDENT_SCHOOL).eq('academic_year',job.year).eq('term',job.term).in('student_id',ids.slice(i,i+100));
+      const {data,error}=await supabaseClient.from('student_report_cards').select('student_id,subjects,remarks,report_card_format').eq('school_code',APS_STUDENT_SCHOOL).eq('academic_year',job.year).eq('term',job.term).in('student_id',ids.slice(i,i+100));
       if(error)throw error;(data||[]).forEach(x=>existing.set(x.student_id,x));
     }
     const payloads=ok.map(r=>{
@@ -6736,14 +6745,15 @@ async function importReportCsv(){
 function renderStudentReportCardHtml(card,st,index){
   const list=normalizeReportSubjects(card.subjects),t=computeReportTotals(list);
   const grade=card.overall_grade||t.grade||'';
-  const rows=list.map(s=>'<tr class="border-b"><td class="py-2 pr-2">'+studentEscape(s.subject)+'</td><td class="py-2 text-center text-slate-500">'+studentEscape(s.max==null?'—':reportFmt(s.max))+'</td><td class="py-2 text-center font-bold">'+(s.absent?'AB':studentEscape(reportFmt(s.marks)))+'</td><td class="py-2 text-center font-bold text-emerald-800">'+studentEscape(s.grade||'')+'</td></tr>').join('');
+  const resultCum=card.report_card_format==='result_cum_marksheet'&&/^(III|IV|3|4|Class III|Class IV|Class 3|Class 4)$/i.test(String(st.class_name||'').trim());
+  const rows=list.map(s=>'<tr class="border-b"><td class="py-2 pr-2">'+studentEscape(s.subject)+'</td>'+(resultCum?'<td class="py-2 text-center">'+studentEscape(reportFmt(s.unit_test??s.unitTest??s.unit_test_marks??s.ut_marks))+'</td><td class="py-2 text-center">'+studentEscape(reportFmt(s.internal_assessment??s.internalAssessment??s.internal_assessment_marks??s.ia_marks))+'</td><td class="py-2 text-center">'+studentEscape(reportFmt(s.term_exam??s.termExam??s.term_exam_marks??s.exam_marks??s.marks))+'</td>':'<td class="py-2 text-center text-slate-500">'+studentEscape(s.max==null?'—':reportFmt(s.max))+'</td><td class="py-2 text-center font-bold">'+(s.absent?'AB':studentEscape(reportFmt(s.marks)))+'</td>')+'<td class="py-2 text-center font-bold text-emerald-800">'+studentEscape(s.grade||'')+'</td></tr>').join('');
   const fallback=Array.isArray(card.subjects)?'':'<p class="text-slate-500">'+studentEscape(JSON.stringify(card.subjects))+'</p>';
   return '<article class="bg-white border border-slate-200 rounded-2xl shadow-sm overflow-hidden">'
-    +'<div class="px-4 py-3 bg-emerald-900 text-white flex items-center justify-between gap-2"><div><div class="text-[10px] uppercase tracking-wide text-emerald-200">Report Card</div><div class="font-extrabold text-sm">'+studentEscape(card.term)+' • '+studentEscape(card.academic_year)+'</div></div>'
+    +'<div class="px-4 py-3 bg-emerald-900 text-white flex items-center justify-between gap-2"><div><div class="text-[10px] uppercase tracking-wide text-emerald-200">'+(card.report_card_format==='result_cum_marksheet'&&/^(III|IV|3|4|Class III|Class IV|Class 3|Class 4)$/i.test(String(st.class_name||'').trim())?'Result Cum Marksheet':'Report Card')+'</div><div class="font-extrabold text-sm">'+studentEscape(card.term)+' • '+studentEscape(card.academic_year)+'</div></div>'
     +'<button type="button" data-rc-print="'+studentEscape(index)+'" class="px-3 py-1.5 rounded-lg bg-white/15 text-xs font-bold">Print / Save PDF</button></div>'
     +'<div class="p-4 space-y-3">'
     +'<div class="grid grid-cols-2 gap-x-3 gap-y-1 text-xs"><div><span class="text-slate-500">Name</span><br><b>'+studentEscape(st.student_name||'')+'</b></div><div><span class="text-slate-500">Class</span><br><b>'+studentEscape(st.class_name||'')+' - '+studentEscape(st.section||'')+'</b></div><div><span class="text-slate-500">Admission No</span><br><b>'+studentEscape(st.enroll_no||'')+'</b></div><div><span class="text-slate-500">Roll No</span><br><b>'+studentEscape(st.roll_no||'—')+'</b></div></div>'
-    +(list.length?'<table class="w-full text-xs"><thead><tr class="text-slate-500 border-b"><th class="text-left py-1">Subject</th><th class="py-1">Max</th><th class="py-1">Marks</th><th class="py-1">Grade</th></tr></thead><tbody>'+rows+'</tbody>'+(t.total==null?'':'<tfoot><tr class="font-extrabold bg-slate-50"><td class="py-2 pl-1">Total</td><td class="py-2 text-center">'+studentEscape(reportFmt(t.max))+'</td><td class="py-2 text-center">'+studentEscape(reportFmt(t.total))+'</td><td></td></tr></tfoot>')+'</table>':fallback)
+    +(list.length?'<table class="w-full text-xs"><thead><tr class="text-slate-500 border-b"><th class="text-left py-1">Subject</th>'+(resultCum?'<th class="py-1">Unit Test</th><th class="py-1">Internal Assessment</th><th class="py-1">Term Exam</th>':'<th class="py-1">Max</th><th class="py-1">Marks</th>')+'<th class="py-1">Grade</th></tr></thead><tbody>'+rows+'</tbody>'+(t.total==null?'':'<tfoot><tr class="font-extrabold bg-slate-50"><td class="py-2 pl-1">Total</td>'+(resultCum?'<td class="py-2 text-center">'+studentEscape(reportFmt(list.reduce((a,s)=>a+Number(s.unit_test??s.unitTest??s.unit_test_marks??s.ut_marks??0),0)))+'</td><td class="py-2 text-center">'+studentEscape(reportFmt(list.reduce((a,s)=>a+Number(s.internal_assessment??s.internalAssessment??s.internal_assessment_marks??s.ia_marks??0),0)))+'</td><td class="py-2 text-center">'+studentEscape(reportFmt(list.reduce((a,s)=>a+Number(s.term_exam??s.termExam??s.term_exam_marks??s.exam_marks??s.marks??0),0)))+'</td>':'<td class="py-2 text-center">'+studentEscape(reportFmt(t.max))+'</td><td class="py-2 text-center">'+studentEscape(reportFmt(t.total))+'</td>')+'<td></td></tr></tfoot>')+'</table>':fallback)
     +(t.pct==null?'':'<div class="flex items-center justify-between rounded-xl bg-emerald-50 border border-emerald-200 px-3 py-2"><div class="text-xs"><span class="text-slate-500">Percentage</span><br><b class="text-base">'+studentEscape(reportFmt(t.pct))+'%</b></div><div class="text-right text-xs"><span class="text-slate-500">Overall Grade</span><br><b class="text-xl text-emerald-800">'+studentEscape(grade)+'</b></div></div>')
     +(card.remarks?'<div class="text-xs"><span class="text-slate-500">Remarks</span><p class="mt-1 whitespace-pre-wrap break-words">'+studentEscape(card.remarks)+'</p></div>':'')
     +'</div></article>';
@@ -6752,12 +6762,13 @@ function printStudentReportCard(index){
   const card=(window.__studentReportCards||[])[index],st=currentAuthUser?.studentRecord||{};
   if(!card)return;
   const list=normalizeReportSubjects(card.subjects),t=computeReportTotals(list),grade=card.overall_grade||t.grade||'';
+  const resultCum=card.report_card_format==='result_cum_marksheet'&&/^(III|IV|3|4|Class III|Class IV|Class 3|Class 4)$/i.test(String(st.class_name||'').trim());
   const e=studentEscape,logo=new URL('logo%202.png',location.href).href;
-  const rows=list.map(s=>'<tr><td>'+e(s.subject)+'</td><td class="c">'+e(s.max==null?'—':reportFmt(s.max))+'</td><td class="c">'+(s.absent?'AB':e(reportFmt(s.marks)))+'</td><td class="c">'+e(s.grade||'')+'</td></tr>').join('');
+  const rows=list.map(s=>'<tr><td>'+e(s.subject)+'</td>'+(resultCum?'<td class="c">'+e(reportFmt(s.unit_test??s.unitTest??s.unit_test_marks??s.ut_marks))+'</td><td class="c">'+e(reportFmt(s.internal_assessment??s.internalAssessment??s.internal_assessment_marks??s.ia_marks))+'</td><td class="c">'+e(reportFmt(s.term_exam??s.termExam??s.term_exam_marks??s.exam_marks??s.marks))+'</td>':'<td class="c">'+e(s.max==null?'—':reportFmt(s.max))+'</td><td class="c">'+(s.absent?'AB':e(reportFmt(s.marks)))+'</td>')+'<td class="c">'+e(s.grade||'')+'</td></tr>').join('');
   const doc='<!doctype html><html><head><meta charset="utf-8"><title>Report Card - '+e(st.student_name||'')+'</title><style>body{font-family:Arial,sans-serif;margin:24px;color:#111}h1{margin:0;font-size:20px}.hd{display:flex;align-items:center;gap:14px;border-bottom:3px solid #064e3b;padding-bottom:10px}.hd img{height:64px}.sub{color:#555;font-size:12px}.info{display:grid;grid-template-columns:1fr 1fr;gap:6px 24px;margin:14px 0;font-size:13px}table{width:100%;border-collapse:collapse;font-size:13px}th,td{border:1px solid #999;padding:6px 8px;text-align:left}th{background:#ecfdf5}.c{text-align:center}.tot td{font-weight:bold;background:#f5f5f5}.sum{display:flex;justify-content:space-between;margin:14px 0;padding:10px 14px;border:2px solid #064e3b;border-radius:8px;font-size:14px}.sig{display:flex;justify-content:space-between;margin-top:70px;font-size:12px}.sig div{border-top:1px solid #333;padding-top:4px;width:30%;text-align:center}@media print{body{margin:10mm}}</style></head><body>'
-    +'<div class="hd"><img src="'+e(logo)+'" alt=""><div><h1>Ashiana Public School</h1><div class="sub">Report Card — '+e(card.term)+' • '+e(card.academic_year)+'</div></div></div>'
+    +'<div class="hd"><img src="'+e(logo)+'" alt=""><div><h1>Ashiana Public School</h1><div class="sub">'+(card.report_card_format==='result_cum_marksheet'&&/^(III|IV|3|4|Class III|Class IV|Class 3|Class 4)$/i.test(String(st.class_name||'').trim())?'Result Cum Marksheet':'Report Card')+' — '+e(card.term)+' • '+e(card.academic_year)+'</div></div></div>'
     +'<div class="info"><div>Name: <b>'+e(st.student_name||'')+'</b></div><div>Class: <b>'+e(st.class_name||'')+' - '+e(st.section||'')+'</b></div><div>Admission No: <b>'+e(st.enroll_no||'')+'</b></div><div>Roll No: <b>'+e(st.roll_no||'—')+'</b></div><div>Father: <b>'+e(st.father_name||'—')+'</b></div><div>Mother: <b>'+e(st.mother_name||'—')+'</b></div></div>'
-    +'<table><thead><tr><th>Subject</th><th class="c">Max Marks</th><th class="c">Marks Obtained</th><th class="c">Grade</th></tr></thead><tbody>'+rows+'</tbody>'+(t.total==null?'':'<tfoot><tr class="tot"><td>Total</td><td class="c">'+e(reportFmt(t.max))+'</td><td class="c">'+e(reportFmt(t.total))+'</td><td></td></tr></tfoot>')+'</table>'
+    +'<table><thead><tr><th>Subject</th>'+(resultCum?'<th class="c">Unit Test</th><th class="c">Internal Assessment</th><th class="c">Term Exam</th>':'<th class="c">Max Marks</th><th class="c">Marks Obtained</th>')+'<th class="c">Grade</th></tr></thead><tbody>'+rows+'</tbody>'+(t.total==null?'':'<tfoot><tr class="tot"><td>Total</td>'+(resultCum?'<td class="c">'+e(reportFmt(list.reduce((a,s)=>a+Number(s.unit_test??s.unitTest??s.unit_test_marks??s.ut_marks??0),0)))+'</td><td class="c">'+e(reportFmt(list.reduce((a,s)=>a+Number(s.internal_assessment??s.internalAssessment??s.internal_assessment_marks??s.ia_marks??0),0)))+'</td><td class="c">'+e(reportFmt(list.reduce((a,s)=>a+Number(s.term_exam??s.termExam??s.term_exam_marks??s.exam_marks??s.marks??0),0)))+'</td>':'<td class="c">'+e(reportFmt(t.max))+'</td><td class="c">'+e(reportFmt(t.total))+'</td>')+'<td></td></tr></tfoot>')+'</table>'
     +(t.pct==null?'':'<div class="sum"><div>Percentage: <b>'+e(reportFmt(t.pct))+'%</b></div><div>Overall Grade: <b>'+e(grade)+'</b></div></div>')
     +(card.remarks?'<p style="font-size:13px"><b>Remarks:</b> '+e(card.remarks)+'</p>':'')
     +'<div class="sig"><div>Class Teacher</div><div>Parent / Guardian</div><div>Principal</div></div></body></html>';
@@ -13755,18 +13766,56 @@ window.addEventListener('load',async function(){
       const target=adminStudentPortalTarget();if(!adminStudentPortalRequiresSingleTarget()){host.innerHTML='<div class="text-xs text-amber-700 bg-amber-50 rounded-xl p-3">Select exactly one class/section to view report cards.</div>';return;}
       const {data:students}=await supabaseClient.from('student_roster').select('id,student_name,enroll_no').eq('school_code',APS_STUDENT_SCHOOL).eq('status','ACTIVE').eq('class_name',target.class_name).eq('section',target.section);
       const ids=(students||[]).map(x=>x.id);if(!ids.length){host.innerHTML='<div class="text-xs text-slate-400 p-4 text-center">No active students.</div>';return;}
-      const {data,error}=await supabaseClient.from('student_report_cards').select('id,student_id,academic_year,term,overall_grade,remarks,published,updated_at').eq('school_code',APS_STUDENT_SCHOOL).in('student_id',ids).order('updated_at',{ascending:false});
+      const {data,error}=await supabaseClient.from('student_report_cards').select('id,student_id,academic_year,term,overall_grade,remarks,published,updated_at,report_card_format').eq('school_code',APS_STUDENT_SCHOOL).in('student_id',ids).order('updated_at',{ascending:false});
       if(error){host.innerHTML='<div class="text-xs text-rose-600">'+studentEscape(error.message)+'</div>';return;}
       const map=new Map((students||[]).map(x=>[x.id,x]));if(status)status.textContent=(data||[]).length+' report(s)';
       host.innerHTML=(data||[]).map(x=>{const st=map.get(x.student_id)||{};return '<div class="border rounded-xl p-3"><div class="flex justify-between gap-2"><div><b class="text-xs">'+studentEscape(st.student_name||x.student_id)+'</b><div class="text-[10px] text-slate-600">'+studentEscape(x.academic_year)+' • '+studentEscape(x.term)+' • '+studentEscape(x.overall_grade||'')+'</div><div class="text-[10px] mt-1 '+(x.published?'text-emerald-700':'text-amber-700')+'">'+(x.published?'Published':'Draft')+'</div></div><button type="button" onclick="deleteAdminStudentPortalReport('+studentEscape(JSON.stringify(String(x.id)))+')" class="text-[10px] font-extrabold text-rose-600">Delete</button></div><p class="text-[10px] text-slate-500 mt-1">'+studentEscape(x.remarks||'')+'</p></div>';}).join('')||'<div class="text-xs text-slate-400 p-4 text-center">No report cards for this class.</div>';
     }
+
+    function addAdminReportSubjectRow(data={}){
+      const host=document.getElementById('admin-report-subject-rows');if(!host)return;
+      const row=document.createElement('div');row.className='admin-report-subject-row rounded-lg border border-slate-200 bg-white p-3';
+      const v=(key,fallback='')=>String(data[key]??fallback).replace(/[&<>"']/g,c=>({'&':'&amp;','<':'&lt;','>':'&gt;','"':'&quot;',"'":'&#39;'}[c]));
+      row.innerHTML='<div class="grid grid-cols-2 sm:grid-cols-3 gap-2">'+
+        '<label class="col-span-2 sm:col-span-1 text-[10px] font-bold text-slate-600">Subject<input data-field="subject" maxlength="80" value="'+v('subject')+'" placeholder="e.g. English" class="mt-1 w-full rounded-lg border p-2 text-xs"></label>'+
+        '<label class="text-[10px] font-bold text-slate-600">Max marks<input data-field="max" type="number" min="0" max="1000" step=".5" value="'+v('max','100')+'" class="mt-1 w-full rounded-lg border p-2 text-xs"></label>'+
+        '<label class="text-[10px] font-bold text-slate-600">Marks obtained<input data-field="marks" type="number" min="0" max="1000" step=".5" value="'+v('marks')+'" placeholder="Marks" class="mt-1 w-full rounded-lg border p-2 text-xs"></label>'+
+        '<label class="text-[10px] font-bold text-slate-600">Unit Test (III–IV)<input data-field="unit_test" type="number" min="0" max="1000" step=".5" value="'+v('unit_test')+'" placeholder="Optional" class="mt-1 w-full rounded-lg border p-2 text-xs"></label>'+
+        '<label class="text-[10px] font-bold text-slate-600">Internal Assessment<input data-field="internal_assessment" type="number" min="0" max="1000" step=".5" value="'+v('internal_assessment')+'" placeholder="Optional" class="mt-1 w-full rounded-lg border p-2 text-xs"></label>'+
+        '<label class="text-[10px] font-bold text-slate-600">Term Exam<input data-field="term_exam" type="number" min="0" max="1000" step=".5" value="'+v('term_exam')+'" placeholder="Optional" class="mt-1 w-full rounded-lg border p-2 text-xs"></label>'+
+        '<label class="text-[10px] font-bold text-slate-600">Grade<input data-field="grade" maxlength="10" value="'+v('grade')+'" placeholder="e.g. A" class="mt-1 w-full rounded-lg border p-2 text-xs"></label>'+
+        '<div class="flex items-end"><button type="button" class="remove-admin-report-subject rounded-lg border border-rose-200 px-3 py-2 text-xs font-bold text-rose-700">Remove subject</button></div></div>';
+      row.querySelector('.remove-admin-report-subject').addEventListener('click',()=>row.remove());host.appendChild(row);
+    }
+    function syncAdminReportSubjectRows(){
+      const rows=[...document.querySelectorAll('#admin-report-subject-rows .admin-report-subject-row')];
+      if(!rows.length){showToast('Add at least one subject row, or use Advanced JSON entry.','error');return false;}
+      const result=[];
+      for(const row of rows){
+        const get=k=>row.querySelector('[data-field="'+k+'"]')?.value.trim()??'';
+        const subject=get('subject');if(!subject){showToast('Enter a subject name for every row.','error');return false;}
+        const number=k=>get(k)===''?null:Number(get(k));
+        const max=number('max'),marks=number('marks'),ut=number('unit_test'),ia=number('internal_assessment'),term=number('term_exam');
+        if(max===null||!Number.isFinite(max)||max<=0){showToast('Maximum marks must be greater than zero for '+subject+'.','error');return false;}
+        for(const [label,n] of [['Marks obtained',marks],['Unit Test',ut],['Internal Assessment',ia],['Term Exam',term]])if(n!==null&&(!Number.isFinite(n)||n<0||n>max)){showToast(label+' for '+subject+' must be between 0 and '+max+'.','error');return false;}
+        const item={subject,max,marks,grade:get('grade')||''};
+        if(ut!==null)item.unit_test=ut;if(ia!==null)item.internal_assessment=ia;if(term!==null)item.term_exam=term;
+        result.push(item);
+      }
+      document.getElementById('admin-student-portal-report-subjects').value=JSON.stringify(result);
+      return true;
+    }
+    function clearAdminReportSubjectRows(){const host=document.getElementById('admin-report-subject-rows');if(host)host.innerHTML='';}
+    window.addAdminReportSubjectRow=addAdminReportSubjectRow;window.syncAdminReportSubjectRows=syncAdminReportSubjectRows;window.clearAdminReportSubjectRows=clearAdminReportSubjectRows;
+
     async function publishAdminStudentPortalReport(){
+      const visibleRows=document.querySelectorAll('#admin-report-subject-rows .admin-report-subject-row').length;if(visibleRows&&!syncAdminReportSubjectRows())return;
       if(currentAuthUser?.type!=='ADMIN'||!supabaseClient)return showToast('Administrator cloud session is required.','error');
       const studentId=document.getElementById('admin-student-portal-report-student')?.value,year=document.getElementById('admin-student-portal-report-year')?.value.trim(),term=document.getElementById('admin-student-portal-report-term')?.value.trim(),grade=document.getElementById('admin-student-portal-report-grade')?.value.trim()||null,remarks=document.getElementById('admin-student-portal-report-remarks')?.value.trim()||null;
       if(!studentId||!year||!term)return showToast('Select student and complete academic year and term.','error');
       let subjects=[];try{subjects=JSON.parse(document.getElementById('admin-student-portal-report-subjects')?.value||'[]');if(!Array.isArray(subjects))throw Error();}catch(e){return showToast('Subjects must be a valid JSON array.','error');}
       if(!adminStudentPortalRequiresSingleTarget())return showToast('Select exactly one class/section before saving a report card.','error');
-      const target=adminStudentPortalTarget();try{const {error}=await supabaseClient.from('student_report_cards').upsert({school_code:APS_STUDENT_SCHOOL,student_id:studentId,academic_year:year,term,subjects,overall_grade:grade,remarks,published:!!document.getElementById('admin-student-portal-report-published')?.checked,published_by:String(currentAuthUser.email||'ADMIN').trim().toLowerCase()},{onConflict:'school_code,student_id,academic_year,term'});if(error)throw error;showToast('Report card saved and reflected in Student Portal.','success');await loadAdminStudentPortalReports();}catch(e){showToast('Report card save failed: '+(e.message||e),'error');}
+      const target=adminStudentPortalTarget();const formatSel=document.getElementById('admin-student-portal-report-format');const selectedFormat=formatSel?.value==='result_cum_marksheet'?'result_cum_marksheet':'standard';if(selectedFormat==='result_cum_marksheet'&&!/^(III|IV|3|4|Class III|Class IV|Class 3|Class 4)$/i.test(String(target.class_name||'').trim()))return showToast('Result Cum Marksheet is reserved for Classes III–IV.','error');try{const {error}=await supabaseClient.from('student_report_cards').upsert({school_code:APS_STUDENT_SCHOOL,student_id:studentId,academic_year:year,term,subjects,overall_grade:grade,remarks,report_card_format:selectedFormat,published:!!document.getElementById('admin-student-portal-report-published')?.checked,published_by:String(currentAuthUser.email||'ADMIN').trim().toLowerCase()},{onConflict:'school_code,student_id,academic_year,term'});if(error)throw error;showToast('Report card saved and reflected in Student Portal.','success');await loadAdminStudentPortalReports();}catch(e){showToast('Report card save failed: '+(e.message||e),'error');}
     }
     async function deleteAdminStudentPortalReport(id){
       if(currentAuthUser?.type!=='ADMIN'||!supabaseClient||!id)return;if(!confirm('Delete this report card?'))return;
@@ -15349,5 +15398,6 @@ window.showStudentSchoolUpiQr=async function(accountId,installmentId){
 })();
 </script>
 
+<script src="./admin-examinations.js"></script>
 </body>
 </html>
