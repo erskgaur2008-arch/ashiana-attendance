@@ -1,0 +1,38 @@
+name: Service Worker Security Validation
+
+on:
+  pull_request:
+    branches: [main]
+    paths:
+      - 'sw.js'
+      - '.github/workflows/service-worker-security-validation.yml'
+  workflow_dispatch:
+
+permissions:
+  contents: read
+
+jobs:
+  service-worker-cache-policy:
+    name: Verify service-worker cache boundaries
+    runs-on: ubuntu-latest
+    timeout-minutes: 5
+    steps:
+      - uses: actions/checkout@v4
+      - name: Validate cache policy and JavaScript syntax
+        run: |
+          set -euo pipefail
+          node --check sw.js
+          node <<'NODE'
+          const fs = require('node:fs');
+          const sw = fs.readFileSync('sw.js', 'utf8');
+          const fail = (message) => { console.error(message); process.exit(1); };
+          if (!/CACHE_NAME\s*=\s*["']ashiana-attendance-v45["']/.test(sw)) fail('Expected service-worker cache version v45');
+          if (!sw.includes('const isSupabaseHost')) fail('Supabase host bypass is missing');
+          if (!sw.includes('const isSensitiveApiPath')) fail('Sensitive API path bypass is missing');
+          if (!sw.includes('if (event.request.method !== "GET") return;')) fail('Non-GET requests must bypass caching');
+          if (!sw.includes('if (isStaticAsset(event.request))')) fail('Static asset cache boundary is missing');
+          if (!sw.includes('Unknown same-origin GET requests are network-only')) fail('Network-only policy for unknown GET routes is missing');
+          if (/event\.respondWith\(\s*fetch\(event\.request\)/.test(sw)) fail('Found broad cache-all response handler');
+          if (/\.catch\(\(\) => caches\.match\(event\.request\)/.test(sw)) fail('Unknown requests must not fall back to arbitrary cached responses');
+          console.log('Service worker syntax and cache-boundary checks passed.');
+          NODE

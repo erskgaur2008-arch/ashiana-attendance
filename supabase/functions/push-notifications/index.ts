@@ -107,7 +107,7 @@ function normalizeServiceAccount() {
   }
 }
 
-async function sendWebPush(row: StudentPushRow, title: string, message: string, category: string, service: ReturnType<typeof createClient>) {
+async function sendWebPush(row: StudentPushRow, title: string, message: string, category: string, service: { from: (table: string) => any }) {
   if (!row.subscription) return false;
   try {
     await webpush.sendNotification(row.subscription as WebPushSubscription, JSON.stringify({
@@ -252,8 +252,15 @@ Deno.serve(async (req: Request) => {
   if (action === "admin-push-diagnostics") {
     const callerEmail = String(userData.user.email || "").trim().toLowerCase();
     if (!callerEmail) return json({ error: "ADMIN_REQUIRED" }, 403);
+    // This endpoint returns school-wide student registration and activity data.
+    // Require the explicitly authorized active super-admin role, not just any
+    // active row in admin_users. Match the normalized email exactly.
     const { data: admins, error: adminError } = await service.from("admin_users")
-      .select("email").eq("active", true).ilike("email", escapeLike(callerEmail)).limit(1);
+      .select("email")
+      .eq("active", true)
+      .eq("role", "super_admin")
+      .ilike("email", escapeLike(callerEmail))
+      .limit(1);
     if (adminError || !admins?.length) return json({ error: "ADMIN_REQUIRED" }, 403);
 
     const { data: registrations, error: registrationError } = await service

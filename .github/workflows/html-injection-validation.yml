@@ -1,0 +1,65 @@
+name: HTML Injection Boundary Validation
+
+on:
+  pull_request:
+    branches: [main]
+    paths:
+      - 'index.html'
+      - '.github/workflows/html-injection-validation.yml'
+  workflow_dispatch:
+
+permissions:
+  contents: read
+
+jobs:
+  html-injection-boundaries:
+    name: Check dynamic HTML safety guards
+    runs-on: ubuntu-latest
+    timeout-minutes: 5
+    steps:
+      - uses: actions/checkout@v4
+      - name: Verify calendar delete handler escapes data in HTML attribute context
+        run: |
+          set -euo pipefail
+          node <<'NODE'
+          const fs = require('node:fs');
+          const html = fs.readFileSync('index.html', 'utf8');
+          const fail = (message) => { console.error(message); process.exit(1); };
+          if (!html.includes('data-delete-calendar-topic="true" data-topic-ids="')) fail('Calendar delete control must use data attributes.');
+          if (html.includes('onclick="deleteAdminStudentPortalCalendarTopic(')) fail('Calendar delete must not interpolate values into inline JavaScript.');
+          if (!html.includes("JSON.parse(button.dataset.topicIds||'[]')")) fail('Calendar delete listener must parse the data attribute safely.');
+          if (!html.includes('data-delete-fee-structure="true" data-fee-id="')) fail('Fee delete control must use data attributes.');
+          if (html.includes('onclick="deleteFeeStructure(')) fail('Fee delete must not interpolate database values into inline JavaScript.');
+          if (!html.includes('button.dataset.feeId,button.dataset.feeClass,button.dataset.feeName')) fail('Fee delete event listener is missing.');
+          if (!html.includes('data-staff-comm-thread-id="')) fail('Staff communications must use a data attribute for thread IDs.');
+          if (html.includes('onclick="openStaffCommThread(')) fail('Staff communication thread IDs must not be interpolated into inline JavaScript.');
+          if (!html.includes('button.dataset.staffCommThreadId')) fail('Staff communication thread listener is missing.');
+          if (!html.includes('printableTable.appendChild(child.cloneNode(true))')) fail('Report print path must clone DOM instead of reparsing table HTML.');
+          if (!html.includes('tableWrapper.replaceChildren(printableTable)')) fail('Report print DOM replacement is missing.');
+          if (!html.includes("function studentEscape(v){return String(v??'' ).replace(/[&<>") &&
+              !html.includes("function studentEscape(v){return String(v??'').replace(/[&<>")) {
+            fail('Expected studentEscape HTML-escaping helper is missing or changed.');
+          }
+          const requiredEscapes = [
+            "${studentEscape(item.firstIn || '--:--')}",
+            "${studentEscape(item.lastOut || '--:--')}",
+            "${studentEscape(p.type)} ${studentEscape(p.timestamp)}",
+            "${studentEscape(item.leaveType || 'Approved Absence')}"
+          ];
+          for (const expression of requiredEscapes) {
+            if (!html.includes(expression)) fail('Missing HTML escaping in staff history card: ' + expression);
+          }
+          for (const expression of [
+            "${item.firstIn || '--:--'}",
+            "${item.lastOut || '--:--'}",
+            "${p.type} ${p.timestamp}",
+            "${item.leaveType || 'Approved Absence'}"
+          ]) {
+            if (html.includes(expression)) fail('Found unescaped staff history card value: ' + expression);
+          }
+          const safeLeaveStatus = '${studentEscape(String(l.status || "").toLowerCase())}';
+          const unsafeLeaveStatus = '${l.status.toLowerCase()}';
+          if (!html.includes(safeLeaveStatus)) fail('Leave status must be escaped before HTML insertion.');
+          if (html.includes(unsafeLeaveStatus)) fail('Found unescaped leave status HTML insertion.');
+          console.log('HTML attribute, staff history, and leave status escaping checks passed.');
+          NODE

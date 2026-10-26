@@ -6463,7 +6463,10 @@ window.showTeacherPortalPdfSelection=function(input,labelId='tp-attachment-name'
   if(label)label.textContent=file.name;
 }
 function teacherPortalPdfUrl(path){
-  return path?DEFAULT_SUPABASE_URL+'/storage/v1/object/public/student-portal-documents/'+path.split('/').map(encodeURIComponent).join('/'):'';
+  if(typeof path!=='string'||!path||path.startsWith('/')||path.includes('\\')||/[\u0000-\u001f\u007f]/.test(path)) return '';
+  const segments=path.split('/');
+  if(segments.some(segment=>!segment||segment==='.'||segment==='..')) return '';
+  return DEFAULT_SUPABASE_URL+'/storage/v1/object/public/student-portal-documents/'+segments.map(encodeURIComponent).join('/');
 }
 async function saveTeacherNotice(){
   const a=teacherPortalClass(),title=document.getElementById('tp-title')?.value.trim(),body=document.getElementById('tp-body')?.value.trim(),file=document.getElementById('tp-attachment')?.files?.[0],btn=document.getElementById('tp-publish-notice');
@@ -6733,7 +6736,7 @@ function studentAttendanceMonthSummary(key,attendanceMap){
 function renderStudentAttendancePanel(attendance,view="home",monthKey=""){
   const host=document.getElementById("student-dashboard-panel-body");
   if(!host)return;
-  const rows=Array.isArray(attendance)?attendance:[],map=studentAttendanceBuildMap(rows),keys=studentAttendanceGetMonthKeys(rows);
+  const rows=Array.isArray(attendance)?attendance:[],map=studentAttendanceBuildMap(rows),keys=studentAttendanceGetMonthKeys(rows).filter(key=>/^\d{4}-(0[1-9]|1[0-2])$/.test(String(key)));
   const overall={present:0,absent:0,leave:0,total:0};
   keys.forEach(key=>{const x=studentAttendanceMonthSummary(key,map);overall.present+=x.present;overall.absent+=x.absent;overall.leave+=x.leave;overall.total+=x.total;});
   const metric=(label,value,theme,icon)=>'<div class="rounded-2xl border p-4 '+theme+'"><div class="flex items-center gap-2"><i data-lucide="'+icon+'" class="w-4 h-4"></i><span class="text-xs font-semibold">'+label+'</span></div><div class="text-2xl font-black mt-2">'+value+'</div></div>';
@@ -9029,10 +9032,10 @@ async function loadAdminStudentAttendance(){
                 <div>
                   <div class="text-xs font-bold text-slate-800 flex items-center space-x-1.5">
                     <span>${dateFormatted}</span>
-                    <span class="text-[10px] text-slate-400 font-normal">(${item.dayOfWeek})</span>
+                    <span class="text-[10px] text-slate-400 font-normal">(${studentEscape(item.dayOfWeek)})</span>
                     ${item.isToday ? '<span class="text-[8px] bg-emerald-100 text-ashiana-green px-1.5 py-0.2 rounded font-bold uppercase">Today</span>' : ''}
                   </div>
-                  <span class="text-[9px] text-slate-400 font-mono">${item.dateStr}</span>
+                  <span class="text-[9px] text-slate-400 font-mono">${studentEscape(item.dateStr)}</span>
                 </div>
               </div>
               <div class="text-right">
@@ -9044,11 +9047,11 @@ async function loadAdminStudentAttendance(){
             <div class="grid grid-cols-3 gap-1.5 text-center text-xs py-1">
               <div class="bg-slate-50 p-1.5 rounded-xl border border-slate-100">
                 <span class="text-[8px] uppercase font-bold text-slate-400 block">First IN</span>
-                <span class="font-mono font-bold ${item.firstIn ? 'text-ashiana-green' : 'text-slate-400'}">${item.firstIn || '--:--'}</span>
+                <span class="font-mono font-bold ${item.firstIn ? 'text-ashiana-green' : 'text-slate-400'}">${studentEscape(item.firstIn || '--:--')}</span>
               </div>
               <div class="bg-slate-50 p-1.5 rounded-xl border border-slate-100">
                 <span class="text-[8px] uppercase font-bold text-slate-400 block">Last OUT</span>
-                <span class="font-mono font-bold ${item.lastOut ? 'text-ashiana-green' : 'text-slate-400'}">${item.lastOut || '--:--'}</span>
+                <span class="font-mono font-bold ${item.lastOut ? 'text-ashiana-green' : 'text-slate-400'}">${studentEscape(item.lastOut || '--:--')}</span>
               </div>
               <div class="bg-slate-50 p-1.5 rounded-xl border border-slate-100">
                 <span class="text-[8px] uppercase font-bold text-slate-400 block">Total Work</span>
@@ -9064,7 +9067,7 @@ async function loadAdminStudentAttendance(){
                   <span>${item.punches.length} punch logs:</span>
                   ${item.punches.map(p => `
                     <span class="px-1.5 py-0.5 rounded ${p.type === 'IN' ? 'bg-emerald-50 text-emerald-800 border border-emerald-200 font-bold' : 'bg-slate-100 text-slate-700'}">
-                      ${p.type} ${p.timestamp}
+                      ${studentEscape(p.type)} ${studentEscape(p.timestamp)}
                     </span>
                   `).join(' ')}
                 </div>
@@ -9078,7 +9081,7 @@ async function loadAdminStudentAttendance(){
             ` : item.status === 'ON LEAVE' ? `
               <div class="mt-1 text-[10px] text-purple-700 font-medium px-1 flex items-center space-x-1">
                 <i data-lucide="calendar-off" class="w-3 h-3"></i>
-                <span>Leave: ${item.leaveType || 'Approved Absence'}</span>
+                <span>Leave: ${studentEscape(item.leaveType || 'Approved Absence')}</span>
               </div>
             ` : ''}
           </div>
@@ -9169,11 +9172,11 @@ async function loadAdminStudentAttendance(){
           <div class="flex items-center justify-between p-2 rounded-xl border ${p.type === 'IN' ? 'bg-emerald-50/80 border-emerald-200 text-emerald-950' : 'bg-slate-50 border-slate-200 text-slate-900'}">
             <div class="flex items-center space-x-2">
               <span class="w-4 h-4 rounded-full ${p.type === 'IN' ? 'bg-ashiana-green' : 'bg-slate-700'} text-white font-bold text-[9px] flex items-center justify-center">${idx + 1}</span>
-              <span class="font-bold text-xs">PUNCH ${p.type}</span>
+              <span class="font-bold text-xs">PUNCH ${studentEscape(p.type)}</span>
             </div>
             <div class="flex items-center space-x-2">
-              <span class="font-mono text-xs font-bold text-ashiana-green">${p.timestamp}</span>
-              <span class="text-[8px] uppercase px-1 py-0.5 rounded bg-white font-semibold text-slate-500 border border-slate-200">${p.method}</span>
+              <span class="font-mono text-xs font-bold text-ashiana-green">${studentEscape(p.timestamp)}</span>
+              <span class="text-[8px] uppercase px-1 py-0.5 rounded bg-white font-semibold text-slate-500 border border-slate-200">${studentEscape(p.method)}</span>
             </div>
           </div>
         `).join('');
@@ -9558,7 +9561,7 @@ window.addEventListener('load',async function(){
         return `
           <tr class="hover:bg-slate-50 transition-colors ${isChecked ? 'bg-rose-50/50' : ''}">
             <td class="py-2 px-3 text-center">
-              <input type="checkbox" class="rounded text-rose-600 focus:ring-rose-500 cursor-pointer w-4 h-4" ${isChecked ? 'checked' : ''} onchange="toggleModalStaffItem(${escHtml(JSON.stringify(String(s.id)))}, this.checked)">
+              <input type="checkbox" class="rounded text-rose-600 focus:ring-rose-500 cursor-pointer w-4 h-4" ${isChecked ? 'checked' : ''} onchange="toggleModalStaffItem(${studentEscape(JSON.stringify(String(s.id)))}, this.checked)">
             </td>
             <td class="py-2 px-2 font-mono font-bold text-ashiana-green text-xs">${studentEscape(s.empId)}</td>
             <td class="py-2 px-2 font-bold text-slate-800">${studentEscape(s.name)}</td>
@@ -11262,7 +11265,7 @@ window.addEventListener('load',async function(){
         let statusBadge = `<span class="px-2 py-0.5 rounded-full text-[9px] font-bold bg-slate-100 text-slate-600">NOT MARKED</span>`;
         if (r.status === 'WORKING') statusBadge = `<span class="px-2 py-0.5 rounded-full text-[9px] font-bold bg-emerald-100 text-emerald-800 border border-emerald-300">WORKING NOW</span>`;
         else if (r.status === 'COMPLETED') statusBadge = `<span class="px-2 py-0.5 rounded-full text-[9px] font-bold bg-blue-100 text-blue-800 border border-blue-200">COMPLETED</span>`;
-        else if (r.status === 'ON LEAVE') statusBadge = `<span class="px-2 py-0.5 rounded-full text-[9px] font-bold bg-purple-100 text-purple-800 border border-purple-200">ON LEAVE (${r.leaveType || 'LEAVE'})</span>`;
+        else if (r.status === 'ON LEAVE') statusBadge = `<span class="px-2 py-0.5 rounded-full text-[9px] font-bold bg-purple-100 text-purple-800 border border-purple-200">ON LEAVE (${studentEscape(r.leaveType || 'LEAVE')})</span>`;
 
         return `
           <tr class="hover:bg-slate-50 transition-colors">
@@ -11273,10 +11276,10 @@ window.addEventListener('load',async function(){
               <div class="text-[9px] text-slate-400 font-normal">${studentEscape(r.role)}</div>
             </td>
             <td class="py-2.5 px-3 text-slate-600">${studentEscape(r.department)}</td>
-            <td class="py-2.5 px-3 font-mono font-bold ${r.firstIn !== '--:--' ? 'text-ashiana-green' : 'text-slate-400'}">${r.firstIn}</td>
-            <td class="py-2.5 px-3 font-mono font-bold ${r.lastOut !== '--:--' ? 'text-ashiana-green' : 'text-slate-400'}">${r.lastOut}</td>
+            <td class="py-2.5 px-3 font-mono font-bold ${r.firstIn !== '--:--' ? 'text-ashiana-green' : 'text-slate-400'}">${studentEscape(r.firstIn)}</td>
+            <td class="py-2.5 px-3 font-mono font-bold ${r.lastOut !== '--:--' ? 'text-ashiana-green' : 'text-slate-400'}">${studentEscape(r.lastOut)}</td>
             <td class="py-2.5 px-3 font-mono font-bold">${r.punchCount}</td>
-            <td class="py-2.5 px-3 font-mono font-bold text-slate-700">${r.workTimeStr}</td>
+            <td class="py-2.5 px-3 font-mono font-bold text-slate-700">${studentEscape(r.workTimeStr)}</td>
             <td class="py-2.5 px-3 font-mono ${r.lateMins > 0 ? 'text-ashiana-red font-bold' : 'text-slate-400'}">${r.lateMins > 0 ? r.lateMins + 'm' : '0m'}</td>
             <td class="py-2.5 px-3 text-right">${statusBadge}</td>
           </tr>
@@ -11427,8 +11430,8 @@ window.addEventListener('load',async function(){
           <td class="py-2.5 px-3 text-center font-mono font-bold ${r.absentDays > 0 ? 'text-rose-600' : 'text-slate-400'}">${r.absentDays}</td>
           <td class="py-2.5 px-3 text-center font-mono font-bold text-purple-700">${r.leaveDays}</td>
           <td class="py-2.5 px-3 text-center font-mono font-bold ${r.lateDays > 0 ? 'text-amber-700' : 'text-slate-400'}">${r.lateDays}</td>
-          <td class="py-2.5 px-3 font-mono font-bold text-slate-700">${r.totalWorkStr}</td>
-          <td class="py-2.5 px-3 font-mono text-slate-600">${r.avgDayStr}</td>
+          <td class="py-2.5 px-3 font-mono font-bold text-slate-700">${studentEscape(r.totalWorkStr)}</td>
+          <td class="py-2.5 px-3 font-mono text-slate-600">${studentEscape(r.avgDayStr)}</td>
           <td class="py-2.5 px-3 text-right">
             <span class="px-2 py-0.5 rounded-full text-[10px] font-bold font-mono ${r.attendanceRate >= 85 ? 'bg-emerald-100 text-emerald-800' : r.attendanceRate >= 70 ? 'bg-amber-100 text-amber-800' : 'bg-rose-100 text-rose-800'}">
               ${r.attendanceRate}%
@@ -11546,15 +11549,15 @@ window.addEventListener('load',async function(){
 
         return `
           <tr class="hover:bg-slate-50 transition-colors ${r.status === 'SUNDAY' ? 'bg-slate-50/60 opacity-70' : ''}">
-            <td class="py-2 px-3 font-mono font-bold text-slate-800">${r.date}</td>
-            <td class="py-2 px-3 font-semibold text-slate-600">${r.dayOfWeek}</td>
-            <td class="py-2 px-3 font-mono font-bold ${r.firstIn !== '--:--' && r.firstIn !== '--' ? 'text-ashiana-green' : 'text-slate-400'}">${r.firstIn}</td>
-            <td class="py-2 px-3 font-mono font-bold ${r.lastOut !== '--:--' && r.lastOut !== '--' ? 'text-ashiana-green' : 'text-slate-400'}">${r.lastOut}</td>
+            <td class="py-2 px-3 font-mono font-bold text-slate-800">${studentEscape(r.date)}</td>
+            <td class="py-2 px-3 font-semibold text-slate-600">${studentEscape(r.dayOfWeek)}</td>
+            <td class="py-2 px-3 font-mono font-bold ${r.firstIn !== '--:--' && r.firstIn !== '--' ? 'text-ashiana-green' : 'text-slate-400'}">${studentEscape(r.firstIn)}</td>
+            <td class="py-2 px-3 font-mono font-bold ${r.lastOut !== '--:--' && r.lastOut !== '--' ? 'text-ashiana-green' : 'text-slate-400'}">${studentEscape(r.lastOut)}</td>
             <td class="py-2 px-3 font-mono font-bold">${r.punchCount}</td>
-            <td class="py-2 px-3 font-mono font-bold text-slate-700">${r.workTimeStr}</td>
+            <td class="py-2 px-3 font-mono font-bold text-slate-700">${studentEscape(r.workTimeStr)}</td>
             <td class="py-2 px-3 font-mono ${r.lateMins > 0 ? 'text-ashiana-red font-bold' : 'text-slate-400'}">${r.lateMins > 0 ? r.lateMins + 'm' : '0m'}</td>
             <td class="py-2 px-3">${badge}</td>
-            <td class="py-2 px-3 text-right text-slate-500 font-medium">${escHtml(r.details)}</td>
+            <td class="py-2 px-3 text-right text-slate-500 font-medium">${studentEscape(r.details)}</td>
           </tr>
         `;
       }).join('');
@@ -11724,7 +11727,14 @@ window.addEventListener('load',async function(){
 
         const mainTable = document.getElementById("report-main-table");
         if (!mainTable) throw new Error("Attendance report table was not found.");
-        tableWrapper.innerHTML = `<table class="w-full text-left text-xs border-collapse border border-slate-300">${mainTable.innerHTML}</table>`;
+        // Clone the already-rendered table nodes instead of reparsing serialized HTML.
+        // This preserves the report layout while avoiding a second HTML injection sink.
+        const printableTable = document.createElement("table");
+        printableTable.className = "w-full text-left text-xs border-collapse border border-slate-300";
+        for (const child of Array.from(mainTable.children)) {
+          printableTable.appendChild(child.cloneNode(true));
+        }
+        tableWrapper.replaceChildren(printableTable);
 
         if (isAshianaNativeAndroid()) {
           const printable = container.cloneNode(true);
@@ -12416,7 +12426,7 @@ window.addEventListener('load',async function(){
                   </button>
                 </div>
               ` : `
-                <span class="text-[10px] text-slate-400 font-semibold capitalize">${l.status.toLowerCase()}</span>
+                <span class="text-[10px] text-slate-400 font-semibold capitalize">${studentEscape(String(l.status || "").toLowerCase())}</span>
               `}
             </td>
           </tr>
@@ -12701,7 +12711,7 @@ window.addEventListener('load',async function(){
                 <td class="py-1 px-2 font-sans font-bold text-slate-800">${studentEscape(r.name)}</td>
                 <td class="py-1 px-2 font-sans">${studentEscape(r.department)}</td>
                 <td class="py-1 px-2 font-sans">${studentEscape(r.role)}</td>
-                <td class="py-1 px-2 text-center">${studentEscape(r.pinHash)}</td>
+                <td class="py-1 px-2 text-center">Hidden</td>
               </tr>
             `).join('');
           }
@@ -13355,8 +13365,9 @@ window.addEventListener('load',async function(){
           '<span class="text-[9px] font-bold px-1.5 py-0.5 rounded-full bg-emerald-50 text-emerald-700">'+studentEscape(scopeText)+'</span>'+
           '</div><p class="text-[10px] text-slate-600 mt-1">'+studentEscape(x.description||'')+'</p>'+
           (x.scopes.length>1?'<p class="text-[9px] text-slate-400 mt-1">'+studentEscape(scopeDetail)+'</p>':'')+
-          '</div><button type="button" onclick="deleteAdminStudentPortalCalendarTopic('+JSON.stringify(x.ids)+')" class="shrink-0 text-[10px] font-extrabold text-rose-600">Delete</button></div>';
+          '</div><button type="button" data-delete-calendar-topic="true" data-topic-ids="'+studentEscape(JSON.stringify(x.ids))+'" class="shrink-0 text-[10px] font-extrabold text-rose-600">Delete</button></div>';
       }).join('')||'<div class="text-xs text-slate-400 p-4 text-center">No calendar topics for this target.</div>';
+      document.querySelectorAll('button[data-delete-calendar-topic]').forEach(button=>button.addEventListener('click',()=>{try{deleteAdminStudentPortalCalendarTopic(JSON.parse(button.dataset.topicIds||'[]'));}catch(_){showToast('Invalid calendar topic selection.','error');}}));
     }
 
     async function publishAdminStudentPortalCalendar(){
@@ -13746,8 +13757,9 @@ function addMessage(text,type){
       const unread=t.last_message_at && t.created_by_email?.toLowerCase()!==email;
       const recipient=staffCommStaff.find(x=>x.id===t.recipient_staff_id);
       const target= t.audience==='ALL_STAFF'?'All Staff':(recipient?.name||(commIsAdmin()&&t.created_by_role==='ADMIN'?'Multiple Staff':'Administration'));
-      return '<button type="button" class="staff-comm-list-item '+(staffCommCurrentThread?.id===t.id?'active':'')+'" onclick="openStaffCommThread('+studentEscape(JSON.stringify(String(t.id)))+')"><div class="flex items-center justify-between gap-2"><span class="font-extrabold text-[11px] text-slate-800 truncate">'+esc(t.subject)+'</span>'+(unread?'<span class="staff-comm-pill bg-emerald-100 text-emerald-700">NEW</span>':'')+'</div><div class="text-[9px] text-slate-500 mt-1 truncate">'+esc(target)+' • '+esc(t.category)+'</div><div class="flex items-center gap-1 mt-1"><span class="staff-comm-pill '+(t.priority==='URGENT'?'bg-rose-100 text-rose-700':t.priority==='IMPORTANT'?'bg-amber-100 text-amber-700':'bg-slate-100 text-slate-600')+'">'+esc(t.priority)+'</span><span class="text-[9px] text-slate-400">'+new Date(t.last_message_at).toLocaleString('en-IN',{day:'numeric',month:'short',hour:'2-digit',minute:'2-digit'})+'</span></div></button>';
+      return '<button type="button" class="staff-comm-list-item '+(staffCommCurrentThread?.id===t.id?'active':'')+'" data-staff-comm-thread-id="'+esc(t.id)+'"><div class="flex items-center justify-between gap-2"><span class="font-extrabold text-[11px] text-slate-800 truncate">'+esc(t.subject)+'</span>'+(unread?'<span class="staff-comm-pill bg-emerald-100 text-emerald-700">NEW</span>':'')+'</div><div class="text-[9px] text-slate-500 mt-1 truncate">'+esc(target)+' • '+esc(t.category)+'</div><div class="flex items-center gap-1 mt-1"><span class="staff-comm-pill '+(t.priority==='URGENT'?'bg-rose-100 text-rose-700':t.priority==='IMPORTANT'?'bg-amber-100 text-amber-700':'bg-slate-100 text-slate-600')+'">'+esc(t.priority)+'</span><span class="text-[9px] text-slate-400">'+new Date(t.last_message_at).toLocaleString('en-IN',{day:'numeric',month:'short',hour:'2-digit',minute:'2-digit'})+'</span></div></button>';
     }).join('');
+    list.querySelectorAll('button[data-staff-comm-thread-id]').forEach(button=>button.addEventListener('click',()=>window.openStaffCommThread(button.dataset.staffCommThreadId)));
   }
   window.backToStaffCommList=function(){
     const card=commModal()?.querySelector('.staff-comm-card');
@@ -14632,7 +14644,8 @@ window.showStudentSchoolUpiQr=async function(accountId,installmentId){
       const client=getClient(),{data,error}=await client.functions.invoke("fee-management",{body:{action:"admin-list-structures",academic_year_id:yearId,class_name:cls}});
       if(error||data?.error)throw new Error(error?.message||data?.error||"Could not load fee structures.");
       const rows=Array.isArray(data?.fee_structures)?data.fee_structures:[];
-      host.innerHTML=rows.length?'<p class="font-bold mb-1">Existing fee structures</p>'+rows.map(r=>'<div class="flex items-start justify-between gap-2 py-2 border-t"><div class="min-w-0">'+escapeHtml(r.class_name)+' · '+escapeHtml(r.fee_name)+' — '+money(r.amount_paise)+(r.is_mandatory?' · Mandatory':' · Optional')+(r.due_date?' · Due '+escapeHtml(r.due_date):'')+'</div><button type="button" class="shrink-0 rounded-lg border border-rose-300 px-2 py-1 text-xs font-bold text-rose-700" onclick="deleteFeeStructure('+escapeHtml(JSON.stringify(String(r.id)))+','+escapeHtml(JSON.stringify(String(r.class_name)))+','+escapeHtml(JSON.stringify(String(r.fee_name)))+')">Delete</button></div>').join(""):'No fee structures found for this selection yet.';
+      host.innerHTML=rows.length?'<p class="font-bold mb-1">Existing fee structures</p>'+rows.map(r=>'<div class="flex items-start justify-between gap-2 py-2 border-t"><div class="min-w-0">'+escapeHtml(r.class_name)+' · '+escapeHtml(r.fee_name)+' — '+money(r.amount_paise)+(r.is_mandatory?' · Mandatory':' · Optional')+(r.due_date?' · Due '+escapeHtml(r.due_date):'')+'</div><button type="button" class="shrink-0 rounded-lg border border-rose-300 px-2 py-1 text-xs font-bold text-rose-700" data-delete-fee-structure="true" data-fee-id="'+escapeHtml(r.id)+'" data-fee-class="'+escapeHtml(r.class_name)+'" data-fee-name="'+escapeHtml(r.fee_name)+'">Delete</button></div>').join(""):'No fee structures found for this selection yet.';
+      host.querySelectorAll("button[data-delete-fee-structure]").forEach(button=>button.addEventListener("click",()=>window.deleteFeeStructure(button.dataset.feeId,button.dataset.feeClass,button.dataset.feeName)));
     }catch(e){host.textContent=e?.message||"Could not load fee structures.";}
   };
   window.deleteFeeStructure=async function(id,className,feeName){

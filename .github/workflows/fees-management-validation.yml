@@ -5,6 +5,10 @@ on:
     branches: [main]
     paths:
       - 'supabase/functions/fee-management/**'
+      - 'supabase/functions/push-notifications/**'
+      - 'supabase/migrations/20261026090000_harden_class_teacher_student_mutations.sql'
+      - 'supabase/migrations/20261026120000_harden_public_login_content_search_path.sql'
+      - 'supabase/tests/teacher_student_mutation_security.sql'
       - 'supabase/migrations/20261023000*_fees_management_*.sql'
       - 'supabase/migrations/20261023170000_fee_installment_payment_selection.sql'
       - 'supabase/migrations/20261023190000_student_pending_fee_reminders.sql'
@@ -18,6 +22,10 @@ on:
     branches: [main, feat/live-fees-management]
     paths:
       - 'supabase/functions/fee-management/**'
+      - 'supabase/functions/push-notifications/**'
+      - 'supabase/migrations/20261026090000_harden_class_teacher_student_mutations.sql'
+      - 'supabase/migrations/20261026120000_harden_public_login_content_search_path.sql'
+      - 'supabase/tests/teacher_student_mutation_security.sql'
       - 'supabase/migrations/20261023000*_fees_management_*.sql'
       - 'supabase/migrations/20261023170000_fee_installment_payment_selection.sql'
       - 'supabase/migrations/20261023190000_student_pending_fee_reminders.sql'
@@ -55,10 +63,16 @@ jobs:
           paths = sorted(Path("supabase/migrations").glob("20261023000*_fees_management_*.sql"))
           installment_migration = Path("supabase/migrations/20261023170000_fee_installment_payment_selection.sql")
           reminder_migration = Path("supabase/migrations/20261023190000_student_pending_fee_reminders.sql")
+          teacher_mutation_migration = Path("supabase/migrations/20261026090000_harden_class_teacher_student_mutations.sql")
+          login_content_migration = Path("supabase/migrations/20261026120000_harden_public_login_content_search_path.sql")
           if installment_migration.exists():
               paths.append(installment_migration)
           if reminder_migration.exists():
               paths.append(reminder_migration)
+          if teacher_mutation_migration.exists():
+              paths.append(teacher_mutation_migration)
+          if login_content_migration.exists():
+              paths.append(login_content_migration)
           paths = sorted(set(paths))
           if len(paths) < 6:
               raise SystemExit(f"Expected fee foundation plus installment migration, found {len(paths)}")
@@ -85,6 +99,7 @@ jobs:
           test -s supabase/config.toml
           grep -q 'verify_jwt = false' supabase/config.toml
           test -s supabase/tests/fees_management_security.sql
+          test -s supabase/tests/teacher_student_mutation_security.sql
           grep -q "studentDashboardSection('fees')" index.html
           grep -q "submitStudentFeePayment" index.html
           grep -q "data-installment-id" index.html
@@ -155,3 +170,45 @@ jobs:
         run: psql -v ON_ERROR_STOP=1 -f supabase/tests/fees_management_security.sql
       - name: Run synthetic payment approval and receipt smoke test
         run: psql -v ON_ERROR_STOP=1 -f supabase/tests/fees_management_rpc_smoke.sql
+  teacher-mutation-validation:
+    name: Test class-teacher student mutation security in isolated PostgreSQL
+    runs-on: ubuntu-latest
+    timeout-minutes: 10
+    services:
+      postgres:
+        image: postgres:16
+        env:
+          POSTGRES_PASSWORD: postgres
+          POSTGRES_DB: teacher_mutation_test
+        ports:
+          - 5432:5432
+        options: >-
+          --health-cmd "pg_isready -U postgres -d teacher_mutation_test"
+          --health-interval 5s
+          --health-timeout 5s
+          --health-retries 10
+    env:
+      PGHOST: localhost
+      PGPORT: 5432
+      PGUSER: postgres
+      PGPASSWORD: postgres
+      PGDATABASE: teacher_mutation_test
+    steps:
+      - uses: actions/checkout@v4
+      - name: Install PostgreSQL client
+        run: sudo apt-get update && sudo apt-get install -y postgresql-client
+      - name: Apply migration and run authorization regression tests
+        run: psql -v ON_ERROR_STOP=1 -f supabase/tests/teacher_student_mutation_security.sql
+  push-notifications-typecheck:
+    name: Type-check push notifications Edge Function
+    runs-on: ubuntu-latest
+    timeout-minutes: 10
+    steps:
+      - uses: actions/checkout@v4
+      - uses: denoland/setup-deno@v2
+        with:
+          deno-version: v2.x
+      - name: Install function dependencies
+        run: deno install --entrypoint supabase/functions/push-notifications/index.ts
+      - name: Type-check Edge Function
+        run: deno check --node-modules-dir=auto supabase/functions/push-notifications/index.ts
