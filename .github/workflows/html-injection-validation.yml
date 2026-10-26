@@ -50,5 +50,9 @@ jobs:
           ]) {
             if (html.includes(expression)) fail('Found unescaped staff history card value: ' + expression);
           }
-          console.log('HTML attribute and staff history escaping checks passed.');
+          const safeLeaveStatus = '${studentEscape(String(l.status || "").toLowerCase())}';
+          const unsafeLeaveStatus = '${l.status.toLowerCase()}';
+          if (!html.includes(safeLeaveStatus)) fail('Leave status must be escaped before HTML insertion.');
+          if (html.includes(unsafeLeaveStatus)) fail('Found unescaped leave status HTML insertion.');
+          console.log('HTML attribute, staff history, and leave status escaping checks passed.');
           NODE
