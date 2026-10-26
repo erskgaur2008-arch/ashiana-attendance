@@ -19,17 +19,17 @@ as $$ select jsonb_build_object('email', current_setting('request.jwt.claim.emai
 create or replace function public.public_login_home_content(p_school_code text default 'ashiana')
 returns jsonb language sql security definer
 set search_path to 'public', 'private'
-as $ select jsonb_build_object('school_code', coalesce(p_school_code,'ashiana')) $;
+as $function$ select jsonb_build_object('school_code', coalesce(p_school_code,'ashiana')) $function$;
 
 \i supabase/migrations/20261026120000_harden_public_login_content_search_path.sql
 
-do $
+do $check$
 begin
   if (select proconfig from pg_proc where oid='public.public_login_home_content(text)'::regprocedure)
        is distinct from array['search_path=""']::text[] then
     raise exception 'public_login_home_content must use an empty search_path';
   end if;
-end $;
+end $check$;
 
 create table public.staff (
   email text,
