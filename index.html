@@ -3249,7 +3249,7 @@ id="student-dashboard-panel-body" class="space-y-3 text-xs"></div>
     <div class="grid grid-cols-2 gap-2 mt-3">
       <select id="teacher-portal-class" onchange="loadTeacherPortalStudents()" class="p-2 border rounded"><option value="">Select class & section</option></select>
       <select id="teacher-portal-type" onchange="renderTeacherPortalEditor()" class="p-2 border rounded">
-        <option value="notice">Notice</option><option value="homework">Homework</option><option value="timetable">Timetable</option><option value="calendar">Calendar Event</option><option value="report">Report Card</option>
+        <option value="notice">Notice</option><option value="homework">Homework</option><option value="timetable">Timetable</option><option value="calendar">Calendar Event</option><option value="reportcsv">Report Card CSV Import / Export</option><option value="report">Report Card (manual, one student)</option>
       </select>
     </div>
     <div id="teacher-portal-editor" class="mt-3 space-y-2"></div>
@@ -6403,7 +6403,8 @@ function renderTeacherPortalEditor(){
     loadTeacherPortalContentItems('homework');
   }else if(type==='timetable')host.innerHTML='<div class="grid grid-cols-2 gap-2"><select id="tp-day" class="p-2 border rounded"><option value="1">Monday</option><option value="2">Tuesday</option><option value="3">Wednesday</option><option value="4">Thursday</option><option value="5">Friday</option><option value="6">Saturday</option></select><input id="tp-period" type="number" min="1" max="12" placeholder="Period No." class="p-2 border rounded"><input id="tp-start" type="time" class="p-2 border rounded"><input id="tp-end" type="time" class="p-2 border rounded"></div><input id="tp-subject" placeholder="Subject" class="w-full p-2 border rounded"><input id="tp-teacher" placeholder="Teacher Name" class="w-full p-2 border rounded"><input id="tp-room" placeholder="Room" class="w-full p-2 border rounded"><label class="flex items-center gap-2 p-2.5 rounded-xl border border-dashed border-violet-200 bg-violet-50/50 text-xs text-slate-700 cursor-pointer"><i data-lucide="paperclip" class="w-4 h-4 text-violet-700"></i><span class="font-bold">Attach PDF</span><input id="tp-timetable-attachment" type="file" accept="application/pdf,.pdf" class="hidden" onchange="showTeacherPortalPdfSelection(this,&quot;tp-timetable-attachment-name&quot;)"><span id="tp-timetable-attachment-name" class="ml-auto text-[10px] text-slate-400 truncate">Optional • PDF up to 10 MB</span></label><button type="button" onclick="saveTeacherTimetable()" class="w-full p-2.5 bg-violet-700 text-white rounded-xl font-bold">Add Timetable Entry</button>';
   else if(type==='calendar')host.innerHTML='<input id="tp-date" type="date" class="w-full p-2 border rounded"><input id="tp-title" placeholder="Event / Holiday title" class="w-full p-2 border rounded"><textarea id="tp-body" rows="2" placeholder="Description" class="w-full p-2 border rounded"></textarea><button type="button" onclick="saveTeacherCalendar()" class="w-full p-2.5 bg-orange-700 text-white rounded-xl font-bold">Add Calendar Event</button>';
-  else host.innerHTML='<select id="tp-student" class="w-full p-2 border rounded"><option>Loading students…</option></select><input id="tp-term" placeholder="Term (e.g. Term 1)" class="w-full p-2 border rounded"><input id="tp-year" value="2026-27" placeholder="Academic Year" class="w-full p-2 border rounded"><textarea id="tp-subjects" rows="4" placeholder="Subjects JSON, e.g. [{"subject":"English","marks":85,"grade":"A1"}]" class="w-full p-2 border rounded font-mono text-[10px]"></textarea><input id="tp-grade" placeholder="Overall Grade" class="w-full p-2 border rounded"><textarea id="tp-remarks" rows="2" placeholder="Remarks" class="w-full p-2 border rounded"></textarea><label class="text-xs flex items-center gap-2"><input id="tp-published" type="checkbox" checked> Publish to student</label><button type="button" onclick="saveTeacherReportCard()" class="w-full p-2.5 bg-cyan-700 text-white rounded-xl font-bold">Save Report Card</button>';
+  else if(type==='reportcsv')renderReportCsvEditor(host);
+  else host.innerHTML='<div class="mb-3 p-3 rounded-xl border border-cyan-200 bg-cyan-50"><div class="font-bold text-cyan-900 text-sm">Need to enter marks for a whole class?</div><p class="mt-1 text-xs text-cyan-800">Download a class CSV sheet, fill in marks, preview it, and import report cards in bulk.</p><button type="button" onclick="document.getElementById(\'teacher-portal-type\').value=\'reportcsv\';renderTeacherPortalEditor()" class="mt-2 w-full p-2.5 bg-cyan-700 text-white rounded-xl font-bold">Download CSV / Bulk Import</button></div><select id="tp-student" class="w-full p-2 border rounded"><option>Loading students…</option></select><input id="tp-term" placeholder="Term (e.g. Term 1)" class="w-full p-2 border rounded"><input id="tp-year" value="2026-27" placeholder="Academic Year" class="w-full p-2 border rounded"><textarea id="tp-subjects" rows="4" placeholder="Subjects JSON, e.g. [{"subject":"English","marks":85,"grade":"A1"}]" class="w-full p-2 border rounded font-mono text-[10px]"></textarea><input id="tp-grade" placeholder="Overall Grade" class="w-full p-2 border rounded"><textarea id="tp-remarks" rows="2" placeholder="Remarks" class="w-full p-2 border rounded"></textarea><label class="text-xs flex items-center gap-2"><input id="tp-published" type="checkbox" checked> Publish to student</label><button type="button" onclick="saveTeacherReportCard()" class="w-full p-2.5 bg-cyan-700 text-white rounded-xl font-bold">Save Report Card</button>';
   if(type==='report')loadTeacherPortalStudentsForReport();
   if(window.lucide)lucide.createIcons();
 }
@@ -6549,6 +6550,220 @@ async function saveTeacherTimetable(){
 }
 async function saveTeacherCalendar(){const date=document.getElementById('tp-date')?.value,title=document.getElementById('tp-title')?.value.trim(),body=document.getElementById('tp-body')?.value.trim(),a=teacherPortalClass();if(!date||!title)return showToast('Enter date and event title.','error');const {error}=await supabaseClient.from('student_calendar_events').insert({school_code:APS_STUDENT_SCHOOL,event_date:date,title,description:body||null,class_name:a?.class_name||null,section:a?.section||null,created_by:teacherPortalEmail()});if(error)return showToast(error.message,'error');showToast('Calendar event added.','success');}
 async function saveTeacherReportCard(){const a=teacherPortalClass(),sid=document.getElementById('tp-student')?.value,term=document.getElementById('tp-term')?.value.trim(),year=document.getElementById('tp-year')?.value.trim()||'2026-27';let subjects=[];try{subjects=JSON.parse(document.getElementById('tp-subjects')?.value||'[]');if(!Array.isArray(subjects))throw Error();}catch(e){return showToast('Subjects must be valid JSON array.','error');}if(!a||!sid||!term)return showToast('Select class, student and term.','error');const {error}=await supabaseClient.from('student_report_cards').upsert({school_code:APS_STUDENT_SCHOOL,student_id:sid,academic_year:year,term,subjects,overall_grade:document.getElementById('tp-grade')?.value.trim()||null,remarks:document.getElementById('tp-remarks')?.value.trim()||null,published:document.getElementById('tp-published')?.checked||false,published_by:teacherPortalEmail()},{onConflict:'school_code,student_id,academic_year,term'});if(error)return showToast(error.message,'error');showToast('Report card saved.','success');}
+
+/* ===== Report cards: CSV import for teachers + printable report card view ===== */
+const REPORT_GRADE_SCALE=[[91,'A1'],[81,'A2'],[71,'B1'],[61,'B2'],[51,'C1'],[41,'C2'],[33,'D'],[21,'E1'],[0,'E2']];
+function reportGradeFor(pct){for(const [min,g] of REPORT_GRADE_SCALE)if(pct>=min)return g;return 'E2';}
+function reportNum(v){const n=Number(v);return Number.isFinite(n)?n:null;}
+function reportFmt(n){return n==null?'—':String(Math.round(n*100)/100);}
+function normalizeReportSubjects(list){
+  if(!Array.isArray(list))return [];
+  return list.map(s=>{
+    const subject=String(s?.subject??'').trim();
+    const absent=s?.absent===true||String(s?.grade||'').toUpperCase()==='AB';
+    const marks=absent?null:reportNum(s?.marks);
+    const max=reportNum(s?.max);
+    const grade=String(s?.grade??'').trim();
+    return {subject,marks,max,grade,absent};
+  }).filter(s=>s.subject);
+}
+function computeReportTotals(list){
+  let total=0,max=0,counted=0;
+  list.forEach(s=>{if(s.max>0){if(s.marks!=null)total+=s.marks;max+=s.max;counted++;}});
+  if(!counted)return {total:null,max:null,pct:null,grade:null};
+  const pct=total*100/max;
+  return {total,max,pct,grade:reportGradeFor(pct)};
+}
+function reportCsvCell(v){const s=String(v??'');return /[",\r\n]/.test(s)?'"'+s.replace(/"/g,'""')+'"':s;}
+function reportCsvSafeText(v){const s=String(v??'');return /^[=+\-@]/.test(s)?"'"+s:s;}
+function reportStudentKey(v){let s=String(v??'').trim().toLowerCase();if(/^\d+$/.test(s))s=s.replace(/^0+(?=\d)/,'');return s;}
+function parseReportCsv(text){
+  text=String(text||'').replace(/^﻿/,'');
+  const rows=[];let row=[],cur='',q=false;
+  for(let i=0;i<text.length;i++){
+    const c=text[i];
+    if(q){if(c==='"'){if(text[i+1]==='"'){cur+='"';i++;}else q=false;}else cur+=c;}
+    else if(c==='"')q=true;
+    else if(c===','){row.push(cur);cur='';}
+    else if(c==='\n'||c==='\r'){if(c==='\r'&&text[i+1]==='\n')i++;row.push(cur);rows.push(row);row=[];cur='';}
+    else cur+=c;
+  }
+  if(cur!==''||row.length){row.push(cur);rows.push(row);}
+  return rows.filter(r=>r.some(x=>String(x).trim()!==''));
+}
+function renderReportCsvEditor(host){
+  const a=teacherPortalClass();
+  if(!a){host.innerHTML='<div class="p-3 rounded-xl border bg-amber-50 text-amber-800 text-xs font-bold">Select your class and section first.</div>';return;}
+  const subjectsDefault=a.isClassTeacher?'English, Hindi, Mathematics, Science, Social Science':(a.subjects||[]).join(', ');
+  const readonly=a.isClassTeacher?'':' readonly';
+  host.innerHTML='<div class="space-y-3">'
+    +'<div class="grid grid-cols-2 gap-2"><input id="rc-year" value="2026-27" placeholder="Academic year" class="p-2 border rounded"><input id="rc-term" placeholder="Term (e.g. Term 1)" class="p-2 border rounded"></div>'
+    +'<div><label class="text-[10px] font-bold text-slate-500">Subjects (comma separated)'+(a.isClassTeacher?'':' — your assigned subjects')+'</label><textarea id="rc-subjects" rows="2" class="w-full p-2 border rounded text-xs"'+readonly+'></textarea></div>'
+    +'<div class="grid grid-cols-2 gap-2 items-end"><div><label class="text-[10px] font-bold text-slate-500">Maximum marks per subject</label><input id="rc-max" type="number" min="1" value="100" class="w-full p-2 border rounded"></div><label class="text-xs flex items-center gap-2 pb-2"><input id="rc-publish" type="checkbox" checked> Publish to students</label></div>'
+    +'<div class="p-3 rounded-xl border bg-slate-50 text-xs space-y-2"><div class="font-bold">Step 1 — Download the sheet</div><div class="text-slate-500">Contains every student of this class. Open it in Excel or Google Sheets and type the marks. Leave a cell empty if not entered, or write AB for absent.</div><button type="button" onclick="downloadReportCardCsvTemplate()" class="w-full p-2.5 bg-slate-800 text-white rounded-xl font-bold">Download CSV sheet</button></div>'
+    +'<div class="p-3 rounded-xl border bg-slate-50 text-xs space-y-2"><div class="font-bold">Step 2 — Upload the filled sheet</div><input id="rc-file" type="file" accept=".csv,text/csv" onchange="handleReportCsvFile(this)" class="w-full text-xs"></div>'
+    +'<div id="rc-preview" class="text-xs"></div>'
+    +'<button type="button" id="rc-import-btn" onclick="importReportCsv()" disabled class="w-full p-2.5 bg-cyan-700 text-white rounded-xl font-bold disabled:opacity-40">Step 3 — Import report cards</button>'
+    +'<div id="rc-result" class="text-xs"></div></div>';
+  document.getElementById('rc-subjects').value=subjectsDefault;
+  window.__rcImport=null;
+}
+async function fetchReportRoster(a){
+  const {data,error}=await supabaseClient.from('student_roster').select('id,student_name,enroll_no,roll_no').eq('school_code',APS_STUDENT_SCHOOL).eq('class_name',a.class_name).eq('section',a.section).eq('status','ACTIVE').order('roll_no').order('student_name');
+  if(error)throw error;return data||[];
+}
+async function downloadReportCardCsvTemplate(){
+  const a=teacherPortalClass();if(!a)return showToast('Select class and section first.','error');
+  const subjects=[...new Set(String(document.getElementById('rc-subjects')?.value||'').split(/[,\n]/).map(x=>x.trim()).filter(Boolean))];
+  if(!subjects.length)return showToast('Enter at least one subject.','error');
+  const max=reportNum(document.getElementById('rc-max')?.value)||100;
+  try{
+    const roster=await fetchReportRoster(a);
+    if(!roster.length)return showToast('No active students found in this class.','error');
+    const head=['Admission No','Student Name',...subjects.map(s=>reportCsvSafeText(s+' ('+max+')')),'Remarks'];
+    const lines=[head,...roster.map(s=>[reportCsvSafeText(s.enroll_no||''),reportCsvSafeText(s.student_name),...subjects.map(()=>''),''])].map(r=>r.map(reportCsvCell).join(',')).join('\r\n');
+    const blob=new Blob(['﻿'+lines],{type:'text/csv;charset=utf-8'}),url=URL.createObjectURL(blob),el=document.createElement('a');
+    el.href=url;el.download='report-card-marks-'+a.class_name+'-'+a.section+'.csv';document.body.appendChild(el);el.click();el.remove();URL.revokeObjectURL(url);
+    showToast('Sheet downloaded. Fill in the marks and upload it.','success');
+  }catch(e){showToast('Could not prepare the sheet: '+(e.message||e),'error');}
+}
+async function handleReportCsvFile(input){
+  const file=input?.files?.[0],preview=document.getElementById('rc-preview'),btn=document.getElementById('rc-import-btn'),result=document.getElementById('rc-result');
+  window.__rcImport=null;if(btn)btn.disabled=true;if(result)result.innerHTML='';
+  if(!file||!preview)return;
+  const a=teacherPortalClass();if(!a){preview.innerHTML='<div class="text-rose-700 font-bold">Select your class and section first.</div>';return;}
+  const term=String(document.getElementById('rc-term')?.value||'').trim(),year=String(document.getElementById('rc-year')?.value||'').trim()||'2026-27';
+  if(!term){preview.innerHTML='<div class="text-rose-700 font-bold">Enter the term (e.g. Term 1) above, then upload the file again.</div>';input.value='';return;}
+  if(file.size>2*1024*1024){preview.innerHTML='<div class="text-rose-700 font-bold">File is too large (max 2 MB).</div>';return;}
+  preview.innerHTML='<div class="text-slate-500">Reading file…</div>';
+  try{
+    const defMax=reportNum(document.getElementById('rc-max')?.value)||100;
+    const table=parseReportCsv(await file.text());
+    if(table.length<2)throw Error('The file has no student rows.');
+    const header=table[0].map(h=>String(h||'').trim());
+    const lower=header.map(h=>h.toLowerCase());
+    const idCol=lower.findIndex(h=>['admission no','admission number','admission no.','enroll no','enrollment no','enrol no'].includes(h));
+    if(idCol<0)throw Error('Column "Admission No" not found. Please use the downloaded sheet.');
+    const nameCol=lower.indexOf('student name'),remCol=lower.indexOf('remarks');
+    const allowed=a.isClassTeacher?null:new Set((a.subjects||[]).map(s=>s.toLowerCase()));
+    const cols=[],fileErrors=[];
+    header.forEach((h,i)=>{
+      if(i===idCol||i===nameCol||i===remCol||!h)return;
+      const m=h.match(/^(.*?)\s*\((\d+(?:\.\d+)?)\)\s*$/);
+      const subject=(m?m[1]:h).trim(),max=m?Number(m[2]):defMax;
+      if(!subject)return;
+      if(allowed&&!allowed.has(subject.toLowerCase())){fileErrors.push('Subject "'+subject+'" is not assigned to you.');return;}
+      if(!(max>0))return;
+      cols.push({i,subject,max});
+    });
+    if(!cols.length)throw Error('No subject columns found.');
+    const roster=await fetchReportRoster(a),byKey=new Map(roster.map(s=>[reportStudentKey(s.enroll_no),s]));
+    const seen=new Set(),rows=[];
+    table.slice(1).forEach((r,n)=>{
+      const rawId=String(r[idCol]??'').trim(),key=reportStudentKey(rawId),errs=[];
+      const st=byKey.get(key);
+      if(!rawId)errs.push('Admission No is empty');
+      else if(!st)errs.push('Admission No "'+rawId+'" is not in this class');
+      else if(seen.has(st.id))errs.push('Student appears twice in the file');
+      if(st)seen.add(st.id);
+      const subjects=[];
+      cols.forEach(c=>{
+        const raw=String(r[c.i]??'').trim();
+        if(raw===''){errs.push(c.subject+': mark is blank; enter a mark or AB for absent');return;}
+        if(/^(ab|absent|a)$/i.test(raw)){subjects.push({subject:c.subject,max:c.max,marks:null,grade:'AB',absent:true});return;}
+        const v=Number(raw);
+        if(!Number.isFinite(v)||v<0)errs.push(c.subject+': "'+raw+'" is not a valid mark');
+        else if(v>c.max)errs.push(c.subject+': '+raw+' is more than the maximum '+c.max);
+        else subjects.push({subject:c.subject,max:c.max,marks:v,grade:reportGradeFor(v*100/c.max),absent:false});
+      });
+      if(!errs.length&&!subjects.length)errs.push('No marks entered');
+      rows.push({line:n+2,student:st||null,rawId,name:st?.student_name||String(r[nameCol]??''),subjects,remarks:remCol>=0?String(r[remCol]??'').trim().slice(0,500):'',errors:errs});
+    });
+    window.__rcImport={term,year,cols,rows,publish:!!document.getElementById('rc-publish')?.checked,classKey:a.class_name+'|'+a.section,blocked:fileErrors.length>0};
+    const ok=rows.filter(r=>!r.errors.length),bad=rows.length-ok.length;
+    const head='<div class="p-2 rounded-xl '+(bad?'bg-amber-50 border border-amber-200':'bg-emerald-50 border border-emerald-200')+' font-bold">'+ok.length+' student(s) ready to import'+(bad?' • '+bad+' row(s) with problems (they will be skipped)':'')+'</div>';
+    const fe=fileErrors.length?'<div class="mt-2 p-2 rounded-xl bg-rose-50 border border-rose-200 text-rose-800">'+fileErrors.map(studentEscape).join('<br>')+'</div>':'';
+    const th=cols.map(c=>'<th class="px-2 py-1 border text-center">'+studentEscape(c.subject)+'<br><span class="font-normal text-slate-500">/'+studentEscape(c.max)+'</span></th>').join('');
+    const body=rows.map(r=>{
+      const map=new Map(r.subjects.map(s=>[s.subject,s]));
+      const cells=cols.map(c=>{const s=map.get(c.subject);return '<td class="px-2 py-1 border text-center">'+(s?(s.absent?'AB':studentEscape(s.marks)):'')+'</td>';}).join('');
+      const t=computeReportTotals(r.subjects);
+      return '<tr class="'+(r.errors.length?'bg-rose-50':'')+'"><td class="px-2 py-1 border">'+studentEscape(r.rawId)+'</td><td class="px-2 py-1 border font-bold">'+studentEscape(r.name)+'</td>'+cells+'<td class="px-2 py-1 border text-center font-bold">'+(t.pct==null?'—':studentEscape(reportFmt(t.pct))+'% '+studentEscape(t.grade))+'</td><td class="px-2 py-1 border text-rose-700">'+r.errors.map(studentEscape).join('; ')+'</td></tr>';
+    }).join('');
+    preview.innerHTML=head+fe+'<div class="mt-2 overflow-x-auto max-h-80 border rounded-xl"><table class="w-full text-[10px] border-collapse"><thead class="bg-slate-100 sticky top-0"><tr><th class="px-2 py-1 border">Adm. No</th><th class="px-2 py-1 border">Student</th>'+th+'<th class="px-2 py-1 border">Result</th><th class="px-2 py-1 border">Problems</th></tr></thead><tbody>'+body+'</tbody></table></div>';
+    if(btn)btn.disabled=ok.length===0||fileErrors.length>0;
+  }catch(e){preview.innerHTML='<div class="p-2 rounded-xl bg-rose-50 border border-rose-200 text-rose-800 font-bold">'+studentEscape(e.message||e)+'</div>';}
+}
+async function importReportCsv(){
+  const job=window.__rcImport,btn=document.getElementById('rc-import-btn'),result=document.getElementById('rc-result'),a=teacherPortalClass();
+  if(!job||!a||job.classKey!==a.class_name+'|'+a.section)return showToast('Please upload the file again.','error');
+  if(job.blocked)return showToast('The CSV contains subjects outside your assignment. Remove those columns and upload again.','error');
+  const ok=job.rows.filter(r=>!r.errors.length);if(!ok.length)return;
+  const publish=!!document.getElementById('rc-publish')?.checked,email=teacherPortalEmail();
+  if(!confirm('Import report cards for '+ok.length+' student(s) — '+job.term+' '+job.year+(publish?' and publish them to students?':' as drafts (not visible to students)?')))return;
+  if(btn)btn.disabled=true;if(result)result.innerHTML='<div class="text-slate-500">Importing…</div>';
+  try{
+    const ids=ok.map(r=>r.student.id),existing=new Map();
+    for(let i=0;i<ids.length;i+=100){
+      const {data,error}=await supabaseClient.from('student_report_cards').select('student_id,subjects,remarks').eq('school_code',APS_STUDENT_SCHOOL).eq('academic_year',job.year).eq('term',job.term).in('student_id',ids.slice(i,i+100));
+      if(error)throw error;(data||[]).forEach(x=>existing.set(x.student_id,x));
+    }
+    const payloads=ok.map(r=>{
+      const old=existing.get(r.student.id),merged=new Map();
+      normalizeReportSubjects(old?.subjects).forEach(s=>merged.set(s.subject.toLowerCase(),s));
+      r.subjects.forEach(s=>merged.set(s.subject.toLowerCase(),s));
+      const list=[...merged.values()].map(s=>({subject:s.subject,max:s.max,marks:s.marks,grade:s.grade,...(s.absent?{absent:true}:{})}));
+      const t=computeReportTotals(normalizeReportSubjects(list));
+      return {student:r.student,row:{school_code:APS_STUDENT_SCHOOL,student_id:r.student.id,academic_year:job.year,term:job.term,subjects:list,overall_grade:t.grade,remarks:r.remarks||old?.remarks||null,published:publish,published_by:email}};
+    });
+    let saved=0;const failed=[];
+    const conflict='school_code,student_id,academic_year,term';
+    for(let i=0;i<payloads.length;i+=50){
+      const chunk=payloads.slice(i,i+50),{error}=await supabaseClient.from('student_report_cards').upsert(chunk.map(p=>p.row),{onConflict:conflict});
+      if(!error){saved+=chunk.length;continue;}
+      for(const p of chunk){
+        const {error:e2}=await supabaseClient.from('student_report_cards').upsert(p.row,{onConflict:conflict});
+        if(e2)failed.push(p.student.student_name+': '+(e2.message||e2));else saved++;
+      }
+    }
+    const skipped=job.rows.length-ok.length;
+    if(result)result.innerHTML='<div class="p-2 rounded-xl '+(failed.length?'bg-amber-50 border border-amber-200':'bg-emerald-50 border border-emerald-200')+' font-bold">'+saved+' report card(s) saved'+(publish?' and published':' as drafts')+(skipped?' • '+skipped+' skipped (problems in file)':'')+(failed.length?' • '+failed.length+' could not be saved':'')+'</div>'+(failed.length?'<div class="mt-2 p-2 rounded-xl bg-rose-50 border border-rose-200 text-rose-800">'+failed.map(studentEscape).join('<br>')+'<br><span class="text-[10px]">A card created by another teacher can only be changed by that teacher or the Admin.</span></div>':'');
+    showToast(saved+' report card(s) saved.',failed.length?'info':'success');
+    window.__rcImport=null;
+  }catch(e){if(result)result.innerHTML='<div class="p-2 rounded-xl bg-rose-50 border border-rose-200 text-rose-800 font-bold">'+studentEscape(e.message||e)+'</div>';if(btn)btn.disabled=false;}
+}
+function renderStudentReportCardHtml(card,st,index){
+  const list=normalizeReportSubjects(card.subjects),t=computeReportTotals(list);
+  const grade=card.overall_grade||t.grade||'';
+  const rows=list.map(s=>'<tr class="border-b"><td class="py-2 pr-2">'+studentEscape(s.subject)+'</td><td class="py-2 text-center text-slate-500">'+studentEscape(s.max==null?'—':reportFmt(s.max))+'</td><td class="py-2 text-center font-bold">'+(s.absent?'AB':studentEscape(reportFmt(s.marks)))+'</td><td class="py-2 text-center font-bold text-emerald-800">'+studentEscape(s.grade||'')+'</td></tr>').join('');
+  const fallback=Array.isArray(card.subjects)?'':'<p class="text-slate-500">'+studentEscape(JSON.stringify(card.subjects))+'</p>';
+  return '<article class="bg-white border border-slate-200 rounded-2xl shadow-sm overflow-hidden">'
+    +'<div class="px-4 py-3 bg-emerald-900 text-white flex items-center justify-between gap-2"><div><div class="text-[10px] uppercase tracking-wide text-emerald-200">Report Card</div><div class="font-extrabold text-sm">'+studentEscape(card.term)+' • '+studentEscape(card.academic_year)+'</div></div>'
+    +'<button type="button" data-rc-print="'+studentEscape(index)+'" class="px-3 py-1.5 rounded-lg bg-white/15 text-xs font-bold">Print / Save PDF</button></div>'
+    +'<div class="p-4 space-y-3">'
+    +'<div class="grid grid-cols-2 gap-x-3 gap-y-1 text-xs"><div><span class="text-slate-500">Name</span><br><b>'+studentEscape(st.student_name||'')+'</b></div><div><span class="text-slate-500">Class</span><br><b>'+studentEscape(st.class_name||'')+' - '+studentEscape(st.section||'')+'</b></div><div><span class="text-slate-500">Admission No</span><br><b>'+studentEscape(st.enroll_no||'')+'</b></div><div><span class="text-slate-500">Roll No</span><br><b>'+studentEscape(st.roll_no||'—')+'</b></div></div>'
+    +(list.length?'<table class="w-full text-xs"><thead><tr class="text-slate-500 border-b"><th class="text-left py-1">Subject</th><th class="py-1">Max</th><th class="py-1">Marks</th><th class="py-1">Grade</th></tr></thead><tbody>'+rows+'</tbody>'+(t.total==null?'':'<tfoot><tr class="font-extrabold bg-slate-50"><td class="py-2 pl-1">Total</td><td class="py-2 text-center">'+studentEscape(reportFmt(t.max))+'</td><td class="py-2 text-center">'+studentEscape(reportFmt(t.total))+'</td><td></td></tr></tfoot>')+'</table>':fallback)
+    +(t.pct==null?'':'<div class="flex items-center justify-between rounded-xl bg-emerald-50 border border-emerald-200 px-3 py-2"><div class="text-xs"><span class="text-slate-500">Percentage</span><br><b class="text-base">'+studentEscape(reportFmt(t.pct))+'%</b></div><div class="text-right text-xs"><span class="text-slate-500">Overall Grade</span><br><b class="text-xl text-emerald-800">'+studentEscape(grade)+'</b></div></div>')
+    +(card.remarks?'<div class="text-xs"><span class="text-slate-500">Remarks</span><p class="mt-1 whitespace-pre-wrap break-words">'+studentEscape(card.remarks)+'</p></div>':'')
+    +'</div></article>';
+}
+function printStudentReportCard(index){
+  const card=(window.__studentReportCards||[])[index],st=currentAuthUser?.studentRecord||{};
+  if(!card)return;
+  const list=normalizeReportSubjects(card.subjects),t=computeReportTotals(list),grade=card.overall_grade||t.grade||'';
+  const e=studentEscape,logo=new URL('logo%202.png',location.href).href;
+  const rows=list.map(s=>'<tr><td>'+e(s.subject)+'</td><td class="c">'+e(s.max==null?'—':reportFmt(s.max))+'</td><td class="c">'+(s.absent?'AB':e(reportFmt(s.marks)))+'</td><td class="c">'+e(s.grade||'')+'</td></tr>').join('');
+  const doc='<!doctype html><html><head><meta charset="utf-8"><title>Report Card - '+e(st.student_name||'')+'</title><style>body{font-family:Arial,sans-serif;margin:24px;color:#111}h1{margin:0;font-size:20px}.hd{display:flex;align-items:center;gap:14px;border-bottom:3px solid #064e3b;padding-bottom:10px}.hd img{height:64px}.sub{color:#555;font-size:12px}.info{display:grid;grid-template-columns:1fr 1fr;gap:6px 24px;margin:14px 0;font-size:13px}table{width:100%;border-collapse:collapse;font-size:13px}th,td{border:1px solid #999;padding:6px 8px;text-align:left}th{background:#ecfdf5}.c{text-align:center}.tot td{font-weight:bold;background:#f5f5f5}.sum{display:flex;justify-content:space-between;margin:14px 0;padding:10px 14px;border:2px solid #064e3b;border-radius:8px;font-size:14px}.sig{display:flex;justify-content:space-between;margin-top:70px;font-size:12px}.sig div{border-top:1px solid #333;padding-top:4px;width:30%;text-align:center}@media print{body{margin:10mm}}</style></head><body>'
+    +'<div class="hd"><img src="'+e(logo)+'" alt=""><div><h1>Ashiana Public School</h1><div class="sub">Report Card — '+e(card.term)+' • '+e(card.academic_year)+'</div></div></div>'
+    +'<div class="info"><div>Name: <b>'+e(st.student_name||'')+'</b></div><div>Class: <b>'+e(st.class_name||'')+' - '+e(st.section||'')+'</b></div><div>Admission No: <b>'+e(st.enroll_no||'')+'</b></div><div>Roll No: <b>'+e(st.roll_no||'—')+'</b></div><div>Father: <b>'+e(st.father_name||'—')+'</b></div><div>Mother: <b>'+e(st.mother_name||'—')+'</b></div></div>'
+    +'<table><thead><tr><th>Subject</th><th class="c">Max Marks</th><th class="c">Marks Obtained</th><th class="c">Grade</th></tr></thead><tbody>'+rows+'</tbody>'+(t.total==null?'':'<tfoot><tr class="tot"><td>Total</td><td class="c">'+e(reportFmt(t.max))+'</td><td class="c">'+e(reportFmt(t.total))+'</td><td></td></tr></tfoot>')+'</table>'
+    +(t.pct==null?'':'<div class="sum"><div>Percentage: <b>'+e(reportFmt(t.pct))+'%</b></div><div>Overall Grade: <b>'+e(grade)+'</b></div></div>')
+    +(card.remarks?'<p style="font-size:13px"><b>Remarks:</b> '+e(card.remarks)+'</p>':'')
+    +'<div class="sig"><div>Class Teacher</div><div>Parent / Guardian</div><div>Principal</div></div></body></html>';
+  const w=window.open('','_blank');
+  if(!w)return showToast('Please allow pop-ups to print the report card.','error');
+  w.document.open();w.document.write(doc);w.document.close();w.focus();setTimeout(()=>{try{w.print();}catch(_){}},400);
+}
 async function loadTeacherLeaveRequests(){
   const host=document.getElementById('teacher-leave-requests');
   if(!host||!supabaseClient)return [];
@@ -6906,7 +7121,9 @@ async function studentDashboardSection(type){
   }else if(type==="leave"){
     host.innerHTML='<form onsubmit="submitStudentLeave(event)" class="space-y-3 bg-white border rounded-2xl p-4"><div class="grid grid-cols-2 gap-2"><input id="student-leave-from" type="date" required class="p-3 border rounded-xl"><input id="student-leave-to" type="date" required class="p-3 border rounded-xl"></div><textarea id="student-leave-reason" required rows="3" placeholder="Reason" class="w-full p-3 border rounded-xl"></textarea><div id="student-leave-feedback" role="alert" aria-live="polite" class="hidden p-3 rounded-xl text-sm font-semibold"></div><button class="w-full p-3 bg-rose-700 text-white rounded-xl font-bold">Submit Leave Request</button></form><div class="pt-2">'+(fresh.leave_requests||[]).map(x=>'<div class="p-4 bg-white border rounded-2xl mb-2"><b>'+studentEscape(x.from_date)+' → '+studentEscape(x.to_date)+'</b><div class="mt-1">'+studentEscape(x.reason)+'</div><span class="font-bold mt-1 inline-block">'+studentEscape(x.status)+'</span></div>').join("")+'</div>';
   }else if(type==="report"){
-    host.innerHTML=(fresh.report_cards||[]).map(x=>'<div class="p-4 bg-white border rounded-2xl"><b class="text-sm">'+studentEscape(x.academic_year)+' · '+studentEscape(x.term)+' · '+studentEscape(x.overall_grade||"")+'</b><div class="mt-3 space-y-1">'+(Array.isArray(x.subjects)?x.subjects.map(s=>'<div class="flex justify-between border-b py-2"><span>'+studentEscape(s.subject||"")+'</span><b>'+studentEscape(s.grade||s.marks||"")+'</b></div>').join(""):studentEscape(JSON.stringify(x.subjects)))+'</div><p class="mt-2 text-slate-500">'+studentEscape(x.remarks||"")+'</p></div>').join("")||'<div class="p-6 bg-white border rounded-2xl text-center text-slate-400">No report card published.</div>';
+    window.__studentReportCards=fresh.report_cards||[];
+    host.innerHTML=window.__studentReportCards.length?window.__studentReportCards.map((x,i)=>renderStudentReportCardHtml(x,currentAuthUser?.studentRecord||{},i)).join(''):'<div class="p-6 bg-white border rounded-2xl text-center text-slate-400">No report card published.</div>';
+    host.querySelectorAll('[data-rc-print]').forEach(b=>b.addEventListener('click',()=>printStudentReportCard(Number(b.dataset.rcPrint))));
   }else if(type==="calendar"){
     host.innerHTML=(fresh.calendar||[]).map(x=>'<div class="p-4 bg-white border rounded-2xl"><b>'+studentEscape(x.event_date)+' — '+studentEscape(x.title)+'</b><div class="mt-1 text-slate-600">'+studentEscape(x.description||"")+'</div></div>').join("")||'<div class="p-6 bg-white border rounded-2xl text-center text-slate-400">No calendar events.</div>';
   }
