@@ -9022,10 +9022,30 @@ async function loadAdminStudentAttendance(){
         toggle.setAttribute("aria-label","Biometric status unavailable");
       }
     }
-    function selectStaffDrawerBiometric(){
-      toggleStaffDrawer(false);
-      openStaffProfileModal();
-      setTimeout(()=>document.getElementById("staff-passkey-settings")?.scrollIntoView({behavior:"smooth",block:"center"}),150);
+    async function selectStaffDrawerBiometric(){
+      const item=document.getElementById("staff-drawer-biometric");
+      if(item)item.disabled=true;
+      try{
+        const state=await callStaffPasskeys("status");
+        if(state?.enabled){
+          await callStaffPasskeys("disable");
+          await refreshStaffBiometricMenuStatus();
+          showToast("Biometric attendance disabled. You can use the existing PIN attendance method.", "success");
+          return;
+        }
+        if(!Number(state?.credential_count||0)){
+          toggleStaffDrawer(false); openStaffProfileModal();
+          setTimeout(()=>document.getElementById("staff-passkey-settings")?.scrollIntoView({behavior:"smooth",block:"center"}),150);
+          showToast("Register a passkey on this device to enable biometric attendance.", "info"); return;
+        }
+        const prepared=await callStaffPasskeys("enable-options");
+        if(!prepared?.options?.challenge)throw new Error("Could not prepare biometric verification. Please try again.");
+        const credential=await window.SimpleWebAuthnBrowser.startAuthentication({optionsJSON:prepared.options});
+        await callStaffPasskeys("authentication-verify",{credential,enable_after_verify:true});
+        await refreshStaffBiometricMenuStatus();
+        showToast("Biometric attendance enabled on this staff account.", "success");
+      }catch(error){showToast("Biometric setting unchanged: "+String(error?.message||error),"error");}
+      finally{if(item)item.disabled=false;}
     }
     function selectStaffDrawerFees(){
       toggleStaffDrawer(false);
