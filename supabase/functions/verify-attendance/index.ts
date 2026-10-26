@@ -346,8 +346,10 @@ Deno.serve(async (req: Request) => {
 
     const qrToken = String(body?.qr_token || "").trim();
     const pin = String(body?.pin || "").trim();
-    if (!/^\d{4}$/.test(pin) || qrToken.length < 20 || qrToken.length > 100) {
-      return json({ error: "QR_TOKEN_AND_4_DIGIT_PIN_REQUIRED" }, 400);
+    const passkeyToken = String(body?.passkey_verification_token || "").trim();
+    const hasPin = /^\d{4}$/.test(pin);
+    if ((!hasPin && passkeyToken.length < 40) || qrToken.length < 20 || qrToken.length > 100) {
+      return json({ error: "QR_TOKEN_AND_PIN_OR_PASSKEY_REQUIRED" }, 400);
     }
 
     const ipLimit = await consume(admin, `staff-ip:${ip}`, PER_IP_MAX, PER_IP_WINDOW);
@@ -362,10 +364,21 @@ Deno.serve(async (req: Request) => {
     const idLimit = await consume(admin, key, PER_STAFF_MAX, PER_STAFF_WINDOW);
     if (idLimit?.allowed === false) return rateLimited(idLimit);
 
-    const { data: pinOk, error: pinError } = await admin.rpc("verify_staff_pin_internal", { p_staff_id: staff.id, p_pin: pin });
-    if (pinError) throw pinError;
-    if (pinOk !== true) return json({ error: "INVALID_PIN" }, 401);
-    await clear(admin, key);
+    if (passkeyToken) {
+      const digest = new Uint8Array(await crypto.subtle.digest("SHA-256", new TextEncoder().encode(passkeyToken)));
+      const tokenHash = Array.from(digest, byte => byte.toString(16).padStart(2, "0")).join("");
+      const { data: passkeyOk, error: passkeyError } = await admin.rpc("consume_staff_webauthn_attendance_token", {
+        p_token_hash: tokenHash,
+        p_staff_id: String(staff.id),
+      });
+      if (passkeyError) throw passkeyError;
+      if (passkeyOk !== true) return json({ error: "PASSKEY_VERIFICATION_REQUIRED_OR_EXPIRED" }, 401);
+    } else {
+      const { data: pinOk, error: pinError } = await admin.rpc("verify_staff_pin_internal", { p_staff_id: staff.id, p_pin: pin });
+      if (pinError) throw pinError;
+      if (pinOk !== true) return json({ error: "INVALID_PIN" }, 401);
+      await clear(admin, key);
+    }
 
     // Server-side geofence enforcement for Ashiana Public School staff attendance.
     // GPS data is validated for this request and is not persisted.
