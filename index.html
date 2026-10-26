@@ -6669,7 +6669,7 @@ async function handleReportCsvFile(input){
       const subjects=[];
       cols.forEach(c=>{
         const raw=String(r[c.i]??'').trim();
-        if(raw==='')return;
+        if(raw===''){errs.push(c.subject+': mark is blank; enter a mark or AB for absent');return;}
         if(/^(ab|absent|a)$/i.test(raw)){subjects.push({subject:c.subject,max:c.max,marks:null,grade:'AB',absent:true});return;}
         const v=Number(raw);
         if(!Number.isFinite(v)||v<0)errs.push(c.subject+': "'+raw+'" is not a valid mark');
@@ -6679,7 +6679,7 @@ async function handleReportCsvFile(input){
       if(!errs.length&&!subjects.length)errs.push('No marks entered');
       rows.push({line:n+2,student:st||null,rawId,name:st?.student_name||String(r[nameCol]??''),subjects,remarks:remCol>=0?String(r[remCol]??'').trim().slice(0,500):'',errors:errs});
     });
-    window.__rcImport={term,year,cols,rows,publish:!!document.getElementById('rc-publish')?.checked,classKey:a.class_name+'|'+a.section};
+    window.__rcImport={term,year,cols,rows,publish:!!document.getElementById('rc-publish')?.checked,classKey:a.class_name+'|'+a.section,blocked:fileErrors.length>0};
     const ok=rows.filter(r=>!r.errors.length),bad=rows.length-ok.length;
     const head='<div class="p-2 rounded-xl '+(bad?'bg-amber-50 border border-amber-200':'bg-emerald-50 border border-emerald-200')+' font-bold">'+ok.length+' student(s) ready to import'+(bad?' • '+bad+' row(s) with problems (they will be skipped)':'')+'</div>';
     const fe=fileErrors.length?'<div class="mt-2 p-2 rounded-xl bg-rose-50 border border-rose-200 text-rose-800">'+fileErrors.map(studentEscape).join('<br>')+'</div>':'';
@@ -6691,12 +6691,13 @@ async function handleReportCsvFile(input){
       return '<tr class="'+(r.errors.length?'bg-rose-50':'')+'"><td class="px-2 py-1 border">'+studentEscape(r.rawId)+'</td><td class="px-2 py-1 border font-bold">'+studentEscape(r.name)+'</td>'+cells+'<td class="px-2 py-1 border text-center font-bold">'+(t.pct==null?'—':studentEscape(reportFmt(t.pct))+'% '+studentEscape(t.grade))+'</td><td class="px-2 py-1 border text-rose-700">'+r.errors.map(studentEscape).join('; ')+'</td></tr>';
     }).join('');
     preview.innerHTML=head+fe+'<div class="mt-2 overflow-x-auto max-h-80 border rounded-xl"><table class="w-full text-[10px] border-collapse"><thead class="bg-slate-100 sticky top-0"><tr><th class="px-2 py-1 border">Adm. No</th><th class="px-2 py-1 border">Student</th>'+th+'<th class="px-2 py-1 border">Result</th><th class="px-2 py-1 border">Problems</th></tr></thead><tbody>'+body+'</tbody></table></div>';
-    if(btn)btn.disabled=ok.length===0;
+    if(btn)btn.disabled=ok.length===0||fileErrors.length>0;
   }catch(e){preview.innerHTML='<div class="p-2 rounded-xl bg-rose-50 border border-rose-200 text-rose-800 font-bold">'+studentEscape(e.message||e)+'</div>';}
 }
 async function importReportCsv(){
   const job=window.__rcImport,btn=document.getElementById('rc-import-btn'),result=document.getElementById('rc-result'),a=teacherPortalClass();
   if(!job||!a||job.classKey!==a.class_name+'|'+a.section)return showToast('Please upload the file again.','error');
+  if(job.blocked)return showToast('The CSV contains subjects outside your assignment. Remove those columns and upload again.','error');
   const ok=job.rows.filter(r=>!r.errors.length);if(!ok.length)return;
   const publish=!!document.getElementById('rc-publish')?.checked,email=teacherPortalEmail();
   if(!confirm('Import report cards for '+ok.length+' student(s) — '+job.term+' '+job.year+(publish?' and publish them to students?':' as drafts (not visible to students)?')))return;
