@@ -2826,6 +2826,7 @@ id="student-portal-view" class="hidden flex-col w-full max-w-2xl space-y-4 stude
             <button onclick="studentDashboardSection('classmates')" class="p-4 rounded-2xl border bg-cyan-50 text-left"><i data-lucide="contact-round" class="w-5 h-5 text-cyan-700"></i><b class="block mt-2 text-sm">Classmates</b><span class="text-[10px] text-slate-500">Your section students</span></button>
             <button onclick="studentDashboardSection('notice')" class="p-4 rounded-2xl border bg-amber-50 text-left"><i data-lucide="megaphone" class="w-5 h-5 text-amber-700"></i><b class="block mt-2 text-sm">Notice</b><span id="student-count-notices" class="text-[10px] text-slate-500">0 notices</span></button>
             <button onclick="studentDashboardSection('attendance')" class="p-4 rounded-2xl border bg-emerald-50 text-left"><i data-lucide="calendar-check" class="w-5 h-5 text-emerald-700"></i><b class="block mt-2 text-sm">Attendance</b><span id="student-count-attendance" class="text-[10px] text-slate-500">0 records</span></button>
+            <button type="button" onclick="studentDashboardSection('report-card')" class="p-4 rounded-2xl border border-indigo-100 bg-indigo-50 text-left"><i data-lucide="graduation-cap" class="w-5 h-5 text-indigo-700"></i><b class="block mt-2 text-sm">Report Card</b><span class="text-[10px] text-slate-500">Approved exam marks</span></button>
             <button type="button" onclick="studentDashboardSection('fees')" class="p-4 rounded-2xl border border-amber-200 bg-amber-50 text-left"><i data-lucide="wallet" class="w-5 h-5 text-amber-700"></i><b class="block mt-2 text-sm text-slate-900">Fees Management</b><span class="text-[10px] text-slate-600">Due, payments & receipts</span></button>
             <button onclick="studentDashboardSection('homework')" class="p-4 rounded-2xl border bg-blue-50 text-left"><i data-lucide="book-open-check" class="w-5 h-5 text-blue-700"></i><b class="block mt-2 text-sm">Homework</b><span id="student-count-homework" class="text-[10px] text-slate-500">0 items</span></button>
             <button onclick="studentDashboardSection('timetable')" class="p-4 rounded-2xl border bg-violet-50 text-left"><i data-lucide="calendar-clock" class="w-5 h-5 text-violet-700"></i><b class="block mt-2 text-sm">Timetable</b><span class="text-[10px] text-slate-500">Class schedule</span></button>
@@ -3256,7 +3257,7 @@ id="student-dashboard-panel-body" class="space-y-3 text-xs"></div>
     <div class="grid grid-cols-2 gap-2 mt-3">
       <select id="teacher-portal-class" onchange="loadTeacherPortalStudents()" class="p-2 border rounded"><option value="">Select class & section</option></select>
       <select id="teacher-portal-type" onchange="renderTeacherPortalEditor()" class="p-2 border rounded">
-        <option value="notice">Notice</option><option value="homework">Homework</option><option value="timetable">Timetable</option><option value="calendar">Calendar Event</option>
+        <option value="notice">Notice</option><option value="homework">Homework</option><option value="timetable">Timetable</option><option value="calendar">Calendar Event</option><option value="marks">Report Card Marks (CSV)</option>
       </select>
     </div>
     <div id="teacher-portal-editor" class="mt-3 space-y-2"></div>
@@ -3445,6 +3446,7 @@ id="admin-portal-view" class="hidden flex-col w-full space-y-4 admin-dashboard-s
 
         <button type="button" onclick="window.switchAdminTab('students')"><i data-lucide="graduation-cap"></i><span>Students</span></button>
         <button type="button" onclick="window.switchAdminTab('student-portal')" title="Student Portal Management"><i data-lucide="panels-top-left"></i><span>Student Portal</span></button>
+        <button type="button" id="admin-nav-report-cards" onclick="window.switchAdminTab('report-cards')" title="Review report cards submitted by class teachers"><i data-lucide="clipboard-check"></i><span>Report Cards</span></button>
         <button type="button" id="admin-nav-student-attendance" onclick="openAdminStudentAttendanceRecordsModal()" title="View Students Attendance"><i data-lucide="clipboard-check"></i><span>View Students Attendance</span></button>
         <button type="button" onclick="openAdminStudentAttendanceReport()" title="Students Attendance Report"><i data-lucide="clipboard-list"></i><span>Attendance Report</span></button><button type="button" onclick="openAdminAttendanceAnalytics()" title="Advanced Attendance Analytics"><i data-lucide="chart-no-axes-combined"></i><span>Analytics 2.0</span></button>
         <button type="button" onclick="window.switchAdminTab('directory')"><i data-lucide="users"></i><span>Faculty</span></button>
@@ -4091,6 +4093,20 @@ id="admin-portal-view" class="hidden flex-col w-full space-y-4 admin-dashboard-s
           <div id="attendance-rule-validation" class="hidden mt-4 rounded-xl border border-rose-200 bg-rose-50 p-3 text-sm text-rose-800" role="alert"></div>
           <div id="attendance-rule-preview" class="hidden mt-4 rounded-xl border border-slate-200 bg-slate-50 p-4" aria-live="polite"></div>
         </section>
+      </div>
+
+      <div id="admin-tab-report-cards" class="hidden space-y-4" style="display:none">
+        <section class="bg-white rounded-2xl border border-slate-200 shadow-sm p-4 sm:p-5">
+          <div class="flex flex-col sm:flex-row sm:items-center justify-between gap-3">
+            <div>
+              <h3 class="text-base font-extrabold text-slate-900 flex items-center gap-2"><i data-lucide="graduation-cap" class="w-5 h-5 text-indigo-700"></i><span>Report Card Approvals</span></h3>
+              <p class="text-xs text-slate-500 mt-1">Review marks submitted by class teachers. Students see results only after approval.</p>
+            </div>
+            <button type="button" onclick="loadAdminReportCards()" class="px-3 py-2 rounded-xl bg-slate-100 hover:bg-slate-200 text-slate-700 text-xs font-bold inline-flex items-center gap-2"><i data-lucide="refresh-cw" class="w-4 h-4"></i>Refresh</button>
+          </div>
+          <div id="admin-report-card-queue" class="mt-4 space-y-2"><div class="p-4 rounded-xl border bg-slate-50 text-sm text-slate-500">Open this panel to load submissions.</div></div>
+        </section>
+        <section id="admin-report-card-review" class="hidden bg-white rounded-2xl border border-slate-200 shadow-sm p-4 sm:p-5"></section>
       </div>
 
       <div id="admin-tab-reports" class="hidden space-y-4">
@@ -6404,6 +6420,12 @@ function renderTeacherPortalEditor(){
   const host=document.getElementById('teacher-portal-editor');
   if(!host)return;
   const type=document.getElementById('teacher-portal-type')?.value||'notice';
+  if(type==='marks'){
+    host.innerHTML='<section class="rounded-2xl border border-indigo-100 bg-indigo-50/60 p-3 sm:p-4"><div class="flex items-start gap-3"><span class="flex h-10 w-10 shrink-0 items-center justify-center rounded-xl bg-white text-indigo-700 shadow-sm"><i data-lucide="file-spreadsheet" class="h-5 w-5"></i></span><div><h5 class="text-sm font-extrabold text-slate-900">Class Report Card</h5><p class="mt-1 text-[11px] leading-relaxed text-slate-600">Download the class template with students pre-filled, enter marks or AB for absent students, then upload and submit the class.</p></div></div><div class="mt-3"><label for="teacher-report-card-exam" class="mb-1 block text-[10px] font-bold text-slate-600">Exam</label><select id="teacher-report-card-exam" onchange="loadTeacherReportCardSheet()" class="w-full rounded-xl border border-slate-300 bg-white p-2.5 text-xs"><option value="">Loading assigned exams...</option></select></div><div id="teacher-report-card-sheet" class="mt-3 rounded-xl border border-white bg-white p-3 text-xs text-slate-500">Select an exam to load the current class roster.</div></section>';
+    if(window.lucide)lucide.createIcons();
+    void loadTeacherReportCardOptions();
+    return;
+  }
   if(type==='notice'){
     host.innerHTML='<input id="tp-title" placeholder="Notice title" class="w-full p-2.5 border rounded-xl text-sm"><textarea id="tp-body" rows="5" placeholder="Notice details — paragraphs and line breaks are preserved for students." class="w-full p-2.5 border rounded-xl text-sm leading-6 resize-y"></textarea><label class="flex items-center gap-2 p-2.5 rounded-xl border border-dashed border-emerald-200 bg-emerald-50/50 text-xs text-slate-700 cursor-pointer"><i data-lucide="paperclip" class="w-4 h-4 text-emerald-700"></i><span class="font-bold">Attach PDF</span><input id="tp-attachment" type="file" accept="application/pdf,.pdf" class="hidden" onchange="showTeacherPortalPdfSelection(this)"><span id="tp-attachment-name" class="ml-auto text-[10px] text-slate-400 truncate">Optional • PDF up to 10 MB</span></label><button type="button" id="tp-publish-notice" onclick="saveTeacherNotice()" class="w-full p-2.5 bg-emerald-800 text-white rounded-xl font-bold">Publish Notice</button><div id="tp-existing-content" class="mt-4"></div>';
     loadTeacherPortalContentItems('notice');
@@ -6414,6 +6436,252 @@ function renderTeacherPortalEditor(){
   else if(type==='calendar')host.innerHTML='<input id="tp-date" type="date" class="w-full p-2 border rounded"><input id="tp-title" placeholder="Event / Holiday title" class="w-full p-2 border rounded"><textarea id="tp-body" rows="2" placeholder="Description" class="w-full p-2 border rounded"></textarea><button type="button" onclick="saveTeacherCalendar()" class="w-full p-2.5 bg-orange-700 text-white rounded-xl font-bold">Add Calendar Event</button>';
   else host.innerHTML='';
   if(window.lucide)lucide.createIcons();
+}
+let teacherReportCardOptions=[],teacherReportCardSheet=null,teacherReportCardOptionsRequest=0,teacherReportCardSheetRequest=0;
+let adminReportCardQueueRows=[],adminReportCardSelection=null,adminReportCardSheet=null,adminReportCardQueueRequest=0,adminReportCardSheetRequest=0;
+function teacherReportCardSelection(){
+  const selected=document.getElementById('teacher-report-card-exam')?.value;
+  const a=teacherPortalClass();
+  if(!selected||!a?.isClassTeacher)return null;
+  return teacherReportCardOptions.find(x=>String(x.exam_id)===String(selected)&&String(x.class_name)===String(a.class_name)&&String(x.section)===String(a.section)&&x.is_class_teacher===true)||null;
+}
+async function loadTeacherReportCardOptions(){
+  const host=document.getElementById('teacher-report-card-sheet'),select=document.getElementById('teacher-report-card-exam'),a=teacherPortalClass(),request=++teacherReportCardOptionsRequest;
+  teacherReportCardSheet=null;
+  if(!host||!select)return;
+  if(!a?.isClassTeacher){select.innerHTML='<option value="">Class Teacher assignment required</option>';host.innerHTML='<div class="rounded-xl border border-amber-200 bg-amber-50 p-3 text-xs text-amber-800">Report-card marks can be entered by the Class Teacher for this section.</div>';return;}
+  select.innerHTML='<option value="">Loading exams...</option>';
+  host.innerHTML='<div class="p-3 text-xs text-slate-500">Loading the student roster and exam subjects...</div>';
+  try{
+    const {data,error}=await supabaseClient.rpc('report_card_exam_options');
+    if(error)throw error;
+    if(request!==teacherReportCardOptionsRequest)return;
+    teacherReportCardOptions=Array.isArray(data)?data:[];
+    const options=teacherReportCardOptions.filter(x=>x.is_class_teacher===true&&String(x.class_name)===String(a.class_name)&&String(x.section)===String(a.section));
+    if(!options.length){select.innerHTML='<option value="">No configured exams for this class</option>';host.innerHTML='<div class="rounded-xl border border-slate-200 bg-slate-50 p-3 text-xs text-slate-600">No active exam subjects are configured for this class and section yet.</div>';return;}
+    const previous=select.value;
+    select.innerHTML=options.map(x=>'<option value="'+studentEscape(x.exam_id)+'">'+studentEscape(x.exam_name)+'  -  '+studentEscape(x.class_name)+' - '+studentEscape(x.section)+'</option>').join('');
+    if(options.some(x=>String(x.exam_id)===String(previous)))select.value=previous;
+    await loadTeacherReportCardSheet();
+  }catch(e){
+    if(request!==teacherReportCardOptionsRequest)return;
+    select.innerHTML='<option value="">Could not load exams</option>';
+    host.innerHTML='<div class="rounded-xl border border-rose-200 bg-rose-50 p-3 text-xs text-rose-800">Unable to load report-card exams: '+studentEscape(e?.message||e)+'</div>';
+  }
+}
+function teacherReportCardCsvHeader(subject){return 'Marks ('+String(subject?.code||'')+') - '+String(subject?.name||'Subject');}
+function renderTeacherReportCardSheet(){
+  const host=document.getElementById('teacher-report-card-sheet'),sheet=teacherReportCardSheet,option=teacherReportCardSelection();
+  if(!host)return;
+  if(!sheet||!option){host.innerHTML='<div class="p-3 text-xs text-slate-500">Select an exam to load the current class roster.</div>';return;}
+  const subjects=Array.isArray(sheet.subjects)?sheet.subjects:[],students=Array.isArray(sheet.students)?sheet.students:[],marks=Array.isArray(sheet.marks)?sheet.marks:[];
+  const marksByCell=new Map(marks.map(m=>[String(m.student_id)+'|'+String(m.subject_id),m]));
+  let filled=0;
+  students.forEach(student=>subjects.forEach(subject=>{const mark=marksByCell.get(String(student.student_id)+'|'+String(subject.subject_id));if(mark&&(mark.absent===true||mark.marks!==null&&mark.marks!==undefined))filled++;}));
+  const total=students.length*subjects.length,status=String(sheet.status||'DRAFT').toUpperCase(),locked=['SUBMITTED','APPROVED'].includes(status);
+  const badge=status==='APPROVED'?'bg-emerald-100 text-emerald-800':status==='SUBMITTED'?'bg-amber-100 text-amber-800':status==='REJECTED'?'bg-rose-100 text-rose-800':'bg-slate-100 text-slate-700';
+  const note=sheet.review_note?'<div class="mt-3 rounded-xl border border-rose-200 bg-rose-50 p-3 text-xs text-rose-800"><b>Admin note:</b> '+studentEscape(sheet.review_note)+'</div>':'';
+  const submitDisabled=locked||total===0||filled<total;
+  host.innerHTML='<div class="flex flex-wrap items-start justify-between gap-3"><div><div class="flex flex-wrap items-center gap-2"><span class="rounded-full px-2.5 py-1 text-[10px] font-extrabold '+badge+'">'+studentEscape(status)+'</span><span class="text-[10px] text-slate-500">'+students.length+' students  -  '+subjects.length+' subjects  -  '+filled+'/'+total+' marks entered</span></div><p class="mt-2 text-[11px] leading-relaxed text-slate-600">Fill each subject column with a mark from 0 to the maximum shown in the template, or <b>AB</b> for absent. Blank marks can be saved as a draft but must be completed before submission.</p></div><div class="flex flex-wrap gap-2"><button type="button" onclick="downloadTeacherReportCardTemplate()" class="inline-flex items-center gap-1.5 rounded-xl border border-indigo-200 bg-indigo-50 px-3 py-2 text-[10px] font-bold text-indigo-800"><i data-lucide="download" class="h-3.5 w-3.5"></i>Download CSV</button><label for="teacher-report-card-file" class="inline-flex cursor-pointer items-center gap-1.5 rounded-xl bg-indigo-700 px-3 py-2 text-[10px] font-bold text-white '+(locked?'pointer-events-none opacity-50':'')+'"><i data-lucide="upload" class="h-3.5 w-3.5"></i>Upload completed CSV</label><input id="teacher-report-card-file" type="file" accept=".csv,text/csv" class="hidden" onchange="uploadTeacherReportCardCsv(this)" '+(locked?'disabled':'')+'><button id="teacher-report-card-submit" type="button" onclick="submitTeacherReportCard()" class="inline-flex items-center gap-1.5 rounded-xl bg-emerald-700 px-3 py-2 text-[10px] font-bold text-white '+(submitDisabled?'opacity-50':'')+'" '+(submitDisabled?'disabled':'')+'><i data-lucide="send" class="h-3.5 w-3.5"></i>Submit to Admin</button></div></div>'+note+'<div id="teacher-report-card-feedback" class="hidden mt-3 rounded-xl p-3 text-xs" role="status" aria-live="polite"></div>'+(locked?'<p class="mt-3 rounded-xl bg-slate-50 p-3 text-[10px] text-slate-600">This class is locked while the report card is '+studentEscape(status.toLowerCase())+'. Admin approval publishes it to students; a return for correction unlocks it.</p>':'');
+  if(window.lucide)lucide.createIcons();
+}
+async function loadTeacherReportCardSheet(){
+  const host=document.getElementById('teacher-report-card-sheet'),option=teacherReportCardSelection(),request=++teacherReportCardSheetRequest;
+  teacherReportCardSheet=null;
+  if(!host)return;
+  if(!option){host.innerHTML='<div class="p-3 text-xs text-slate-500">Select an exam to load the current class roster.</div>';return;}
+  host.innerHTML='<div class="p-3 text-xs text-slate-500">Loading '+studentEscape(option.exam_name)+' roster...</div>';
+  try{
+    const {data,error}=await supabaseClient.rpc('report_card_sheet',{p_exam_id:option.exam_id,p_class:option.class_name,p_section:option.section});
+    if(error)throw error;
+    if(request!==teacherReportCardSheetRequest)return;
+    teacherReportCardSheet=data||null;
+    renderTeacherReportCardSheet();
+  }catch(e){
+    if(request!==teacherReportCardSheetRequest)return;
+    host.innerHTML='<div class="rounded-xl border border-rose-200 bg-rose-50 p-3 text-xs text-rose-800">Unable to load this class sheet: '+studentEscape(e?.message||e)+'</div>';
+  }
+}
+function teacherReportCardCsvCell(value){const text=String(value??'');return /[",\r\n]/.test(text)?'"'+text.replace(/"/g,'""')+'"':text;}
+function downloadTeacherReportCardTemplate(){
+  const option=teacherReportCardSelection(),sheet=teacherReportCardSheet;
+  if(!option||!sheet)return showToast('Load a class and exam first.','error');
+  const subjects=Array.isArray(sheet.subjects)?sheet.subjects:[],students=Array.isArray(sheet.students)?sheet.students:[],marks=Array.isArray(sheet.marks)?sheet.marks:[];
+  if(!subjects.length||!students.length)return showToast('This class needs active students and configured subjects before a template can be created.','error');
+  const marksByCell=new Map(marks.map(m=>[String(m.student_id)+'|'+String(m.subject_id),m]));
+  const headers=['enroll_no','roll_no','student_name',...subjects.map(teacherReportCardCsvHeader)];
+  const rows=students.map(student=>[student.enroll_no||'',student.roll_no||'',student.name||'',...subjects.map(subject=>{const m=marksByCell.get(String(student.student_id)+'|'+String(subject.subject_id));return m?.absent?'AB':m?.marks==null?'':m.marks;})]);
+  const csv='\uFEFF'+[headers,...rows].map(row=>row.map(teacherReportCardCsvCell).join(',')).join('\r\n')+'\r\n';
+  const safe=value=>String(value||'').trim().toLowerCase().replace(/[^a-z0-9_-]+/g,'-').replace(/^-+|-+$/g,'').slice(0,40)||'class';
+  const filename=['report-card',safe(option.exam_name),safe(option.class_name),safe(option.section)].join('-')+'.csv';
+  const url=URL.createObjectURL(new Blob([csv],{type:'text/csv;charset=utf-8'}));
+  const link=document.createElement('a');link.href=url;link.download=filename;document.body.appendChild(link);link.click();link.remove();setTimeout(()=>URL.revokeObjectURL(url),1000);
+}
+function parseTeacherReportCardCsv(text){
+  const source=String(text||'').replace(/^\uFEFF/,'');let rows=[],row=[],cell='',quoted=false;
+  for(let i=0;i<source.length;i++){
+    const ch=source[i];
+    if(quoted){if(ch==='"'&&source[i+1]==='"'){cell+='"';i++;}else if(ch==='"'){quoted=false;}else cell+=ch;continue;}
+    if(ch==='"'){if(cell.length)throw new Error('Unexpected quote in CSV. Download a fresh template and keep its headers unchanged.');quoted=true;}
+    else if(ch===','){row.push(cell);cell='';}
+    else if(ch==='\n'){row.push(cell);if(row.some(v=>String(v).trim()!==''))rows.push(row);row=[];cell='';}
+    else if(ch!=='\r')cell+=ch;
+  }
+  if(quoted)throw new Error('The CSV has an unclosed quoted value. Save it again as CSV and retry.');
+  if(cell.length||row.length){row.push(cell);if(row.some(v=>String(v).trim()!==''))rows.push(row);}
+  return rows;
+}
+function showTeacherReportCardFeedback(messages,isError=true){
+  const host=document.getElementById('teacher-report-card-feedback');if(!host)return;
+  const list=(Array.isArray(messages)?messages:[messages]).filter(Boolean);
+  host.className='mt-3 rounded-xl border p-3 text-xs '+(isError?'border-rose-200 bg-rose-50 text-rose-800':'border-emerald-200 bg-emerald-50 text-emerald-800');
+  host.innerHTML=list.length>1?'<ul class="list-disc space-y-1 pl-4">'+list.map(x=>'<li>'+studentEscape(x)+'</li>').join('')+'</ul>':studentEscape(list[0]||'');
+}
+async function uploadTeacherReportCardCsv(input){
+  const file=input?.files?.[0],option=teacherReportCardSelection(),sheet=teacherReportCardSheet;
+  if(!file)return;
+  try{
+    if(!option||!sheet)throw new Error('Load a class and exam before uploading marks.');
+    if(file.size>5*1024*1024)throw new Error('CSV must be 5 MB or smaller.');
+    if(!file.name.toLowerCase().endsWith('.csv')&&file.type!=='text/csv')throw new Error('Choose the completed CSV template.');
+    if(['SUBMITTED','APPROVED'].includes(String(sheet.status||'').toUpperCase()))throw new Error('This class has already been submitted and is locked.');
+    const parsed=parseTeacherReportCardCsv(await file.text());
+    if(parsed.length<2)throw new Error('The CSV has no student rows.');
+    const headers=parsed[0].map(v=>String(v||'').trim()),normalized=headers.map(v=>v.toLowerCase());
+    const subjects=Array.isArray(sheet.subjects)?sheet.subjects:[],students=Array.isArray(sheet.students)?sheet.students:[];
+    const expected=['enroll_no','roll_no','student_name',...subjects.map(teacherReportCardCsvHeader)];
+    const expectedNormalized=expected.map(v=>v.toLowerCase());
+    if(normalized.length!==expectedNormalized.length||new Set(normalized).size!==normalized.length||expectedNormalized.some(v=>!normalized.includes(v))||normalized.some(v=>!expectedNormalized.includes(v)))throw new Error('CSV columns do not match the current class template. Download a fresh template and keep its headers unchanged.');
+    const enrollmentIndex=normalized.indexOf('enroll_no');
+    const subjectIndexes=subjects.map(subject=>normalized.indexOf(teacherReportCardCsvHeader(subject).toLowerCase()));
+    const roster=new Map(students.map(s=>[String(s.enroll_no||'').trim().toUpperCase(),s]));
+    const seen=new Set(),errors=[],rows=[];
+    const dataRows=parsed.slice(1);
+    if(dataRows.length!==students.length)errors.push('The CSV must include every active student exactly once ('+students.length+' expected, '+dataRows.length+' found).');
+    for(let i=0;i<dataRows.length;i++){
+      const values=dataRows[i],csvRow=i+2;
+      if(values.length!==headers.length){errors.push('Row '+csvRow+' has '+values.length+' columns; expected '+headers.length+'.');continue;}
+      const enroll=String(values[enrollmentIndex]||'').trim(),key=enroll.toUpperCase(),student=roster.get(key);
+      if(!enroll){errors.push('Row '+csvRow+' is missing an admission number.');continue;}
+      if(!student){errors.push('Row '+csvRow+' admission number '+enroll+' is not in this class.');continue;}
+      if(seen.has(key)){errors.push('Admission number '+enroll+' appears more than once.');continue;}
+      seen.add(key);
+      subjects.forEach((subject,j)=>{
+        const raw=String(values[subjectIndexes[j]]||'').trim();
+        if(raw.toUpperCase()==='AB'){
+          rows.push({enroll_no:student.enroll_no,subject_code:subject.code,marks:'',absent:true});
+          return;
+        }
+        if(raw==='' ){
+          rows.push({enroll_no:student.enroll_no,subject_code:subject.code,marks:'',absent:false});
+          return;
+        }
+        if(!/^\d{1,5}(?:\.\d{1,2})?$/.test(raw)||Number(raw)>Number(subject.max_marks)){
+          errors.push('Row '+csvRow+', '+subject.name+': enter 0 to '+subject.max_marks+' or AB.');
+          return;
+        }
+        rows.push({enroll_no:student.enroll_no,subject_code:subject.code,marks:raw,absent:false});
+      });
+    }
+    students.forEach(s=>{const key=String(s.enroll_no||'').trim().toUpperCase();if(key&&!seen.has(key))errors.push('Student '+(s.enroll_no||s.name||'')+' is missing from the CSV.');});
+    if(rows.length>5000)errors.push('This upload exceeds the 5,000 student-subject row limit.');
+    if(errors.length){showTeacherReportCardFeedback(errors.slice(0,40),true);showToast('No marks were saved. Fix the CSV errors and upload again.','error');return;}
+    const button=document.querySelector('#teacher-report-card-sheet label[for="teacher-report-card-file"]');if(button){button.classList.add('pointer-events-none','opacity-60');button.textContent='Uploading...';}
+    const {data,error}=await supabaseClient.rpc('report_card_save_marks',{p_exam_id:option.exam_id,p_class:option.class_name,p_section:option.section,p_rows:rows});
+    if(error)throw error;
+    if(!data?.success){const details=Array.isArray(data?.errors)?data.errors.map(x=>'Row '+x.row+': '+x.error):[];showTeacherReportCardFeedback([data?.message||'Marks were not saved.',...details].slice(0,40),true);return;}
+    showToast('Draft saved: '+Number(data.saved||0)+' student-subject marks.','success');
+    await loadTeacherReportCardSheet();
+    showTeacherReportCardFeedback(['Draft saved. Review the sheet and submit it to Admin when complete.'],false);
+  }catch(e){showTeacherReportCardFeedback([e?.message||String(e)],true);showToast('CSV upload failed. No marks were saved.','error');}
+  finally{
+    if(input)input.value='';
+    const button=document.querySelector('#teacher-report-card-sheet label[for="teacher-report-card-file"]');
+    if(button){button.classList.remove('pointer-events-none','opacity-60');button.innerHTML='<i data-lucide="upload" class="h-3.5 w-3.5"></i>Upload completed CSV';if(['SUBMITTED','APPROVED'].includes(String(teacherReportCardSheet?.status||'').toUpperCase()))button.classList.add('pointer-events-none','opacity-50');if(window.lucide)lucide.createIcons();}
+  }
+}
+async function submitTeacherReportCard(){
+  const option=teacherReportCardSelection(),sheet=teacherReportCardSheet;if(!option||!sheet)return;
+  if(['SUBMITTED','APPROVED'].includes(String(sheet.status||'').toUpperCase()))return showToast('This class is already locked.','info');
+  if(!window.confirm('Submit '+option.exam_name+' marks for Class '+option.class_name+' - '+option.section+' to Admin? You cannot edit them again unless Admin returns them for correction.'))return;
+  const button=document.getElementById('teacher-report-card-submit');if(button){button.disabled=true;button.textContent='Submitting...';}
+  try{
+    const {data,error}=await supabaseClient.rpc('report_card_submit',{p_exam_id:option.exam_id,p_class:option.class_name,p_section:option.section});
+    if(error)throw error;
+    if(!data?.success){showTeacherReportCardFeedback([data?.message||'Submission was not completed.'],true);showToast(data?.message||'Submission was not completed.','error');return;}
+    showToast('Report card submitted to Admin for approval.','success');
+    await loadTeacherReportCardSheet();
+  }catch(e){showTeacherReportCardFeedback([e?.message||String(e)],true);showToast('Could not submit report card.','error');}
+  finally{const current=document.getElementById('teacher-report-card-submit');if(current)current.disabled=false;}
+}
+async function loadAdminReportCards(){
+  const host=document.getElementById('admin-report-card-queue'),request=++adminReportCardQueueRequest;
+  if(!host)return;
+  if(currentAuthUser?.type!=='ADMIN'){host.innerHTML='<div class="rounded-xl border border-rose-200 bg-rose-50 p-3 text-xs text-rose-800">Admin access is required.</div>';return;}
+  host.innerHTML='<div class="rounded-xl border bg-slate-50 p-4 text-sm text-slate-500">Loading submitted report cards...</div>';
+  try{
+    const {data,error}=await supabaseClient.rpc('report_card_admin_queue');
+    if(error)throw error;
+    if(request!==adminReportCardQueueRequest)return;
+    adminReportCardQueueRows=Array.isArray(data)?data:[];
+    if(!adminReportCardQueueRows.length){host.innerHTML='<div class="rounded-xl border border-slate-200 bg-slate-50 p-5 text-center"><i data-lucide="inbox" class="mx-auto h-6 w-6 text-slate-400"></i><p class="mt-2 text-sm font-bold text-slate-700">No report cards to review</p><p class="mt-1 text-xs text-slate-500">Submitted class results will appear here.</p></div>';if(window.lucide)lucide.createIcons();return;}
+    host.innerHTML=adminReportCardQueueRows.map(item=>{
+      const status=String(item.status||'').toUpperCase(),pending=status==='SUBMITTED';
+      const badge=pending?'bg-amber-100 text-amber-800':status==='APPROVED'?'bg-emerald-100 text-emerald-800':'bg-rose-100 text-rose-800';
+      const action='<button type="button" onclick="openAdminReportCardReview('+studentEscape(JSON.stringify(String(item.exam_id)))+','+studentEscape(JSON.stringify(String(item.class_name)))+','+studentEscape(JSON.stringify(String(item.section)))+')" class="shrink-0 rounded-xl '+(pending?'bg-indigo-700 text-white':'bg-slate-100 text-slate-700')+' px-3 py-2 text-[10px] font-bold">'+(pending?'Review':'View')+'</button>';
+      return '<article class="flex flex-wrap items-center justify-between gap-3 rounded-2xl border border-slate-200 bg-white p-3 sm:p-4"><div class="min-w-0 flex-1"><div class="flex flex-wrap items-center gap-2"><h4 class="font-extrabold text-slate-900">'+studentEscape(item.exam_name||'Examination')+'</h4><span class="rounded-full px-2 py-1 text-[9px] font-extrabold '+badge+'">'+studentEscape(status)+'</span></div><p class="mt-1 text-xs text-slate-600">Class '+studentEscape(item.class_name||'')+'  -  Section '+studentEscape(item.section||'')+'</p><p class="mt-1 text-[10px] text-slate-400">'+(pending&&item.submitted_at?'Submitted '+studentEscape(formatStudentPortalDate(item.submitted_at)):item.reviewed_at?'Reviewed '+studentEscape(formatStudentPortalDate(item.reviewed_at)):'')+'</p>'+(status==='REJECTED'&&item.review_note?'<p class="mt-2 text-[10px] text-rose-700">Returned: '+studentEscape(item.review_note)+'</p>':'')+'</div>'+action+'</article>';
+    }).join('');
+    if(window.lucide)lucide.createIcons();
+  }catch(e){
+    if(request!==adminReportCardQueueRequest)return;
+    host.innerHTML='<div class="rounded-xl border border-rose-200 bg-rose-50 p-3 text-xs text-rose-800">Unable to load report-card submissions: '+studentEscape(e?.message||e)+'</div>';
+  }
+}
+async function openAdminReportCardReview(examId,className,section){
+  const host=document.getElementById('admin-report-card-review');
+  if(!host||currentAuthUser?.type!=='ADMIN')return;
+  const request=++adminReportCardSheetRequest;
+  adminReportCardSelection=adminReportCardQueueRows.find(x=>String(x.exam_id)===String(examId)&&String(x.class_name)===String(className)&&String(x.section)===String(section))||{exam_id:examId,class_name:className,section};
+  adminReportCardSheet=null;host.classList.remove('hidden');host.innerHTML='<div class="text-sm text-slate-500">Loading class marks for review...</div>';
+  try{
+    const {data,error}=await supabaseClient.rpc('report_card_sheet',{p_exam_id:examId,p_class:className,p_section:section});
+    if(error)throw error;
+    if(request!==adminReportCardSheetRequest)return;
+    adminReportCardSheet=data||null;
+    renderAdminReportCardReview();
+    host.scrollIntoView({behavior:'smooth',block:'start'});
+  }catch(e){
+    if(request!==adminReportCardSheetRequest)return;
+    host.innerHTML='<div class="flex items-start justify-between gap-3"><p class="text-sm text-rose-700">Unable to load marks: '+studentEscape(e?.message||e)+'</p><button type="button" onclick="closeAdminReportCardReview()" class="rounded-lg bg-slate-100 px-3 py-2 text-xs font-bold">Close</button></div>';
+  }
+}
+function renderAdminReportCardReview(){
+  const host=document.getElementById('admin-report-card-review'),item=adminReportCardSelection,sheet=adminReportCardSheet;
+  if(!host||!item||!sheet)return;
+  const subjects=Array.isArray(sheet.subjects)?sheet.subjects:[],students=Array.isArray(sheet.students)?sheet.students:[],marks=Array.isArray(sheet.marks)?sheet.marks:[],status=String(sheet.status||item.status||'DRAFT').toUpperCase();
+  const marksByCell=new Map(marks.map(m=>[String(m.student_id)+'|'+String(m.subject_id),m]));
+  const subjectHeaders=subjects.map(s=>'<th class="min-w-[92px] px-3 py-2 text-right">'+studentEscape(s.name||s.code||'Subject')+'<span class="mt-0.5 block text-[9px] font-normal text-slate-400">Max '+studentEscape(s.max_marks)+'</span></th>').join('');
+  const rows=students.map(student=>'<tr class="border-t border-slate-100"><td class="whitespace-nowrap px-3 py-2 font-bold text-slate-800">'+studentEscape(student.roll_no||'-')+'</td><td class="whitespace-nowrap px-3 py-2">'+studentEscape(student.enroll_no||'')+'</td><td class="min-w-[150px] px-3 py-2">'+studentEscape(student.name||'')+'</td>'+subjects.map(subject=>{const mark=marksByCell.get(String(student.student_id)+'|'+String(subject.subject_id));return '<td class="px-3 py-2 text-right font-semibold">'+(mark?.absent?'AB':mark?.marks==null?'-':studentEscape(Number(mark.marks).toLocaleString('en-IN',{maximumFractionDigits:2})))+'</td>';}).join('')+'</tr>').join('');
+  const badge=status==='SUBMITTED'?'bg-amber-100 text-amber-800':status==='APPROVED'?'bg-emerald-100 text-emerald-800':status==='REJECTED'?'bg-rose-100 text-rose-800':'bg-slate-100 text-slate-700';
+  const controls=status==='SUBMITTED'?'<div class="mt-4 grid gap-3 sm:grid-cols-[1fr_auto_auto]"><textarea id="admin-report-card-review-note" maxlength="500" rows="2" class="w-full rounded-xl border border-slate-300 p-3 text-xs" placeholder="Optional note for the teacher; required when returning for correction."></textarea><button type="button" onclick="reviewAdminReportCardSubmission(false)" class="rounded-xl border border-rose-200 bg-rose-50 px-4 py-3 text-xs font-bold text-rose-800">Return to Teacher</button><button type="button" onclick="reviewAdminReportCardSubmission(true)" class="rounded-xl bg-emerald-700 px-4 py-3 text-xs font-bold text-white">Approve & Publish</button></div>':status==='APPROVED'?'<p class="mt-3 rounded-xl bg-emerald-50 p-3 text-xs text-emerald-800">Approved report card is visible to students.</p>':status==='REJECTED'?'<p class="mt-3 rounded-xl bg-rose-50 p-3 text-xs text-rose-800">Returned to the teacher for correction. '+(sheet.review_note?studentEscape(sheet.review_note):'')+'</p>':'';
+  host.innerHTML='<div class="flex flex-wrap items-start justify-between gap-3"><div><div class="flex flex-wrap items-center gap-2"><h3 class="text-base font-extrabold text-slate-900">'+studentEscape(item.exam_name||'Examination')+'  -  Class '+studentEscape(item.class_name||'')+' - '+studentEscape(item.section||'')+'</h3><span class="rounded-full px-2 py-1 text-[9px] font-extrabold '+badge+'">'+studentEscape(status)+'</span></div><p class="mt-1 text-xs text-slate-500">Check the imported marks before approving. Approval publishes this class report card to students.</p></div><button type="button" onclick="closeAdminReportCardReview()" class="rounded-xl bg-slate-100 px-3 py-2 text-xs font-bold text-slate-700">Close</button></div><div class="mt-4 overflow-x-auto rounded-xl border border-slate-200"><table class="w-full min-w-max text-left text-xs"><thead class="bg-slate-50 text-[10px] uppercase tracking-wide text-slate-500"><tr><th class="px-3 py-2">Roll</th><th class="px-3 py-2">Admission No.</th><th class="px-3 py-2">Student</th>'+subjectHeaders+'</tr></thead><tbody>'+rows+'</tbody></table></div>'+controls;
+  if(window.lucide)lucide.createIcons();
+}
+function closeAdminReportCardReview(){const host=document.getElementById('admin-report-card-review');if(host){host.classList.add('hidden');host.innerHTML='';}adminReportCardSelection=null;adminReportCardSheet=null;adminReportCardSheetRequest++;}
+async function reviewAdminReportCardSubmission(approve){
+  const item=adminReportCardSelection;if(!item||currentAuthUser?.type!=='ADMIN')return;
+  const note=document.getElementById('admin-report-card-review-note')?.value.trim()||'';
+  if(!approve&&!note)return showToast('Add a note to tell the teacher what needs correction.','error');
+  const action=approve?'approve and publish':'return to the teacher for correction';
+  if(!window.confirm('Are you sure you want to '+action+' for '+(item.exam_name||'this report card')+', Class '+item.class_name+' - '+item.section+'?'))return;
+  try{
+    const {data,error}=await supabaseClient.rpc('report_card_admin_review',{p_exam_id:item.exam_id,p_class:item.class_name,p_section:item.section,p_approve:!!approve,p_note:note||null});
+    if(error)throw error;
+    if(!data?.success)throw new Error(data?.message||'The review could not be saved.');
+    showToast(approve?'Report card approved and published to students.':'Report card returned to the teacher.','success');
+    closeAdminReportCardReview();
+    await loadAdminReportCards();
+  }catch(e){showToast('Report-card review failed: '+(e?.message||e),'error');}
 }
 async function loadTeacherPortalContentItems(type){
   const host=document.getElementById('tp-existing-content');
@@ -6784,7 +7052,7 @@ async function studentDashboardSection(type){
     title=document.getElementById("student-dashboard-panel-title"),
     loading=document.getElementById("student-dashboard-panel-loading");
   if(!host||!panel)return;
-  const names={notice:"Notice",attendance:"Attendance",homework:"Homework",timetable:"Timetable",leave:"Leave Request & Status",calendar:"School Calendar",fees:"Fees Management",profile:"Student Profile",mentor:"Your Mentor",classmates:"Classmates"};
+  const names={notice:"Notice",attendance:"Attendance",homework:"Homework",timetable:"Timetable",leave:"Leave Request & Status",calendar:"School Calendar",fees:"Fees Management",profile:"Student Profile",mentor:"Your Mentor",classmates:"Classmates","report-card":"Report Card"};
   title.textContent=names[type]||"Dashboard";
   panel.classList.remove("hidden");
   document.body.classList.add("overflow-hidden");
@@ -6863,6 +7131,30 @@ async function studentDashboardSection(type){
       }catch(e){
         console.warn("Student fees module unavailable:",e?.message||e);
         host.innerHTML='<div class="p-4 rounded-2xl border border-amber-200 bg-amber-50"><h3 class="font-bold text-amber-900">Fees could not be loaded</h3><p class="mt-2 text-sm text-amber-800">'+studentEscape(e?.message||"The fee service is not available.")+'</p><p class="mt-2 text-xs text-amber-800">Your fee details are safe. If this keeps happening, please contact the school office.</p><button type="button" onclick="studentDashboardSection(\'fees\')" class="mt-3 px-4 py-2 rounded-xl bg-amber-800 text-white text-xs font-bold">Try again</button></div>';
+      }
+    }
+  }else if(type==="report-card"){
+    host.innerHTML='<div class="p-4 rounded-2xl border border-indigo-100 bg-indigo-50 text-sm text-indigo-900">Loading approved report cards...</div>';
+    const token=String(await window.AshianaNative?.getStudentSessionToken?.() || sessionStorage.getItem("aps_student_session_token_v1") || "");
+    if(!/^[a-f0-9]{64}$/i.test(token)){
+      host.innerHTML='<div class="p-4 rounded-2xl border border-rose-200 bg-rose-50 text-sm text-rose-800">Your student session has expired. Please sign in again.</div>';
+    }else{
+      try{
+        const {data,error}=await supabaseClient.rpc("student_report_cards_by_session",{p_token:token});
+        if(error)throw error;
+        if(!data?.success)throw new Error(data?.code==="STUDENT_SESSION_EXPIRED"?"Your student session has expired. Please sign in again.":"Report cards could not be loaded.");
+        const cards=Array.isArray(data.cards)?data.cards:[];
+        host.innerHTML=cards.length?cards.map(card=>{
+          const subjects=Array.isArray(card.subjects)?card.subjects:[];
+          const markText=value=>Number(value).toLocaleString("en-IN",{maximumFractionDigits:2});
+          const subjectRows=subjects.map(subject=>'<tr class="border-t border-slate-100"><td class="px-3 py-2.5 font-semibold text-slate-800">'+studentEscape(subject.name||"Subject")+'</td><td class="px-3 py-2.5 text-right font-bold text-slate-900">'+(subject.absent?'AB':subject.marks==null?'-':markText(subject.marks))+'</td><td class="px-3 py-2.5 text-right text-slate-500">'+studentEscape(subject.max_marks==null?'-':markText(subject.max_marks))+'</td><td class="px-3 py-2.5 text-center font-bold text-indigo-700">'+studentEscape(subject.grade||'-')+'</td></tr>').join("");
+          const title=card.exam_header&&card.exam_header!==card.exam_name?studentEscape(card.exam_header)+'<span class="ml-2 text-xs font-medium text-slate-500">'+studentEscape(card.exam_name||"")+'</span>':studentEscape(card.exam_name||card.exam_header||"Examination");
+          const published=card.published_at?'<p class="mt-1 text-[10px] text-slate-500">Approved '+studentEscape(formatStudentPortalDate(card.published_at))+'</p>':'';
+          return '<article class="overflow-hidden rounded-2xl border border-indigo-100 bg-white shadow-sm"><div class="flex flex-wrap items-start justify-between gap-3 bg-indigo-50/70 p-4"><div><h3 class="text-base font-extrabold text-slate-900">'+title+'</h3><p class="mt-1 text-xs text-slate-600">Class '+studentEscape(data.class_name||"")+'  -  Section '+studentEscape(data.section||"")+(data.roll_no?'  -  Roll No. '+studentEscape(data.roll_no):'')+'</p>'+published+'</div><span class="rounded-xl bg-white px-3 py-2 text-right shadow-sm"><span class="block text-[9px] font-bold uppercase tracking-wide text-slate-500">Overall Grade</span><b class="text-lg text-indigo-800">'+studentEscape(card.grade||'-')+'</b></span></div><div class="overflow-x-auto"><table class="w-full min-w-[480px] text-left text-xs"><thead class="bg-slate-50 text-[10px] uppercase tracking-wide text-slate-500"><tr><th class="px-3 py-2.5">Subject</th><th class="px-3 py-2.5 text-right">Marks</th><th class="px-3 py-2.5 text-right">Maximum</th><th class="px-3 py-2.5 text-center">Grade</th></tr></thead><tbody>'+subjectRows+'</tbody><tfoot class="border-t-2 border-slate-200 bg-slate-50"><tr><th class="px-3 py-3 text-slate-700">Total</th><td class="px-3 py-3 text-right font-extrabold text-slate-900">'+markText(card.total||0)+'</td><td class="px-3 py-3 text-right font-bold text-slate-600">'+markText(card.max_total||0)+'</td><td class="px-3 py-3 text-center font-extrabold text-indigo-800">'+(card.percentage==null?'-':markText(card.percentage)+'%')+'</td></tr></tfoot></table></div></article>';
+        }).join(""):'<div class="rounded-2xl border border-slate-200 bg-white p-5 text-center"><div class="mx-auto flex h-12 w-12 items-center justify-center rounded-2xl bg-indigo-50 text-indigo-700"><i data-lucide="graduation-cap" class="h-6 w-6"></i></div><h3 class="mt-3 font-extrabold text-slate-900">No report cards yet</h3><p class="mt-1 text-xs leading-relaxed text-slate-500">Approved exam results will appear here after the school publishes them.</p></div>';
+      }catch(e){
+        console.warn("Student report cards could not be loaded:",e?.message||e);
+        host.innerHTML='<div class="rounded-2xl border border-rose-200 bg-rose-50 p-4 text-sm text-rose-800">'+studentEscape(e?.message||"Report cards could not be loaded right now.")+'</div>';
       }
     }
   }else if(type==="profile"){
@@ -10855,7 +11147,7 @@ window.addEventListener('load',async function(){
     }
 
     function switchAdminTab(tab) {
-      const allowedTabs = ['live', 'qr', 'directory', 'corrections', 'leave', 'audit', 'reports', 'attendance-rules', 'students', 'student-portal'];
+      const allowedTabs = ['live', 'qr', 'directory', 'corrections', 'leave', 'audit', 'reports', 'attendance-rules', 'students', 'student-portal', 'report-cards'];
       if (!allowedTabs.includes(tab)) return;
       if (tab === "attendance-rules") loadStaffAttendanceRules();
 
@@ -10881,7 +11173,7 @@ window.addEventListener('load',async function(){
       });
 
       // Keep the selected quick-action visibly active.
-      ["reports","leave","corrections","student-portal","attendance-rules"].forEach(t => {
+      ["reports","leave","corrections","student-portal","attendance-rules","report-cards"].forEach(t => {
         const quickBtn = document.getElementById(`admin-nav-${t}`);
         if (quickBtn) {
           quickBtn.style.borderColor = t === tab ? "#0A7E46" : "";
@@ -10921,6 +11213,9 @@ window.addEventListener('load',async function(){
         }
         if (tab === 'student-portal' && currentAuthUser?.type === 'ADMIN') {
           loadAdminStudentPortalClasses().then(() => loadAdminStudentPortalContent());
+        }
+        if (tab === 'report-cards' && currentAuthUser?.type === 'ADMIN') {
+          loadAdminReportCards();
         }
       } catch (err) {
         console.error("Admin tab load error:", tab, err);
