@@ -17,6 +17,7 @@ Deno.serve(async req=>{
  const db=createClient(url,key,{auth:{persistSession:false,autoRefreshToken:false}});
  let b:Record<string,unknown>;try{b=await req.json()}catch{return json({error:"INVALID_JSON"},400)}
  const role=String(b.role||""),action=String(b.action||"");
+ const studentSessionUnlock = role === "student" && Boolean(String(b.session_token || "").trim());
  if(!["admin","student"].includes(role))return json({error:"INVALID_ROLE"},400);
  let subjectId="",student:Record<string,unknown>|null=null;
  if(role==="admin"){
@@ -118,7 +119,7 @@ Deno.serve(async req=>{
    if(!verified.verified)return json({error:"PASSKEY_VERIFICATION_FAILED"},401);
    const {error:ue}=await db.from("portal_webauthn_credentials").update({counter:verified.authenticationInfo.newCounter,last_used_at:new Date().toISOString()}).eq("id",stored.id).eq("subject_type",role).eq("subject_id",subjectId);
    if(ue)throw ue;
-   if(role==="admin")return json({success:true,verified:true,purpose:"portal-unlock"});
+   if(role==="admin" || studentSessionUnlock)return json({success:true,verified:true,purpose:"portal-unlock"});
    const session=Array.from(crypto.getRandomValues(new Uint8Array(32)),v=>v.toString(16).padStart(2,"0")).join("");
    const {error:se}=await db.from("student_session_tokens").insert({student_id:subjectId,token_hash:await hash(session),expires_at:new Date(Date.now()+30*24*60*60_000).toISOString()});
    if(se)throw se;return json({success:true,verified:true,session_token:session,expires_in:2592000});
