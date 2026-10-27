@@ -133,6 +133,7 @@
   }
   let overlay = null;
   const webPasskeyEnabled = { admin: false, student: false };
+  const nativeVerified = { admin: false, student: false };
   let idleTimer = null;
   function armIdleLock(role) {
     clearTimeout(idleTimer);
@@ -187,6 +188,7 @@
           if (!window.AshianaNative?.verifyPortalBiometric) throw new Error("Update the Android app to enable device biometric lock.");
           await window.AshianaNative.verifyPortalBiometric(role);
           setNativeLock(role, true);
+          nativeVerified[role] = true;
           armIdleLock(role);
           toast("Device biometric lock enabled. It protects this app session on this device.", "success");
         } else {
@@ -256,7 +258,7 @@
     installStudentLoginButton();
     ensureControls();
     const current = currentRole();
-    if (current && NATIVE() && nativeLockEnabled(current.role) && !sessionStorage.getItem("aps_portal_biometric_verified:" + current.role)) {
+    if (current && NATIVE() && nativeLockEnabled(current.role) && !nativeVerified[current.role]) {
       // Do not silently unlock after a page reload when the user enabled device lock.
       lockOverlay(current.role);
     }
@@ -268,7 +270,7 @@
   const originalUnlock = unlockOverlay;
   unlockOverlay = function() {
     const current = currentRole();
-    if (current && NATIVE()) sessionStorage.setItem("aps_portal_biometric_verified:" + current.role, "1");
+    if (current && NATIVE()) nativeVerified[current.role] = true;
     originalUnlock();
   };
 })();
