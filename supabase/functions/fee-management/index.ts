@@ -18,8 +18,16 @@ const MAX_BYTES = 5 * 1024 * 1024;
 
 Deno.serve(async (req) => {
   const origin = req.headers.get("Origin");
-  const allowedOrigins = (Deno.env.get("FEE_ALLOWED_ORIGINS") ?? "")
-    .split(",").map((value) => value.trim()).filter(Boolean);
+  // Built-in origins: the GitHub Pages site and the Capacitor Android/iOS WebView
+  // (https://localhost / capacitor://localhost). FEE_ALLOWED_ORIGINS adds more.
+  const allowedOrigins = [
+    "https://erskgaur2008-arch.github.io",
+    "https://localhost",
+    "http://localhost",
+    "capacitor://localhost",
+    ...(Deno.env.get("FEE_ALLOWED_ORIGINS") ?? "")
+      .split(",").map((value) => value.trim()).filter(Boolean),
+  ];
   const corsHeaders: Record<string, string> = { ...corsBase };
   if (origin && allowedOrigins.includes(origin)) corsHeaders["Access-Control-Allow-Origin"] = origin;
   const respond = (body: unknown, status = 200) => reply(body, status, corsHeaders);
