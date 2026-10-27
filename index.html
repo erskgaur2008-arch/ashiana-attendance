@@ -2826,7 +2826,7 @@ id="student-portal-view" class="hidden flex-col w-full max-w-2xl space-y-4 stude
             <button onclick="studentDashboardSection('classmates')" class="p-4 rounded-2xl border bg-cyan-50 text-left"><i data-lucide="contact-round" class="w-5 h-5 text-cyan-700"></i><b class="block mt-2 text-sm">Classmates</b><span class="text-[10px] text-slate-500">Your section students</span></button>
             <button onclick="studentDashboardSection('notice')" class="p-4 rounded-2xl border bg-amber-50 text-left"><i data-lucide="megaphone" class="w-5 h-5 text-amber-700"></i><b class="block mt-2 text-sm">Notice</b><span id="student-count-notices" class="text-[10px] text-slate-500">0 notices</span></button>
             <button onclick="studentDashboardSection('attendance')" class="p-4 rounded-2xl border bg-emerald-50 text-left"><i data-lucide="calendar-check" class="w-5 h-5 text-emerald-700"></i><b class="block mt-2 text-sm">Attendance</b><span id="student-count-attendance" class="text-[10px] text-slate-500">0 records</span></button>
-            <button type="button" onclick="studentDashboardSection('report-card')" class="p-4 rounded-2xl border border-indigo-100 bg-indigo-50 text-left"><i data-lucide="graduation-cap" class="w-5 h-5 text-indigo-700"></i><b class="block mt-2 text-sm">Report Card</b><span class="text-[10px] text-slate-500">Approved exam marks</span></button>
+            <button type="button" onclick="studentDashboardSection('report-card')" class="p-4 rounded-2xl border border-indigo-100 bg-indigo-50 text-left"><i data-lucide="graduation-cap" class="w-5 h-5 text-indigo-700"></i><b class="block mt-2 text-sm">Report Card</b><span class="text-[10px] text-slate-500">Full-year marks & grades</span></button>
             <button type="button" onclick="studentDashboardSection('fees')" class="p-4 rounded-2xl border border-amber-200 bg-amber-50 text-left"><i data-lucide="wallet" class="w-5 h-5 text-amber-700"></i><b class="block mt-2 text-sm text-slate-900">Fees Management</b><span class="text-[10px] text-slate-600">Due, payments & receipts</span></button>
             <button onclick="studentDashboardSection('homework')" class="p-4 rounded-2xl border bg-blue-50 text-left"><i data-lucide="book-open-check" class="w-5 h-5 text-blue-700"></i><b class="block mt-2 text-sm">Homework</b><span id="student-count-homework" class="text-[10px] text-slate-500">0 items</span></button>
             <button onclick="studentDashboardSection('timetable')" class="p-4 rounded-2xl border bg-violet-50 text-left"><i data-lucide="calendar-clock" class="w-5 h-5 text-violet-700"></i><b class="block mt-2 text-sm">Timetable</b><span class="text-[10px] text-slate-500">Class schedule</span></button>
@@ -4096,6 +4096,21 @@ id="admin-portal-view" class="hidden flex-col w-full space-y-4 admin-dashboard-s
       </div>
 
       <div id="admin-tab-report-cards" class="hidden space-y-4" style="display:none">
+        <section class="bg-white rounded-2xl border border-slate-200 shadow-sm p-4 sm:p-5">
+          <div>
+            <h3 class="text-base font-extrabold text-slate-900">Optional Language by Section</h3>
+            <p class="mt-1 text-xs text-slate-500">Set French or Punjabi once for each class and section in an academic session. The chosen language is a marks subject in the teacher CSV and student report card.</p>
+          </div>
+          <div class="mt-4 grid gap-3 sm:grid-cols-2 lg:grid-cols-5">
+            <label class="text-[11px] font-bold text-slate-600">Academic Session<select id="admin-report-card-language-session" onchange="adminReportCardLanguageSelectionChanged()" class="mt-1 w-full rounded-xl border border-slate-300 bg-white p-2.5 text-xs"><option value="">Loading sessions...</option></select></label>
+            <label class="text-[11px] font-bold text-slate-600">Class<select id="admin-report-card-language-class" onchange="adminReportCardLanguageClassChanged()" class="mt-1 w-full rounded-xl border border-slate-300 bg-white p-2.5 text-xs"><option value="">Loading classes...</option></select></label>
+            <label class="text-[11px] font-bold text-slate-600">Section<select id="admin-report-card-language-section" onchange="adminReportCardLanguageSelectionChanged()" class="mt-1 w-full rounded-xl border border-slate-300 bg-white p-2.5 text-xs"><option value="">Loading sections...</option></select></label>
+            <label class="text-[11px] font-bold text-slate-600">Optional Marks Subject<select id="admin-report-card-language-value" class="mt-1 w-full rounded-xl border border-slate-300 bg-white p-2.5 text-xs"><option value="">Choose language</option><option value="French">French</option><option value="Punjabi">Punjabi</option></select></label>
+            <div class="flex items-end"><button type="button" onclick="saveAdminReportCardLanguage()" class="w-full rounded-xl bg-indigo-700 px-4 py-2.5 text-xs font-bold text-white">Save Language</button></div>
+          </div>
+          <div id="admin-report-card-language-feedback" class="hidden mt-3 rounded-xl p-3 text-xs" role="status" aria-live="polite"></div>
+          <div id="admin-report-card-language-assignments" class="mt-4 text-xs text-slate-500">Load the active academic session's language settings.</div>
+        </section>
         <section class="bg-white rounded-2xl border border-slate-200 shadow-sm p-4 sm:p-5">
           <div class="flex flex-col sm:flex-row sm:items-center justify-between gap-3">
             <div>
@@ -6421,7 +6436,7 @@ function renderTeacherPortalEditor(){
   if(!host)return;
   const type=document.getElementById('teacher-portal-type')?.value||'notice';
   if(type==='marks'){
-    host.innerHTML='<section class="rounded-2xl border border-indigo-100 bg-indigo-50/60 p-3 sm:p-4"><div class="flex items-start gap-3"><span class="flex h-10 w-10 shrink-0 items-center justify-center rounded-xl bg-white text-indigo-700 shadow-sm"><i data-lucide="file-spreadsheet" class="h-5 w-5"></i></span><div><h5 class="text-sm font-extrabold text-slate-900">Class Report Card</h5><p class="mt-1 text-[11px] leading-relaxed text-slate-600">Download the class template with students pre-filled, enter marks or AB for absent students, then upload and submit the class.</p></div></div><div class="mt-3"><label for="teacher-report-card-exam" class="mb-1 block text-[10px] font-bold text-slate-600">Exam</label><select id="teacher-report-card-exam" onchange="loadTeacherReportCardSheet()" class="w-full rounded-xl border border-slate-300 bg-white p-2.5 text-xs"><option value="">Loading assigned exams...</option></select></div><div id="teacher-report-card-sheet" class="mt-3 rounded-xl border border-white bg-white p-3 text-xs text-slate-500">Select an exam to load the current class roster.</div></section>';
+    host.innerHTML='<section class="rounded-2xl border border-indigo-100 bg-indigo-50/60 p-3 sm:p-4"><div class="flex items-start gap-3"><span class="flex h-10 w-10 shrink-0 items-center justify-center rounded-xl bg-white text-indigo-700 shadow-sm"><i data-lucide="file-spreadsheet" class="h-5 w-5"></i></span><div><h5 class="text-sm font-extrabold text-slate-900">Class Report Card</h5><p class="mt-1 text-[11px] leading-relaxed text-slate-600">Download the class template with students pre-filled. Enter marks for academic subjects, A1 to E for grade-only subjects, or AB for absent students.</p></div></div><div class="mt-3"><label for="teacher-report-card-exam" class="mb-1 block text-[10px] font-bold text-slate-600">Exam</label><select id="teacher-report-card-exam" onchange="loadTeacherReportCardSheet()" class="w-full rounded-xl border border-slate-300 bg-white p-2.5 text-xs"><option value="">Loading assigned exams...</option></select></div><div id="teacher-report-card-sheet" class="mt-3 rounded-xl border border-white bg-white p-3 text-xs text-slate-500">Select an exam to load the current class roster.</div></section>';
     if(window.lucide)lucide.createIcons();
     void loadTeacherReportCardOptions();
     return;
@@ -6439,6 +6454,137 @@ function renderTeacherPortalEditor(){
 }
 let teacherReportCardOptions=[],teacherReportCardSheet=null,teacherReportCardOptionsRequest=0,teacherReportCardSheetRequest=0;
 let adminReportCardQueueRows=[],adminReportCardSelection=null,adminReportCardSheet=null,adminReportCardQueueRequest=0,adminReportCardSheetRequest=0;
+let adminReportCardLanguageData=null,adminReportCardLanguageRequest=0;
+const REPORT_CARD_GRADE_VALUES=['A1','A2','B1','B2','C1','C2','D','E'];
+const REPORT_CARD_PROFILES={
+  class_iii_iv_result_cum_marksheet:{
+    title:'Classes 3-4',
+    gradeAssessmentType:'Internal Assessment-IV',
+    subjects:['English','Hindi','Mathematics','EVS','French'],
+    gradeSubjects:['Computer','Art & Craft','G.K.'],
+    terms:[
+      {label:'TERM 1',components:[{type:'Unit Test-I',label:'Unit Test I',max:35},{type:'Internal Assessment-I',label:'Internal Ass. I',max:15},{type:'Unit Test-II',label:'Unit Test II',max:35},{type:'Internal Assessment-II',label:'Internal Ass. II',max:15}]},
+      {label:'TERM 2',components:[{type:'Unit Test-III',label:'Unit Test III',max:35},{type:'Internal Assessment-III',label:'Internal Ass. III',max:15},{type:'Unit Test-IV',label:'Unit Test IV',max:35},{type:'Internal Assessment-IV',label:'Internal Ass. IV',max:15}]}
+    ]
+  },
+  class_v_result_cum_marksheet:{
+    title:'Class V',
+    gradeAssessmentType:'Annual',
+    subjects:['English','Hindi','Mathematics','Science','Social Science'],
+    gradeSubjects:['Computer','Art & Craft','G.K.'],
+    terms:[
+      {label:'TERM 1',components:[{type:'Unit Test-I',label:'Unit Test I',max:30},{type:'Internal Assessment-I',label:'Internal Ass. I',max:20},{type:'Half-Yearly',label:'Half Yearly',max:50}]},
+      {label:'TERM 2',components:[{type:'Unit Test-II',label:'Unit Test II',max:30},{type:'Internal Assessment-II',label:'Internal Ass. II',max:20},{type:'Annual',label:'Annual',max:50}]}
+    ]
+  },
+  class_vi_viii_result_cum_marksheet:{
+    title:'Classes 6-8',
+    gradeAssessmentType:'Annual',
+    subjects:['English','Hindi','Mathematics','Science','Social Science'],
+    gradeSubjects:['Computer','Art & Craft','G.K.'],
+    terms:[
+      {label:'TERM 1',components:[{type:'Unit Test-I',label:'Unit Test I',max:30},{type:'Internal Assessment-I',label:'Internal Ass. I',max:20},{type:'Half-Yearly',label:'Half Yearly',max:50}]},
+      {label:'TERM 2',components:[{type:'Unit Test-II',label:'Unit Test II',max:30},{type:'Internal Assessment-II',label:'Internal Ass. II',max:20},{type:'Annual',label:'Annual',max:50}]}
+    ]
+  }
+};
+function reportCardProfileForClass(className,format){
+  const explicit=REPORT_CARD_PROFILES[String(format||'').trim()];if(explicit)return explicit;
+  const level=reportCardClassLevel(className);
+  return level===3||level===4?REPORT_CARD_PROFILES.class_iii_iv_result_cum_marksheet:level===5?REPORT_CARD_PROFILES.class_v_result_cum_marksheet:level>=6&&level<=8?REPORT_CARD_PROFILES.class_vi_viii_result_cum_marksheet:null;
+}
+function reportCardClassLevel(className){
+  const value=String(className||'').trim().toUpperCase().replace(/^CLASS\s+/,''),levels={III:3,IV:4,V:5,VI:6,VII:7,VIII:8,'3':3,'4':4,'5':5,'6':6,'7':7,'8':8};
+  return levels[value]||0;
+}
+function reportCardSortSubjects(subjects,className,format){
+  const list=Array.isArray(subjects)?[...subjects]:[];
+  const profile=reportCardProfileForClass(className,format);if(!profile)return list;
+  const level=reportCardClassLevel(className),orderNames=[...profile.subjects];
+  if(level>=4&&level<=8){
+    for(let i=orderNames.length-1;i>=0;i--)if(['french','punjabi'].includes(reportCardNormalizeAssessment(orderNames[i])))orderNames.splice(i,1);
+    const language=list.find(subject=>['french','punjabi'].includes(reportCardNormalizeAssessment(subject?.name||subject?.code)));
+    if(language)orderNames.push(language.name||language.code);
+  }
+  orderNames.push(...profile.gradeSubjects);
+  const order=new Map(orderNames.map((name,index)=>[reportCardNormalizeAssessment(name),index]));
+  return list.sort((a,b)=>(order.get(reportCardNormalizeAssessment(a?.name||a?.code))??999)-(order.get(reportCardNormalizeAssessment(b?.name||b?.code))??999));
+}
+function reportCardNormalizeAssessment(value){return String(value||'').toLowerCase().replace(/[^a-z0-9]/g,'');}
+function adminReportCardLanguageFeedback(message,isError=false){
+  const host=document.getElementById('admin-report-card-language-feedback');if(!host)return;
+  host.className='mt-3 rounded-xl border p-3 text-xs '+(isError?'border-rose-200 bg-rose-50 text-rose-800':'border-emerald-200 bg-emerald-50 text-emerald-800');
+  host.textContent=String(message||'');
+}
+function renderAdminReportCardLanguageAssignments(){
+  const host=document.getElementById('admin-report-card-language-assignments'),sessionId=document.getElementById('admin-report-card-language-session')?.value;
+  if(!host)return;
+  const sections=Array.isArray(adminReportCardLanguageData?.sections)?adminReportCardLanguageData.sections:[];
+  const assignments=Array.isArray(adminReportCardLanguageData?.assignments)?adminReportCardLanguageData.assignments:[];
+  if(!sessionId){host.textContent='No academic sessions are configured yet.';return;}
+  host.innerHTML=sections.length?'<div class="grid gap-2 sm:grid-cols-2 lg:grid-cols-3">'+sections.map(section=>{
+    const assignment=assignments.find(item=>String(item.academic_session_id)===String(sessionId)&&String(item.class_name)===String(section.class_name)&&String(item.section)===String(section.section));
+    return '<div class="flex items-center justify-between gap-2 rounded-xl border border-slate-200 bg-slate-50 px-3 py-2"><b class="text-slate-700">'+studentEscape(section.class_name)+'-'+studentEscape(section.section)+'</b><span class="rounded-full px-2 py-1 text-[10px] font-bold '+(assignment?'bg-indigo-100 text-indigo-800':'bg-amber-100 text-amber-800')+'">'+studentEscape(assignment?.language||'Not set')+'</span></div>';
+  }).join('')+'</div>':'<p>No active sections found for classes IV-VIII.</p>';
+}
+function adminReportCardLanguageSelectionChanged(){
+  const sessionId=document.getElementById('admin-report-card-language-session')?.value,className=document.getElementById('admin-report-card-language-class')?.value,section=document.getElementById('admin-report-card-language-section')?.value,language=document.getElementById('admin-report-card-language-value');
+  if(language){
+    const assignment=(adminReportCardLanguageData?.assignments||[]).find(item=>String(item.academic_session_id)===String(sessionId)&&String(item.class_name)===String(className)&&String(item.section)===String(section));
+    language.value=assignment?.language||'';
+  }
+  const assignment=(adminReportCardLanguageData?.assignments||[]).find(item=>String(item.academic_session_id)===String(sessionId)&&String(item.class_name)===String(className)&&String(item.section)===String(section));
+  adminReportCardLanguageFeedback(assignment?className+'-'+section+' is set to '+assignment.language+'. You can change it before report cards are submitted.':'No language is set for this section in the selected session.',false);
+  renderAdminReportCardLanguageAssignments();
+}
+function adminReportCardLanguageClassChanged(){
+  const className=document.getElementById('admin-report-card-language-class')?.value,sectionSelect=document.getElementById('admin-report-card-language-section'),previous=sectionSelect?.value;
+  if(!sectionSelect)return;
+  const sections=(adminReportCardLanguageData?.sections||[]).filter(item=>String(item.class_name)===String(className));
+  sectionSelect.innerHTML=sections.map(item=>'<option value="'+studentEscape(item.section)+'">'+studentEscape(item.section)+'</option>').join('')||'<option value="">No active sections</option>';
+  if(sections.some(item=>String(item.section)===String(previous)))sectionSelect.value=previous;
+  adminReportCardLanguageSelectionChanged();
+}
+async function loadAdminReportCardLanguages(){
+  const sessionSelect=document.getElementById('admin-report-card-language-session'),classSelect=document.getElementById('admin-report-card-language-class');
+  if(!sessionSelect||currentAuthUser?.type!=='ADMIN')return;
+  const request=++adminReportCardLanguageRequest;
+  try{
+    const {data,error}=await supabaseClient.rpc('report_card_optional_language_options');if(error)throw error;
+    if(request!==adminReportCardLanguageRequest)return;
+    adminReportCardLanguageData=data||{};
+    const sessions=Array.isArray(data?.sessions)?data.sessions:[],sections=Array.isArray(data?.sections)?data.sections:[];
+    const oldSession=sessionSelect.value,oldClass=classSelect?.value,oldSection=document.getElementById('admin-report-card-language-section')?.value;
+    sessionSelect.innerHTML=sessions.map(item=>'<option value="'+studentEscape(item.id)+'">'+studentEscape(item.label)+(item.is_active?' · Active':'')+'</option>').join('')||'<option value="">No sessions</option>';
+    if(sessions.some(item=>String(item.id)===String(oldSession)))sessionSelect.value=oldSession;
+    else sessionSelect.value=(sessions.find(item=>item.is_active)||sessions[0])?.id||'';
+    const classes=[...new Set(sections.map(item=>item.class_name))];
+    if(classSelect){classSelect.innerHTML=classes.map(item=>'<option value="'+studentEscape(item)+'">'+studentEscape(item)+'</option>').join('')||'<option value="">No classes</option>';if(classes.includes(oldClass))classSelect.value=oldClass;}
+    adminReportCardLanguageClassChanged();
+    const sectionSelect=document.getElementById('admin-report-card-language-section');
+    if(sectionSelect&&[...sectionSelect.options].some(option=>option.value===oldSection))sectionSelect.value=oldSection;
+    adminReportCardLanguageSelectionChanged();
+  }catch(error){
+    if(request!==adminReportCardLanguageRequest)return;
+    sessionSelect.innerHTML='<option value="">Unable to load settings</option>';
+    adminReportCardLanguageFeedback(error?.message||'Could not load optional language settings.',true);
+  }
+}
+async function saveAdminReportCardLanguage(){
+  if(currentAuthUser?.type!=='ADMIN')return;
+  const sessionId=document.getElementById('admin-report-card-language-session')?.value,className=document.getElementById('admin-report-card-language-class')?.value,section=document.getElementById('admin-report-card-language-section')?.value,language=document.getElementById('admin-report-card-language-value')?.value;
+  if(!sessionId||!className||!section||!language)return adminReportCardLanguageFeedback('Choose an academic session, class, section, and language first.',true);
+  const button=document.querySelector('#admin-tab-report-cards button[onclick="saveAdminReportCardLanguage()"]');if(button){button.disabled=true;button.textContent='Saving...';}
+  try{
+    const {data,error}=await supabaseClient.rpc('report_card_set_optional_language',{p_academic_session_id:sessionId,p_class:className,p_section:section,p_language:language});if(error)throw error;
+    if(!data?.success)throw new Error('The language assignment was not saved.');
+    const savedMessage='Saved '+data.class_name+'-'+data.section+' → '+data.language+' for this academic session. This remains a marks subject.';
+    showToast('Optional marks subject saved.','success');
+    await loadAdminReportCardLanguages();
+    adminReportCardLanguageFeedback(savedMessage,false);
+  }catch(error){adminReportCardLanguageFeedback(error?.message||'Could not save this language assignment.',true);}
+  finally{if(button){button.disabled=false;button.textContent='Save Language';}}
+}
 function teacherReportCardSelection(){
   const selected=document.getElementById('teacher-report-card-exam')?.value;
   const a=teacherPortalClass();
@@ -6460,7 +6606,8 @@ async function loadTeacherReportCardOptions(){
     const options=teacherReportCardOptions.filter(x=>x.is_class_teacher===true&&String(x.class_name)===String(a.class_name)&&String(x.section)===String(a.section));
     if(!options.length){select.innerHTML='<option value="">No configured exams for this class</option>';host.innerHTML='<div class="rounded-xl border border-slate-200 bg-slate-50 p-3 text-xs text-slate-600">No active exam subjects are configured for this class and section yet.</div>';return;}
     const previous=select.value;
-    select.innerHTML=options.map(x=>'<option value="'+studentEscape(x.exam_id)+'">'+studentEscape(x.exam_name)+'  -  '+studentEscape(x.class_name)+' - '+studentEscape(x.section)+'</option>').join('');
+    const profile=reportCardProfileForClass(a.class_name,options[0]?.report_card_format);
+    select.innerHTML=options.map(x=>'<option value="'+studentEscape(x.exam_id)+'">'+studentEscape(x.academic_session||'')+' · '+studentEscape(x.exam_header||'')+' · '+studentEscape(x.exam_name)+(profile&&reportCardNormalizeAssessment(x.exam_type)===reportCardNormalizeAssessment(profile.gradeAssessmentType)?' \u00b7 Grade entry: '+studentEscape(profile.gradeSubjects.join(', ')):'')+'  -  '+studentEscape(x.class_name)+' - '+studentEscape(x.section)+'</option>').join('');
     if(options.some(x=>String(x.exam_id)===String(previous)))select.value=previous;
     await loadTeacherReportCardSheet();
   }catch(e){
@@ -6469,20 +6616,23 @@ async function loadTeacherReportCardOptions(){
     host.innerHTML='<div class="rounded-xl border border-rose-200 bg-rose-50 p-3 text-xs text-rose-800">Unable to load report-card exams: '+studentEscape(e?.message||e)+'</div>';
   }
 }
-function teacherReportCardCsvHeader(subject){return 'Marks ('+String(subject?.code||'')+') - '+String(subject?.name||'Subject');}
+function teacherReportCardCsvHeader(subject){const name=String(subject?.name||'Subject');return subject?.grade_only?name+' (Grade)':name+' (Max '+String(subject?.max_marks??'')+')';}
 function renderTeacherReportCardSheet(){
   const host=document.getElementById('teacher-report-card-sheet'),sheet=teacherReportCardSheet,option=teacherReportCardSelection();
   if(!host)return;
   if(!sheet||!option){host.innerHTML='<div class="p-3 text-xs text-slate-500">Select an exam to load the current class roster.</div>';return;}
-  const subjects=Array.isArray(sheet.subjects)?sheet.subjects:[],students=Array.isArray(sheet.students)?sheet.students:[],marks=Array.isArray(sheet.marks)?sheet.marks:[];
+  const subjects=reportCardSortSubjects(sheet.subjects,option.class_name,option.report_card_format),students=Array.isArray(sheet.students)?sheet.students:[],marks=Array.isArray(sheet.marks)?sheet.marks:[];
   const marksByCell=new Map(marks.map(m=>[String(m.student_id)+'|'+String(m.subject_id),m]));
   let filled=0;
-  students.forEach(student=>subjects.forEach(subject=>{const mark=marksByCell.get(String(student.student_id)+'|'+String(subject.subject_id));if(mark&&(mark.absent===true||mark.marks!==null&&mark.marks!==undefined))filled++;}));
+  students.forEach(student=>subjects.forEach(subject=>{const mark=marksByCell.get(String(student.student_id)+'|'+String(subject.subject_id));if(mark&&(mark.absent===true||mark.grade!==null&&mark.grade!==undefined||mark.marks!==null&&mark.marks!==undefined))filled++;}));
   const total=students.length*subjects.length,status=String(sheet.status||'DRAFT').toUpperCase(),locked=['SUBMITTED','APPROVED'].includes(status);
   const badge=status==='APPROVED'?'bg-emerald-100 text-emerald-800':status==='SUBMITTED'?'bg-amber-100 text-amber-800':status==='REJECTED'?'bg-rose-100 text-rose-800':'bg-slate-100 text-slate-700';
   const note=sheet.review_note?'<div class="mt-3 rounded-xl border border-rose-200 bg-rose-50 p-3 text-xs text-rose-800"><b>Admin note:</b> '+studentEscape(sheet.review_note)+'</div>':'';
-  const submitDisabled=locked||total===0||filled<total;
-  host.innerHTML='<div class="flex flex-wrap items-start justify-between gap-3"><div><div class="flex flex-wrap items-center gap-2"><span class="rounded-full px-2.5 py-1 text-[10px] font-extrabold '+badge+'">'+studentEscape(status)+'</span><span class="text-[10px] text-slate-500">'+students.length+' students  -  '+subjects.length+' subjects  -  '+filled+'/'+total+' marks entered</span></div><p class="mt-2 text-[11px] leading-relaxed text-slate-600">Fill each subject column with a mark from 0 to the maximum shown in the template, or <b>AB</b> for absent. Blank marks can be saved as a draft but must be completed before submission.</p></div><div class="flex flex-wrap gap-2"><button type="button" onclick="downloadTeacherReportCardTemplate()" class="inline-flex items-center gap-1.5 rounded-xl border border-indigo-200 bg-indigo-50 px-3 py-2 text-[10px] font-bold text-indigo-800"><i data-lucide="download" class="h-3.5 w-3.5"></i>Download CSV</button><label for="teacher-report-card-file" class="inline-flex cursor-pointer items-center gap-1.5 rounded-xl bg-indigo-700 px-3 py-2 text-[10px] font-bold text-white '+(locked?'pointer-events-none opacity-50':'')+'"><i data-lucide="upload" class="h-3.5 w-3.5"></i>Upload completed CSV</label><input id="teacher-report-card-file" type="file" accept=".csv,text/csv" class="hidden" onchange="uploadTeacherReportCardCsv(this)" '+(locked?'disabled':'')+'><button id="teacher-report-card-submit" type="button" onclick="submitTeacherReportCard()" class="inline-flex items-center gap-1.5 rounded-xl bg-emerald-700 px-3 py-2 text-[10px] font-bold text-white '+(submitDisabled?'opacity-50':'')+'" '+(submitDisabled?'disabled':'')+'><i data-lucide="send" class="h-3.5 w-3.5"></i>Submit to Admin</button></div></div>'+note+'<div id="teacher-report-card-feedback" class="hidden mt-3 rounded-xl p-3 text-xs" role="status" aria-live="polite"></div>'+(locked?'<p class="mt-3 rounded-xl bg-slate-50 p-3 text-[10px] text-slate-600">This class is locked while the report card is '+studentEscape(status.toLowerCase())+'. Admin approval publishes it to students; a return for correction unlocks it.</p>':'');
+  const classLevel=reportCardClassLevel(option.class_name),languageSubject=subjects.find(subject=>['french','punjabi'].includes(reportCardNormalizeAssessment(subject?.name)));
+  const languageMissing=classLevel>=4&&classLevel<=8&&!languageSubject;
+  const languageNote=classLevel>=4&&classLevel<=8?(languageSubject?'<p class="mt-2 text-[11px] text-indigo-700">Optional marks subject for this section: <b>'+studentEscape(languageSubject.name)+'</b>.</p>':'<p class="mt-2 rounded-lg bg-amber-50 p-2 text-[11px] text-amber-800">French or Punjabi has not been assigned to this section for the academic session. Ask Admin to set it before completing this report card.</p>'):'';
+  const submitDisabled=locked||total===0||filled<total||languageMissing;
+  host.innerHTML='<div class="flex flex-wrap items-start justify-between gap-3"><div><div class="flex flex-wrap items-center gap-2"><span class="rounded-full px-2.5 py-1 text-[10px] font-extrabold '+badge+'">'+studentEscape(status)+'</span><span class="text-[10px] text-slate-500">'+students.length+' students  -  '+subjects.length+' subjects  -  '+filled+'/'+total+' marks or grades entered</span></div><p class="mt-2 text-[11px] leading-relaxed text-slate-600">Enter numeric marks for academic subjects and A1 to E for grade-only subjects. Use <b>AB</b> for absence. Grade-only subjects appear in the final assessment; blanks can be saved as a draft but must be completed before submission.</p>'+languageNote+'</div><div class="flex flex-wrap gap-2"><button type="button" onclick="downloadTeacherReportCardTemplate()" class="inline-flex items-center gap-1.5 rounded-xl border border-indigo-200 bg-indigo-50 px-3 py-2 text-[10px] font-bold text-indigo-800"><i data-lucide="download" class="h-3.5 w-3.5"></i>Download CSV</button><label for="teacher-report-card-file" class="inline-flex cursor-pointer items-center gap-1.5 rounded-xl bg-indigo-700 px-3 py-2 text-[10px] font-bold text-white '+(locked?'pointer-events-none opacity-50':'')+'"><i data-lucide="upload" class="h-3.5 w-3.5"></i>Upload completed CSV</label><input id="teacher-report-card-file" type="file" accept=".csv,text/csv" class="hidden" onchange="uploadTeacherReportCardCsv(this)" '+(locked?'disabled':'')+'><button id="teacher-report-card-submit" type="button" onclick="submitTeacherReportCard()" class="inline-flex items-center gap-1.5 rounded-xl bg-emerald-700 px-3 py-2 text-[10px] font-bold text-white '+(submitDisabled?'opacity-50':'')+'" '+(submitDisabled?'disabled':'')+'><i data-lucide="send" class="h-3.5 w-3.5"></i>Submit to Admin</button></div></div>'+note+'<div id="teacher-report-card-feedback" class="hidden mt-3 rounded-xl p-3 text-xs" role="status" aria-live="polite"></div>'+(locked?'<p class="mt-3 rounded-xl bg-slate-50 p-3 text-[10px] text-slate-600">This class is locked while the report card is '+studentEscape(status.toLowerCase())+'. Admin approval publishes it to students; a return for correction unlocks it.</p>':'');
   if(window.lucide)lucide.createIcons();
 }
 async function loadTeacherReportCardSheet(){
@@ -6506,11 +6656,11 @@ function teacherReportCardCsvCell(value){const text=String(value??'');return /["
 function downloadTeacherReportCardTemplate(){
   const option=teacherReportCardSelection(),sheet=teacherReportCardSheet;
   if(!option||!sheet)return showToast('Load a class and exam first.','error');
-  const subjects=Array.isArray(sheet.subjects)?sheet.subjects:[],students=Array.isArray(sheet.students)?sheet.students:[],marks=Array.isArray(sheet.marks)?sheet.marks:[];
+  const subjects=reportCardSortSubjects(sheet.subjects,option.class_name,option.report_card_format),students=Array.isArray(sheet.students)?sheet.students:[],marks=Array.isArray(sheet.marks)?sheet.marks:[];
   if(!subjects.length||!students.length)return showToast('This class needs active students and configured subjects before a template can be created.','error');
   const marksByCell=new Map(marks.map(m=>[String(m.student_id)+'|'+String(m.subject_id),m]));
   const headers=['enroll_no','roll_no','student_name',...subjects.map(teacherReportCardCsvHeader)];
-  const rows=students.map(student=>[student.enroll_no||'',student.roll_no||'',student.name||'',...subjects.map(subject=>{const m=marksByCell.get(String(student.student_id)+'|'+String(subject.subject_id));return m?.absent?'AB':m?.marks==null?'':m.marks;})]);
+  const rows=students.map(student=>[student.enroll_no||'',student.roll_no||'',student.name||'',...subjects.map(subject=>{const m=marksByCell.get(String(student.student_id)+'|'+String(subject.subject_id));return m?.absent?'AB':subject.grade_only?(m?.grade||''):m?.marks==null?'':m.marks;})]);
   const csv='\uFEFF'+[headers,...rows].map(row=>row.map(teacherReportCardCsvCell).join(',')).join('\r\n')+'\r\n';
   const safe=value=>String(value||'').trim().toLowerCase().replace(/[^a-z0-9_-]+/g,'-').replace(/^-+|-+$/g,'').slice(0,40)||'class';
   const filename=['report-card',safe(option.exam_name),safe(option.class_name),safe(option.section)].join('-')+'.csv';
@@ -6548,7 +6698,7 @@ async function uploadTeacherReportCardCsv(input){
     const parsed=parseTeacherReportCardCsv(await file.text());
     if(parsed.length<2)throw new Error('The CSV has no student rows.');
     const headers=parsed[0].map(v=>String(v||'').trim()),normalized=headers.map(v=>v.toLowerCase());
-    const subjects=Array.isArray(sheet.subjects)?sheet.subjects:[],students=Array.isArray(sheet.students)?sheet.students:[];
+    const subjects=reportCardSortSubjects(sheet.subjects,option.class_name,option.report_card_format),students=Array.isArray(sheet.students)?sheet.students:[];
     const expected=['enroll_no','roll_no','student_name',...subjects.map(teacherReportCardCsvHeader)];
     const expectedNormalized=expected.map(v=>v.toLowerCase());
     if(normalized.length!==expectedNormalized.length||new Set(normalized).size!==normalized.length||expectedNormalized.some(v=>!normalized.includes(v))||normalized.some(v=>!expectedNormalized.includes(v)))throw new Error('CSV columns do not match the current class template. Download a fresh template and keep its headers unchanged.');
@@ -6568,19 +6718,36 @@ async function uploadTeacherReportCardCsv(input){
       seen.add(key);
       subjects.forEach((subject,j)=>{
         const raw=String(values[subjectIndexes[j]]||'').trim();
+        if(subject.grade_only){
+          const grade=raw.toUpperCase();
+          if(grade==='AB'){
+            rows.push({enroll_no:student.enroll_no,subject_code:subject.code,grade:'',marks:'',absent:true});
+            return;
+          }
+          if(grade===''){
+            rows.push({enroll_no:student.enroll_no,subject_code:subject.code,grade:'',marks:'',absent:false});
+            return;
+          }
+          if(!REPORT_CARD_GRADE_VALUES.includes(grade)){
+            errors.push('Row '+csvRow+', '+subject.name+': enter A1, A2, B1, B2, C1, C2, D, E, or AB.');
+            return;
+          }
+          rows.push({enroll_no:student.enroll_no,subject_code:subject.code,grade:grade,marks:'',absent:false});
+          return;
+        }
         if(raw.toUpperCase()==='AB'){
-          rows.push({enroll_no:student.enroll_no,subject_code:subject.code,marks:'',absent:true});
+          rows.push({enroll_no:student.enroll_no,subject_code:subject.code,grade:'',marks:'',absent:true});
           return;
         }
         if(raw==='' ){
-          rows.push({enroll_no:student.enroll_no,subject_code:subject.code,marks:'',absent:false});
+          rows.push({enroll_no:student.enroll_no,subject_code:subject.code,grade:'',marks:'',absent:false});
           return;
         }
         if(!/^\d{1,5}(?:\.\d{1,2})?$/.test(raw)||Number(raw)>Number(subject.max_marks)){
           errors.push('Row '+csvRow+', '+subject.name+': enter 0 to '+subject.max_marks+' or AB.');
           return;
         }
-        rows.push({enroll_no:student.enroll_no,subject_code:subject.code,marks:raw,absent:false});
+        rows.push({enroll_no:student.enroll_no,subject_code:subject.code,grade:'',marks:raw,absent:false});
       });
     }
     students.forEach(s=>{const key=String(s.enroll_no||'').trim().toUpperCase();if(key&&!seen.has(key))errors.push('Student '+(s.enroll_no||s.name||'')+' is missing from the CSV.');});
@@ -6658,10 +6825,10 @@ async function openAdminReportCardReview(examId,className,section){
 function renderAdminReportCardReview(){
   const host=document.getElementById('admin-report-card-review'),item=adminReportCardSelection,sheet=adminReportCardSheet;
   if(!host||!item||!sheet)return;
-  const subjects=Array.isArray(sheet.subjects)?sheet.subjects:[],students=Array.isArray(sheet.students)?sheet.students:[],marks=Array.isArray(sheet.marks)?sheet.marks:[],status=String(sheet.status||item.status||'DRAFT').toUpperCase();
+  const subjects=reportCardSortSubjects(sheet.subjects,item.class_name,sheet.report_card_format),students=Array.isArray(sheet.students)?sheet.students:[],marks=Array.isArray(sheet.marks)?sheet.marks:[],status=String(sheet.status||item.status||'DRAFT').toUpperCase();
   const marksByCell=new Map(marks.map(m=>[String(m.student_id)+'|'+String(m.subject_id),m]));
-  const subjectHeaders=subjects.map(s=>'<th class="min-w-[92px] px-3 py-2 text-right">'+studentEscape(s.name||s.code||'Subject')+'<span class="mt-0.5 block text-[9px] font-normal text-slate-400">Max '+studentEscape(s.max_marks)+'</span></th>').join('');
-  const rows=students.map(student=>'<tr class="border-t border-slate-100"><td class="whitespace-nowrap px-3 py-2 font-bold text-slate-800">'+studentEscape(student.roll_no||'-')+'</td><td class="whitespace-nowrap px-3 py-2">'+studentEscape(student.enroll_no||'')+'</td><td class="min-w-[150px] px-3 py-2">'+studentEscape(student.name||'')+'</td>'+subjects.map(subject=>{const mark=marksByCell.get(String(student.student_id)+'|'+String(subject.subject_id));return '<td class="px-3 py-2 text-right font-semibold">'+(mark?.absent?'AB':mark?.marks==null?'-':studentEscape(Number(mark.marks).toLocaleString('en-IN',{maximumFractionDigits:2})))+'</td>';}).join('')+'</tr>').join('');
+  const subjectHeaders=subjects.map(s=>'<th class="min-w-[92px] px-3 py-2 text-right">'+studentEscape(s.name||s.code||'Subject')+'<span class="mt-0.5 block text-[9px] font-normal text-slate-400">'+(s.grade_only?'Grade':'Max '+studentEscape(s.max_marks))+'</span></th>').join('');
+  const rows=students.map(student=>'<tr class="border-t border-slate-100"><td class="whitespace-nowrap px-3 py-2 font-bold text-slate-800">'+studentEscape(student.roll_no||'-')+'</td><td class="whitespace-nowrap px-3 py-2">'+studentEscape(student.enroll_no||'')+'</td><td class="min-w-[150px] px-3 py-2">'+studentEscape(student.name||'')+'</td>'+subjects.map(subject=>{const mark=marksByCell.get(String(student.student_id)+'|'+String(subject.subject_id));return '<td class="px-3 py-2 text-right font-semibold">'+(mark?.absent?'AB':subject.grade_only?(mark?.grade||'-'):mark?.marks==null?'-':studentEscape(Number(mark.marks).toLocaleString('en-IN',{maximumFractionDigits:2})))+'</td>';}).join('')+'</tr>').join('');
   const badge=status==='SUBMITTED'?'bg-amber-100 text-amber-800':status==='APPROVED'?'bg-emerald-100 text-emerald-800':status==='REJECTED'?'bg-rose-100 text-rose-800':'bg-slate-100 text-slate-700';
   const controls=status==='SUBMITTED'?'<div class="mt-4 grid gap-3 sm:grid-cols-[1fr_auto_auto]"><textarea id="admin-report-card-review-note" maxlength="500" rows="2" class="w-full rounded-xl border border-slate-300 p-3 text-xs" placeholder="Optional note for the teacher; required when returning for correction."></textarea><button type="button" onclick="reviewAdminReportCardSubmission(false)" class="rounded-xl border border-rose-200 bg-rose-50 px-4 py-3 text-xs font-bold text-rose-800">Return to Teacher</button><button type="button" onclick="reviewAdminReportCardSubmission(true)" class="rounded-xl bg-emerald-700 px-4 py-3 text-xs font-bold text-white">Approve & Publish</button></div>':status==='APPROVED'?'<p class="mt-3 rounded-xl bg-emerald-50 p-3 text-xs text-emerald-800">Approved report card is visible to students.</p>':status==='REJECTED'?'<p class="mt-3 rounded-xl bg-rose-50 p-3 text-xs text-rose-800">Returned to the teacher for correction. '+(sheet.review_note?studentEscape(sheet.review_note):'')+'</p>':'';
   host.innerHTML='<div class="flex flex-wrap items-start justify-between gap-3"><div><div class="flex flex-wrap items-center gap-2"><h3 class="text-base font-extrabold text-slate-900">'+studentEscape(item.exam_name||'Examination')+'  -  Class '+studentEscape(item.class_name||'')+' - '+studentEscape(item.section||'')+'</h3><span class="rounded-full px-2 py-1 text-[9px] font-extrabold '+badge+'">'+studentEscape(status)+'</span></div><p class="mt-1 text-xs text-slate-500">Check the imported marks before approving. Approval publishes this class report card to students.</p></div><button type="button" onclick="closeAdminReportCardReview()" class="rounded-xl bg-slate-100 px-3 py-2 text-xs font-bold text-slate-700">Close</button></div><div class="mt-4 overflow-x-auto rounded-xl border border-slate-200"><table class="w-full min-w-max text-left text-xs"><thead class="bg-slate-50 text-[10px] uppercase tracking-wide text-slate-500"><tr><th class="px-3 py-2">Roll</th><th class="px-3 py-2">Admission No.</th><th class="px-3 py-2">Student</th>'+subjectHeaders+'</tr></thead><tbody>'+rows+'</tbody></table></div>'+controls;
@@ -7045,6 +7212,56 @@ function renderStudentAttendancePanel(attendance,view="home",monthKey=""){
 function studentAttendanceShowView(view){window.studentAttendanceView=view;renderStudentAttendancePanel(currentAuthUser?.portalData?.attendance||[] ,view,window.studentAttendanceSelectedMonth||"");}
 function studentAttendanceShowMonth(key){window.studentAttendanceSelectedMonth=key;window.studentAttendanceView="days";renderStudentAttendancePanel(currentAuthUser?.portalData?.attendance||[],"days",key);}
 
+function reportCardGradeForPercent(percent){
+  if(percent==null||!Number.isFinite(Number(percent)))return '-';
+  const value=Number(percent);
+  return value>=91?'A1':value>=81?'A2':value>=71?'B1':value>=61?'B2':value>=51?'C1':value>=41?'C2':value>=33?'D':'E';
+}
+function renderCumulativeStudentReportCard(data,cards,profile,session){
+  const isClassV=profile.title==='Class V';
+  const classLevel=reportCardClassLevel(data.class_name);
+  const assignedLanguage=(Array.isArray(cards)?cards:[]).flatMap(card=>Array.isArray(card?.subjects)?card.subjects:[]).find(subject=>['french','punjabi'].includes(reportCardNormalizeAssessment(subject?.name)));
+  const scholasticSubjects=classLevel>=4&&classLevel<=8
+    ?profile.subjects.filter(name=>!['french','punjabi'].includes(reportCardNormalizeAssessment(name))).concat(assignedLanguage?[assignedLanguage.name]:[])
+    :profile.subjects;
+  const formatMark=value=>Number(value).toLocaleString('en-IN',{maximumFractionDigits:2});
+  const findCard=type=>cards.filter(card=>reportCardNormalizeAssessment(card.exam_type)===reportCardNormalizeAssessment(type)).sort((a,b)=>String(b.published_at||'').localeCompare(String(a.published_at||'')))[0]||null;
+  const findSubject=(card,name)=>Array.isArray(card?.subjects)?card.subjects.find(subject=>reportCardNormalizeAssessment(subject.name)===reportCardNormalizeAssessment(name))||null:null;
+  const markResult=(card,subjectName)=>{
+    const subject=findSubject(card,subjectName);
+    if(!subject)return {complete:false,points:0,label:'—'};
+    if(subject.absent)return {complete:true,points:0,label:'AB'};
+    if(subject.marks==null||!Number.isFinite(Number(subject.marks)))return {complete:false,points:0,label:'—'};
+    const points=Number(subject.marks);
+    return {complete:true,points,label:formatMark(points)};
+  };
+  const termHeaders=profile.terms.map(term=>'<th colspan="'+(term.components.length+1)+'" class="border border-slate-300 bg-slate-100 px-2 py-2 text-center">'+studentEscape(term.label)+'</th>').join('');
+  const componentHeaders=profile.terms.map(term=>term.components.map(component=>'<th class="min-w-[78px] border border-slate-300 px-2 py-2 text-center font-semibold">'+studentEscape(component.label)+'<span class="block text-[9px] text-slate-500">('+component.max+')</span></th>').join('')+'<th class="min-w-[82px] border border-slate-300 bg-slate-50 px-2 py-2 text-center font-extrabold">Total Marks<span class="block text-[9px] text-slate-500">(100)</span></th>').join('');
+  const rows=scholasticSubjects.map((name,index)=>{
+    const termResults=profile.terms.map(term=>{
+      const cells=term.components.map(component=>markResult(findCard(component.type),name));
+      const complete=cells.every(cell=>cell.complete),total=cells.reduce((sum,cell)=>sum+cell.points,0);
+      return {cells,complete,total};
+    });
+    const grandComplete=termResults.every(term=>term.complete),grandTotal=termResults.reduce((sum,term)=>sum+term.total,0);
+    const cells=termResults.map(term=>term.cells.map(cell=>'<td class="border border-slate-300 px-2 py-2 text-center">'+studentEscape(cell.label)+'</td>').join('')+'<td class="border border-slate-300 bg-slate-50 px-2 py-2 text-center font-bold">'+(term.complete?formatMark(term.total):'—')+'</td>').join('');
+    const grand=grandComplete?formatMark(grandTotal):'—',grade=grandComplete?reportCardGradeForPercent(grandTotal/2):'-';
+    return '<tr><td class="border border-slate-300 px-2 py-2 text-center">'+(index+1)+'</td><th class="min-w-[135px] border border-slate-300 px-2 py-2 text-left font-semibold">'+studentEscape(name)+'</th>'+cells+'<td class="border border-slate-300 bg-indigo-50 px-2 py-2 text-center font-bold">'+studentEscape(grand)+'</td><td class="border border-slate-300 bg-indigo-50 px-2 py-2 text-center font-extrabold text-indigo-800">'+studentEscape(grade)+'</td></tr>';
+  }).join('');
+  const gradeCard=findCard(profile.gradeAssessmentType);
+  const gradeRows=profile.gradeSubjects.map((name,index)=>{
+    const subject=findSubject(gradeCard,name),value=subject?.absent?'AB':subject?.grade||'—';
+    if(isClassV)return '<tr><td colspan="2" class="border border-slate-300 px-3 py-2 font-medium">'+studentEscape(name)+'</td><td class="border border-slate-300 px-3 py-2 text-center font-bold text-indigo-800">'+studentEscape(value)+'</td></tr>';
+    return '<tr><td class="border border-slate-300 px-3 py-2">'+(index+1)+'</td><td class="border border-slate-300 px-3 py-2 font-medium">'+studentEscape(name)+'</td><td class="border border-slate-300 px-3 py-2 text-center font-bold text-indigo-800">'+studentEscape(value)+'</td></tr>';
+  }).join('');
+  const gradeSection=isClassV
+    ? '<section class="overflow-hidden rounded-lg border border-slate-300"><table class="w-full border-collapse text-xs"><thead><tr><th colspan="2" class="border border-slate-300 px-3 py-2 text-left font-extrabold">Scholastic Areas :</th><th class="w-24 border border-slate-300 px-3 py-2 text-center font-extrabold">Grade</th></tr></thead><tbody>'+gradeRows+'</tbody></table></section>'
+    : '<section class="overflow-hidden rounded-lg border border-slate-300"><h4 class="bg-slate-50 px-3 py-2 text-xs font-extrabold text-slate-900">Scholastic Areas &middot; Grade</h4><table class="w-full border-collapse text-xs"><thead><tr><th class="w-12 border border-slate-300 px-3 py-2 text-left">S.No.</th><th class="border border-slate-300 px-3 py-2 text-left">Subject</th><th class="w-24 border border-slate-300 px-3 py-2 text-center">Grade</th></tr></thead><tbody>'+gradeRows+'</tbody></table></section>';
+  const classLabel=[data.class_name,data.section].filter(Boolean).join('-');
+  const roll=data.roll_no?'<span><b>Roll No.</b> '+studentEscape(data.roll_no)+'</span>':'';
+  const scholasticHeading=isClassV?'Part-I : Scholastic Areas':'Part I &middot; Scholastic Areas';
+  return '<article class="overflow-hidden rounded-2xl border border-slate-300 bg-white shadow-sm"><header class="border-b-4 border-rose-600 bg-white px-4 py-5 text-center"><h3 class="text-xl font-black tracking-wide text-slate-900">ASHIANA PUBLIC SCHOOL</h3><p class="mt-1 text-xs font-semibold text-slate-600">'+studentEscape(profile.title)+' &middot; RESULT CUM MARKSHEET</p><p class="mt-3 rounded-lg bg-slate-100 px-3 py-2 text-xs font-bold text-slate-800">Academic Session: '+studentEscape(session||'')+'</p><div class="mt-3 flex flex-wrap justify-center gap-x-5 gap-y-1 text-[11px] text-slate-700"><span><b>Student:</b> '+studentEscape(data.student_name||'')+'</span><span><b>Class:</b> '+studentEscape(classLabel)+'</span>'+roll+'</div></header><div class="space-y-4 p-3 sm:p-4"><section><h4 class="mb-2 text-sm font-extrabold text-slate-900">'+scholasticHeading+'</h4><div class="overflow-x-auto rounded-lg"><table class="w-full min-w-[990px] border-collapse text-[10px] sm:text-[11px]"><thead><tr><th rowspan="2" class="min-w-[42px] border border-slate-300 bg-slate-50 px-2 py-2">S.No.</th><th rowspan="2" class="min-w-[135px] border border-slate-300 bg-slate-50 px-2 py-2 text-left">Subject</th>'+termHeaders+'<th rowspan="2" class="min-w-[78px] border border-slate-300 bg-indigo-50 px-2 py-2 text-center">Grand Total<span class="block text-[9px] text-slate-500">(200)</span></th><th rowspan="2" class="min-w-[55px] border border-slate-300 bg-indigo-50 px-2 py-2 text-center">Grade</th></tr><tr>'+componentHeaders+'</tr></thead><tbody>'+rows+'</tbody></table></div></section>'+gradeSection+'<p class="text-[10px] text-slate-500">Only admin-approved results are shown. A dash means that assessment has not been published yet.</p><footer class="flex justify-between border-t border-slate-200 pt-6 text-[10px] font-semibold text-slate-700"><span>Class Teacher</span><span class="text-right">Principal<br>Ashiana Public School</span></footer></div></article>';
+}
 async function studentDashboardSection(type){
   const d=currentAuthUser?.portalData||{},
     host=document.getElementById("student-dashboard-panel-body"),
@@ -7144,14 +7361,25 @@ async function studentDashboardSection(type){
         if(error)throw error;
         if(!data?.success)throw new Error(data?.code==="STUDENT_SESSION_EXPIRED"?"Your student session has expired. Please sign in again.":"Report cards could not be loaded.");
         const cards=Array.isArray(data.cards)?data.cards:[];
-        host.innerHTML=cards.length?cards.map(card=>{
-          const subjects=Array.isArray(card.subjects)?card.subjects:[];
-          const markText=value=>Number(value).toLocaleString("en-IN",{maximumFractionDigits:2});
-          const subjectRows=subjects.map(subject=>'<tr class="border-t border-slate-100"><td class="px-3 py-2.5 font-semibold text-slate-800">'+studentEscape(subject.name||"Subject")+'</td><td class="px-3 py-2.5 text-right font-bold text-slate-900">'+(subject.absent?'AB':subject.marks==null?'-':markText(subject.marks))+'</td><td class="px-3 py-2.5 text-right text-slate-500">'+studentEscape(subject.max_marks==null?'-':markText(subject.max_marks))+'</td><td class="px-3 py-2.5 text-center font-bold text-indigo-700">'+studentEscape(subject.grade||'-')+'</td></tr>').join("");
-          const title=card.exam_header&&card.exam_header!==card.exam_name?studentEscape(card.exam_header)+'<span class="ml-2 text-xs font-medium text-slate-500">'+studentEscape(card.exam_name||"")+'</span>':studentEscape(card.exam_name||card.exam_header||"Examination");
-          const published=card.published_at?'<p class="mt-1 text-[10px] text-slate-500">Approved '+studentEscape(formatStudentPortalDate(card.published_at))+'</p>':'';
-          return '<article class="overflow-hidden rounded-2xl border border-indigo-100 bg-white shadow-sm"><div class="flex flex-wrap items-start justify-between gap-3 bg-indigo-50/70 p-4"><div><h3 class="text-base font-extrabold text-slate-900">'+title+'</h3><p class="mt-1 text-xs text-slate-600">Class '+studentEscape(data.class_name||"")+'  -  Section '+studentEscape(data.section||"")+(data.roll_no?'  -  Roll No. '+studentEscape(data.roll_no):'')+'</p>'+published+'</div><span class="rounded-xl bg-white px-3 py-2 text-right shadow-sm"><span class="block text-[9px] font-bold uppercase tracking-wide text-slate-500">Overall Grade</span><b class="text-lg text-indigo-800">'+studentEscape(card.grade||'-')+'</b></span></div><div class="overflow-x-auto"><table class="w-full min-w-[480px] text-left text-xs"><thead class="bg-slate-50 text-[10px] uppercase tracking-wide text-slate-500"><tr><th class="px-3 py-2.5">Subject</th><th class="px-3 py-2.5 text-right">Marks</th><th class="px-3 py-2.5 text-right">Maximum</th><th class="px-3 py-2.5 text-center">Grade</th></tr></thead><tbody>'+subjectRows+'</tbody><tfoot class="border-t-2 border-slate-200 bg-slate-50"><tr><th class="px-3 py-3 text-slate-700">Total</th><td class="px-3 py-3 text-right font-extrabold text-slate-900">'+markText(card.total||0)+'</td><td class="px-3 py-3 text-right font-bold text-slate-600">'+markText(card.max_total||0)+'</td><td class="px-3 py-3 text-center font-extrabold text-indigo-800">'+(card.percentage==null?'-':markText(card.percentage)+'%')+'</td></tr></tfoot></table></div></article>';
-        }).join(""):'<div class="rounded-2xl border border-slate-200 bg-white p-5 text-center"><div class="mx-auto flex h-12 w-12 items-center justify-center rounded-2xl bg-indigo-50 text-indigo-700"><i data-lucide="graduation-cap" class="h-6 w-6"></i></div><h3 class="mt-3 font-extrabold text-slate-900">No report cards yet</h3><p class="mt-1 text-xs leading-relaxed text-slate-500">Approved exam results will appear here after the school publishes them.</p></div>';
+        if(!cards.length){
+          host.innerHTML='<div class="rounded-2xl border border-slate-200 bg-white p-5 text-center"><div class="mx-auto flex h-12 w-12 items-center justify-center rounded-2xl bg-indigo-50 text-indigo-700"><i data-lucide="graduation-cap" class="h-6 w-6"></i></div><h3 class="mt-3 font-extrabold text-slate-900">No report cards yet</h3><p class="mt-1 text-xs leading-relaxed text-slate-500">Approved exam results will appear here after the school publishes them.</p></div>';
+        }else{
+          const profile=reportCardProfileForClass(data.class_name,cards[0]?.report_card_format);
+          if(profile){
+            const sessions=new Map();
+            cards.forEach(card=>{const session=String(card.academic_session||'Academic Session');if(!sessions.has(session))sessions.set(session,[]);sessions.get(session).push(card);});
+            host.innerHTML=Array.from(sessions,([session,sessionCards])=>renderCumulativeStudentReportCard(data,sessionCards,profile,session)).join('');
+          }else{
+            const markText=value=>Number(value).toLocaleString("en-IN",{maximumFractionDigits:2});
+            host.innerHTML=cards.map(card=>{
+              const subjects=Array.isArray(card.subjects)?card.subjects:[];
+              const subjectRows=subjects.map(subject=>'<tr class="border-t border-slate-100"><td class="px-3 py-2.5 font-semibold text-slate-800">'+studentEscape(subject.name||"Subject")+'</td><td class="px-3 py-2.5 text-right font-bold text-slate-900">'+(subject.absent?'AB':subject.marks==null?'-':markText(subject.marks))+'</td><td class="px-3 py-2.5 text-right text-slate-500">'+studentEscape(subject.max_marks==null?'-':markText(subject.max_marks))+'</td><td class="px-3 py-2.5 text-center font-bold text-indigo-700">'+studentEscape(subject.grade||'-')+'</td></tr>').join("");
+              const title=card.exam_header&&card.exam_header!==card.exam_name?studentEscape(card.exam_header)+'<span class="ml-2 text-xs font-medium text-slate-500">'+studentEscape(card.exam_name||"")+'</span>':studentEscape(card.exam_name||card.exam_header||"Examination");
+              const published=card.published_at?'<p class="mt-1 text-[10px] text-slate-500">Approved '+studentEscape(formatStudentPortalDate(card.published_at))+'</p>':'';
+              return '<article class="overflow-hidden rounded-2xl border border-indigo-100 bg-white shadow-sm"><div class="flex flex-wrap items-start justify-between gap-3 bg-indigo-50/70 p-4"><div><h3 class="text-base font-extrabold text-slate-900">'+title+'</h3><p class="mt-1 text-xs text-slate-600">Class '+studentEscape(data.class_name||"")+'  -  Section '+studentEscape(data.section||"")+(data.roll_no?'  -  Roll No. '+studentEscape(data.roll_no):'')+'</p>'+published+'</div><span class="rounded-xl bg-white px-3 py-2 text-right shadow-sm"><span class="block text-[9px] font-bold uppercase tracking-wide text-slate-500">Overall Grade</span><b class="text-lg text-indigo-800">'+studentEscape(card.grade||'-')+'</b></span></div><div class="overflow-x-auto"><table class="w-full min-w-[480px] text-left text-xs"><thead class="bg-slate-50 text-[10px] uppercase tracking-wide text-slate-500"><tr><th class="px-3 py-2.5">Subject</th><th class="px-3 py-2.5 text-right">Marks</th><th class="px-3 py-2.5 text-right">Maximum</th><th class="px-3 py-2.5 text-center">Grade</th></tr></thead><tbody>'+subjectRows+'</tbody><tfoot class="border-t-2 border-slate-200 bg-slate-50"><tr><th class="px-3 py-3 text-slate-700">Total</th><td class="px-3 py-3 text-right font-extrabold text-slate-900">'+markText(card.total||0)+'</td><td class="px-3 py-3 text-right font-bold text-slate-600">'+markText(card.max_total||0)+'</td><td class="px-3 py-3 text-center font-extrabold text-indigo-800">'+(card.percentage==null?'-':markText(card.percentage)+'%')+'</td></tr></tfoot></table></div></article>';
+            }).join("");
+          }
+        }
       }catch(e){
         console.warn("Student report cards could not be loaded:",e?.message||e);
         host.innerHTML='<div class="rounded-2xl border border-rose-200 bg-rose-50 p-4 text-sm text-rose-800">'+studentEscape(e?.message||"Report cards could not be loaded right now.")+'</div>';
@@ -11215,6 +11443,7 @@ window.addEventListener('load',async function(){
           loadAdminStudentPortalClasses().then(() => loadAdminStudentPortalContent());
         }
         if (tab === 'report-cards' && currentAuthUser?.type === 'ADMIN') {
+          void loadAdminReportCardLanguages();
           loadAdminReportCards();
         }
       } catch (err) {
