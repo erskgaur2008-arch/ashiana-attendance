@@ -289,6 +289,31 @@ async function disableStaffBiometric() {
   return true;
 }
 
+async function portalBiometricAvailable() {
+  if (!isNativeAndroid()) return false;
+  try {
+    const result = await NativeBiometric.isAvailable({ useFallback: false });
+    return Boolean(result?.isAvailable);
+  } catch (_) { return false; }
+}
+
+// This verifies the device owner's currently enrolled biometric to unlock an
+// already-authenticated local portal session. It is not server-side login.
+async function verifyPortalBiometric(role) {
+  if (!isNativeAndroid()) throw new Error("Device biometric lock is available only in the Android app.");
+  if (!["admin", "student"].includes(String(role || ""))) throw new Error("Invalid portal role.");
+  if (!(await portalBiometricAvailable())) throw new Error("Set up fingerprint or face unlock in Android Settings first.");
+  await NativeBiometric.verifyIdentity({
+    reason: "Unlock your Ashiana " + (role === "admin" ? "Admin" : "Student") + " Portal",
+    title: "Ashiana Portal Lock",
+    subtitle: "Verify your identity",
+    description: "Use the fingerprint or face authentication enabled on this device",
+    negativeButtonText: "Cancel",
+    maxAttempts: 3
+  });
+  return true;
+}
+
 // Handle Android hardware Back inside the web app instead of letting Capacitor
 // immediately terminate the activity. The page decides which view/modal to close.
 if (isNativeAndroid()) {
@@ -304,7 +329,7 @@ window.AshianaNative = Object.freeze({
   saveBlob,
   registerPushNotifications,
   requestNotificationPermission,
-  staffBiometricAvailable,
+  portalBiometricAvailable,\n  verifyPortalBiometric,\n  staffBiometricAvailable,
   hasStaffBiometricEnrollment,
   enableStaffBiometric,
   prepareStaffBiometricAccount,
