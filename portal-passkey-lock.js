@@ -103,10 +103,16 @@
   async function authenticateWebPasskey(role, purpose = "unlock") {
     const extra = {};
     if (role === "student") {
-      const input = document.getElementById("student-login-admission");
-      const admission = String(input?.value || "").trim();
-      if (!admission) throw new Error("Enter your Admission No. first.");
-      extra.admission_no = admission;
+      if (purpose === "unlock") {
+        const token = localStorage.getItem(TOKEN_KEY) || sessionStorage.getItem(TOKEN_KEY);
+        if (!token) throw new Error("Student session expired. Sign in again with Admission No. and DOB.");
+        extra.session_token = token;
+      } else {
+        const input = document.getElementById("student-login-admission");
+        const admission = String(input?.value || "").trim();
+        if (!admission) throw new Error("Enter your Admission No. first.");
+        extra.admission_no = admission;
+      }
     }
     const { options } = await invoke(role, "authentication-options", extra);
     const credential = await navigator.credentials.get({ publicKey: publicKeyOptions(options) });
