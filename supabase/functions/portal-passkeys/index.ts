@@ -8,6 +8,7 @@ const b64=(v:Uint8Array)=>{let s="";for(let i=0;i<v.length;i+=8192)s+=String.fro
 const unb64=(v:string)=>Uint8Array.from(atob(v.replace(/-/g,"+").replace(/_/g,"/")+"=".repeat((4-v.length%4)%4)),c=>c.charCodeAt(0));
 const challenge=()=>b64(crypto.getRandomValues(new Uint8Array(32)));
 const hash=async(v:string)=>Array.from(new Uint8Array(await crypto.subtle.digest("SHA-256",new TextEncoder().encode(v))),b=>b.toString(16).padStart(2,"0")).join("");
+const escapeLike=(v:string)=>v.replace(/[\\%_]/g,ch=>"\\"+ch);
 
 Deno.serve(async req=>{
  if(req.method==="OPTIONS")return new Response("ok",{headers});
@@ -42,7 +43,7 @@ Deno.serve(async req=>{
    }else{
      const enroll=String(b.admission_no||"").trim();
      if(!enroll||enroll.length>100)return json({error:"ADMISSION_NUMBER_REQUIRED"},400);
-     const {data:rows,error}=await db.from("student_roster").select("id,enroll_no,name,status,school_code").eq("school_code","ashiana").ilike("enroll_no",enroll).limit(2);
+     const {data:rows,error}=await db.from("student_roster").select("id,enroll_no,name,status,school_code").eq("school_code","ashiana").ilike("enroll_no",escapeLike(enroll)).limit(2);
      if(error||!rows||rows.length!==1||String(rows[0].status||"").toLowerCase()!=="active")return json({error:"STUDENT_NOT_FOUND"},401);
      student=rows[0];subjectId=String(student.id);
    }
