@@ -24,15 +24,27 @@ Deno.serve(async req=>{
    if(!jwt)return json({error:"AUTHENTICATION_REQUIRED"},401);
    const {data:u,error:ue}=await db.auth.getUser(jwt),email=String(u.user?.email||"").trim().toLowerCase();
    if(ue||!email)return json({error:"AUTHENTICATION_REQUIRED"},401);
-   const {data:rows,error}=await db.from("admin_users").select("email").eq("active",true).eq("role","super_admin").ilike("email",email).limit(2);
-   if(error||!rows||rows.length!==1)return json({error:"ADMIN_REQUIRED"},403);
+   const {data:rows,error}=await db.from("admin_users").select("email,role").eq("active",true).limit(500);
+   const matches=(rows||[]).filter((r:{email:string})=>String(r.email||"").trim().toLowerCase()===email);
+   if(error||matches.length!==1)return json({error:"ADMIN_REQUIRED"},403);
    subjectId=email;
- }else if(action==="authentication-options"||action==="authentication-verify"){
-   const enroll=String(b.admission_no||"").trim();
-   if(!enroll||enroll.length>100)return json({error:"ADMISSION_NUMBER_REQUIRED"},400);
-   const {data:rows,error}=await db.from("student_roster").select("id,enroll_no,name,status,school_code").eq("school_code","ashiana").ilike("enroll_no",enroll).limit(2);
-   if(error||!rows||rows.length!==1||String(rows[0].status||"").toLowerCase()!=="active")return json({error:"STUDENT_NOT_FOUND"},401);
-   student=rows[0];subjectId=String(student.id);
+ }else if((action==="authentication-options"||action==="authentication-verify") && role==="student"){
+   const session=String(b.session_token||"").trim();
+   if(session){
+     if(!/^[a-f0-9]{64}$/i.test(session))return json({error:"STUDENT_SESSION_REQUIRED"},401);
+     const {data:id,error}=await db.rpc("student_session_student_id",{p_token:session});
+     if(error||typeof id!=="string"||!id)return json({error:"STUDENT_SESSION_EXPIRED"},401);
+     subjectId=id;
+     const {data:row,error:re}=await db.from("student_roster").select("id,enroll_no,name,status,school_code").eq("id",id).eq("school_code","ashiana").maybeSingle();
+     if(re||!row||String(row.status||"").toLowerCase()!=="active")return json({error:"STUDENT_SESSION_EXPIRED"},401);
+     student=row;
+   }else{
+     const enroll=String(b.admission_no||"").trim();
+     if(!enroll||enroll.length>100)return json({error:"ADMISSION_NUMBER_REQUIRED"},400);
+     const {data:rows,error}=await db.from("student_roster").select("id,enroll_no,name,status,school_code").eq("school_code","ashiana").ilike("enroll_no",enroll).limit(2);
+     if(error||!rows||rows.length!==1||String(rows[0].status||"").toLowerCase()!=="active")return json({error:"STUDENT_NOT_FOUND"},401);
+     student=rows[0];subjectId=String(student.id);
+   }
  }else{
    const session=String(b.session_token||"").trim();
    if(!/^[a-f0-9]{64}$/i.test(session))return json({error:"STUDENT_SESSION_REQUIRED"},401);
