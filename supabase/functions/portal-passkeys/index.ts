@@ -104,7 +104,7 @@ Deno.serve(async req=>{
   if(action==="authentication-options"){
    const {data:rows,error}=await db.from("portal_webauthn_credentials").select("credential_id,transports").eq("subject_type",role).eq("subject_id",subjectId).eq("enabled",true);
    if(error)throw error;if(!rows?.length)return json({error:"PASSKEY_NOT_REGISTERED"},404);
-   const options=await generateAuthenticationOptions({rpID,userVerification:"required",allowCredentials:rows.map((r:{credential_id:string;transports?:string[]})=>({id:r.credential_id,type:"public-key" as const,transports:r.transports||[]})),challenge:challenge()});
+   const options=await generateAuthenticationOptions({rpID,userVerification:"required",allowCredentials:rows.map((r:{credential_id:string})=>({id:r.credential_id})),challenge:challenge()});
    await db.from("portal_webauthn_challenges").delete().eq("subject_type",role).eq("subject_id",subjectId).eq("purpose","authentication");
    const {error:ie}=await db.from("portal_webauthn_challenges").insert({subject_type:role,subject_id:subjectId,challenge:options.challenge,purpose:"authentication",expires_at:new Date(Date.now()+120000).toISOString()});
    if(ie)throw ie;return json({options});
