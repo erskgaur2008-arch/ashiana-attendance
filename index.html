@@ -9642,15 +9642,20 @@ async function loadAdminStudentAttendance(){
       if(currentAuthUser?.type!=="STAFF"){item.classList.add("hidden");return;}
       item.classList.remove("hidden");
       try{
-        const result=await callStaffPasskeys("status");
-        const enabled=!!result?.enabled;
+        let enabled=false;
+        if(window.AshianaNative?.isAndroid?.()){
+          enabled=Boolean(currentStaffId && await window.AshianaNative.hasStaffBiometricEnrollment(currentStaffId));
+        }else{
+          const result=await callStaffPasskeys("status");
+          enabled=!!result?.enabled;
+        }
         label.textContent=enabled?"Enabled Biometric":"Enable Biometric";
         toggle.className="ml-auto relative inline-flex items-center w-[76px] h-[34px] rounded-full border shadow-inner transition-colors "+(enabled?"bg-emerald-500 border-emerald-600":"bg-slate-200 border-slate-300");
         toggleText.textContent=enabled?"ON":"OFF";
         toggleText.className="absolute text-[11px] font-extrabold "+(enabled?"left-2 text-emerald-950":"right-2 text-slate-500");
         knob.className="absolute top-[3px] h-[26px] w-[26px] rounded-full bg-white border border-slate-200 shadow-md transition-all "+(enabled?"left-[46px]":"left-[3px]");
         toggle.setAttribute("aria-label",enabled?"Biometric enabled":"Biometric disabled");
-        item.setAttribute("aria-label",enabled?"Biometric attendance enabled; open settings":"Biometric attendance not enabled; open settings");
+        item.setAttribute("aria-label",enabled?"Biometric enabled; open settings":"Biometric not enabled; open settings");
       }catch(error){
         label.textContent="Biometric Status";
         toggle.className="ml-auto relative inline-flex items-center w-[76px] h-[34px] rounded-full bg-slate-200 border border-slate-300 shadow-inner";
@@ -9664,6 +9669,29 @@ async function loadAdminStudentAttendance(){
       const item=document.getElementById("staff-drawer-biometric");
       if(item)item.disabled=true;
       try{
+        if(window.AshianaNative?.isAndroid?.()){
+          if(!currentStaffId)throw new Error("Staff account could not be identified. Sign out and sign in again.");
+          const enabled=await window.AshianaNative.hasStaffBiometricEnrollment(currentStaffId);
+          if(enabled){
+            await window.AshianaNative.disableStaffBiometric();
+            await refreshStaffBiometricMenuStatus();
+            showToast("Biometric disabled. You can still mark attendance using your usual method.", "success");
+            return;
+          }
+          const available=await window.AshianaNative.staffBiometricAvailable();
+          if(!available)throw new Error("No device biometric is available. Set up fingerprint or face unlock in Android Settings first.");
+          const pin=window.prompt("Enter your current 4-digit staff PIN to enable biometric on this phone:");
+          if(pin===null)return;
+          if(!/^\\d{4}$/.test(String(pin).trim()))throw new Error("Enter your current 4-digit staff PIN.");
+          const staffRecord=(Array.isArray(staffDatabase)?staffDatabase:[]).find(x=>String(x.id||x.staff_id||"")===String(currentStaffId));
+          const loginId=String(currentAuthUser?.loginId||currentAuthUser?.login_id||currentAuthUser?.email||currentAuthUser?.username||staffRecord?.employee_id||staffRecord?.emp_id||"").trim();
+          if(!loginId)throw new Error("Could not identify your staff login ID. Sign out and sign in again.");
+          await window.AshianaNative.prepareStaffBiometricAccount(currentStaffId);
+          await window.AshianaNative.enableStaffBiometric({staffId:currentStaffId,loginId,pin:String(pin).trim()});
+          await refreshStaffBiometricMenuStatus();
+          showToast("Device biometric enabled. You can still mark attendance without it.", "success");
+          return;
+        }
         const state=await callStaffPasskeys("status");
         if(state?.enabled){
           await callStaffPasskeys("disable");
