@@ -174,7 +174,12 @@
           setNativeLock(role, true);
           toast("Device biometric lock enabled. It protects this app session on this device.", "success");
         } else {
-          await registerWebPasskey(role);
+          if (enable.dataset.hasCredentials === "true") {
+            const extra = role === "student" ? { session_token: localStorage.getItem(TOKEN_KEY) || sessionStorage.getItem(TOKEN_KEY) } : {};
+            await invoke(role, "enable", extra);
+          } else {
+            await registerWebPasskey(role);
+          }
         }
         enable.textContent = NATIVE() ? "Biometric Lock Enabled" : "Passkey Enabled";
       } catch (e) { toast(e.message || "Could not enable passkey.", "error"); }
@@ -204,8 +209,11 @@
     });
     box.append(status, enable, lock, disable); document.body.append(box);
     if (!NATIVE()) invoke(role, "status", role === "student" ? { session_token: localStorage.getItem(TOKEN_KEY) || sessionStorage.getItem(TOKEN_KEY) } : {})
-      .then(s => { if (s.enabled) enable.textContent = "Passkey Enabled"; })
-      .catch(() => {});
+      .then(s => {
+        enable.dataset.hasCredentials = s.credential_count > 0 ? "true" : "false";
+        if (s.enabled) enable.textContent = "Passkey Enabled";
+        else if (s.credential_count > 0) enable.textContent = "Re-enable Passkey";
+      }).catch(() => {});
   }
   function installStudentLoginButton() {
     const form = document.getElementById("student-login-form");
