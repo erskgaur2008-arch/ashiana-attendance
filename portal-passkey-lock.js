@@ -239,6 +239,9 @@
       }).catch(() => {});
   }
   function installStudentLoginButton() {
+    // Native APK currently uses the secure device-biometric session lock; true
+    // cross-platform server-backed passkey login requires Android Credential Manager.
+    if (NATIVE()) return;
     const form = document.getElementById("student-login-form");
     if (!form || document.getElementById("student-passkey-login")) return;
     const button = document.createElement("button");
