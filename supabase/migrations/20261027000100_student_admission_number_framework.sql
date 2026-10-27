@@ -1,7 +1,6 @@
 -- Student admission-number framework for Ashiana Attendance.
--- Format: APS-YY-NNNN. The NNNN component reuses the existing numeric enroll_no.
--- This migration is intentionally additive; it does not alter authentication, attendance,
--- existing student IDs, or the retired report-card feature.
+-- Format: APS-YY-NNNN. NNNN reuses the existing numeric enroll_no.
+-- Additive only: no student IDs, authentication, attendance, or retired report-card data is changed.
 
 alter table public.student_roster
   add column if not exists registration_year integer,
@@ -11,16 +10,14 @@ alter table public.student_roster
 comment on column public.student_roster.registration_year is
   'Full admission year, e.g. 2026; displayed as YY in admission_number.';
 comment on column public.student_roster.serial_number is
-  'Numeric serial derived from the existing enroll_no; retained separately for structured queries.';
+  'Numeric serial derived from the existing enroll_no.';
 comment on column public.student_roster.admission_number is
   'Formatted internal registration number: APS-YY-NNNN.';
 
--- The final display identifier must never be duplicated.
 create unique index if not exists student_roster_admission_number_uidx
   on public.student_roster (admission_number)
   where admission_number is not null;
 
--- Fast lookup and uniqueness guard for a school's admission-year serial batch.
 create unique index if not exists student_roster_school_year_serial_uidx
   on public.student_roster (school_code, registration_year, serial_number)
   where registration_year is not null and serial_number is not null;
@@ -37,25 +34,21 @@ as $function$
 declare
   v_serial integer;
 begin
-  -- New records default to the current calendar year unless the admin explicitly
-  -- provides the actual admission year. Legacy bulk generation supplies the year.
   if tg_op = 'INSERT' and new.registration_year is null then
     new.registration_year := extract(year from now())::integer;
   end if;
 
-  -- Enroll No is the authoritative serial component; do not reorder existing IDs.
+  -- Enroll No remains authoritative. Existing identifiers are never reordered.
   if coalesce(trim(new.enroll_no), '') ~ '^[0-9]{1,4}$' then
     v_serial := trim(new.enroll_no)::integer;
     if v_serial between 1 and 9999 then
       new.serial_number := v_serial;
     end if;
   elsif new.admission_number is null then
-    -- Leave non-numeric enrollment IDs untouched; the bulk RPC will report them
-    -- explicitly instead of silently generating a mismatched registration number.
     new.serial_number := null;
   end if;
 
-  -- Generate once; later name/class/section edits do not change the identifier.
+  -- Generate once; changing names/classes later cannot change the identifier.
   if new.admission_number is null
      and new.registration_year between 2000 and 2199
      and new.serial_number between 1 and 9999 then
@@ -72,11 +65,10 @@ drop trigger if exists student_roster_sync_admission_number on public.student_ro
 create trigger student_roster_sync_admission_number
 before insert or update of enroll_no, registration_year, serial_number
 on public.student_roster
-for each row
-execute function public.sync_student_admission_number();
+for each row execute function public.sync_student_admission_number();
 
--- Admin-only bulk backfill. Uses each student's existing Enroll No as NNNN,
--- and intentionally does not alphabetically renumber students or alter their IDs.
+-- Admin-only bulk backfill. Uses existing Enroll No as NNNN, never alphabetically
+-- renumbers students, and leaves student IDs and all attendance records untouched.
 create or replace function public.admin_generate_student_admission_numbers(
   p_school_code text,
   p_registration_year integer
@@ -99,37 +91,39 @@ begin
     raise exception 'Unsupported school code' using errcode = '22023';
   end if;
 
-  if p_registration_year < 2000 or p_registration_year > 2199 then
-    raise exception 'Registration year must be a full year between 2000 and 2199'
-      using errcode = '22023';
+  if p_registration_year is null or p_registration_year < 2000 or p_registration_year > 2199 then
+    raise exception 'Registration year must be between 2000 and 2199' using errcode = '22023';
   end if;
 
-  -- Serialize generation jobs for this school/year and avoid concurrent batches.
-  perform pg_advisory_xact_lock(hashtext('student-admission-number'), hashtext(lower(trim(p_school_code)) || ':' || p_registration_year::text));
+  perform pg_advisory_xact_lock(
+    hashtext('student-admission-number'),
+    hashtext(lower(trim(p_school_code)) || ':' || p_registration_year::text)
+  );
 
-  -- Every unassigned student must have a usable numeric Enroll No for NNNN.
+  -- Reject bad Enroll Nos before attempting any writes.
   select count(*) into v_invalid_count
   from public.student_roster s
   where lower(s.school_code) = lower(trim(p_school_code))
     and s.admission_number is null
-    and (
-      coalesce(trim(s.enroll_no), '') !~ '^[0-9]{1,4}$'
-      or trim(s.enroll_no)::integer not between 1 and 9999
-    );
+    and case
+      when coalesce(trim(s.enroll_no), '') ~ '^[0-9]{1,4}$'
+        then trim(s.enroll_no)::integer not between 1 and 9999
+      else true
+    end;
 
   if v_invalid_count > 0 then
-    raise exception '% unassigned student(s) have a non-numeric or out-of-range Enroll No. Fix those records before generation.', v_invalid_count
+    raise exception '% unassigned student(s) have a non-numeric or out-of-range Enroll No. Fix these records first.', v_invalid_count
       using errcode = '22023';
   end if;
 
-  -- Detect numeric collisions such as Enroll No "0012" and "12" before writes.
+  -- Prevent collisions like Enroll No "0012" and "12".
   select count(*) into v_duplicate_count
   from (
-    select trim(s.enroll_no)::integer
+    select case when trim(s.enroll_no) ~ '^[0-9]{1,4}$' then trim(s.enroll_no)::integer end as serial
     from public.student_roster s
     where lower(s.school_code) = lower(trim(p_school_code))
       and s.admission_number is null
-    group by trim(s.enroll_no)::integer
+    group by case when trim(s.enroll_no) ~ '^[0-9]{1,4}$' then trim(s.enroll_no)::integer end
     having count(*) > 1
   ) duplicates;
 
