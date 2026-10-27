@@ -61,3 +61,12 @@ where school_code = 'ashiana'
 ## Scope note
 
 This repository uses Supabase/Postgres and a static browser frontend, not a Node.js/Express/MySQL or PHP/PDO backend. The migration therefore implements the framework in the application's actual database stack. The current change provides the schema, protected bulk RPC, uniqueness/indexing, and automatic generation trigger. Frontend labels and ID-card displays should only be wired to `admission_number` after this migration is applied and verified in a test project.
+
+
+## EduPunch-Test validation (2026-10-27)
+
+- Both migration files applied successfully to the isolated `EduPunch-Test` project.
+- Verified the three new columns exist with the expected types.
+- Verified both student portal RPC definitions now include `admission_number` in their student JSON payload.
+- Test roster currently contains 2 Ashiana rows; both have non-numeric Enroll Nos. The bulk generation was **not run**, because doing so should fail safely until the existing Enroll Nos are corrected to numeric values from 1 to 9999. No student data was updated by the bulk-generation function.
+- This verifies migration application and function definitions, not the browser display or a completed end-to-end student test.
