@@ -128,7 +128,7 @@
       location.reload();
       return true;
     }
-    if (role === "admin") unlockOverlay();
+    if (purpose === "unlock") unlockOverlay();
     return true;
   }
   let overlay = null;
