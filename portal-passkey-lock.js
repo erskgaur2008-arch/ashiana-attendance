@@ -132,6 +132,21 @@
     return true;
   }
   let overlay = null;
+  const webPasskeyEnabled = { admin: false, student: false };
+  let idleTimer = null;
+  function armIdleLock(role) {
+    clearTimeout(idleTimer);
+    if (!role || (NATIVE() ? !nativeLockEnabled(role) : !webPasskeyEnabled[role])) return;
+    idleTimer = setTimeout(() => {
+      if (currentRole()?.role === role) lockOverlay(role);
+    }, 10 * 60 * 1000);
+  }
+  ["pointerdown", "keydown", "touchstart", "click"].forEach(eventName =>
+    window.addEventListener(eventName, () => {
+      const current = currentRole();
+      if (current) armIdleLock(current.role);
+    }, { passive: true })
+  );
   function lockOverlay(role) {
     if (overlay) return;
     overlay = document.createElement("div");
@@ -172,13 +187,18 @@
           if (!window.AshianaNative?.verifyPortalBiometric) throw new Error("Update the Android app to enable device biometric lock.");
           await window.AshianaNative.verifyPortalBiometric(role);
           setNativeLock(role, true);
+          armIdleLock(role);
           toast("Device biometric lock enabled. It protects this app session on this device.", "success");
         } else {
           if (enable.dataset.hasCredentials === "true") {
             const extra = role === "student" ? { session_token: localStorage.getItem(TOKEN_KEY) || sessionStorage.getItem(TOKEN_KEY) } : {};
             await invoke(role, "enable", extra);
+            webPasskeyEnabled[role] = true;
+            armIdleLock(role);
           } else {
             await registerWebPasskey(role);
+            webPasskeyEnabled[role] = true;
+            armIdleLock(role);
           }
         }
         enable.textContent = NATIVE() ? "Biometric Lock Enabled" : "Passkey Enabled";
@@ -211,7 +231,8 @@
     if (!NATIVE()) invoke(role, "status", role === "student" ? { session_token: localStorage.getItem(TOKEN_KEY) || sessionStorage.getItem(TOKEN_KEY) } : {})
       .then(s => {
         enable.dataset.hasCredentials = s.credential_count > 0 ? "true" : "false";
-        if (s.enabled) enable.textContent = "Passkey Enabled";
+        webPasskeyEnabled[role] = Boolean(s.enabled);
+        if (s.enabled) { enable.textContent = "Passkey Enabled"; armIdleLock(role); }
         else if (s.credential_count > 0) enable.textContent = "Re-enable Passkey";
       }).catch(() => {});
   }
