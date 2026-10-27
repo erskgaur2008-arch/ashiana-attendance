@@ -64,6 +64,14 @@ Deno.serve(async req=>{
    const {error}=await db.from("portal_webauthn_credentials").update({enabled:false}).eq("subject_type",role).eq("subject_id",subjectId);
    if(error)throw error;return json({success:true,enabled:false});
   }
+  if(action==="enable"){
+   const {data:existing,error}=await db.from("portal_webauthn_credentials").select("id").eq("subject_type",role).eq("subject_id",subjectId);
+   if(error)throw error;
+   if(!existing?.length)return json({error:"PASSKEY_NOT_REGISTERED"},404);
+   const {error:updateError}=await db.from("portal_webauthn_credentials").update({enabled:true}).eq("subject_type",role).eq("subject_id",subjectId);
+   if(updateError)throw updateError;
+   return json({success:true,enabled:true});
+  }
   if(action==="registration-options"){
    const {data:existing,error}=await db.from("portal_webauthn_credentials").select("credential_id").eq("subject_type",role).eq("subject_id",subjectId);
    if(error)throw error;
