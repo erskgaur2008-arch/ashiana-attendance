@@ -3645,15 +3645,15 @@ id="admin-portal-view" class="hidden flex-col w-full space-y-4 admin-dashboard-s
                   <th class="py-2 px-2 text-center">
                     <input type="checkbox" id="staff-directory-select-all" onchange="toggleAllStaffIdCards(this.checked)" class="w-3.5 h-3.5 accent-emerald-700" title="Select all staff">
                   </th>
-                  <th class="py-2 px-3">Emp ID</th>
-                  <th class="py-2 px-3">Name</th>
-                  <th class="py-2 px-3">Department</th>
-                  <th class="py-2 px-3">Role</th>
-                  <th class="py-2 px-3">Email</th>
-                  <th class="py-2 px-3">Address</th>
-                  <th class="py-2 px-3">Valid Thru</th>
-                  <th class="py-2 px-3 text-center">PIN</th>
-                  <th class="py-2 px-3">Status</th>
+                  <th class="py-2 px-3 sortable-header" role="button" tabindex="0" onclick="sortTableByHeader(this)" onkeydown="if(event.key==='Enter'||event.key===' '){event.preventDefault();sortTableByHeader(this)}" aria-label="Sort by Emp ID" title="Sort by Emp ID">Emp ID <span class="sort-indicator" aria-hidden="true">↕</span></th>
+                  <th class="py-2 px-3 sortable-header" role="button" tabindex="0" onclick="sortTableByHeader(this)" onkeydown="if(event.key==='Enter'||event.key===' '){event.preventDefault();sortTableByHeader(this)}" aria-label="Sort by Name" title="Sort by Name">Name <span class="sort-indicator" aria-hidden="true">↕</span></th>
+                  <th class="py-2 px-3 sortable-header" role="button" tabindex="0" onclick="sortTableByHeader(this)" onkeydown="if(event.key==='Enter'||event.key===' '){event.preventDefault();sortTableByHeader(this)}" aria-label="Sort by Department" title="Sort by Department">Department <span class="sort-indicator" aria-hidden="true">↕</span></th>
+                  <th class="py-2 px-3 sortable-header" role="button" tabindex="0" onclick="sortTableByHeader(this)" onkeydown="if(event.key==='Enter'||event.key===' '){event.preventDefault();sortTableByHeader(this)}" aria-label="Sort by Role" title="Sort by Role">Role <span class="sort-indicator" aria-hidden="true">↕</span></th>
+                  <th class="py-2 px-3 sortable-header" role="button" tabindex="0" onclick="sortTableByHeader(this)" onkeydown="if(event.key==='Enter'||event.key===' '){event.preventDefault();sortTableByHeader(this)}" aria-label="Sort by Email" title="Sort by Email">Email <span class="sort-indicator" aria-hidden="true">↕</span></th>
+                  <th class="py-2 px-3 sortable-header" role="button" tabindex="0" onclick="sortTableByHeader(this)" onkeydown="if(event.key==='Enter'||event.key===' '){event.preventDefault();sortTableByHeader(this)}" aria-label="Sort by Address" title="Sort by Address">Address <span class="sort-indicator" aria-hidden="true">↕</span></th>
+                  <th class="py-2 px-3 sortable-header" role="button" tabindex="0" onclick="sortTableByHeader(this)" onkeydown="if(event.key==='Enter'||event.key===' '){event.preventDefault();sortTableByHeader(this)}" aria-label="Sort by Valid Thru" title="Sort by Valid Thru">Valid Thru <span class="sort-indicator" aria-hidden="true">↕</span></th>
+                  <th class="py-2 px-3 text-center sortable-header" role="button" tabindex="0" onclick="sortTableByHeader(this)" onkeydown="if(event.key==='Enter'||event.key===' '){event.preventDefault();sortTableByHeader(this)}" aria-label="Sort by PIN" title="Sort by PIN">PIN <span class="sort-indicator" aria-hidden="true">↕</span></th>
+                  <th class="py-2 px-3 sortable-header" role="button" tabindex="0" onclick="sortTableByHeader(this)" onkeydown="if(event.key==='Enter'||event.key===' '){event.preventDefault();sortTableByHeader(this)}" aria-label="Sort by Status" title="Sort by Status">Status <span class="sort-indicator" aria-hidden="true">↕</span></th>
                   <th class="py-2 px-3 text-center">Actions</th>
                 </tr>
               </thead>
