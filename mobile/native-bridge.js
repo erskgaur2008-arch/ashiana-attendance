@@ -4,12 +4,35 @@ import { Share } from "@capacitor/share";
 import { PushNotifications } from "@capacitor/push-notifications";
 import { LocalNotifications } from "@capacitor/local-notifications";
 import { NativeBiometric, AccessControl } from "@capgo/capacitor-native-biometric";
+import { CapacitorPasskey } from "@capgo/capacitor-passkey";
 import { SecureStorage } from "@aparajita/capacitor-secure-storage";
 import { Geolocation } from "@capacitor/geolocation";
 import { App } from "@capacitor/app";
 
 function isNativeAndroid() {
   return Boolean(window.Capacitor?.isNativePlatform?.() && window.Capacitor?.getPlatform?.() === "android");
+}
+
+let nativePasskeyInitError = null;
+const nativePasskeyInit = isNativeAndroid()
+  ? CapacitorPasskey.autoShimWebAuthn().catch(error => {
+      nativePasskeyInitError = error;
+      console.error("Android passkey initialization failed:", error?.message || error);
+    })
+  : Promise.resolve();
+
+async function ensurePasskeyReady() {
+  if (!isNativeAndroid()) return true;
+  await nativePasskeyInit;
+  if (nativePasskeyInitError) throw new Error("Android passkeys could not be initialized. Update the app and try again.");
+  const support = await CapacitorPasskey.isSupported();
+  if (!support?.available) throw new Error("This Android device has no passkey provider available. Set up Google Password Manager or another passkey provider first.");
+  return true;
+}
+
+async function passkeySupported() {
+  if (!isNativeAndroid()) return Boolean(navigator.credentials?.create && navigator.credentials?.get);
+  try { await ensurePasskeyReady(); return true; } catch (_) { return false; }
 }
 
 async function printHtml(html, name = "Ashiana Attendance") {
@@ -289,31 +312,6 @@ async function disableStaffBiometric() {
   return true;
 }
 
-async function portalBiometricAvailable() {
-  if (!isNativeAndroid()) return false;
-  try {
-    const result = await NativeBiometric.isAvailable({ useFallback: false });
-    return Boolean(result?.isAvailable);
-  } catch (_) { return false; }
-}
-
-// This verifies the device owner's currently enrolled biometric to unlock an
-// already-authenticated local portal session. It is not server-side login.
-async function verifyPortalBiometric(role) {
-  if (!isNativeAndroid()) throw new Error("Device biometric lock is available only in the Android app.");
-  if (!["admin", "student"].includes(String(role || ""))) throw new Error("Invalid portal role.");
-  if (!(await portalBiometricAvailable())) throw new Error("Set up fingerprint or face unlock in Android Settings first.");
-  await NativeBiometric.verifyIdentity({
-    reason: "Unlock your Ashiana " + (role === "admin" ? "Admin" : "Student") + " Portal",
-    title: "Ashiana Portal Lock",
-    subtitle: "Verify your identity",
-    description: "Use the fingerprint or face authentication enabled on this device",
-    negativeButtonText: "Cancel",
-    maxAttempts: 3
-  });
-  return true;
-}
-
 // Handle Android hardware Back inside the web app instead of letting Capacitor
 // immediately terminate the activity. The page decides which view/modal to close.
 if (isNativeAndroid()) {
@@ -329,7 +327,9 @@ window.AshianaNative = Object.freeze({
   saveBlob,
   registerPushNotifications,
   requestNotificationPermission,
-  portalBiometricAvailable,\n  verifyPortalBiometric,\n  staffBiometricAvailable,
+  ensurePasskeyReady,
+  passkeySupported,
+  staffBiometricAvailable,
   hasStaffBiometricEnrollment,
   enableStaffBiometric,
   prepareStaffBiometricAccount,

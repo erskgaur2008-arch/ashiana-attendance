@@ -13,7 +13,14 @@ const config: CapacitorConfig = {
   appId: selected.appId,
   appName: selected.appName,
   webDir: "mobile/www",
-  android: { backgroundColor: "#064E3B" }
+  android: { backgroundColor: "#064E3B" },
+  plugins: {
+    CapacitorPasskey: {
+      origin: "https://erskgaur2008-arch.github.io",
+      domains: ["erskgaur2008-arch.github.io"],
+      autoShim: true
+    }
+  }
 };
 
 export default config;

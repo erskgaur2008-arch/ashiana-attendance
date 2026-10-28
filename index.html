@@ -1987,6 +1987,10 @@
             <i data-lucide="lock" class="w-4 h-4"></i>
             <span>Access Administrator Portal</span>
           </button>
+          <button type="button" id="admin-passkey-login" onclick="window.__ashianaAdminPasskeyLogin()" class="w-full py-3 bg-white hover:bg-emerald-50 border border-emerald-800 text-emerald-950 font-bold rounded-xl text-xs flex items-center justify-center space-x-2 active:scale-[0.99] transition-all">
+            <i data-lucide="fingerprint" class="w-4 h-4"></i>
+            <span>Sign in with Passkey</span>
+          </button>
           <button type="button" onclick="requestAdminPasswordReset()" class="w-full py-2.5 mt-1 bg-amber-50 hover:bg-amber-100 border border-amber-200 text-amber-700 font-bold rounded-xl text-xs flex items-center justify-center space-x-2 active:scale-[0.99] transition-all">
             <i data-lucide="mail-question" class="w-4 h-4"></i>
             <span>Forgot Administrator Password?</span>
@@ -2112,10 +2116,11 @@
           window.__ashianaMainSupabaseClient = window.supabase.createClient(
             "https://oalfzgluqroqbbrulhpr.supabase.co",
             "sb_publishable_PND9f9FKbNrxlEakSgLKYA_5EsqLHkg",
-            { auth: { persistSession: true, autoRefreshToken: true, detectSessionInUrl: false, storage: window.localStorage, storageKey: "sb-oalfzgluqroqbbrulhpr-auth-token" } }
+            { auth: { persistSession: true, autoRefreshToken: true, detectSessionInUrl: false, storage: window.localStorage, storageKey: "sb-oalfzgluqroqbbrulhpr-auth-token", experimental: { passkey: true } } }
           );
           return window.__ashianaMainSupabaseClient;
         }
+        window.__ashianaGetMainSupabaseClient = ashianaGetMainSupabaseClient;
 
         // Student auth is RPC-based. This helper is the fallback storage
         // cleanup used after a local Auth sign-out when switching roles.
@@ -2139,7 +2144,7 @@
                 return;
               }
               var script = document.createElement("script");
-              script.src = "https://cdn.jsdelivr.net/npm/@supabase/supabase-js@2.45.4/dist/umd/supabase.js";
+              script.src = "https://cdn.jsdelivr.net/npm/@supabase/supabase-js@2.117.2/dist/umd/supabase.js";
               script.async = true;
               script.dataset.supabaseRuntime = "true";
               script.onload = resolve;
@@ -2213,6 +2218,72 @@
           btn.innerText = busy ? label : btn.dataset.originalText;
         }
 
+        async function ashianaCompleteAdminAuthentication(mainClient, fallbackEmail, authenticatedUser) {
+          const verified = await mainClient.auth.getUser();
+          const email = String(verified.data?.user?.email || authenticatedUser?.email || fallbackEmail || "").trim().toLowerCase();
+          if (verified.error || !email) {
+            await mainClient.auth.signOut({ scope: "local" });
+            throw new Error("Administrator identity could not be verified by Supabase Auth.");
+          }
+          const { data: adminAuthz, error: adminAuthzError } = await mainClient.rpc("authorize_admin_login");
+          if (adminAuthzError || !adminAuthz?.authorized) {
+            await mainClient.auth.signOut({ scope: "local" });
+            if (adminAuthzError) throw new Error("Administrator authorization check failed: " + (adminAuthzError.message || "Database error"));
+            throw new Error("This Supabase account is not authorized as an Administrator.");
+          }
+          const pendingAdminUser = {
+            type: "ADMIN",
+            username: String(adminAuthz.email || email).trim().toLowerCase(),
+            role: adminAuthz.role || "ADMIN"
+          };
+          sessionStorage.setItem("aps_passkey_recent_auth_v1", "admin");
+          sessionStorage.setItem("aps_current_auth_session_v1", JSON.stringify(pendingAdminUser));
+          sessionStorage.setItem("aps_login_handoff_v1", "ADMIN");
+          sessionStorage.setItem("aps_admin_login_handoff_v1", "1");
+          if (typeof window.__ashianaFinishAdminLogin === "function") {
+            window.__ashianaFinishAdminLogin(pendingAdminUser);
+            ashianaLoginMessage("Administrator sign-in successful. Console loaded.", "success");
+            return true;
+          }
+          ashianaLoginMessage("Administrator sign-in successful. Opening console…", "success");
+          window.location.replace(window.location.href.split("#")[0]);
+          return true;
+        }
+
+        window.__ashianaAdminPasskeyLogin = async function () {
+          if (window.__ashianaLoginBusy) return false;
+          window.__ashianaLoginBusy = true;
+          const button = document.getElementById("admin-passkey-login");
+          const label = button?.querySelector("span");
+          const originalText = label?.textContent || "Sign in with Passkey";
+          if (button) button.disabled = true;
+          if (label) label.textContent = "Verifying passkey…";
+          try {
+            const mainClient = await ashianaGetMainSupabaseClient();
+            if (window.AshianaNative?.isAndroid?.()) {
+              if (typeof window.AshianaNative.ensurePasskeyReady !== "function") {
+                throw new Error("Update the Android app to enable native passkey sign-in.");
+              }
+              await window.AshianaNative.ensurePasskeyReady();
+            } else if (!navigator.credentials?.get) {
+              throw new Error("This browser does not support passkey sign-in. Use a current browser over HTTPS.");
+            }
+            if (typeof mainClient.auth.signInWithPasskey !== "function") {
+              throw new Error("Passkey sign-in is unavailable. Reload the app and try again.");
+            }
+            const { data, error } = await mainClient.auth.signInWithPasskey();
+            if (error || !data?.user) throw new Error(error?.message || "Passkey sign-in failed.");
+            await ashianaCompleteAdminAuthentication(mainClient, data.user.email, data.user);
+          } catch (error) {
+            ashianaLoginMessage(error?.message || "Administrator passkey sign-in failed.", "error");
+          } finally {
+            window.__ashianaLoginBusy = false;
+            if (button) button.disabled = false;
+            if (label) label.textContent = originalText;
+          }
+          return false;
+        };
+
         async function ashianaStandaloneLogin(role, event) {
           if (event) {
             event.preventDefault();
@@ -2226,13 +2297,13 @@
           try {
             var client = role === "teacher"
               ? await ashianaGetTeacherLoginClient()
-              : role === "admin"
-                ? await ashianaGetAdminLoginClient()
-                : await ashianaGetStudentLoginClient();
+              : role === "student"
+                ? await ashianaGetStudentLoginClient()
+                : null;
 
-            // Each role uses an isolated pre-auth client. Teacher/Admin clients
-            // are non-persisting, while Student uses anonymous RPCs. Do not
-            // sign out here: there is no pre-auth session to revoke.
+            // Teacher and Student use isolated pre-auth clients. Admin auth
+            // uses the persistent main client so password and passkey sessions
+            // follow the same server-authorized portal handoff.
             if (role === "teacher") {
               var loginId = String(document.getElementById("teacher-login-id")?.value || "").trim();
               var pin = String(document.getElementById("teacher-login-pin")?.value || "").trim();
@@ -2361,8 +2432,8 @@
               var adminPassword = String(document.getElementById("admin-login-pass")?.value || "");
               if (!adminEmail || !adminPassword) throw new Error("Enter the administrator email and password.");
 
-              // Use the SAME persistent Supabase client that the dashboard uses.
-              // This avoids the Android/PWA full-page session handoff failure.
+              // Use the same persistent, passkey-enabled Supabase Auth client
+              // as the dashboard.
               var adminMainClient = await ashianaGetMainSupabaseClient();
               var authResult = await adminMainClient.auth.signInWithPassword({
                 email: adminEmail,
@@ -2371,39 +2442,7 @@
               if (authResult.error || !authResult.data?.user) {
                 throw new Error(authResult.error?.message || "Administrator sign-in failed.");
               }
-
-              const { data: adminAuthz, error: adminAuthzError } =
-                await adminMainClient.rpc("authorize_admin_login");
-
-              if (adminAuthzError) {
-                await adminMainClient.auth.signOut({ scope: "local" });
-                throw new Error("Administrator authorization check failed: " + (adminAuthzError.message || "Database error"));
-              }
-              if (!adminAuthz?.authorized) {
-                await adminMainClient.auth.signOut({ scope: "local" });
-                throw new Error("This Supabase account is not authorized as an Administrator.");
-              }
-
-              var pendingAdminUser = {
-                type: "ADMIN",
-                username: adminAuthz.email || adminEmail,
-                role: adminAuthz.role || "ADMIN"
-              };
-
-              sessionStorage.setItem("aps_current_auth_session_v1", JSON.stringify(pendingAdminUser));
-              sessionStorage.setItem("aps_login_handoff_v1", "ADMIN");
-              sessionStorage.setItem("aps_admin_login_handoff_v1", "1");
-
-              // Do not reload the PWA. Complete the portal handoff in-place.
-              if (typeof window.__ashianaFinishAdminLogin === "function") {
-                window.__ashianaFinishAdminLogin(pendingAdminUser);
-                ashianaLoginMessage("Administrator login successful. Console loaded.", "success");
-                return false;
-              }
-
-              // Very early/slow page fallback.
-              ashianaLoginMessage("Administrator login successful. Opening console…", "success");
-              window.location.replace(window.location.href.split("#")[0]);
+              await ashianaCompleteAdminAuthentication(adminMainClient, adminEmail, authResult.data.user);
               return false;
             }
 
@@ -2470,6 +2509,7 @@
               };
               // Persist only the opaque, revocable token; never save the DOB password.
               sessionStorage.setItem("aps_student_session_token_v1", studentSessionToken);
+              sessionStorage.setItem("aps_passkey_recent_auth_v1", "student");
               if (window.AshianaNative?.isAndroid?.()) {
                 await window.AshianaNative.saveStudentSessionToken(studentSessionToken);
               } else {
@@ -5630,8 +5670,8 @@ id="admin-portal-view" class="hidden flex-col w-full space-y-4 admin-dashboard-s
       if (window.supabase && window.supabase.createClient) return true;
 
       const sources = [
-        "https://cdn.jsdelivr.net/npm/@supabase/supabase-js@2.45.4/dist/umd/supabase.js",
-        "https://unpkg.com/@supabase/supabase-js@2"
+        "https://cdn.jsdelivr.net/npm/@supabase/supabase-js@2.117.2/dist/umd/supabase.js",
+        "https://unpkg.com/@supabase/supabase-js@2.117.2/dist/umd/supabase.js"
       ];
 
       for (const src of sources) {
@@ -5668,7 +5708,9 @@ id="admin-portal-view" class="hidden flex-col w-full space-y-4 admin-dashboard-s
         // This is critical for Admin/Teacher login because the bridge can run
         // before bootstrapApp() finishes initializing the main app client.
         supabaseClient = window.__ashianaMainSupabaseClient
-          || window.supabase.createClient(DEFAULT_SUPABASE_URL, DEFAULT_SUPABASE_ANON_KEY);
+          || window.supabase.createClient(DEFAULT_SUPABASE_URL, DEFAULT_SUPABASE_ANON_KEY, {
+            auth: { experimental: { passkey: true } }
+          });
         window.__ashianaMainSupabaseClient = supabaseClient;
 
         // Register one auth lifecycle listener. INITIAL_SESSION/SIGNED_OUT/

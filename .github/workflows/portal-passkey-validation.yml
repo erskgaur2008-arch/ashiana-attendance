@@ -5,18 +5,26 @@ on:
     branches: [main]
     paths:
       - 'portal-passkey-lock.js'
+      - '.github/scripts/**'
       - 'index.html'
       - 'mobile/native-bridge.js'
+      - 'capacitor.config.ts'
+      - 'package.json'
+      - 'package-lock.json'
       - 'supabase/functions/portal-passkeys/**'
       - 'supabase/migrations/20261027000200_admin_student_portal_passkeys.sql'
       - 'supabase/config.toml'
       - '.github/workflows/portal-passkey-validation.yml'
   push:
-    branches: [main, feat/admin-student-passkey-lock]
+    branches: [main]
     paths:
       - 'portal-passkey-lock.js'
+      - '.github/scripts/**'
       - 'index.html'
       - 'mobile/native-bridge.js'
+      - 'capacitor.config.ts'
+      - 'package.json'
+      - 'package-lock.json'
       - 'supabase/functions/portal-passkeys/**'
       - 'supabase/migrations/20261027000200_admin_student_portal_passkeys.sql'
       - 'supabase/config.toml'
@@ -28,17 +36,22 @@ permissions:
 
 jobs:
   validate:
-    name: Type-check and validate portal passkey security boundaries
+    name: Validate passkey code and security boundaries
     runs-on: ubuntu-latest
     timeout-minutes: 15
     steps:
       - uses: actions/checkout@v4
+      - uses: actions/setup-node@v4
+        with:
+          node-version: 22
       - uses: denoland/setup-deno@v2
         with:
           deno-version: v2.x
+      - name: Check JavaScript syntax
+        run: python .github/scripts/check-inline-javascript.py
       - name: Type-check portal passkeys Edge Function
         run: deno check --node-modules-dir=auto supabase/functions/portal-passkeys/index.ts
-      - name: Validate SQL syntax
+      - name: Validate migration SQL syntax
         run: |
           python -m pip install --disable-pip-version-check pglast
           python - <<'PY'
@@ -48,30 +61,5 @@ jobs:
           parse_sql(path.read_text(encoding="utf-8"))
           print("Passkey migration SQL syntax OK")
           PY
-      - name: Validate UI wiring and security guards
-        run: |
-          python - <<'PY'
-          from pathlib import Path
-          html = Path("index.html").read_text(encoding="utf-8")
-          ui = Path("portal-passkey-lock.js").read_text(encoding="utf-8")
-          fn = Path("supabase/functions/portal-passkeys/index.ts").read_text(encoding="utf-8")
-          migration = Path("supabase/migrations/20261027000200_admin_student_portal_passkeys.sql").read_text(encoding="utf-8")
-          native = Path("mobile/native-bridge.js").read_text(encoding="utf-8")
-          checks = {
-              "portal UI loaded by existing app": 'src="./portal-passkey-lock.js"' in html,
-              "WebAuthn registration and assertion": "navigator.credentials.create" in ui and "navigator.credentials.get" in ui,
-              "Student passkey login keeps Admission No prompt": 'student-login-admission' in ui,
-              "Android biometric lock is explicitly local-only": "verifyPortalBiometric" in native and "not server-side login" in native,
-              "Admin role checked server-side": 'from("admin_users")' in fn and 'eq("active",true)' in fn,
-              "Student session validated server-side": 'student_session_student_id' in fn,
-              "WebAuthn user verification required": "requireUserVerification:true" in fn,
-              "Expected RP ID and origin are fixed": 'rpID="erskgaur2008-arch.github.io"' in fn and 'expectedOrigin="https://erskgaur2008-arch.github.io"' in fn,
-              "Credential tables have RLS": "enable row level security" in migration.lower(),
-              "Client cannot directly access credentials": "revoke all on public.portal_webauthn_credentials from public, anon, authenticated" in migration.lower(),
-              "Only public keys stored": "public_key text not null" in migration.lower(),
-          }
-          for name, ok in checks.items():
-              print(("PASS" if ok else "FAIL") + ": " + name)
-          if not all(checks.values()):
-              raise SystemExit(1)
-          PY
+      - name: Check Admin, Student, Android, and database security wiring
+        run: python .github/scripts/check-passkey-wiring.py
