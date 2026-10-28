@@ -6,3 +6,8 @@ verify_jwt = false
 # Scheduled fee reminders authenticate with the dedicated FEE_REMINDER_CRON_SECRET header.
 [functions.fee-reminders]
 verify_jwt = false
+
+# Portal passkeys support student passkey login before a Supabase Auth session exists.
+# The Edge Function enforces active Admin authorization or a verified student session itself.
+[functions.portal-passkeys]
+verify_jwt = false

@@ -1,7 +1,8 @@
-const CACHE_NAME = "ashiana-attendance-v47";
+const CACHE_NAME = "ashiana-attendance-v48";
 const APP_SHELL = [
   "./",
   "./index.html",
+  "./portal-passkey-lock.js",
   "./manifest.webmanifest",
   "./logo 2.png"
 ];
