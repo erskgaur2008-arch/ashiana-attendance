@@ -53,7 +53,7 @@ jobs:
           path = Path("mobile/www/index.html")
           html = path.read_text()
           role = os.environ["APP_ROLE"]
-          anchor = '  <script src="./assets/vendor/supabase.js"></script>'
+          anchor = '  <script src="./assets/vendor/supabase.js" defer></script>'
           if html.count(anchor) != 1:
               raise SystemExit("Could not find expected Supabase script insertion point")
           additions = anchor + '\n  <script>try{const u=new URL(window.location.href);u.searchParams.set("login","' + role + '");history.replaceState(null,"",u.toString());}catch(e){}</script>'
@@ -89,7 +89,7 @@ jobs:
           from pathlib import Path
           path = Path("mobile/www/index.html")
           html = path.read_text()
-          anchor = '  <script src="./assets/vendor/supabase.js"></script>'
+          anchor = '  <script src="./assets/vendor/supabase.js" defer></script>'
           bridge = '  <script src="./assets/vendor/ashiana-native-bridge.js"></script>'
           if html.count(anchor) != 1:
               raise SystemExit("Could not find expected script insertion point")
