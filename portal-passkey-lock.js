@@ -170,73 +170,63 @@
     card.append(title, desc, btn); overlay.append(card); document.body.append(overlay);
   }
   function unlockOverlay() { overlay?.remove(); overlay = null; }
-  function ensureControls() {
-    const current = currentRole();
-    if (!current || document.getElementById("portal-passkey-controls")) return;
-    const { role } = current;
-    const box = document.createElement("div");
-    box.id = "portal-passkey-controls";
-    box.style.cssText = "position:fixed;right:12px;bottom:12px;z-index:99990;display:flex;gap:8px;align-items:center;flex-wrap:wrap;justify-content:flex-end;max-width:calc(100vw - 24px)";
-    const status = document.createElement("span"); status.id = "portal-passkey-status"; status.hidden = true;
-    status.style.cssText = "background:#064e3b;color:#fff;padding:8px 12px;border-radius:10px;font-size:12px;max-width:70vw";
-    const enable = document.createElement("button"); enable.type = "button"; enable.textContent = NATIVE() ? "Enable Biometric Lock" : "Enable Passkey";
-    enable.style.cssText = "padding:10px 13px;border-radius:12px;background:#064e3b;color:white;border:1px solid #34d399;font-size:12px;font-weight:800;box-shadow:0 4px 16px #0002";
-    enable.addEventListener("click", async () => {
-      enable.disabled = true;
-      try {
-        if (NATIVE()) {
-          if (!window.AshianaNative?.verifyPortalBiometric) throw new Error("Update the Android app to enable device biometric lock.");
+  let setupPrompted = { admin: false, student: false };
+  async function offerAutomaticSetup(role) {
+    if (!role || setupPrompted[role]) return;
+    setupPrompted[role] = true;
+    if (NATIVE()) {
+      if (nativeLockEnabled(role)) return;
+      if (!(await window.AshianaNative?.portalBiometricAvailable?.())) {
+        toast("To use fingerprint sign-in, first add a fingerprint or face unlock in Android Settings.", "info");
+        return;
+      }
+      const dialog = document.createElement("div");
+      dialog.id = "portal-biometric-setup-prompt";
+      dialog.style.cssText = "position:fixed;inset:0;z-index:2147483001;background:rgba(2,20,15,.78);display:flex;align-items:center;justify-content:center;padding:24px;font-family:system-ui,sans-serif";
+      dialog.innerHTML = '<section style="width:min(100%,380px);background:white;border-radius:22px;padding:24px;text-align:center;color:#064e3b"><div style="font-size:38px" aria-hidden="true">👆</div><h2 style="font-size:22px;font-weight:800;margin:8px 0">Enable fingerprint sign-in</h2><p style="font-size:14px;margin:0 0 20px">Use your device fingerprint or face unlock for this ' + (role === "admin" ? "Admin" : "Student") + ' account on this phone.</p><button type="button" data-biometric-setup="enable" style="width:100%;padding:13px;border-radius:12px;background:#064e3b;color:white;font-weight:800">Continue with biometrics</button><button type="button" data-biometric-setup="later" style="width:100%;padding:12px;margin-top:8px;color:#475569;font-weight:700">Not now</button></section>';
+      dialog.addEventListener("click", async event => {
+        const choice = event.target.closest("[data-biometric-setup]");
+        if (!choice) return;
+        if (choice.dataset.biometricSetup === "later") { dialog.remove(); return; }
+        choice.disabled = true;
+        try {
           await window.AshianaNative.verifyPortalBiometric(role);
           setNativeLock(role, true);
           nativeVerified[role] = true;
-          armIdleLock(role);
-          toast("Device biometric lock enabled. It protects this app session on this device.", "success");
-        } else {
-          if (enable.dataset.hasCredentials === "true") {
-            const extra = role === "student" ? { session_token: localStorage.getItem(TOKEN_KEY) || sessionStorage.getItem(TOKEN_KEY) } : {};
-            await invoke(role, "enable", extra);
-            webPasskeyEnabled[role] = true;
-            armIdleLock(role);
-          } else {
-            await registerWebPasskey(role);
-            webPasskeyEnabled[role] = true;
-            armIdleLock(role);
-          }
+          toast("Biometric verification enabled for this " + role + " portal on this device.", "success");
+          dialog.remove();
+        } catch (error) {
+          toast(error.message || "Biometric setup was cancelled.", "error");
+          choice.disabled = false;
         }
-        enable.textContent = NATIVE() ? "Biometric Lock Enabled" : "Passkey Enabled";
-      } catch (e) { toast(e.message || "Could not enable passkey.", "error"); }
-      finally { enable.disabled = false; }
-    });
-    const lock = document.createElement("button"); lock.type = "button"; lock.textContent = "Lock Portal";
-    lock.style.cssText = "padding:10px 13px;border-radius:12px;background:white;color:#064e3b;border:1px solid #d1fae5;font-size:12px;font-weight:800;box-shadow:0 4px 16px #0002";
-    lock.addEventListener("click", () => {
-      if (NATIVE()) {
-        if (!nativeLockEnabled(role)) { toast("Enable device biometric lock first.", "error"); return; }
-      }
-      lockOverlay(role);
-    });
-    const disable = document.createElement("button"); disable.type = "button"; disable.textContent = "Disable Lock";
-    disable.style.cssText = "padding:10px 13px;border-radius:12px;background:#fff1f2;color:#9f1239;border:1px solid #fecdd3;font-size:12px;font-weight:800";
-    disable.addEventListener("click", async () => {
-      if (!confirm("Disable the passkey/biometric lock for this portal on this account/device?")) return;
-      try {
-        if (NATIVE()) setNativeLock(role, false);
-        else {
-          const extra = role === "student" ? { session_token: localStorage.getItem(TOKEN_KEY) || sessionStorage.getItem(TOKEN_KEY) } : {};
-          await invoke(role, "disable", extra);
-        }
-        unlockOverlay(); enable.textContent = NATIVE() ? "Enable Biometric Lock" : "Enable Passkey";
-        toast("Portal lock disabled.", "success");
-      } catch (e) { toast(e.message || "Could not disable lock.", "error"); }
-    });
-    box.append(status, enable, lock, disable); document.body.append(box);
-    if (!NATIVE()) invoke(role, "status", role === "student" ? { session_token: localStorage.getItem(TOKEN_KEY) || sessionStorage.getItem(TOKEN_KEY) } : {})
-      .then(s => {
-        enable.dataset.hasCredentials = s.credential_count > 0 ? "true" : "false";
-        webPasskeyEnabled[role] = Boolean(s.enabled);
-        if (s.enabled) { enable.textContent = "Passkey Enabled"; armIdleLock(role); }
-        else if (s.credential_count > 0) enable.textContent = "Re-enable Passkey";
-      }).catch(() => {});
+      });
+      document.body.append(dialog);
+      return;
+    }
+    try {
+      const extra = role === "student" ? { session_token: localStorage.getItem(TOKEN_KEY) || sessionStorage.getItem(TOKEN_KEY) } : {};
+      const status = await invoke(role, "status", extra);
+      webPasskeyEnabled[role] = Boolean(status.enabled);
+      if (status.credential_count > 0) return;
+      const dialog = document.createElement("div");
+      dialog.id = "portal-biometric-setup-prompt";
+      dialog.style.cssText = "position:fixed;inset:0;z-index:2147483001;background:rgba(2,20,15,.78);display:flex;align-items:center;justify-content:center;padding:24px;font-family:system-ui,sans-serif";
+      dialog.innerHTML = '<section style="width:min(100%,380px);background:white;border-radius:22px;padding:24px;text-align:center;color:#064e3b"><div style="font-size:38px" aria-hidden="true">🔐</div><h2 style="font-size:22px;font-weight:800;margin:8px 0">Set up passkey sign-in</h2><p style="font-size:14px;margin:0 0 20px">Use your device screen lock or available biometric method for this account.</p><button type="button" data-passkey-setup="enable" style="width:100%;padding:13px;border-radius:12px;background:#064e3b;color:white;font-weight:800">Set up passkey</button><button type="button" data-passkey-setup="later" style="width:100%;padding:12px;margin-top:8px;color:#475569;font-weight:700">Not now</button></section>';
+      dialog.addEventListener("click", async event => {
+        const choice = event.target.closest("[data-passkey-setup]");
+        if (!choice) return;
+        if (choice.dataset.passkeySetup === "later") { dialog.remove(); return; }
+        choice.disabled = true;
+        try { await registerWebPasskey(role); webPasskeyEnabled[role] = true; dialog.remove(); }
+        catch (error) { toast(error.message || "Passkey setup failed.", "error"); choice.disabled = false; }
+      });
+      document.body.append(dialog);
+    } catch (error) { console.warn("Could not check portal passkey status:", error); }
+  }
+  function ensureControls() {
+    const current = currentRole();
+    if (!current) { setupPrompted = { admin: false, student: false }; return; }
+    offerAutomaticSetup(current.role);
   }
   function installStudentLoginButton() {
     // Native APK currently uses the secure device-biometric session lock; true
