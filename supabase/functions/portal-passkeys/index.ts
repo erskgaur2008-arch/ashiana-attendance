@@ -37,13 +37,13 @@ Deno.serve(async req=>{
      const {data:id,error}=await db.rpc("student_session_student_id",{p_token:session});
      if(error||typeof id!=="string"||!id)return json({error:"STUDENT_SESSION_EXPIRED"},401);
      subjectId=id;
-     const {data:row,error:re}=await db.from("student_roster").select("id,enroll_no,name,status,school_code").eq("id",id).eq("school_code","ashiana").maybeSingle();
+     const {data:row,error:re}=await db.from("student_roster").select("id,enroll_no,name:student_name,status,school_code").eq("id",id).eq("school_code","ashiana").maybeSingle();
      if(re||!row||String(row.status||"").toLowerCase()!=="active")return json({error:"STUDENT_SESSION_EXPIRED"},401);
      student=row;
    }else{
      const enroll=String(b.admission_no||"").trim();
      if(!enroll||enroll.length>100)return json({error:"ADMISSION_NUMBER_REQUIRED"},400);
-     const {data:rows,error}=await db.from("student_roster").select("id,enroll_no,name,status,school_code").eq("school_code","ashiana").ilike("enroll_no",escapeLike(enroll)).limit(2);
+     const {data:rows,error}=await db.from("student_roster").select("id,enroll_no,name:student_name,status,school_code").eq("school_code","ashiana").ilike("enroll_no",escapeLike(enroll)).limit(2);
      if(error||!rows||rows.length!==1||String(rows[0].status||"").toLowerCase()!=="active")return json({error:"STUDENT_NOT_FOUND"},401);
      student=rows[0];subjectId=String(student.id);
    }
@@ -53,7 +53,7 @@ Deno.serve(async req=>{
    const {data:id,error}=await db.rpc("student_session_student_id",{p_token:session});
    if(error||typeof id!=="string"||!id)return json({error:"STUDENT_SESSION_EXPIRED"},401);
    subjectId=id;
-   const {data:row,error:re}=await db.from("student_roster").select("id,enroll_no,name,status,school_code").eq("id",id).eq("school_code","ashiana").maybeSingle();
+   const {data:row,error:re}=await db.from("student_roster").select("id,enroll_no,name:student_name,status,school_code").eq("id",id).eq("school_code","ashiana").maybeSingle();
    if(re||!row||String(row.status||"").toLowerCase()!=="active")return json({error:"STUDENT_SESSION_EXPIRED"},401);
    student=row;
  }
