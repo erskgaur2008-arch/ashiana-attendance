@@ -50,16 +50,17 @@
   <link rel="preconnect" href="https://fonts.googleapis.com">
   <link rel="preconnect" href="https://fonts.gstatic.com">
   <link rel="preconnect" href="https://oalfzgluqroqbbrulhpr.supabase.co" crossorigin>
+  <link rel="preconnect" href="https://unpkg.com" crossorigin>
   <link href="https://fonts.googleapis.com/css2?family=Cinzel:wght@600;700;800&family=Inter:wght@300;400;500;600;700;800&family=JetBrains+Mono:wght@400;600;700&display=swap" rel="stylesheet">
   
   <!-- Tailwind CSS CDN -->
   <script src="./assets/vendor/tailwind.js"></script>
   
   <!-- Lucide Icons CDN -->
-  <script src="./assets/vendor/lucide.js"></script>
+  <script src="./assets/vendor/lucide.js" defer></script>
   
   <!-- Supabase JS Client (v2) for PostgreSQL Cloud Sync -->
-  <script src="./assets/vendor/supabase.js"></script>
+  <script src="./assets/vendor/supabase.js" defer></script>
 
   <script>
     tailwind.config = {
@@ -1788,7 +1789,6 @@
     }
   </style>
 
-  <script src="https://unpkg.com/@simplewebauthn/browser@13.1.2/dist/bundle/index.umd.min.js" crossorigin="anonymous"></script>
 </head>
 <body class="bg-slate-100 text-slate-800 antialiased min-h-screen min-h-screen-safe flex flex-col selection:bg-emerald-600 selection:text-white">
 
@@ -5315,26 +5315,43 @@ id="admin-portal-view" class="hidden flex-col w-full space-y-4 admin-dashboard-s
                 : "Getting your GPS location timed out. Move to an open area and try again.";
             reject(new Error(reason));
           },
-          { enableHighAccuracy: true, maximumAge: 0, timeout: 20000 }
+          // A recent fix from the staff live-location watch is still fresh for
+          // this request (the server allows up to 2 minutes) and can avoid a
+          // second slow GPS acquisition when the QR is scanned.
+          { enableHighAccuracy: true, maximumAge: 15000, timeout: 20000 }
         );
       });
+    }
+
+    let pendingScannedLocationPromise = null;
+
+    async function getAttendanceLocationForCurrentScan() {
+      const pending = pendingScannedLocationPromise;
+      pendingScannedLocationPromise = null;
+      if (!pending) return getStaffAttendanceLocation();
+
+      // Resolve into a value so a background GPS error cannot become an
+      // unhandled rejection while the staff member is completing passkey UI.
+      const captured = await pending;
+      if (captured.error) throw captured.error;
+      const location = captured.location;
+      const ageMs = Date.now() - Number(location?.timestamp);
+      if (!Number.isFinite(ageMs) || ageMs < -15000 || ageMs > 60000) {
+        return getStaffAttendanceLocation();
+      }
+      return location;
     }
 
     async function invokeVerifyAttendance(body) {
       if (!supabaseClient) throw new Error('Supabase client is not initialized.');
 
-      // Obtain a fresh GPS fix for each attendance punch. Login and PIN changes
-      // do not require location. The server independently enforces the geofence.
       const action = String(body?.action || 'attendance');
-      const requestBody = action === 'attendance'
-        ? { ...body, location: await getStaffAttendanceLocation() }
-        : body;
-
-      // Staff login is the initial credential-verification bridge and must
-      // remain callable before a Supabase Auth session exists. Attendance
-      // verification, however, requires the signed-in staff user's JWT.
-      const headers = {};
-      if (String(body?.action || 'attendance') !== 'staff_login') {
+      // GPS and auth-session checks are independent. Start both together so a
+      // slow location fix does not add to the session lookup/refresh time.
+      const locationPromise = action === 'attendance'
+        ? getAttendanceLocationForCurrentScan()
+        : Promise.resolve(null);
+      const sessionPromise = action === 'staff_login' ? Promise.resolve(null) : (async () => {
         let { data: sessionData, error: sessionError } = await supabaseClient.auth.getSession();
         let session = sessionData?.session || null;
         if (sessionError || !session?.access_token ||
@@ -5347,8 +5364,15 @@ id="admin-portal-view" class="hidden flex-col w-full space-y-4 admin-dashboard-s
         if (!session?.access_token) {
           throw new Error('AUTHENTICATION_REQUIRED: Sign in to the staff portal again before marking attendance.');
         }
-        headers.Authorization = `Bearer ${session.access_token}`;
-      }
+        return session;
+      })();
+      const [location, session] = await Promise.all([locationPromise, sessionPromise]);
+      const requestBody = action === 'attendance' ? { ...body, location } : body;
+
+      // Staff login is the initial credential-verification bridge and must
+      // remain callable before a Supabase Auth session exists. Attendance
+      // verification still requires the signed-in staff user's JWT.
+      const headers = session?.access_token ? { Authorization: `Bearer ${session.access_token}` } : {};
 
       const { data, error } = await supabaseClient.functions.invoke('verify-attendance', {
         body: requestBody,
@@ -5663,6 +5687,19 @@ id="admin-portal-view" class="hidden flex-col w-full space-y-4 admin-dashboard-s
         "./assets/vendor/html5-qrcode.min.js",
         "Html5Qrcode"
       );
+    }
+
+    function ensureStaffPasskeyLibrary() {
+      return loadOptionalLibrary(
+        "simplewebauthn-browser",
+        "https://unpkg.com/@simplewebauthn/browser@13.1.2/dist/bundle/index.umd.min.js",
+        "SimpleWebAuthnBrowser"
+      ).then(library => {
+        if (!library?.startRegistration || !library?.startAuthentication) {
+          throw new Error("Staff passkey verification is unavailable in this browser.");
+        }
+        return library;
+      });
     }
 
     // Initialize Supabase Client with Dual Auto-Sync Engine
@@ -8314,6 +8351,14 @@ async function refreshStudentPortalData(){
       if (parsed) {
         if (smartResult) { smartResult.className = 'hidden rounded-2xl border p-3 text-left'; smartResult.innerHTML = ''; }
         pendingScannedQR = parsed;
+        if (status) status.textContent = 'School QR scanned. Preparing biometric and location verification…';
+        // Start GPS while the staff member confirms identity. The resulting fix
+        // is still checked for age, accuracy, and the school geofence by the
+        // attendance function before a punch is saved.
+        pendingScannedLocationPromise = getStaffAttendanceLocation().then(
+          location => ({ location }),
+          error => ({ error })
+        );
         if (pinPanel) pinPanel.classList.remove('hidden');
         const pinInput = document.getElementById('scanner-attendance-pin');
         if (pinInput) pinInput.value = '';
@@ -8323,30 +8368,45 @@ async function refreshStudentPortalData(){
         const biometricButton = document.getElementById('scanner-biometric-attendance-button');
         const androidApp = Boolean(window.AshianaNative?.isAndroid?.());
         const pwaPasskey = !androidApp && currentAuthUser?.type === 'STAFF'
-          && Boolean(window.SimpleWebAuthnBrowser?.startAuthentication) && window.isSecureContext;
+          && Boolean(navigator.credentials?.get) && window.isSecureContext;
+        if (pwaPasskey && !window.SimpleWebAuthnBrowser?.startAuthentication) {
+          // Usually warmed as the scanner opens. Wait here on slow networks
+          // instead of hiding passkey attendance from an eligible staff user.
+          try { await ensureStaffPasskeyLibrary(); } catch (_) {}
+        }
+        const pwaPasskeyAvailable = pwaPasskey && Boolean(window.SimpleWebAuthnBrowser?.startAuthentication);
         let biometricEnabled = false;
         let biometricReady = false;
         pendingStaffPwaPasskeyOptions = null;
-        try {
-          const ownStaffId = String(currentAuthUser?.type === 'STAFF' ? currentAuthUser?.staffRecord?.id || '' : '');
-          const biometricState = await callStaffPasskeys('status');
-          biometricEnabled = Boolean(biometricState?.enabled);
-          biometricReady = Boolean(ownStaffId && androidApp
-            && await window.AshianaNative.hasStaffBiometricEnrollment(ownStaffId));
-        } catch (_) {
-          // If the setting cannot be confirmed, do not silently force passkey mode.
-          biometricEnabled = false;
-          biometricReady = false;
-        }
-
         let pwaPasskeyReady = false;
-        if (pwaPasskey && biometricEnabled) {
+        if (pwaPasskeyAvailable) {
+          // Authentication options are only returned for an enabled,
+          // registered credential, so skip the separate status request.
           try {
             const authOptions = await callStaffPasskeys('authentication-options');
             pendingStaffPwaPasskeyOptions = authOptions?.options || null;
             pwaPasskeyReady = Boolean(pendingStaffPwaPasskeyOptions?.challenge);
+            biometricEnabled = pwaPasskeyReady;
           } catch (_) {
-            pwaPasskeyReady = false;
+            biometricEnabled = false;
+            pendingStaffPwaPasskeyOptions = null;
+          }
+        } else if (androidApp) {
+          const ownStaffId = String(currentAuthUser?.type === 'STAFF' ? currentAuthUser?.staffRecord?.id || '' : '');
+          try {
+            // Server setting and local enrollment are independent checks.
+            const [biometricState, hasEnrollment] = await Promise.all([
+              callStaffPasskeys('status'),
+              ownStaffId
+                ? window.AshianaNative.hasStaffBiometricEnrollment(ownStaffId)
+                : Promise.resolve(false)
+            ]);
+            biometricEnabled = Boolean(biometricState?.enabled);
+            biometricReady = Boolean(ownStaffId && hasEnrollment);
+          } catch (_) {
+            // If the setting cannot be confirmed, keep the PIN fallback visible.
+            biometricEnabled = false;
+            biometricReady = false;
           }
         }
 
@@ -8362,7 +8422,7 @@ async function refreshStudentPortalData(){
           if (pinSubmit) pinSubmit.style.display = '';
           if (biometricButton) biometricButton.style.display = 'none';
           if (status) status.innerHTML = '<span class="text-ashiana-green font-bold">School QR verified.</span><br>Biometric verification is disabled. Enter your 4-digit PIN to mark attendance.';
-        } else if (pwaPasskey && biometricEnabled && pwaPasskeyReady) {
+        } else if (pwaPasskeyAvailable && biometricEnabled && pwaPasskeyReady) {
           if (pinLabel) pinLabel.style.display = 'none';
           if (pinEntry) pinEntry.style.display = 'none';
           if (pinSubmit) pinSubmit.style.display = 'none';
@@ -8373,7 +8433,7 @@ async function refreshStudentPortalData(){
           if (pinEntry) pinEntry.style.display = '';
           if (pinSubmit) pinSubmit.style.display = '';
           if (biometricButton) biometricButton.style.display = 'none';
-          if (status) status.innerHTML = pwaPasskey
+          if (status) status.innerHTML = pwaPasskeyAvailable
             ? '<span class="text-ashiana-green font-bold">School QR verified.</span><br>Enter your PIN to mark attendance, or register a device passkey in Staff Profile & Settings for biometric verification.'
             : '<span class="text-ashiana-green font-bold">School QR verified.</span><br>Enter your personal 4-digit PIN to mark staff attendance.';
           pendingStaffPwaPasskeyOptions = null;
@@ -8508,6 +8568,7 @@ async function refreshStudentPortalData(){
         return;
       }
       pendingScannedQR = null;
+      pendingScannedLocationPromise = null;
       smartQrScanLocked = false;
       dismissScannerGeofenceAlert();
       document.getElementById('scanner-pin-panel')?.classList.add('hidden');
@@ -8519,12 +8580,18 @@ async function refreshStudentPortalData(){
       if (status) status.textContent = '';
       document.getElementById("modal-punch").classList.remove("hidden");
       if (window.lucide) lucide.createIcons();
+      if (isStaffPwaPasskeySupported() && !window.SimpleWebAuthnBrowser?.startAuthentication) {
+        // Load biometric verification in parallel with scanner startup instead
+        // of charging every student/admin session for this library.
+        ensureStaffPasskeyLibrary().catch(error => console.info("Staff passkey library will retry when needed:", error));
+      }
       setTimeout(startCameraScanner, 150);
     }
 
     async function closePunchModal() {
       await stopCameraScanner();
       pendingScannedQR = null;
+      pendingScannedLocationPromise = null;
       smartQrScanLocked = false;
       document.getElementById('scanner-pin-panel')?.classList.add('hidden');
       const biometricButton = document.getElementById('scanner-biometric-attendance-button');
@@ -8535,10 +8602,10 @@ async function refreshStudentPortalData(){
     let pendingStaffPwaPasskeyOptions = null;
     let pendingStaffPwaRegistrationOptions = null;
 
-    function isStaffPwaPasskeyAvailable() {
+    function isStaffPwaPasskeySupported() {
       return !window.AshianaNative?.isAndroid?.()
         && currentAuthUser?.type === 'STAFF'
-        && Boolean(window.SimpleWebAuthnBrowser?.startRegistration && window.SimpleWebAuthnBrowser?.startAuthentication)
+        && Boolean(navigator.credentials?.get)
         && window.isSecureContext;
     }
 
@@ -8558,7 +8625,7 @@ async function refreshStudentPortalData(){
       const status = document.getElementById('staff-passkey-status');
       const button = document.getElementById('staff-passkey-register-button');
       const pin = document.getElementById('staff-passkey-current-pin')?.value.trim() || '';
-      if (!isStaffPwaPasskeyAvailable()) {
+      if (!isStaffPwaPasskeySupported()) {
         if (status) status.textContent = 'Use the secure HTTPS web app in a supported browser. The existing Android app biometric flow is unchanged.';
         return;
       }
@@ -8568,6 +8635,7 @@ async function refreshStudentPortalData(){
       }
       if (button) { button.disabled = true; button.classList.add('opacity-60'); }
       try {
+        if (!window.SimpleWebAuthnBrowser?.startRegistration) await ensureStaffPasskeyLibrary();
         let options = pendingStaffPwaRegistrationOptions;
         if (!options) {
           if (status) status.textContent = 'Preparing secure registration. Tap the button again when it says Continue to open your device biometric prompt.';
@@ -8610,7 +8678,7 @@ async function refreshStudentPortalData(){
         showToast("Sign in with your staff account before verifying attendance.", "error");
         return;
       }
-      if (!androidApp && !isStaffPwaPasskeyAvailable()) {
+      if (!androidApp && !isStaffPwaPasskeySupported()) {
         showToast("This browser does not support secure passkey verification. Use a supported HTTPS browser or the existing Android app.", "error");
         return;
       }
@@ -9746,7 +9814,10 @@ async function loadAdminStudentAttendance(){
           setTimeout(()=>document.getElementById("staff-passkey-settings")?.scrollIntoView({behavior:"smooth",block:"center"}),150);
           showToast("Register a passkey on this device to enable biometric attendance.", "info"); return;
         }
-        const prepared=await callStaffPasskeys("enable-options");
+        const [prepared]=await Promise.all([
+          callStaffPasskeys("enable-options"),
+          ensureStaffPasskeyLibrary()
+        ]);
         if(!prepared?.options?.challenge)throw new Error("Could not prepare biometric verification. Please try again.");
         const credential=await window.SimpleWebAuthnBrowser.startAuthentication({optionsJSON:prepared.options});
         await callStaffPasskeys("authentication-verify",{credential,enable_after_verify:true});
