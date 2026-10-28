@@ -11,3 +11,14 @@ verify_jwt = false
 # The Edge Function enforces active Admin authorization or a verified student session itself.
 [functions.portal-passkeys]
 verify_jwt = false
+
+# Admin users authenticate through Supabase Auth passkeys. The relying-party
+# origin for native Android builds must also include each app signing
+# certificate's android:apk-key-hash origin in the project Auth settings.
+[auth.passkey]
+enabled = true
+
+[auth.webauthn]
+rp_display_name = "Ashiana Public School"
+rp_id = "erskgaur2008-arch.github.io"
+rp_origins = ["https://erskgaur2008-arch.github.io"]
