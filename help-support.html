@@ -1,0 +1,68 @@
+<!doctype html>
+<html lang="en"><head><meta charset="utf-8"><meta name="viewport" content="width=device-width,initial-scale=1"><meta name="theme-color" content="#065f46"><title>Help &amp; Support | Ashiana Attendance</title><style>
+:root{--green:#047857;--deep:#064e3b;--ink:#172033;--muted:#64748b;--line:#e2e8f0}*{box-sizing:border-box}body{margin:0;background:#f1f5f9;color:var(--ink);font:16px/1.55 system-ui,-apple-system,Segoe UI,sans-serif}.hero{background:linear-gradient(135deg,#064e3b,#047857);color:white;padding:28px 18px 36px;border-radius:0 0 28px 28px}.hero-inner,.main{max-width:900px;margin:auto}.back{color:white;text-decoration:none;font-weight:700}.hero h1{font-size:clamp(28px,5vw,38px);margin:20px 0 4px}.hero p{margin:0;color:#d1fae5}.main{padding:20px 16px 42px}.search{width:100%;padding:15px 16px;border:1px solid var(--line);border-radius:15px;font:inherit;background:white;margin-bottom:18px;box-shadow:0 5px 18px #0f172a0a}.grid{display:grid;grid-template-columns:repeat(2,minmax(0,1fr));gap:12px}.card{background:white;border:1px solid var(--line);border-radius:18px;padding:17px;box-shadow:0 5px 18px #0f172a08}.card h2{font-size:18px;margin:0 0 8px}.card p{color:var(--muted);font-size:14px;margin:0}.icon{font-size:25px;margin-bottom:7px}.section-title{font-size:22px;margin:28px 0 12px}.faq{background:white;border:1px solid var(--line);border-radius:14px;margin:9px 0;overflow:hidden}.faq summary{padding:15px;font-weight:700;cursor:pointer}.faq p{padding:0 15px 15px;margin:0;color:#475569}.faq[hidden],.card[hidden]{display:none}.btn{display:inline-flex;align-items:center;justify-content:center;text-decoration:none;border:0;border-radius:12px;background:var(--green);color:white;padding:12px 16px;font-weight:750;cursor:pointer;font:inherit;font-weight:750}.btn.secondary{background:#ecfdf5;color:var(--deep);border:1px solid #a7f3d0}.form-grid{display:grid;grid-template-columns:1fr 1fr;gap:12px}.field label{display:block;font-size:13px;font-weight:750;margin-bottom:6px}.field input,.field select,.field textarea{width:100%;border:1px solid #cbd5e1;border-radius:11px;padding:12px;font:inherit;background:white}.field textarea{min-height:105px;resize:vertical}.field.full{grid-column:1/-1}.note{font-size:13px;color:var(--muted)}.actions{display:flex;gap:10px;flex-wrap:wrap;margin-top:14px}.notice{background:#fffbeb;border:1px solid #fde68a;padding:12px 14px;border-radius:12px;font-size:14px;color:#854d0e;margin:12px 0}.contact{display:flex;flex-wrap:wrap;gap:10px;margin-top:12px}.footer{text-align:center;color:var(--muted);font-size:13px;padding:20px}.footer a{color:var(--green)}@media(max-width:560px){.grid,.form-grid{grid-template-columns:1fr}.field.full{grid-column:auto}.hero{padding-top:20px}}
+</style></head><body><header class="hero"><div class="hero-inner"><a class="back" href="./index.html">← Back to login</a><h1>Help &amp; Support</h1><p>Find answers or prepare a support request for Ashiana Public School.</p></div></header><main class="main">
+<input id="help-search" class="search" type="search" placeholder="Search help topics…" aria-label="Search help topics">
+<div class="grid" id="topic-cards">
+<a class="card topic" href="#faq-login" style="text-decoration:none;color:inherit"><div class="icon">🔐</div><h2>Login &amp; Account</h2><p>Login trouble, student password, staff PIN, session and passkey help.</p></a>
+<a class="card topic" href="#faq-attendance" style="text-decoration:none;color:inherit"><div class="icon">🗓️</div><h2>Attendance</h2><p>Missing attendance, QR scanning, check-in times and corrections.</p></a>
+<a class="card topic" href="#faq-location" style="text-decoration:none;color:inherit"><div class="icon">📍</div><h2>Staff Location</h2><p>Location permission and campus verification.</p></a>
+<a class="card topic" href="#faq-fees" style="text-decoration:none;color:inherit"><div class="icon">💳</div><h2>Fees &amp; Payments</h2><p>Fee details, QR instructions and payment status.</p></a>
+<a class="card topic" href="#faq-notifications" style="text-decoration:none;color:inherit"><div class="icon">🔔</div><h2>Notifications</h2><p>Missing notices and phone notification settings.</p></a>
+<a class="card topic" href="#report-problem" style="text-decoration:none;color:inherit"><div class="icon">🛟</div><h2>Report a Problem</h2><p>Prepare a report for the school support team.</p></a>
+</div>
+<h2 class="section-title">Frequently Asked Questions</h2>
+<div id="faq-list">
+<details class="faq" id="faq-login"><summary>I cannot log in. What should I do?</summary><p>Check that you selected the correct role and entered the correct admission number, Employee ID, email, password or PIN. Check your internet connection and reload the page. If the problem continues, contact the School office. Never send your password or PIN to support.</p></details>
+<details class="faq"><summary>What if the dashboard returns to the login screen?</summary><p>Check that your browser or app is up to date and that your device has a stable connection. Sign in again. If the issue repeats, report the device type, role and approximate time of the problem—do not include authentication secrets.</p></details>
+<details class="faq"><summary>I forgot my student password or staff PIN.</summary><p>Use the recovery or Reset PIN option provided on the relevant login screen, if available. If recovery does not work, contact the authorized School administrator to verify your identity and help restore access.</p></details>
+<details class="faq" id="faq-attendance"><summary>My attendance is missing or incorrect.</summary><p>Note the date and the attendance entry that appears incorrect. Contact the class teacher or authorized School administrator for a review. Do not try to change attendance records through unofficial methods.</p></details>
+<details class="faq"><summary>The QR code is not scanning.</summary><p>Increase screen brightness, clean the camera lens, allow camera permission when requested, and hold the code steady inside the scanner frame. If it still fails, ask the authorized teacher or School office for assistance.</p></details>
+<details class="faq" id="faq-location"><summary>Staff location permission is not working.</summary><p>Enable Location services on the device and allow location access for the browser or app. Ensure you are using the supported app/page and are at the authorized attendance location. If permission was denied earlier, change it in device or browser settings and retry.</p></details>
+<details class="faq"><summary>Fingerprint or passkey authentication is not working.</summary><p>Confirm that your device supports the offered authentication method and that screen lock/biometrics are configured on the device. Use the other authorized login or recovery method if available. Device biometrics and passkeys are not identical; available features depend on your platform.</p></details>
+<details class="faq"><summary>My leave request is still pending.</summary><p>Submitting a request does not automatically approve it. Check the request status and contact the responsible teacher or School office if a response is overdue.</p></details>
+<details class="faq" id="faq-fees"><summary>I paid a fee but it still shows pending.</summary><p>Keep your transaction receipt/reference and contact the School office with the payment date, amount and transaction reference. Never share a UPI PIN, bank password or OTP. A QR code or payment instruction alone is not proof of payment.</p></details>
+<details class="faq" id="faq-notifications"><summary>I am not receiving notifications.</summary><p>Check device notification permissions, internet connectivity, battery/background restrictions and whether the app is allowed to send notifications. Open the Application to check for updates directly; push delivery can be delayed by device or network settings.</p></details>
+<details class="faq"><summary>How do I correct my personal information or report a privacy concern?</summary><p>Contact the School using its official contact channel. For a privacy request, include only enough information to identify the record safely. Do not include passwords, PINs or one-time codes.</p></details>
+</div>
+<h2 class="section-title" id="report-problem">Report a Problem</h2>
+<section class="card"><p class="note">Complete the form to prepare a support message. This page does not save or submit a ticket to a server; it opens your device's email app so you can send the report after checking it.</p>
+<div class="notice">School support email has not been configured in this page yet. Replace <strong>SUPPORT_EMAIL_PLACEHOLDER</strong> in this file with the School's verified support email before using email submission.</div>
+<form id="support-form"><div class="form-grid">
+<div class="field"><label for="role">Your role *</label><select id="role" required><option value="">Choose role</option><option>Student</option><option>Parent / Guardian</option><option>Teacher</option><option>Staff</option><option>Administrator</option><option>Other</option></select></div>
+<div class="field"><label for="category">Issue category *</label><select id="category" required><option value="">Choose issue</option><option>Login &amp; Account</option><option>Attendance</option><option>Staff Location</option><option>PIN Reset</option><option>Fingerprint / Passkey</option><option>Fees &amp; Payments</option><option>Notifications</option><option>Student Information</option><option>Leave Request</option><option>Technical Problem</option><option>Privacy Concern</option><option>Other</option></select></div>
+<div class="field"><label for="user-id">Admission number / Employee ID (optional)</label><input id="user-id" autocomplete="off" maxlength="80" placeholder="Avoid entering unnecessary personal data"></div>
+<div class="field"><label for="contact">Your contact email or phone (optional)</label><input id="contact" maxlength="120" placeholder="How the School can reach you"></div>
+<div class="field full"><label for="description">Describe the problem *</label><textarea id="description" required maxlength="2000" placeholder="What happened? Include the date/time and steps to reproduce, if relevant. Do not include passwords, PINs, OTPs or banking details."></textarea></div>
+</div><div class="actions"><button class="btn" type="submit">Prepare Support Email</button><button class="btn secondary" type="reset">Clear Form</button></div><p id="form-status" class="note" role="status" aria-live="polite"></p></form></section>
+<h2 class="section-title">Contact the School</h2><section class="card"><h2>🏫 Ashiana Public School</h2><p>Sector 46-A, Chandigarh</p><p class="note" style="margin-top:8px">Please use the School's official contact details published by the School. We have not inserted an unverified phone number or email address.</p><div class="contact"><a class="btn secondary" href="./privacy-policy.html">Privacy Policy</a><a class="btn secondary" href="./terms-of-service.html">Terms of Service</a></div></section>
+</main><footer class="footer">© 2026 Ashiana Public School · <a href="./index.html">Back to login</a></footer>
+<script>
+(function(){
+const search=document.getElementById('help-search');
+const items=[...document.querySelectorAll('.faq')];
+const cards=[...document.querySelectorAll('.topic')];
+search.addEventListener('input',function(){
+const q=this.value.trim().toLowerCase();
+items.forEach(el=>el.hidden=!!q&&!el.innerText.toLowerCase().includes(q));
+cards.forEach(el=>el.hidden=!!q&&!el.innerText.toLowerCase().includes(q));
+});
+document.getElementById('support-form').addEventListener('submit',function(e){
+e.preventDefault();
+const role=document.getElementById('role').value;
+const category=document.getElementById('category').value;
+const id=document.getElementById('user-id').value.trim();
+const contact=document.getElementById('contact').value.trim();
+const description=document.getElementById('description').value.trim();
+const subject='Ashiana Attendance Support: '+category;
+const body=['Ashiana Attendance support request','Role: '+role,'Category: '+category,'Admission number / Employee ID: '+(id||'Not provided'),'Contact: '+(contact||'Not provided'),'Description:',description,'','Please do not include passwords, PINs, OTPs or banking credentials.'].join('\n');
+const email='SUPPORT_EMAIL_PLACEHOLDER';
+if(email==='SUPPORT_EMAIL_PLACEHOLDER'){
+document.getElementById('form-status').textContent='The form is validated, but email submission is not configured yet. Please contact the School through its official contact channel. No ticket has been saved.';
+return;
+}
+window.location.href='mailto:'+email+'?subject='+encodeURIComponent(subject)+'&body='+encodeURIComponent(body);
+document.getElementById('form-status').textContent='Your email app should open. Review the message and send it to the School.';
+});
+})();
+</script></body></html>
