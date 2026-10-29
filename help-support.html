@@ -1,0 +1,75 @@
+<!doctype html>
+<html lang="en">
+<head>
+<meta charset="utf-8">
+<meta name="viewport" content="width=device-width,initial-scale=1">
+<meta name="theme-color" content="#065f46">
+<title>Help &amp; Support | Ashiana Attendance</title>
+<style>
+:root{color-scheme:light;--green:#065f46;--green2:#047857;--mint:#ecfdf5;--ink:#172033;--muted:#64748b;--line:#e2e8f0}
+*{box-sizing:border-box}body{margin:0;background:#f4f7f6;color:var(--ink);font:16px/1.55 system-ui,-apple-system,"Segoe UI",sans-serif}
+header{background:linear-gradient(135deg,#064e3b,#059669);color:#fff;padding:28px 18px 34px}
+.top,main{max-width:980px;margin:auto}.top a{color:#d1fae5;text-decoration:none;font-weight:650}.top h1{font-size:clamp(28px,5vw,38px);margin:22px 0 4px}.top p{margin:0;color:#d1fae5}
+main{padding:22px 16px 48px}.search{width:100%;padding:15px 16px;border:1px solid var(--line);border-radius:15px;font:inherit;background:white;box-shadow:0 5px 18px #0f172a0a}
+.grid{display:grid;grid-template-columns:repeat(auto-fit,minmax(min(100%,230px),1fr));gap:14px;margin:18px 0 28px}
+.card{background:#fff;border:1px solid var(--line);border-radius:18px;padding:19px;box-shadow:0 5px 20px #0f172a08}.icon{font-size:25px}.card h2,.card h3{margin:8px 0;color:var(--green)}.card p{margin:5px 0;color:var(--muted)}h2.section{font-size:23px;margin:28px 0 12px}
+details{background:#fff;border:1px solid var(--line);border-radius:13px;margin:9px 0;padding:14px 16px}summary{font-weight:700;cursor:pointer;color:#1f2937}details p{color:#475569;margin-bottom:0}
+label{display:block;font-weight:650;margin:13px 0 6px}input,select,textarea{width:100%;padding:12px;border:1px solid #cbd5e1;border-radius:11px;font:inherit;background:#fff}textarea{min-height:120px;resize:vertical}
+button,.button{border:0;border-radius:11px;padding:12px 17px;background:var(--green2);color:white;font:inherit;font-weight:700;text-decoration:none;display:inline-block;cursor:pointer}.secondary{background:#e7f5ee;color:var(--green)}.notice{background:var(--mint);border:1px solid #a7f3d0;border-radius:13px;padding:14px;color:#065f46}
+.actions{display:flex;gap:10px;flex-wrap:wrap;margin-top:15px}.hidden{display:none!important}.small{font-size:13px;color:var(--muted)}footer{text-align:center;color:var(--muted);padding:18px}footer a{color:var(--green2)}
+@media(max-width:520px){header{padding-top:20px}.card{padding:16px}.actions>*{flex:1;text-align:center}}
+</style>
+</head>
+<body>
+<header><div class="top"><a href="./index.html">← Back to login</a><h1>Help &amp; Support</h1><p>Find answers, troubleshoot common issues, and prepare a support request.</p></div></header>
+<main>
+<input id="helpSearch" class="search" type="search" placeholder="Search help topics (e.g. login, attendance, fees)…" aria-label="Search help topics">
+<section class="grid" id="quickCards" aria-label="Help categories">
+<article class="card" data-search="login password pin account role"><div class="icon">🔐</div><h3>Login &amp; account</h3><p>Sign-in, PIN, session, and account-access guidance.</p></article>
+<article class="card" data-search="attendance qr code staff location permission biometric passkey"><div class="icon">📍</div><h3>Attendance</h3><p>QR scanning, check-in/out, location permission, and passkeys.</p></article>
+<article class="card" data-search="student portal homework timetable leave notice calendar report"><div class="icon">🎓</div><h3>Student portal</h3><p>Notices, homework, timetable, leave, and student records.</p></article>
+<article class="card" data-search="staff teacher faculty class assignment location pin"><div class="icon">👩‍🏫</div><h3>Staff &amp; teacher portal</h3><p>Class assignments, attendance, PIN, and location checks.</p></article>
+<article class="card" data-search="fees payment upi qr receipt installment"><div class="icon">💳</div><h3>Fees &amp; payments</h3><p>Fee items, UPI QR, payment submission, and receipts.</p></article>
+<article class="card" data-search="notification push alert android browser technical issue"><div class="icon">🔔</div><h3>Notifications &amp; technical help</h3><p>Push alerts, app refresh, and common display issues.</p></article>
+</section>
+<h2 class="section">Frequently asked questions</h2>
+<div id="faqs">
+<details data-search="login sign in wrong password pin role"><summary>I cannot log in or the app returns to the login screen</summary><p>Confirm you selected the correct role and are using the school-issued login details. Check your internet connection, update/reopen the app, and try again. Do not share your password or PIN. If the issue continues, ask the authorised school administrator to verify your account and role assignment.</p></details>
+<details data-search="refresh close reopen session student dashboard"><summary>My dashboard disappears after refreshing or reopening the app</summary><p>Check that the app is updated and your connection is stable. Sign in again if your session has expired. If this happens repeatedly, record your role, device/browser, and the steps that reproduce it, then contact the school administrator. Never send session tokens or passwords.</p></details>
+<details data-search="qr scan camera attendance rejected expired"><summary>My attendance QR code is not scanning</summary><p>Allow camera access, clean the camera lens, increase screen brightness, and keep the code inside the scan frame. Check that the code is current and belongs to the correct student/staff member. If it is still rejected, ask the authorised administrator to verify the record.</p></details>
+<details data-search="staff location permission campus attendance"><summary>Staff attendance says location permission is required</summary><p>Enable location services on your device and allow location access for the app/browser when prompted. Make sure you are at the authorised school location and that the device can obtain a location fix. If the location remains unavailable, contact the school administrator; do not attempt to bypass location checks.</p></details>
+<details data-search="biometric fingerprint face lock passkey"><summary>Fingerprint, face unlock, or passkey is not working</summary><p>Confirm a screen lock and a passkey provider are configured on the device. Use the app's available enable/disable control and follow the device prompt. If the device does not support the feature, use the normal school-approved sign-in method.</p></details>
+<details data-search="student leave request status approval"><summary>Where can I check a leave request?</summary><p>Open the Student portal and use the Leave Request / Leave Status options. If the status is missing or incorrect, note the submission date and ask the authorised school administrator to check the request.</p></details>
+<details data-search="fees payment upi qr amount receipt"><summary>I cannot see fees or my payment confirmation</summary><p>Check that the correct student account is open and review the fee items shown in the portal. Before paying, verify the displayed amount and UPI details. Keep your transaction reference. If a payment is pending or a receipt is missing, contact the school office/authorised administrator; do not submit repeated payments without checking.</p></details>
+<details data-search="push notification not received android permission"><summary>I am not receiving notifications</summary><p>Check internet access, app/browser notification permission, and Android notification settings. Open the app to refresh its data. Some notifications may be delayed by device settings or network availability; verify important notices inside the portal as well.</p></details>
+<details data-search="photo student record wrong class data correction"><summary>My student/staff details or class assignment are incorrect</summary><p>For safety, profile and class corrections must be handled by an authorised school administrator. Share only the minimum details needed to identify the record, and never include passwords, PINs, or authentication codes.</p></details>
+</div>
+<h2 class="section">Prepare a support request</h2>
+<div class="card">
+<p>Describe the issue below to prepare a message you can copy and send to your school’s authorised administrator. This page currently does not submit or store support tickets.</p>
+<form id="supportForm">
+<label for="role">Your role</label><select id="role" required><option value="">Select role</option><option>Admin / Principal</option><option>Teacher</option><option>Staff</option><option>Student</option><option>Parent / Guardian</option></select>
+<label for="identifier">Admission No. / Employee ID (optional)</label><input id="identifier" maxlength="80" autocomplete="off" placeholder="Enter only if needed">
+<label for="category">Issue category</label><select id="category" required><option value="">Choose a category</option><option>Login or account access</option><option>Attendance or QR scanning</option><option>Location permission or passkey</option><option>Student / staff records</option><option>Leave request or approval</option><option>Fees or payment</option><option>Notifications</option><option>Other technical issue</option></select>
+<label for="description">Describe what happened</label><textarea id="description" required maxlength="2000" placeholder="What were you trying to do? What message appeared? What steps reproduce it?"></textarea>
+<label for="contact">Contact detail (optional)</label><input id="contact" maxlength="120" autocomplete="off" placeholder="Phone or email for follow-up">
+<div class="actions"><button type="submit">Prepare support message</button><button class="secondary" type="reset">Clear form</button></div>
+</form>
+<div id="prepared" class="notice hidden" role="status" aria-live="polite" style="margin-top:16px"><strong>Support message prepared.</strong><pre id="messagePreview" style="white-space:pre-wrap;font:inherit"></pre><div class="actions"><button id="copyMessage" type="button">Copy message</button></div><p class="small">Send this to the school’s authorised administrator through your usual school contact channel. Do not attach passwords, PINs, OTPs, session tokens, or sensitive student records.</p></div>
+</div>
+<div class="notice" style="margin-top:18px"><strong>Privacy reminder:</strong> Share only information needed to resolve the issue. Do not include passwords, PINs, one-time codes, passkey details, or full payment credentials in a support request.</div>
+</main>
+<footer><a href="./privacy-policy.html">Privacy Policy</a> &nbsp;•&nbsp; <a href="./terms-of-service.html">Terms of Service</a> &nbsp;•&nbsp; <a href="./index.html">Back to login</a><p class="small">Ashiana Public School · Ashiana Attendance Application</p></footer>
+<script>
+(function(){
+ const search=document.getElementById('helpSearch');
+ const items=[...document.querySelectorAll('#quickCards [data-search],#faqs details')];
+ search.addEventListener('input',function(){const q=this.value.trim().toLowerCase();items.forEach(el=>{const text=(el.innerText+' '+(el.dataset.search||'')).toLowerCase();el.classList.toggle('hidden',!!q&&!text.includes(q));if(el.tagName==='DETAILS'&&q&&text.includes(q))el.open=true;});});
+ const form=document.getElementById('supportForm'),prepared=document.getElementById('prepared'),preview=document.getElementById('messagePreview');
+ form.addEventListener('submit',function(e){e.preventDefault();const v=id=>document.getElementById(id).value.trim();const msg=['Ashiana Attendance — Support Request','Role: '+v('role'),'Identifier: '+(v('identifier')||'Not provided'),'Category: '+v('category'),'Issue: '+v('description'),'Contact: '+(v('contact')||'Not provided'),'Device/browser: Please add if relevant'].join('\n');preview.textContent=msg;prepared.classList.remove('hidden');prepared.scrollIntoView({behavior:'smooth',block:'nearest'});});
+ document.getElementById('copyMessage').addEventListener('click',async function(){try{await navigator.clipboard.writeText(preview.textContent);this.textContent='Copied';}catch(e){const range=document.createRange();range.selectNodeContents(preview);const sel=window.getSelection();sel.removeAllRanges();sel.addRange(range);this.textContent='Select and copy the message';}});
+ form.addEventListener('reset',()=>prepared.classList.add('hidden'));
+})();
+</script>
+</body>
+</html>
