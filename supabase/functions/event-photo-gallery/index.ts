@@ -55,10 +55,10 @@ Deno.serve(async(req)=>{
  if(action==="delete-event"){const id=String(input.id||"");const {data:photos}=await admin.from("school_event_photos").select("storage_path").eq("event_id",id);if(photos?.length)await admin.storage.from("school-event-photos").remove(photos.map((p:any)=>p.storage_path));const {error}=await admin.from("school_events").delete().eq("id",id);return error?send({error:"Could not delete event"},500):send({success:true});}
  if(action==="upload-photo"){
    const eventId=String(input.event_id||""),name=String(input.file_name||"photo"),mime=String(input.mime_type||""),b64=String(input.base64||"").replace(/^data:[^;]+;base64,/,""),caption=String(input.caption||"").slice(0,500);
-   if(!/^[0-9a-f-]{36}$/i.test(eventId)||!["image/jpeg","image/png","image/webp"].includes(mime)||!b64||b64.length>11200000)return send({error:"Photo must be JPG, PNG or WebP and no larger than 8 MB"},400);
+   if(!/^[0-9a-f-]{36}$/i.test(eventId)||!["image/jpeg","image/png","image/webp"].includes(mime)||!b64||b64.length>1400000)return send({error:"Photo must be JPG, PNG or WebP and no larger than 1 MB"},400);
    const {data:event}=await admin.from("school_events").select("id").eq("id",eventId).maybeSingle();if(!event)return send({error:"Event not found"},404);
    let bytes:Uint8Array;try{const raw=atob(b64);bytes=Uint8Array.from(raw,c=>c.charCodeAt(0));}catch{return send({error:"Invalid photo data"},400)}
-   if(!bytes.length||bytes.length>8*1024*1024)return send({error:"Photo exceeds 8 MB"},400);
+   if(!bytes.length||bytes.length>1*1024*1024)return send({error:"Photo exceeds 1 MB"},400);
    const ext=mime==="image/jpeg"?"jpg":mime==="image/png"?"png":"webp",path=eventId+"/"+crypto.randomUUID()+"."+ext;
    const {error:uploadError}=await admin.storage.from("school-event-photos").upload(path,bytes,{contentType:mime,upsert:false});
    if(uploadError)return send({error:"Photo upload failed"},500);
