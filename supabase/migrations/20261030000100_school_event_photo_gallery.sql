@@ -24,7 +24,7 @@ create table if not exists public.school_event_photos (
   storage_path text not null unique,
   caption text not null default '' check (length(caption) <= 500),
   mime_type text not null check (mime_type in ('image/jpeg','image/png','image/webp')),
-  byte_size integer not null check (byte_size > 0 and byte_size <= 8388608),
+  byte_size integer not null check (byte_size > 0 and byte_size <= 1048576),
   created_at timestamptz not null default now()
 );
 create index if not exists school_event_photos_event_idx on public.school_event_photos(event_id,created_at);
@@ -33,6 +33,6 @@ alter table public.school_event_photos enable row level security;
 revoke all on public.school_events from anon, authenticated;
 revoke all on public.school_event_photos from anon, authenticated;
 insert into storage.buckets(id,name,public,file_size_limit,allowed_mime_types)
-values('school-event-photos','school-event-photos',false,8388608,array['image/jpeg','image/png','image/webp'])
-on conflict(id) do update set public=false,file_size_limit=8388608,allowed_mime_types=excluded.allowed_mime_types;
+values('school-event-photos','school-event-photos',false,1048576,array['image/jpeg','image/png','image/webp'])
+on conflict(id) do update set public=false,file_size_limit=1048576,allowed_mime_types=excluded.allowed_mime_types;
 commit;
