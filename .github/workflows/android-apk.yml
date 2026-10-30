@@ -2,9 +2,7 @@ name: Build Ashiana Attendance APKs
 
 on:
   workflow_dispatch:
-  # Build APKs for every PR targeting main, regardless of changed file paths.
-  pull_request:
-    branches: [main]
+  # APK builds are manual or run on relevant pushes to main; PRs do not trigger APK builds.
   push:
     branches: [main]
     paths:
