@@ -49,6 +49,12 @@ Deno.serve(async(req)=>{
    const audience=String(input.audience_type||"ALL"),cls=String(input.class_name||"").trim(),sec=String(input.section||"").trim(),status=String(input.status||"DRAFT");
    if(title.length<2||title.length>180||description.length>3000||!/^[0-9]{4}-[0-9]{2}-[0-9]{2}$/.test(date)||!["ALL","CLASS","SECTION"].includes(audience)||!["DRAFT","PUBLISHED","ARCHIVED"].includes(status)||(audience!=="ALL"&&!cls)||(audience==="SECTION"&&!sec))return send({error:"Please check event details"},400);
    const row={title,description,event_date:date,audience_type:audience,class_name:audience==="ALL"?null:cls,section:audience==="SECTION"?sec:null,status,updated_at:new Date().toISOString()};
+   if(status==="PUBLISHED"){
+     if(action==="create-event")return send({error:"Add at least one photo before publishing this event"},400);
+     const {count,error:photoCountError}=await admin.from("school_event_photos").select("id",{count:"exact",head:true}).eq("event_id",id);
+     if(photoCountError)return send({error:"Could not verify event photos"},500);
+     if(!count)return send({error:"Add at least one photo before publishing this event"},400);
+   }
    const result=action==="create-event"?await admin.from("school_events").insert({...row,created_by:(await admin.auth.getUser(auth.replace(/^Bearer /,""))).data.user?.id}).select("id").single():await admin.from("school_events").update(row).eq("id",id).select("id").single();
    if(result.error)return send({error:"Could not save event"},500);return send({success:true,id:result.data.id});
  }
