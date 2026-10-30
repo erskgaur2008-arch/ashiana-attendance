@@ -2,17 +2,7 @@ name: Build Ashiana Attendance APKs
 
 on:
   workflow_dispatch:
-  pull_request:
-    branches: [main]
-    paths:
-      - 'index.html'
-      - 'portal-passkey-lock.js'
-      - 'mobile/native-bridge.js'
-      - 'capacitor.config.ts'
-      - 'package.json'
-      - 'package-lock.json'
-      - 'assets/vendor/**'
-      - '.github/workflows/android-apk.yml'
+  # APK builds are manual or run on relevant pushes to main; PRs do not trigger APK builds.
   push:
     branches: [main]
     paths:
