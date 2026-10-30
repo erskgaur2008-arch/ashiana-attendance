@@ -65,6 +65,11 @@ Deno.serve(async(req)=>{
    const {data:event}=await admin.from("school_events").select("id").eq("id",eventId).maybeSingle();if(!event)return send({error:"Event not found"},404);
    let bytes:Uint8Array;try{const raw=atob(b64);bytes=Uint8Array.from(raw,c=>c.charCodeAt(0));}catch{return send({error:"Invalid photo data"},400)}
    if(!bytes.length||bytes.length>1*1024*1024)return send({error:"Photo exceeds 1 MB"},400);
+   const starts=(sig:number[])=>sig.every((v,i)=>bytes[i]===v);
+   const isJpeg=mime==="image/jpeg"&&starts([0xff,0xd8,0xff]);
+   const isPng=mime==="image/png"&&starts([0x89,0x50,0x4e,0x47,0x0d,0x0a,0x1a,0x0a]);
+   const isWebp=mime==="image/webp"&&bytes.length>=12&&String.fromCharCode(...bytes.slice(0,4))==="RIFF"&&String.fromCharCode(...bytes.slice(8,12))==="WEBP";
+   if(!isJpeg&&!isPng&&!isWebp)return send({error:"Image content does not match JPG, PNG or WebP file type"},400);
    const ext=mime==="image/jpeg"?"jpg":mime==="image/png"?"png":"webp",path=eventId+"/"+crypto.randomUUID()+"."+ext;
    const {error:uploadError}=await admin.storage.from("school-event-photos").upload(path,bytes,{contentType:mime,upsert:false});
    if(uploadError)return send({error:"Photo upload failed"},500);
