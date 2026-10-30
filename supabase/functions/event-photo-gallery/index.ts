@@ -15,7 +15,7 @@ Deno.serve(async(req)=>{
  if(auth.startsWith("Bearer ")){
    const verifier=createClient(url,anon,{global:{headers:{Authorization:auth}},auth:{persistSession:false,autoRefreshToken:false}});
    const {data}=await verifier.auth.getUser();
-   if(data.user){const {data:adminRow}=await admin.from("admin_users").select("id").eq("id",data.user.id).maybeSingle();isAdmin=!!adminRow;}
+   if(data.user){const {data:adminRow}=await admin.from("admin_users").select("user_id").eq("user_id",data.user.id).maybeSingle();isAdmin=!!adminRow;}
  }
  const token=typeof input.student_session_token==="string"?input.student_session_token:"";
  let student:any=null;
