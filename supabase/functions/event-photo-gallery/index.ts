@@ -28,12 +28,14 @@ Deno.serve(async(req)=>{
  if(action==="student-list"){
    if(!student)return send({error:"Student session expired"},401);
    const cls=String(student.class_name||student.class||"").trim(),sec=String(student.section||"").trim();
-   const {data:events,error}=await admin.from("school_events").select("id,title,description,event_date,audience_type,class_name,section,created_at").eq("status","PUBLISHED").or("audience_type.eq.ALL,and(audience_type.eq.CLASS,class_name.eq."+cls+"),and(audience_type.eq.SECTION,class_name.eq."+cls+",section.eq."+sec+")").order("event_date",{ascending:false}).limit(100);
+   const {data:published,error}=await admin.from("school_events").select("id,title,description,event_date,audience_type,class_name,section,created_at").eq("status","PUBLISHED").order("event_date",{ascending:false}).limit(500);
    if(error)return send({error:"Could not load events"},500);
-   const ids=(events||[]).map((e:any)=>e.id);let photos:any[]=[];
-   if(ids.length){const result=await admin.from("school_event_photos").select("id,event_id,storage_path,caption,mime_type").in("event_id",ids).order("created_at");photos=result.data||[];}
+   // Filter audience in trusted server code, not by interpolating student data into a PostgREST filter.
+   const events=(published||[]).filter((e:any)=>e.audience_type==="ALL"||(e.audience_type==="CLASS"&&e.class_name===cls)||(e.audience_type==="SECTION"&&e.class_name===cls&&e.section===sec));
+   const ids=events.map((e:any)=>e.id);let photos:any[]=[];
+   if(ids.length){const result=await admin.from("school_event_photos").select("id,event_id,storage_path,caption,mime_type").in("event_id",ids).order("created_at");if(result.error)return send({error:"Could not load photos"},500);photos=result.data||[];}
    const items=[];
-   for(const e of events||[]){const pp=[];for(const p of photos.filter((x:any)=>x.event_id===e.id)){const {data}=await admin.storage.from("school-event-photos").createSignedUrl(p.storage_path,300);if(data?.signedUrl)pp.push({id:p.id,url:data.signedUrl,caption:p.caption});}items.push({...e,photos:pp});}
+   for(const e of events){const pp=[];for(const p of photos.filter((x:any)=>x.event_id===e.id)){const {data}=await admin.storage.from("school-event-photos").createSignedUrl(p.storage_path,300);if(data?.signedUrl)pp.push({id:p.id,url:data.signedUrl,caption:p.caption});}items.push({...e,photos:pp});}
    return send({events:items});
  }
  if(action==="admin-list"){
