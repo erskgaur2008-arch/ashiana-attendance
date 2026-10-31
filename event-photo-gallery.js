@@ -2,28 +2,34 @@
 (()=>{"use strict";
 const $=id=>document.getElementById(id);
 const esc=s=>String(s??"").replace(/[&<>"']/g,c=>({"&":"&amp;","<":"&lt;",">":"&gt;",'"':"&quot;","'":"&#39;"}[c]));
-const client=()=>window.__ashianaMainSupabaseClient||window.supabaseClient||window.mainClient||(typeof window.__ashianaGetMainSupabaseClient==="function"?window.__ashianaGetMainSupabaseClient():null);
-async function api(action,extra={}){const c=client();if(!c?.functions?.invoke)throw Error("Application connection is not ready.");const {data,error}=await c.functions.invoke("event-photo-gallery",{body:{action,...extra}});if(error)throw Error(data?.error||error.message||"Gallery request failed.");if(data?.error)throw Error(data.error);return data||{};}
+const client=async()=>window.__ashianaMainSupabaseClient||window.supabaseClient||window.mainClient||(typeof window.__ashianaGetMainSupabaseClient==="function"?await window.__ashianaGetMainSupabaseClient():null);
+async function api(action,extra={}){const c=await client();if(!c?.functions?.invoke)throw Error("Application connection is not ready.");const {data,error}=await c.functions.invoke("event-photo-gallery",{body:{action,...extra}});if(error)throw Error(data?.error||error.message||"Gallery request failed.");if(data?.error)throw Error(data.error);return data||{};}
 function studentToken(){return String(sessionStorage.getItem("aps_student_session_token_v1")||localStorage.getItem("aps_student_session_token_v1")||"");}
 function showMessage(host,msg,error=false){host.innerHTML='<div class="p-3 rounded-xl text-sm '+(error?'bg-rose-50 text-rose-800':'bg-emerald-50 text-emerald-800')+'">'+esc(msg)+'</div>';}
 async function renderStudentGallery(host){showMessage(host,"Loading school event photos…");try{const data=await api("student-list",{student_session_token:studentToken()});if(!data.events?.length){showMessage(host,"No published event photos are available for your class yet.");return;}host.innerHTML=data.events.map(e=>'<article class="bg-white border border-orange-100 rounded-2xl p-4 mb-4"><div class="flex justify-between gap-2"><div><h4 class="font-extrabold text-slate-900">'+esc(e.title)+'</h4><p class="text-xs text-slate-500">'+esc(e.event_date)+'</p></div><span class="text-[10px] font-bold bg-orange-50 text-orange-700 rounded-full px-2 py-1 self-start">'+esc(e.photos.length)+' photos</span></div>'+(e.description?'<p class="text-sm text-slate-600 mt-2">'+esc(e.description)+'</p>':'')+'<div class="grid grid-cols-2 sm:grid-cols-3 gap-2 mt-3">'+e.photos.map(p=>'<button type="button" class="text-left" data-gallery-photo="'+esc(p.url)+'" data-gallery-caption="'+esc(p.caption)+'"><img loading="lazy" src="'+esc(p.url)+'" alt="'+esc(p.caption||e.title)+'" class="w-full aspect-square object-cover rounded-xl bg-slate-100"><span class="block text-[10px] text-slate-500 mt-1">'+esc(p.caption||"View photo")+'</span></button>').join("")+'</div></article>').join("");host.querySelectorAll("[data-gallery-photo]").forEach(b=>b.addEventListener("click",()=>{const w=document.createElement("div");w.className="fixed inset-0 z-[250] bg-black/90 flex flex-col items-center justify-center p-4";w.innerHTML='<button type="button" class="self-end text-white text-2xl p-3" aria-label="Close photo">×</button><img src="'+esc(b.dataset.galleryPhoto)+'" alt="'+esc(b.dataset.galleryCaption)+'" class="max-w-full max-h-[78vh] object-contain rounded-xl"><p class="text-white text-sm mt-3">'+esc(b.dataset.galleryCaption)+'</p>';w.addEventListener("click",()=>w.remove());document.body.appendChild(w);}));}catch(e){showMessage(host,e.message||"Unable to load event photos.",true);}}
 function installStudent(){const portal=$("student-portal-view");if(!portal||$("student-event-gallery-button"))return;const grid=portal.querySelector(".grid.grid-cols-2");if(!grid)return;const b=document.createElement("button");b.id="student-event-gallery-button";b.type="button";b.className="p-4 rounded-2xl border border-orange-200 bg-orange-50 text-left";b.innerHTML='<i data-lucide="images" class="w-5 h-5 text-orange-700"></i><b class="block mt-2 text-sm">Event Photos</b><span class="text-[10px] text-slate-500">School event galleries</span>';b.addEventListener("click",()=>{if(typeof window.studentDashboardSection==="function"){window.studentDashboardSection("event-photos");setTimeout(()=>{const h=$("student-dashboard-panel-body");if(h)renderStudentGallery(h);},250);}else{const panel=$("student-dashboard-panel");if(panel){panel.classList.remove("hidden");const h=$("student-dashboard-panel-body");if(h)renderStudentGallery(h);}}});grid.appendChild(b);if(window.lucide)window.lucide.createIcons();}
 function syncAdminGalleryClassOptions(sel){
-const target=$("epg-class");
+const target=$("epg-class"),section=$("epg-section");
 if(!sel||!target)return;
 const opts=Array.from(sel.options).filter(o=>o.value&&o.value!=="ALL");
 const signature=opts.map(o=>o.value+"|"+o.textContent).join("~");
 if(target.dataset.sourceSignature!==signature){
-const previous=target.value;
-target.replaceChildren(...opts.map(o=>{const n=document.createElement("option");n.value=o.value;n.textContent=o.textContent;return n;}));
-target.dataset.sourceSignature=signature;
-if(opts.some(o=>o.value===previous))target.value=previous;
+ const previous=target.value;
+ target.replaceChildren(...opts.map(o=>{const n=document.createElement("option");n.value=o.value;n.textContent=o.textContent;return n;}));
+ target.dataset.sourceSignature=signature;
+ if(opts.some(o=>o.value===previous))target.value=previous;
 }
-const parts=(target.value||"").split("||"),section=$("epg-section");
-if(section){const sections=opts.map(o=>o.value.split("||")).filter(p=>p.length>1&&p[0]===parts[0]&&p[1]);
-const old=section.value;
-section.replaceChildren(...sections.map(p=>{const n=document.createElement("option");n.value=p[1];n.textContent=p[1];return n;}));
-if(sections.some(p=>p[1]===old))section.value=old;}
+const parts=(target.value||"").split("||");
+if(section){
+ const sections=opts.map(o=>o.value.split("||")).filter(p=>p.length>1&&p[0]===parts[0]&&p[1]);
+ const sectionSignature=sections.map(p=>p[1]).join("|");
+ if(section.dataset.sourceSignature!==sectionSignature){
+  const old=section.value;
+  section.replaceChildren(...sections.map(p=>{const n=document.createElement("option");n.value=p[1];n.textContent=p[1];return n;}));
+  section.dataset.sourceSignature=sectionSignature;
+  if(sections.some(p=>p[1]===old))section.value=old;
+ }
+}
 }
 function installAdmin(){const sel=$("admin-student-portal-class");if(!sel)return;if($("admin-event-gallery")){syncAdminGalleryClassOptions(sel);return;}const controls=sel.closest(".bg-white");if(!controls)return;const section=document.createElement("section");section.id="admin-event-gallery";section.className="bg-white rounded-2xl border border-orange-200 shadow-sm p-4 sm:p-5 mt-4";section.innerHTML='<div class="flex items-center justify-between gap-2"><div><h3 class="font-extrabold text-slate-900">Event Photo Gallery</h3><p class="text-xs text-slate-500">Share event photographs with all students or a selected class/section.</p></div><span class="text-xs font-bold text-orange-700">Photos</span></div><div class="grid gap-3 mt-4"><input id="epg-title" maxlength="180" class="w-full text-sm p-3 border rounded-xl" placeholder="Event name (e.g. Annual Function)"><input id="epg-date" type="date" class="w-full text-sm p-3 border rounded-xl"><textarea id="epg-description" maxlength="3000" rows="2" class="w-full text-sm p-3 border rounded-xl" placeholder="Event description (optional)"></textarea><select id="epg-audience" class="w-full text-sm p-3 border rounded-xl"><option value="ALL">All students</option><option value="CLASS">Selected class (all sections)</option><option value="SECTION">Selected class and section</option></select><div id="epg-class-wrap" class="hidden"><label class="text-xs font-bold">Class / Section</label><select id="epg-class" class="w-full text-sm p-3 border rounded-xl mt-1"></select></div><div id="epg-section-wrap" class="hidden"><label class="text-xs font-bold">Section</label><select id="epg-section" class="w-full text-sm p-3 border rounded-xl mt-1"></select></div><label class="text-xs font-bold">Event photographs (JPG, PNG, WebP; max 1 MB each)<input id="epg-files" type="file" accept="image/jpeg,image/png,image/webp" multiple class="block w-full text-xs mt-2"></label><button id="epg-publish" class="w-full rounded-xl bg-emerald-700 text-white font-extrabold p-3">Create & Publish Event</button><p id="epg-status" class="text-xs text-slate-500"></p></div><hr class="my-4"><div class="flex justify-between items-center"><h4 class="font-bold">Manage Events</h4><button id="epg-refresh" class="text-xs text-emerald-700 font-bold">Refresh</button></div><div id="epg-list" class="mt-3 space-y-3"></div>';
 controls.insertAdjacentElement("afterend",section);
