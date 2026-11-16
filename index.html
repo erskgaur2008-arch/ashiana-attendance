@@ -7890,7 +7890,7 @@ async function refreshStudentPortalData(){
     }
 
 
-    async function handleLogout() {
+    async function handleLogout(message = "Signed out safely.") {
       try { if (supabaseClient) await supabaseClient.auth.signOut({ scope: 'local' }); } catch (e) {}
       try { sessionStorage.removeItem(staffPortalTabStorageKey(currentAuthUser)); } catch (_) {}
       currentAuthUser = null;
@@ -7914,7 +7914,7 @@ async function refreshStudentPortalData(){
       try { localStorage.removeItem("aps_student_session_expiry_v1"); } catch (_) {}
       try { sessionStorage.removeItem("aps_student_session_expiry_v1"); } catch (_) {}
       try { sessionStorage.removeItem("sb-oalfzgluqroqbbrulhpr-auth-token"); } catch (_) {}
-      showToast("Signed out safely.", "info");
+      showToast(message, "info");
       applyAuthenticatedUI();
     }
 
@@ -13061,11 +13061,15 @@ window.addEventListener('load',async function(){
         }
         if (!changeResult?.success) throw new Error("PIN update failed.");
 
-        recordAuditLog("PIN_CHANGE", staff.name, "Staff changed personal attendance PIN");
+        if (changeResult?.sessions_revoked !== true || changeResult?.force_logout !== true) {
+          throw new Error("PIN changed, but all-device sign-out could not be confirmed. Please contact the administrator.");
+        }
+
+        recordAuditLog("PIN_CHANGE", staff.name, "Staff changed personal attendance PIN; all sessions revoked");
         playTone('SUCCESS');
-        showToast("PIN updated successfully and synced securely!", "success");
-        closeStaffProfileModal();
-        renderStaffDirectoryTable();
+        // The Edge Function has revoked every refresh-token session globally.
+        // Sign out this browser too and return to the login screen.
+        await handleLogout("PIN changed successfully. This device is signed out; sign in again with your new PIN.");
       } catch (e) {
         playTone('ERROR');
         showToast(e?.message || "PIN update failed.", "error");
