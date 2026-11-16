@@ -50,6 +50,16 @@ const fs = require('node:fs');
     if (!(await menu.locator('.menu-links a').first().isVisible())) failures.push('Help page: mobile menu did not open');
   }
 
+  for (const [role, expected] of [
+    ['admin', 'Administrator Login'],
+    ['teacher', 'Teacher Login'],
+    ['staff', 'Staff Login'],
+    ['student', 'Student Login']
+  ]) {
+    await page.goto('http://127.0.0.1:4173/?login=' + role, { waitUntil: 'domcontentloaded' });
+    if (!(await page.title()).includes(expected)) failures.push('Role route ' + role + ': incorrect page title');
+  }
+
   await page.goto('http://127.0.0.1:4173/', { waitUntil: 'domcontentloaded' });
   for (const href of ['mailto:ashianapublicschool@gmail.com', 'tel:+919872500460']) {
     if (!(await page.locator('a[href="' + href + '"]').count())) failures.push('Login page: missing contact link ' + href);
