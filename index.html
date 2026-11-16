@@ -10851,24 +10851,40 @@ window.addEventListener('load',async function(){
           <div class="id-footer">Authorized Staff Identification • Ashiana Public School</div>
         </div>`;
 
-      const qrBox = document.getElementById("staff-preview-qr");
-      try {
-        await ensureQRCodeLibrary();
-      } catch (e) {}
-      if (qrBox && typeof QRCode !== "undefined") {
-        qrBox.innerHTML = "";
-        new QRCode(qrBox, {
-          text: qrPayload,
-          width: 90,
-          height: 90,
-          correctLevel: QRCode.CorrectLevel.H
-        });
+      // Match the administrator's bulk-card QR error correction level (M).
+      // Level H can overflow for otherwise valid staff payloads with longer names.
+      // Open the card first so a QR rendering problem can never prevent the preview.
+      const nameElement = preview.querySelector(".id-name");
+      if (nameElement) {
+        const nameLength = String(staff.name || "STAFF MEMBER").trim().length;
+        const fontSizeMm = Math.max(1.6, 2.8 - Math.max(0, nameLength - 16) * 0.055);
+        nameElement.style.fontSize = fontSizeMm.toFixed(2) + "mm";
+        nameElement.style.textOverflow = "clip";
       }
 
       modal.classList.remove("hidden");
       modal.classList.add("flex");
       document.body.classList.add("overflow-hidden");
       try { history.pushState({ ashianaApp: true, modal: "staff-id-card-preview" }, "", location.href); } catch (_) {}
+
+      const qrBox = document.getElementById("staff-preview-qr");
+      if (qrBox) {
+        qrBox.innerHTML = "";
+        try {
+          await ensureQRCodeLibrary();
+          if (typeof QRCode === "undefined") throw new Error("QR code library is unavailable");
+          new QRCode(qrBox, {
+            text: qrPayload,
+            width: 90,
+            height: 90,
+            // Keep this consistent with the working Admin bulk ID-card generator.
+            correctLevel: QRCode.CorrectLevel.M
+          });
+        } catch (qrError) {
+          console.warn("Staff ID card QR rendering failed; keeping card preview open:", qrError);
+          qrBox.innerHTML = '<span class="text-[7px] text-slate-500 text-center">QR unavailable</span>';
+        }
+      }
 
       const scaleStaffIdCardPreview = () => {
         const card = preview.querySelector(".staff-id-preview-card");
