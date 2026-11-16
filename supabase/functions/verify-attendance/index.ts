@@ -108,24 +108,29 @@ async function requireUser(req: Request, admin: AdminClient) {
   return { token, email };
 }
 
-// Writes a staff PIN with the service role, then confirms the NEW PIN verifies.
-// Tries the internal function first, then the public wrapper.
+// Writes a staff PIN through the public RPC endpoint using the service-role client,
+// then confirms the NEW PIN verifies. The private schema is intentionally not exposed
+// through PostgREST, so calling set_staff_pin_internal directly via rpc() is not valid.
 async function setPinServerSide(admin: AdminClient, staffId: string, pin: string) {
-  for (const fn of ["set_staff_pin_internal", "set_staff_pin"]) {
-    const { data, error } = await admin.rpc(fn, { p_staff_id: staffId, p_pin: pin });
-    if (error) {
-      console.error(`change_pin: ${fn} failed:`, error.message);
-      continue;
-    }
-    if (data === false) {
-      console.error(`change_pin: ${fn} returned false`);
-      continue;
-    }
-    const { data: ok, error: verifyError } = await admin.rpc("verify_staff_pin_internal", { p_staff_id: staffId, p_pin: pin });
-    if (!verifyError && ok === true) return true;
-    console.error(`change_pin: ${fn} ran but the new PIN does not verify`);
+  const { data, error } = await admin.rpc("set_staff_pin", { p_staff_id: staffId, p_pin: pin });
+  if (error) {
+    console.error("change_pin: public.set_staff_pin failed:", error.message);
+    return false;
   }
-  return false;
+  if (data !== true) {
+    console.error("change_pin: public.set_staff_pin returned false for staff:", staffId);
+    return false;
+  }
+  const { data: ok, error: verifyError } = await admin.rpc("verify_staff_pin_internal", { p_staff_id: staffId, p_pin: pin });
+  if (verifyError) {
+    console.error("change_pin: new PIN verification RPC failed:", verifyError.message);
+    return false;
+  }
+  if (ok !== true) {
+    console.error("change_pin: saved PIN did not pass server-side verification for staff:", staffId);
+    return false;
+  }
+  return true;
 }
 
 Deno.serve(async (req: Request) => {
@@ -333,8 +338,17 @@ Deno.serve(async (req: Request) => {
       const saved = await setPinServerSide(admin, staff.id, next);
       if (!saved) return json({ error: "PIN_UPDATE_FAILED" }, 400);
 
+      // Revoke all refresh-token sessions for this staff Auth user.
+      // Existing access JWTs on other devices remain valid only until their
+      // normal expiry; they cannot refresh after this global revocation.
+      const { error: signOutError } = await admin.auth.admin.signOut(user.token, "global");
+      if (signOutError) {
+        console.error("change_pin: global session revocation failed:", signOutError.message);
+        return json({ error: "PIN_CHANGED_SESSION_REVOCATION_FAILED" }, 500);
+      }
+
       await clear(admin, key);
-      return json({ success: true });
+      return json({ success: true, sessions_revoked: true, force_logout: true });
     }
 
     // =====================================================================
