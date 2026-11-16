@@ -1,6 +1,5 @@
 const { chromium, devices } = require('playwright');
 const fs = require('node:fs');
-const path = require('node:path');
 
 (async () => {
   const browser = await chromium.launch({ headless: true });
@@ -25,6 +24,8 @@ const path = require('node:path');
     if (!meta || !meta.trim()) failures.push(url + ': missing meta description');
     const icon = await page.locator('link[rel~="icon"]').getAttribute('href');
     if (!icon) failures.push(url + ': missing favicon reference');
+    const broken = await page.locator('a[href], img[src], script[src], link[href]').evaluateAll(nodes => nodes.map(node => node.getAttribute('href') || node.getAttribute('src')).filter(value => value && (value.startsWith('./') || value.endsWith('.html') || value.endsWith('.svg'))).filter(value => { const target = value.split(/[?#]/)[0].replace(/^\.\//, ''); return target && !require('node:fs').existsSync(target); }));
+    if (broken.length) failures.push(url + ': missing local references ' + broken.join(', '));
     const dimensions = await page.evaluate(() => ({
       viewport: document.documentElement.clientWidth,
       page: document.documentElement.scrollWidth,
