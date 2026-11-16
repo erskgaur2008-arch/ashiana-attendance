@@ -1,0 +1,47 @@
+name: Mobile Web Quality Smoke Tests
+
+on:
+  pull_request:
+    branches: [main]
+    paths:
+      - 'index.html'
+      - 'help-support.html'
+      - 'privacy-policy.html'
+      - 'terms-of-service.html'
+      - '404.html'
+      - 'empty-state.html'
+      - 'tests/mobile-web-quality.spec.cjs'
+      - '.github/workflows/mobile-web-quality.yml'
+  workflow_dispatch:
+
+permissions:
+  contents: read
+
+jobs:
+  mobile-web-smoke:
+    runs-on: ubuntu-latest
+    timeout-minutes: 10
+    steps:
+      - uses: actions/checkout@v4
+      - uses: actions/setup-node@v4
+        with:
+          node-version: 22
+      - name: Install Playwright
+        run: |
+          npm install --no-save playwright
+          npx playwright install --with-deps chromium
+      - name: Start static site
+        run: |
+          python3 -m http.server 4173 --bind 127.0.0.1 >/tmp/ashiana-http.log 2>&1 &
+          echo $! > /tmp/ashiana-http.pid
+      - name: Wait for local site
+        run: |
+          for attempt in $(seq 1 20); do
+            if curl --silent --fail http://127.0.0.1:4173/ >/dev/null; then exit 0; fi
+            sleep 1
+          done
+          echo 'Local site did not start in time.'
+          cat /tmp/ashiana-http.log
+          exit 1
+      - name: Run Pixel 7 mobile smoke tests
+        run: node tests/mobile-web-quality.spec.cjs

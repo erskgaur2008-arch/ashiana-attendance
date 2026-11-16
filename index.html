@@ -9,10 +9,23 @@
   <meta name="apple-mobile-web-app-capable" content="yes">
   <meta name="apple-mobile-web-app-status-bar-style" content="black-translucent">
   <meta name="apple-mobile-web-app-title" content="Ashiana Attendance">
-  <meta name="description" content="Ashiana Public School attendance and school management portal.">
+  <meta name="description" content="Official Ashiana Public School portal for staff, teachers, students and administrators to manage attendance, school updates and student services.">
+  <link rel="icon" type="image/svg+xml" href="./favicon.svg">
   <link rel="apple-touch-icon" href="./logo%202.png">
   <link rel="stylesheet" href="./ios-pwa.css">
   <link id="ashiana-manifest" rel="manifest">
+  <script id="ashiana-role-page-title">
+    (function () {
+      var role = String(new URLSearchParams(location.search).get("login") || "").trim().toLowerCase();
+      var titles = {
+        admin: "Administrator Login | Ashiana Public School",
+        teacher: "Teacher Login | Ashiana Public School",
+        staff: "Staff Login | Ashiana Public School",
+        student: "Student Login | Ashiana Public School"
+      };
+      document.title = titles[role] || "Ashiana Public School | Attendance & School Portal";
+    })();
+  </script>
   <script>
     // Single source for the staff <select> options (was copy-pasted 8 times).
     function staffOptionsHtml() {
@@ -88,6 +101,22 @@
     }
   </script>
 
+  <style id="ashiana-mobile-quality-fixes">
+    /* Prevent page-level horizontal overflow while preserving intentional inner table/map scrolling. */
+    html, body { max-width: 100%; overflow-x: clip; }
+    body { min-width: 0; }
+    img, video, canvas, iframe { max-width: 100%; }
+    input, select, textarea, button { max-width: 100%; }
+    @media (max-width: 640px) {
+      #auth-main, #auth-gateway-view, #teacher-portal-view, #student-portal-view,
+      #staff-portal-view, #admin-portal-view { min-width: 0; max-width: 100vw; }
+      .overflow-x-auto, [data-horizontal-scroll] {
+        max-width: 100%; overscroll-behavior-x: contain;
+        -webkit-overflow-scrolling: touch;
+      }
+      table { max-width: 100%; }
+    }
+  </style>
   <style>
     /* Ashiana typography system: Inter for the app UI, with robust offline/device fallbacks. */
     :root {
@@ -2849,7 +2878,8 @@
       <div class="login-home-credit">
         Developed by <a href="https://wa.me/918360484931" target="_blank" rel="noopener noreferrer" aria-label="Chat with ER. SK GAUR on WhatsApp" class="font-bold text-emerald-700 hover:text-emerald-800 hover:underline">ER. SK GAUR</a><br>
         © 2026 Ashiana Public School. All rights reserved.<br>
-        <span class="login-home-links"><a href="./privacy-policy.html" class="hover:underline" aria-label="Read Privacy Policy">Privacy Policy</a>&nbsp; • &nbsp;<a href="./terms-of-service.html" class="hover:underline" aria-label="Read Terms of Service">Terms of Service</a></span>
+        <span class="login-home-links"><a href="mailto:ashianapublicschool@gmail.com" class="hover:underline">ashianapublicschool@gmail.com</a>&nbsp; • &nbsp;<a href="tel:+919872500460" class="hover:underline">+91-9872500460</a></span><br>
+        <span class="login-home-links"><a href="./privacy-policy.html" class="hover:underline" aria-label="Read Privacy Policy">Privacy Policy</a>&nbsp; • &nbsp;<a href="./terms-of-service.html" class="hover:underline" aria-label="Read Terms of Service">Terms of Service</a>&nbsp; • &nbsp;<a href="./help-support.html" class="hover:underline" aria-label="Get Help and Support">Help &amp; Support</a></span>
       </div>
     </section>
 
