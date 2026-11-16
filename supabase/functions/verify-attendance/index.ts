@@ -338,8 +338,17 @@ Deno.serve(async (req: Request) => {
       const saved = await setPinServerSide(admin, staff.id, next);
       if (!saved) return json({ error: "PIN_UPDATE_FAILED" }, 400);
 
+      // Revoke all refresh-token sessions for this staff Auth user.
+      // Existing access JWTs on other devices remain valid only until their
+      // normal expiry; they cannot refresh after this global revocation.
+      const { error: signOutError } = await admin.auth.admin.signOut(user.token, "global");
+      if (signOutError) {
+        console.error("change_pin: global session revocation failed:", signOutError.message);
+        return json({ error: "PIN_CHANGED_SESSION_REVOCATION_FAILED" }, 500);
+      }
+
       await clear(admin, key);
-      return json({ success: true });
+      return json({ success: true, sessions_revoked: true, force_logout: true });
     }
 
     // =====================================================================
