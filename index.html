@@ -2392,6 +2392,7 @@
                   name: staff.name,
                   department: staff.department,
                   role: staff.role,
+                  qualification: staff.qualification || "",
                   email: staff.email,
                   avatarUrl: staff.avatar_url || "",
                   gender: staff.gender || "",
@@ -3688,6 +3689,7 @@ id="admin-portal-view" class="hidden flex-col w-full space-y-4 admin-dashboard-s
                   <th class="py-2 px-3 sortable-header" role="button" tabindex="0" onclick="sortTableByHeader(this)" onkeydown="if(event.key==='Enter'||event.key===' '){event.preventDefault();sortTableByHeader(this)}" aria-label="Sort by Name" title="Sort by Name">Name <span class="sort-indicator" aria-hidden="true">↕</span></th>
                   <th class="py-2 px-3 sortable-header" role="button" tabindex="0" onclick="sortTableByHeader(this)" onkeydown="if(event.key==='Enter'||event.key===' '){event.preventDefault();sortTableByHeader(this)}" aria-label="Sort by Department" title="Sort by Department">Department <span class="sort-indicator" aria-hidden="true">↕</span></th>
                   <th class="py-2 px-3 sortable-header" role="button" tabindex="0" onclick="sortTableByHeader(this)" onkeydown="if(event.key==='Enter'||event.key===' '){event.preventDefault();sortTableByHeader(this)}" aria-label="Sort by Role" title="Sort by Role">Role <span class="sort-indicator" aria-hidden="true">↕</span></th>
+                  <th class="py-2 px-3">Qualification</th>
                   <th class="py-2 px-3 sortable-header" role="button" tabindex="0" onclick="sortTableByHeader(this)" onkeydown="if(event.key==='Enter'||event.key===' '){event.preventDefault();sortTableByHeader(this)}" aria-label="Sort by Email" title="Sort by Email">Email <span class="sort-indicator" aria-hidden="true">↕</span></th>
                   <th class="py-2 px-3 sortable-header" role="button" tabindex="0" onclick="sortTableByHeader(this)" onkeydown="if(event.key==='Enter'||event.key===' '){event.preventDefault();sortTableByHeader(this)}" aria-label="Sort by Address" title="Sort by Address">Address <span class="sort-indicator" aria-hidden="true">↕</span></th>
                   <th class="py-2 px-3 sortable-header" role="button" tabindex="0" onclick="sortTableByHeader(this)" onkeydown="if(event.key==='Enter'||event.key===' '){event.preventDefault();sortTableByHeader(this)}" aria-label="Sort by Valid Thru" title="Sort by Valid Thru">Valid Thru <span class="sort-indicator" aria-hidden="true">↕</span></th>
@@ -4179,7 +4181,16 @@ id="admin-portal-view" class="hidden flex-col w-full space-y-4 admin-dashboard-s
       </div>
 
       <div id="admin-tab-reports" class="hidden space-y-4">
-        
+        <div class="bg-white rounded-2xl border border-slate-200 shadow-sm p-4 sm:p-5 flex flex-col sm:flex-row sm:items-center justify-between gap-3">
+          <div>
+            <h3 class="text-base font-extrabold text-slate-900 flex items-center gap-2"><i data-lucide="graduation-cap" class="w-5 h-5 text-ashiana-green"></i><span>Staff &amp; Faculty Information</span></h3>
+            <p class="text-xs text-slate-500 mt-1">Export staff qualifications and directory information. PIN credentials are never included.</p>
+          </div>
+          <button type="button" onclick="exportStaffInformationReport()" class="px-4 py-2.5 bg-emerald-800 hover:bg-emerald-900 text-white rounded-xl text-xs font-bold flex items-center justify-center gap-2 shadow">
+            <i data-lucide="download" class="w-4 h-4"></i><span>Export Faculty Information (CSV)</span>
+          </button>
+        </div>
+
         <!-- Controls & Parameter Config Card -->
         <div class="bg-white rounded-2xl border border-slate-200 shadow-sm p-4 sm:p-5">
           <div class="flex flex-col md:flex-row md:items-center justify-between gap-3 border-b border-slate-100 pb-3 mb-4">
@@ -4533,6 +4544,12 @@ id="admin-portal-view" class="hidden flex-col w-full space-y-4 admin-dashboard-s
             <input type="text" id="profile-edit-name" required class="w-full text-xs p-2 bg-white border border-slate-200 rounded-xl focus:ring-2 focus:ring-ashiana-green font-medium">
           </div>
 
+          <div>
+            <label class="block text-[10px] font-bold text-slate-600 mb-0.5">Qualification</label>
+            <textarea id="profile-edit-qualification" maxlength="500" rows="2" placeholder="e.g. M.A. English, B.Ed., CTET" class="w-full text-xs p-2 bg-white border border-slate-200 rounded-xl focus:ring-2 focus:ring-ashiana-green resize-y"></textarea>
+            <p class="text-[9px] text-slate-400 mt-1">Add degrees, certifications, or other professional qualifications.</p>
+          </div>
+
           <div class="grid grid-cols-2 gap-2">
             <div>
               <label class="block text-[10px] font-bold text-slate-600 mb-0.5">Gender</label>
@@ -4683,6 +4700,11 @@ id="admin-portal-view" class="hidden flex-col w-full space-y-4 admin-dashboard-s
         </div>
 
         <div>
+          <label class="block text-[11px] font-bold text-slate-700 mb-1">Qualification</label>
+          <textarea id="add-staff-qualification" maxlength="500" rows="2" placeholder="e.g. M.A. English, B.Ed., CTET" class="w-full text-xs p-2 bg-slate-50 border border-slate-200 rounded-xl resize-y"></textarea>
+        </div>
+
+        <div>
           <label class="block text-[11px] font-bold text-slate-700 mb-1">Official Email *</label>
           <input type="email" id="add-staff-email" required placeholder="faculty@ashianapublicschool.com" class="w-full text-xs p-2 bg-slate-50 border border-slate-200 rounded-xl font-mono">
         </div>
@@ -4769,6 +4791,11 @@ id="admin-portal-view" class="hidden flex-col w-full space-y-4 admin-dashboard-s
             <label class="block text-[11px] font-bold text-slate-700 mb-1">Role / Designation *</label>
             <input type="text" id="edit-staff-role" required class="w-full text-xs p-2 bg-slate-50 border border-slate-200 rounded-xl">
           </div>
+        </div>
+
+        <div>
+          <label class="block text-[11px] font-bold text-slate-700 mb-1">Qualification</label>
+          <textarea id="edit-staff-qualification" maxlength="500" rows="2" placeholder="e.g. M.A. English, B.Ed., CTET" class="w-full text-xs p-2 bg-slate-50 border border-slate-200 rounded-xl resize-y"></textarea>
         </div>
 
         <div>
@@ -5592,7 +5619,7 @@ id="admin-portal-view" class="hidden flex-col w-full space-y-4 admin-dashboard-s
 
         const { data: staff, error: staffError } = await supabaseClient
           .from('staff')
-          .select('id,emp_id,name,department,role,email,status,avatar_url,gender,dob,valid_thru')
+          .select('id,emp_id,name,department,role,qualification,email,status,avatar_url,gender,dob,valid_thru')
           .ilike('email', email)
           .eq('status', 'ACTIVE')
           .maybeSingle();
@@ -5608,6 +5635,7 @@ id="admin-portal-view" class="hidden flex-col w-full space-y-4 admin-dashboard-s
           name: staff.name,
           department: staff.department,
           role: staff.role,
+          qualification: staff.qualification || '',
           email: staff.email,
           avatarUrl: staff.avatar_url || '',
           gender: staff.gender || '',
@@ -5913,7 +5941,7 @@ id="admin-portal-view" class="hidden flex-col w-full space-y-4 admin-dashboard-s
         // wait for staff, punches, and leave requests one after another.
         const [staffResult, punchResult, leaveResult] = await Promise.all([
           supabaseClient.from('staff')
-            .select('id,emp_id,name,department,role,email,avatar_url,gender,dob,valid_thru,phone,address,status')
+            .select('id,emp_id,name,department,role,qualification,email,avatar_url,gender,dob,valid_thru,phone,address,status')
             .order('name', { ascending: true }),
           supabaseClient.from('attendance_punches')
             .select('id,staff_id,staff_name,emp_id,attendance_date,type,timestamp,method,created_at')
@@ -5936,6 +5964,7 @@ id="admin-portal-view" class="hidden flex-col w-full space-y-4 admin-dashboard-s
               name: s.name,
               department: s.department,
               role: s.role,
+              qualification: s.qualification || '',
               email: s.email,
               avatarUrl: s.avatar_url || '',
               gender: s.gender || '',
@@ -5953,7 +5982,7 @@ id="admin-portal-view" class="hidden flex-col w-full space-y-4 admin-dashboard-s
           const staffChanged = remoteStaff.length !== staffDatabase.length ||
             remoteStaff.some(s => {
               const loc = localStaffMap.get(s.id);
-              return !loc || loc.name !== s.name || loc.status !== s.status || loc.email !== s.email;
+              return !loc || loc.name !== s.name || loc.status !== s.status || loc.email !== s.email || (loc.qualification || '') !== (s.qualification || '');
             });
 
           if (staffChanged) {
@@ -10182,6 +10211,7 @@ async function loadAdminStudentAttendance(){
             </td>
             <td class="py-2 px-3 text-slate-600">${studentEscape(s.department)}</td>
             <td class="py-2 px-3 text-slate-600">${studentEscape(s.role)}</td>
+            <td class="py-2 px-3 text-slate-600 max-w-[240px]" title="${escapeIdCardHtml(s.qualification || '')}"><span class="block max-w-[240px] truncate">${studentEscape(s.qualification || '—')}</span></td>
             <td class="py-2 px-3 font-mono text-[10px] text-slate-500">${studentEscape(s.email)}</td>
             <td class="py-2 px-3 text-slate-600 max-w-[220px] truncate" title="${escapeIdCardHtml(s.address || "")}">${escapeIdCardHtml(s.address || "—")}</td>
             <td class="py-2 px-3 font-mono text-[10px] ${isStaffIdExpired(s) ? 'text-rose-600 font-bold' : 'text-slate-500'}">${escapeIdCardHtml(formatValidThruDate(s.validThru || s.valid_thru) || "—")}</td>
@@ -10233,6 +10263,7 @@ async function loadAdminStudentAttendance(){
             name: s.name || '',
             department: s.department || '',
             role: s.role || '',
+            qualification: s.qualification || '',
             email: s.email || '',
             avatarUrl: s.avatar_url || '',
             gender: s.gender || '',
@@ -12882,6 +12913,7 @@ window.addEventListener('load',async function(){
         renderStaffAvatar("profile-modal-avatar", staff);
 
         const nameInp = document.getElementById("profile-edit-name");
+        const qualificationInp = document.getElementById("profile-edit-qualification");
         const emailInp = document.getElementById("profile-edit-email");
         const genderInp = document.getElementById("profile-edit-gender");
         const dobInp = document.getElementById("profile-edit-dob");
@@ -12889,6 +12921,7 @@ window.addEventListener('load',async function(){
         const phoneInp = document.getElementById("profile-edit-phone");
         const addressInp = document.getElementById("profile-edit-address");
         if (nameInp) nameInp.value = staff.name || '';
+        if (qualificationInp) qualificationInp.value = staff.qualification || '';
         if (emailInp) emailInp.value = staff.email || '';
         if (genderInp) genderInp.value = staff.gender || '';
         if (dobInp) dobInp.value = staff.dob || '';
@@ -12913,6 +12946,7 @@ window.addEventListener('load',async function(){
       if (!staff) return;
 
       const newName = document.getElementById("profile-edit-name").value.trim();
+      const newQualification = document.getElementById("profile-edit-qualification").value.trim();
       const newGender = document.getElementById("profile-edit-gender").value;
       const newDob = document.getElementById("profile-edit-dob").value || null;
       // Valid Through is administrator-controlled and intentionally cannot be
@@ -12932,6 +12966,7 @@ window.addEventListener('load',async function(){
           .from('staff')
           .update({
             name: newName,
+            qualification: newQualification || null,
             gender: newGender || null,
             dob: newDob,
             phone: newPhone || null,
@@ -12943,6 +12978,7 @@ window.addEventListener('load',async function(){
 
         Object.assign(staff, {
           name: newName,
+          qualification: newQualification,
           gender: newGender,
           dob: newDob || '',
           phone: newPhone,
@@ -12953,6 +12989,7 @@ window.addEventListener('load',async function(){
           currentAuthUser.staffRecord = {
             ...currentAuthUser.staffRecord,
             name: newName,
+            qualification: newQualification,
             gender: newGender,
             dob: newDob || '',
             phone: newPhone,
@@ -13064,10 +13101,12 @@ window.addEventListener('load',async function(){
       // Reset other form inputs to defaults
       const nameInput = document.getElementById("add-staff-name");
       const roleInput = document.getElementById("add-staff-role");
+      const qualificationInput = document.getElementById("add-staff-qualification");
       const emailInput = document.getElementById("add-staff-email");
       const pinInput = document.getElementById("add-staff-pin");
       if (nameInput) nameInput.value = "";
       if (roleInput) roleInput.value = "";
+      if (qualificationInput) qualificationInput.value = "";
       if (emailInput) emailInput.value = "";
       if (pinInput) pinInput.value = "";
 
@@ -13085,6 +13124,7 @@ window.addEventListener('load',async function(){
       const name = document.getElementById("add-staff-name").value.trim();
       const department = document.getElementById("add-staff-department").value;
       const role = document.getElementById("add-staff-role").value.trim();
+      const qualification = document.getElementById("add-staff-qualification").value.trim();
       const email = document.getElementById("add-staff-email").value.trim().toLowerCase();
       const phone = document.getElementById("add-staff-phone").value.trim();
       const address = document.getElementById("add-staff-address").value.trim();
@@ -13121,13 +13161,14 @@ window.addEventListener('load',async function(){
           .update({
             phone: phone || null,
             address: address || null,
+            qualification: qualification || null,
             valid_thru: validThru
           })
           .eq('id', result.staff.id);
         if (profileError) throw profileError;
 
         const newStaff = {
-          id: result.staff.id, empId, name, department, role, email,
+          id: result.staff.id, empId, name, department, role, qualification, email,
           phone, address, validThru, pinHash: "", status: 'ACTIVE'
         };
         staffDatabase.push(newStaff);
@@ -13157,6 +13198,7 @@ window.addEventListener('load',async function(){
       document.getElementById("edit-staff-name").value = staff.name;
       document.getElementById("edit-staff-department").value = staff.department;
       document.getElementById("edit-staff-role").value = staff.role;
+      document.getElementById("edit-staff-qualification").value = staff.qualification || "";
       document.getElementById("edit-staff-email").value = staff.email;
       document.getElementById("edit-staff-phone").value = staff.phone || staff.mobile || staff.mobileNumber || "";
       document.getElementById("edit-staff-address").value = staff.address || staff.residentialAddress || "";
@@ -13186,6 +13228,7 @@ window.addEventListener('load',async function(){
       const name = document.getElementById("edit-staff-name").value.trim();
       const department = document.getElementById("edit-staff-department").value;
       const role = document.getElementById("edit-staff-role").value.trim();
+      const qualification = document.getElementById("edit-staff-qualification").value.trim();
       const email = document.getElementById("edit-staff-email").value.trim().toLowerCase();
       const status = document.getElementById("edit-staff-status").value;
       const phone = document.getElementById("edit-staff-phone").value.trim();
@@ -13219,6 +13262,7 @@ window.addEventListener('load',async function(){
           name,
           department,
           role,
+          qualification: qualification || null,
           status,
           phone: phone || null,
           address: address || null,
@@ -13232,11 +13276,11 @@ window.addEventListener('load',async function(){
 
         if (error) throw error;
 
-        Object.assign(staff, { name, department, role, email, status, phone, address, validThru });
+        Object.assign(staff, { name, department, role, qualification, email, status, phone, address, validThru });
         savePersistedData();
 
         if (currentAuthUser?.type === 'STAFF' && currentAuthUser.staffRecord?.id === staff.id) {
-          currentAuthUser.staffRecord = { ...currentAuthUser.staffRecord, name, department, role, email, status, phone, address, validThru };
+          currentAuthUser.staffRecord = { ...currentAuthUser.staffRecord, name, department, role, qualification, email, status, phone, address, validThru };
           sessionStorage.setItem(STORAGE_KEY_CURRENT_USER, JSON.stringify(currentAuthUser));
         }
 
@@ -13791,6 +13835,53 @@ window.addEventListener('load',async function(){
       let t = String(v == null ? "" : v);
       if (/^[=+\-@\t\r]/.test(t)) t = "'" + t; // block spreadsheet formula injection
       return '"' + t.replace(/"/g, '""') + '"';
+    }
+
+    async function exportStaffInformationReport() {
+      if (currentAuthUser?.type !== 'ADMIN' || !supabaseClient) {
+        showToast("Administrator cloud session is required to export staff information.", "error");
+        return;
+      }
+
+      try {
+        const { data, error } = await supabaseClient
+          .from('staff')
+          .select('emp_id,name,department,role,qualification,email,gender,dob,phone,address,status,valid_thru,created_at')
+          .order('name', { ascending: true });
+        if (error) throw error;
+
+        const headers = [
+          "Employee ID", "Name", "Department", "Role / Designation", "Qualification",
+          "Official Email", "Gender", "Date of Birth", "Phone", "Address", "Status",
+          "ID Card Valid Through", "Added On"
+        ];
+        const csvCellSafe = value => {
+          let cell = String(value ?? "").replace(/\r\n?/g, "\n");
+          if (/^\s*[=+\-@]/.test(cell)) cell = "'" + cell;
+          return '"' + cell.replace(/"/g, '""') + '"';
+        };
+        const rows = (data || []).map(staff => [
+          staff.emp_id, staff.name, staff.department, staff.role, staff.qualification,
+          staff.email, staff.gender, staff.dob, staff.phone, staff.address, staff.status,
+          staff.valid_thru, staff.created_at
+        ]);
+        const csv = "\uFEFF" + [headers, ...rows].map(row => row.map(csvCellSafe).join(",")).join("\r\n");
+        const blob = new Blob([csv], { type: "text/csv;charset=utf-8" });
+        const url = URL.createObjectURL(blob);
+        const anchor = document.createElement("a");
+        anchor.href = url;
+        anchor.download = `Ashiana_Faculty_Information_${new Date().toISOString().slice(0, 10)}.csv`;
+        document.body.appendChild(anchor);
+        anchor.click();
+        anchor.remove();
+        setTimeout(() => URL.revokeObjectURL(url), 1000);
+        try { recordAuditLog("STAFF_INFORMATION_EXPORT", "Staff Directory", `Exported ${rows.length} staff records without credential data`); }
+        catch (auditError) { console.warn("Staff information export audit log could not be written:", auditError); }
+        showToast(`Faculty information exported (${rows.length} records).`, "success");
+      } catch (e) {
+        console.error("Staff information export failed:", e);
+        showToast("Could not export staff information: " + (e?.message || e), "error");
+      }
     }
 
     function exportStaffCredentialsWithPIN() {

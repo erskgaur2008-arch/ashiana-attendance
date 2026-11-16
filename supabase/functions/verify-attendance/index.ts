@@ -85,7 +85,7 @@ async function clear(admin: AdminClient, key: string) {
 const rateLimited = (r: { retry_after_seconds?: number } | null) =>
   json({ error: "RATE_LIMIT", retry_after_seconds: r?.retry_after_seconds || 600 }, 429);
 
-const STAFF_COLUMNS = "id,emp_id,name,department,role,email,status,valid_thru,phone,address";
+const STAFF_COLUMNS = "id,emp_id,name,department,role,qualification,email,status,valid_thru,phone,address";
 
 async function findStaffByEmail(admin: AdminClient, email: string) {
   const { data, error } = await admin
@@ -289,6 +289,7 @@ Deno.serve(async (req: Request) => {
           name: staff!.name,
           department: staff!.department,
           role: staff!.role,
+          qualification: staff!.qualification || "",
           email: staffEmail,
           status: staff!.status,
           valid_thru: staff!.valid_thru,
