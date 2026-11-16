@@ -34,5 +34,14 @@ jobs:
         run: |
           python3 -m http.server 4173 --bind 127.0.0.1 >/tmp/ashiana-http.log 2>&1 &
           echo $! > /tmp/ashiana-http.pid
+      - name: Wait for local site
+        run: |
+          for attempt in $(seq 1 20); do
+            if curl --silent --fail http://127.0.0.1:4173/ >/dev/null; then exit 0; fi
+            sleep 1
+          done
+          echo 'Local site did not start in time.'
+          cat /tmp/ashiana-http.log
+          exit 1
       - name: Run Pixel 7 mobile smoke tests
         run: node tests/mobile-web-quality.spec.cjs
