@@ -4,6 +4,8 @@
 <meta charset="utf-8">
 <meta name="viewport" content="width=device-width,initial-scale=1">
 <meta name="theme-color" content="#065f46">
+<meta name="description" content="Get help with Ashiana Attendance login, staff and student portals, attendance, fees, notifications and account access.">
+<link rel="icon" type="image/svg+xml" href="./favicon.svg">
 <title>Help &amp; Support | Ashiana Attendance</title>
 <style>
 :root{color-scheme:light;--green:#065f46;--green2:#047857;--mint:#ecfdf5;--ink:#172033;--muted:#64748b;--line:#e2e8f0}
@@ -16,12 +18,18 @@ main{padding:22px 16px 48px}.search{width:100%;padding:15px 16px;border:1px soli
 details{background:#fff;border:1px solid var(--line);border-radius:13px;margin:9px 0;padding:14px 16px}summary{font-weight:700;cursor:pointer;color:#1f2937}details p{color:#475569;margin-bottom:0}
 label{display:block;font-weight:650;margin:13px 0 6px}input,select,textarea{width:100%;padding:12px;border:1px solid #cbd5e1;border-radius:11px;font:inherit;background:#fff}textarea{min-height:120px;resize:vertical}
 button,.button{border:0;border-radius:11px;padding:12px 17px;background:var(--green2);color:white;font:inherit;font-weight:700;text-decoration:none;display:inline-block;cursor:pointer}.secondary{background:#e7f5ee;color:var(--green)}.notice{background:var(--mint);border:1px solid #a7f3d0;border-radius:13px;padding:14px;color:#065f46}
-.actions{display:flex;gap:10px;flex-wrap:wrap;margin-top:15px}.hidden{display:none!important}.small{font-size:13px;color:var(--muted)}footer{text-align:center;color:var(--muted);padding:18px}footer a{color:var(--green2)}
+.actions{display:flex;gap:10px;flex-wrap:wrap;margin-top:15px}.hidden{display:none!important}.small{font-size:13px;color:var(--muted)}footer{text-align:center;color:var(--muted);padding:18px}
+.mobile-nav{max-width:980px;margin:12px auto 0;padding:0 16px}
+.mobile-nav summary{display:inline-flex;align-items:center;gap:8px;padding:9px 13px;border:1px solid rgba(255,255,255,.35);border-radius:10px;color:#fff;list-style:none}
+.mobile-nav summary::-webkit-details-marker{display:none}
+.mobile-nav .menu-links{display:flex;flex-wrap:wrap;gap:12px;padding:12px 0}
+.mobile-nav .menu-links a{color:#d1fae5;font-weight:650;text-decoration:none}
+@media(max-width:520px){.mobile-nav .menu-links{display:grid;grid-template-columns:repeat(2,minmax(0,1fr))}.mobile-nav .menu-links a{padding:8px 10px;background:#ffffff14;border-radius:9px}}footer a{color:var(--green2)}
 @media(max-width:520px){header{padding-top:20px}.card{padding:16px}.actions>*{flex:1;text-align:center}}
 </style>
 </head>
 <body>
-<header><div class="top"><a href="./index.html">← Back to login</a><h1>Help &amp; Support</h1><p>Find answers, troubleshoot common issues, and prepare a support request.</p></div></header>
+<header><div class="top"><a href="./index.html">← Back to login</a><h1>Help &amp; Support</h1><p>Find answers, troubleshoot common issues, and prepare a support request.</p></div><details class="mobile-nav"><summary>☰ Menu</summary><div class="menu-links"><a href="./index.html">Home / Login</a><a href="./privacy-policy.html">Privacy Policy</a><a href="./terms-of-service.html">Terms of Service</a></div></details></header>
 <main>
 <input id="helpSearch" class="search" type="search" placeholder="Search help topics (e.g. login, attendance, fees)…" aria-label="Search help topics">
 <section class="grid" id="quickCards" aria-label="Help categories">
@@ -43,6 +51,12 @@ button,.button{border:0;border-radius:11px;padding:12px 17px;background:var(--gr
 <details data-search="fees payment upi qr amount receipt"><summary>I cannot see fees or my payment confirmation</summary><p>Check that the correct student account is open and review the fee items shown in the portal. Before paying, verify the displayed amount and UPI details. Keep your transaction reference. If a payment is pending or a receipt is missing, contact the school office/authorised administrator; do not submit repeated payments without checking.</p></details>
 <details data-search="push notification not received android permission"><summary>I am not receiving notifications</summary><p>Check internet access, app/browser notification permission, and Android notification settings. Open the app to refresh its data. Some notifications may be delayed by device settings or network availability; verify important notices inside the portal as well.</p></details>
 <details data-search="photo student record wrong class data correction"><summary>My student/staff details or class assignment are incorrect</summary><p>For safety, profile and class corrections must be handled by an authorised school administrator. Share only the minimum details needed to identify the record, and never include passwords, PINs, or authentication codes.</p></details>
+</div>
+<h2 class="section">Contact the school</h2>
+<div class="card" aria-label="School contact details">
+<p><strong>Ashiana Public School</strong><br>Sector 46-A, Chandigarh</p>
+<p><a href="mailto:ashianapublicschool@gmail.com">ashianapublicschool@gmail.com</a></p>
+<p><a href="tel:+919872500460">+91-9872500460</a></p>
 </div>
 <h2 class="section">Prepare a support request</h2>
 <div class="card">
