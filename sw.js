@@ -64,8 +64,8 @@ self.addEventListener("fetch", (event) => {
           if (response && response.ok && contentType.includes("text/html")) {
             const html = await response.clone().text();
             const withTheme = html
-              .replace(/<\\/head>/i, '<link rel="stylesheet" href="./dark-mode.css?v=1"></head>')
-              .replace(/<\\/body>/i, '<script src="./dark-mode.js?v=1" defer></script></body>');
+              .replace(/<\/head>/i, '<link rel="stylesheet" href="./dark-mode.css?v=1"></head>')
+              .replace(/<\/body>/i, '<script src="./dark-mode.js?v=1" defer></script></body>');
             if (withTheme !== html) {
               const headers = new Headers(response.headers);
               headers.delete("content-length");
