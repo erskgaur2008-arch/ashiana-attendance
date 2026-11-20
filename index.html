@@ -2047,7 +2047,9 @@
                 ? "ADMIN LOGIN"
                 : routeRole === "student"
                   ? "STUDENT LOGIN"
-                  : "TEACHER LOGIN";
+                  : routeRole === "principal"
+                    ? "PRINCIPAL LOGIN"
+                    : "TEACHER LOGIN";
             }
           } else {
             gateway.classList.remove("login-route-only");
@@ -2061,7 +2063,6 @@
           var selected = ["teacher", "principal", "admin", "student"].indexOf(String(role)) >= 0 ? String(role) : "teacher";
           var map = {
             teacher: document.getElementById("teacher-login-form"),
-            principal: document.getElementById("teacher-login-form"),
             admin: document.getElementById("admin-login-form"),
             student: document.getElementById("student-login-form")
           };
