@@ -83,7 +83,7 @@ jobs:
           style = '  <link id="ashiana-dark-mode-style" rel="stylesheet" href="./dark-mode.css?v=2">'
           dark_script = '  <script id="ashiana-dark-mode-script" src="./dark-mode.js?v=2" defer></script>'
           role_script = '  <script>try{const u=new URL(window.location.href);u.searchParams.set("login","' + role + '");history.replaceState(null,"",u.toString());}catch(e){}</script>'
-          additions = "\\n".join([style, anchor, dark_script, role_script])
+          additions = "\n".join([style, anchor, dark_script, role_script])
           html = html.replace(anchor, additions, 1)
           path.write_text(html)
 
