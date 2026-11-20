@@ -101,3 +101,57 @@ html[data-ashiana-theme="dark"] body :where(
 .staff-side-drawer .staff-drawer-item.hidden {
   display: none !important;
 }
+
+
+/* Contrast refinements for dark-mode dashboard panels and admin portal controls. */
+html[data-ashiana-theme="dark"] body :where(
+  .text-slate-500, .text-slate-400, .text-gray-500, .text-gray-400,
+  .text-neutral-500, .text-neutral-400
+) {
+  color: #b8cbc1 !important;
+}
+html[data-ashiana-theme="dark"] body :where(
+  .text-slate-300, .text-gray-300, .text-neutral-300
+) {
+  color: #d4e2da !important;
+}
+html[data-ashiana-theme="dark"] body :where(
+  .text-emerald-900, .text-green-900, .text-ashiana-green
+) {
+  color: #8fe0b8 !important;
+}
+
+/* KPI values should remain prominent even when the card surface is darkened. */
+html[data-ashiana-theme="dark"] #kpi-total-staff,
+html[data-ashiana-theme="dark"] #kpi-present-today,
+html[data-ashiana-theme="dark"] #kpi-currently-working,
+html[data-ashiana-theme="dark"] #kpi-late-today,
+html[data-ashiana-theme="dark"] #kpi-on-leave,
+html[data-ashiana-theme="dark"] #kpi-total-hours {
+  color: #f0faf4 !important;
+}
+html[data-ashiana-theme="dark"] #admin-tab-student-portal :where(
+  p.text-slate-500, p.text-slate-400, label.text-slate-700
+) {
+  color: #c3d5cb !important;
+}
+
+/* Native multi-select: remove the harsh white outline and keep options readable. */
+html[data-ashiana-theme="dark"] #admin-student-portal-class {
+  color: #edf7f1 !important;
+  background-color: #102019 !important;
+  border: 2px solid #547c69 !important;
+  outline: none !important;
+  box-shadow: none !important;
+}
+html[data-ashiana-theme="dark"] #admin-student-portal-class option {
+  color: #edf7f1 !important;
+  background-color: #102019 !important;
+}
+html[data-ashiana-theme="dark"] #admin-student-portal-class option:checked {
+  color: #ffffff !important;
+  background-color: #176447 !important;
+}
+html[data-ashiana-theme="dark"] #admin-tab-student-portal strong {
+  color: #e7f5ed !important;
+}
