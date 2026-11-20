@@ -74,9 +74,9 @@ jobs:
           if html.count(anchor) != 1:
               raise SystemExit("Could not find expected Supabase script insertion point")
           additions = (
-              '  <link rel="stylesheet" href="./dark-mode.css?v=1">\\n'
-              + anchor + '\\n'
-              + '  <script src="./dark-mode.js?v=1" defer></script>\\n'
+              '  <link rel="stylesheet" href="./dark-mode.css?v=1">\n'
+              + anchor + '\n'
+              + '  <script src="./dark-mode.js?v=1" defer></script>\n'
               + '  <script>try{const u=new URL(window.location.href);u.searchParams.set("login","' + role + '");history.replaceState(null,"",u.toString());}catch(e){}</script>'
           )
           if 'dark-mode.js' not in html:
