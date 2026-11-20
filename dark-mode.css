@@ -94,3 +94,10 @@ html[data-ashiana-theme="dark"] body :where(
 ) {
   color: #c3d4cb !important;
 }
+
+/* Keep role-restricted staff drawer items hidden. The app's custom
+   .staff-drawer-item display rule otherwise overrides utility .hidden. */
+#staff-portal-view .staff-drawer-item.hidden,
+.staff-side-drawer .staff-drawer-item.hidden {
+  display: none !important;
+}
