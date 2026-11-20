@@ -3487,6 +3487,7 @@ id="admin-portal-view" class="hidden flex-col w-full space-y-4 admin-dashboard-s
         <button type="button" onclick="window.switchAdminTab('qr')"><i data-lucide="qr-code"></i><span>Daily QR</span></button>
         <button type="button" id="admin-nav-reports" onclick="window.switchAdminTab('reports')"><i data-lucide="file-spreadsheet"></i><span>Report</span></button>
         <button type="button" id="admin-nav-working-days" onclick="openMonthlyWorkingDaysCalendar()" title="Mark working days, weekly offs, and school holidays for a month"><i data-lucide="calendar-days"></i><span>Monthly Working Days</span></button>
+        <button type="button" id="admin-nav-role-permissions" onclick="openRolePermissionManager()" title="Assign role and module permissions"><i data-lucide="shield-check"></i><span>Role Permissions</span></button>
         <button type="button" id="admin-nav-fees" onclick="openFeesAdminConsole()" title="Review fee payments and Principal confirmations"><i data-lucide="wallet"></i><span>Fees Management</span></button>
         <button type="button" id="admin-nav-push-monitor" onclick="openAdminPushMonitor()" title="Monitor student push registrations"><i data-lucide="bell-ring"></i><span>Push Monitor</span></button>
         <button type="button" id="admin-nav-attendance-rules" onclick="window.switchAdminTab('attendance-rules')" title="Manage staff attendance calculation rules"><i data-lucide="sliders-horizontal"></i><span>Attendance Rules</span></button>
@@ -9298,7 +9299,29 @@ async function loadAdminStudents(){
       if(!printWin){showToast('Please allow pop-ups to print student ID cards.','error');return;}
       setupPrintWindowBackHandling(printWin);
       printWin.document.open();
-      printWin.document.write('<!doctype html><title>Preparing student ID cards…</title><body style="font:16px Arial;padding:24px">Preparing student ID cards…</body>');
+      printWin.document.write('<!doctype html><title>Preparing student ID cards…</title><body style="font:16px Arial;padding:24px">Preparing student ID cards…
+<!-- Admin-only role and module permission manager. Database RPCs enforce Admin access. -->
+<div id="role-permissions-modal" class="hidden fixed inset-0 z-[290] bg-slate-950/70 backdrop-blur-sm p-3 items-center justify-center" role="dialog" aria-modal="true" aria-labelledby="role-permissions-title">
+  <div class="w-full max-w-4xl max-h-[92dvh] overflow-y-auto rounded-2xl bg-slate-50 shadow-2xl">
+    <header class="sticky top-0 z-10 flex items-center justify-between gap-3 border-b bg-white p-4">
+      <div><h2 id="role-permissions-title" class="text-lg font-extrabold text-slate-900">Role &amp; Permission Management</h2><p class="text-xs text-slate-600">Assign module actions by role. Administrator controls remain restricted.</p></div>
+      <button type="button" onclick="closeRolePermissionManager()" class="rounded-xl border border-slate-400 px-3 py-2 text-sm font-bold text-slate-900">Close</button>
+    </header>
+    <div class="p-4 space-y-4">
+      <label class="block text-sm font-bold text-slate-800">Select role
+        <select id="role-permissions-role" class="mt-1 w-full rounded-xl border border-slate-400 bg-white p-3 text-slate-900">
+          <option value="PRINCIPAL">Principal</option><option value="TEACHER">Teacher</option><option value="STAFF">Staff</option><option value="STUDENT">Student</option>
+        </select>
+      </label>
+      <p class="text-xs leading-relaxed text-slate-700">Admin is not editable here. Existing fee approval assignments remain separately controlled by the Admin and Principal fee authorization workflow.</p>
+      <div id="role-permissions-status" class="rounded-lg border border-slate-300 bg-white p-3 text-sm text-slate-700" role="status" aria-live="polite">Loading…</div>
+      <div id="role-permissions-rows"></div>
+    </div>
+  </div>
+</div>
+<script src="./role-permissions.js" defer></script>
+
+</body>');
 
       printWin.document.close();
       // For student login, resolve private photo URLs before rendering the card.
