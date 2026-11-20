@@ -1,8 +1,10 @@
-const CACHE_NAME = "ashiana-attendance-v48";
+const CACHE_NAME = "ashiana-attendance-v49";
 const APP_SHELL = [
   "./",
   "./index.html",
   "./portal-passkey-lock.js",
+  "./dark-mode.css",
+  "./dark-mode.js",
   "./manifest.webmanifest",
   "./logo 2.png"
 ];
@@ -55,12 +57,27 @@ self.addEventListener("fetch", (event) => {
         try {
           const preload = await event.preloadResponse;
           const response = preload || await fetch(event.request);
+          // Inject the shared theme assets into app HTML without changing the
+          // large application document or any role-specific business logic.
+          let page = response;
+          const contentType = response && response.headers.get("content-type") || "";
+          if (response && response.ok && contentType.includes("text/html")) {
+            const html = await response.clone().text();
+            const withTheme = html
+              .replace(/<\\/head>/i, '<link rel="stylesheet" href="./dark-mode.css?v=1"><\\/head>')
+              .replace(/<\\/body>/i, '<script src="./dark-mode.js?v=1" defer><\\/script><\\/body>');
+            if (withTheme !== html) {
+              const headers = new Headers(response.headers);
+              headers.delete("content-length");
+              page = new Response(withTheme, { status: response.status, statusText: response.statusText, headers });
+            }
+          }
           // Only cache good responses (never a 404/500 error page).
-          if (response && response.ok && response.type === "basic") {
-            const copy = response.clone();
+          if (page && page.ok && page.type === "basic") {
+            const copy = page.clone();
             caches.open(CACHE_NAME).then((cache) => cache.put(event.request, copy));
           }
-          return response;
+          return page;
         } catch (_) {
           return caches.match(event.request).then((cached) => cached || caches.match("./"));
         }
