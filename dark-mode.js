@@ -1,0 +1,39 @@
+(() => {
+  "use strict";
+  const KEY = "ashiana-attendance-theme";
+  const root = document.documentElement;
+  const getSaved = () => {
+    try { return localStorage.getItem(KEY); } catch (_) { return null; }
+  };
+  const setTheme = (theme) => {
+    const dark = theme === "dark";
+    root.setAttribute("data-ashiana-theme", dark ? "dark" : "light");
+    try { localStorage.setItem(KEY, dark ? "dark" : "light"); } catch (_) {}
+    const button = document.getElementById("ashiana-theme-toggle");
+    if (button) {
+      button.setAttribute("aria-pressed", dark ? "true" : "false");
+      button.setAttribute("aria-label", dark ? "Switch to light mode" : "Switch to dark mode");
+      const icon = button.querySelector(".ashiana-theme-icon");
+      const label = button.querySelector(".ashiana-theme-label");
+      if (icon) icon.textContent = dark ? "☀" : "☾";
+      if (label) label.textContent = dark ? "Light" : "Dark";
+    }
+  };
+  const saved = getSaved();
+  setTheme(saved === "dark" || saved === "light" ? saved :
+    (window.matchMedia && window.matchMedia("(prefers-color-scheme: dark)").matches ? "dark" : "light"));
+  const addToggle = () => {
+    if (!document.body || document.getElementById("ashiana-theme-toggle")) return;
+    const button = document.createElement("button");
+    button.id = "ashiana-theme-toggle";
+    button.type = "button";
+    button.innerHTML = '<span class="ashiana-theme-icon" aria-hidden="true"></span><span class="ashiana-theme-label"></span>';
+    button.addEventListener("click", () => {
+      setTheme(root.getAttribute("data-ashiana-theme") === "dark" ? "light" : "dark");
+    });
+    document.body.appendChild(button);
+    setTheme(root.getAttribute("data-ashiana-theme") || "light");
+  };
+  if (document.readyState === "loading") document.addEventListener("DOMContentLoaded", addToggle, { once: true });
+  else addToggle();
+})();
