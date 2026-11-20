@@ -2122,7 +2122,10 @@
         // bootstrapApp()/initSupabase() has finished.
         async function ashianaGetMainSupabaseClient() {
           if (window.__ashianaMainSupabaseClient) return window.__ashianaMainSupabaseClient;
-          if (!window.supabase?.createClient) throw new Error("Supabase client library is unavailable.");
+          // Login forms execute before the main dashboard bootstrap. Ensure the
+          // Supabase SDK is ready here instead of assuming a later script loaded it.
+          await ashianaEnsureSupabaseForLogin();
+          if (!window.supabase?.createClient) throw new Error("Supabase authentication library is unavailable. Check your internet connection and retry.");
           window.__ashianaMainSupabaseClient = window.supabase.createClient(
             "https://oalfzgluqroqbbrulhpr.supabase.co",
             "sb_publishable_PND9f9FKbNrxlEakSgLKYA_5EsqLHkg",
