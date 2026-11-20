@@ -73,3 +73,24 @@ html[data-ashiana-theme="dark"] #ashiana-theme-toggle {
 #ashiana-theme-toggle .ashiana-theme-icon { font-size: 20px; line-height: 1; }
 #ashiana-theme-toggle:focus-visible { outline: 3px solid #16a875; outline-offset: 3px; }
 @media print { #ashiana-theme-toggle { display: none !important; } }
+
+/* Tailwind-style utility classes used by several dashboard panels. */
+html[data-ashiana-theme="dark"] body :where(
+  [class*="bg-white"], [class*="bg-gray-50"], [class*="bg-gray-100"],
+  [class*="bg-slate-50"], [class*="bg-slate-100"], [class*="bg-neutral-50"],
+  [class*="bg-neutral-100"]
+) {
+  background-color: #14251e !important;
+}
+html[data-ashiana-theme="dark"] body :where(
+  [class*="text-gray-900"], [class*="text-gray-800"], [class*="text-slate-900"],
+  [class*="text-slate-800"], [class*="text-neutral-900"]
+) {
+  color: #e5eee9 !important;
+}
+html[data-ashiana-theme="dark"] body :where(
+  [class*="text-gray-700"], [class*="text-gray-600"], [class*="text-slate-700"],
+  [class*="text-slate-600"], [class*="text-neutral-700"]
+) {
+  color: #c3d4cb !important;
+}
