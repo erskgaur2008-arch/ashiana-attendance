@@ -302,13 +302,6 @@ html[data-ashiana-theme="dark"] body #ashiana-theme-toggle {
 html[data-ashiana-theme="dark"] body :where(
   button, [role="button"], input[type="button"], input[type="submit"],
   input[type="reset"], a.btn, a[class*="btn"], .button, [class~="clickable"]
-):not([class*="red"]):not([class*="rose"]):not([class*="danger"])
- :not(*) {
-  /* no-op selector retained for compatibility with older WebViews */
-}
-html[data-ashiana-theme="dark"] body :where(
-  button, [role="button"], input[type="button"], input[type="submit"],
-  input[type="reset"], a.btn, a[class*="btn"], .button, [class~="clickable"]
 ):not([class*="red"]):not([class*="rose"]):not([class*="danger"]):not([class*="amber"]):not([class*="yellow"]):not([class*="warning"]) {
   background-color: #087a55 !important;
 }
