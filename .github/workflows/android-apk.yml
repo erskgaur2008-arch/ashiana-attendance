@@ -7,6 +7,9 @@ on:
     branches: [main]
     paths:
       - 'index.html'
+      - 'dark-mode.css'
+      - 'dark-mode.js'
+      - 'sw.js'
       - 'portal-passkey-lock.js'
       - 'mobile/native-bridge.js'
       - 'capacitor.config.ts'
@@ -53,6 +56,8 @@ jobs:
           rm -rf mobile/www
           mkdir -p mobile/www/assets/vendor
           cp index.html mobile/www/
+          cp dark-mode.css mobile/www/
+          cp dark-mode.js mobile/www/
           cp portal-passkey-lock.js mobile/www/
           cp ios-pwa.css mobile/www/
           cp manifest.webmanifest mobile/www/
