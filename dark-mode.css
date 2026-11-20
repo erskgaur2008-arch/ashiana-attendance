@@ -295,3 +295,27 @@ html[data-ashiana-theme="dark"] body #ashiana-theme-toggle {
   -webkit-text-fill-color: #d9ffed !important;
   border-color: #3d9270 !important;
 }
+
+
+/* Ensure standard button surfaces use the high-contrast primary color.
+   This same-element selector deliberately excludes semantic danger/warning actions. */
+html[data-ashiana-theme="dark"] body :where(
+  button, [role="button"], input[type="button"], input[type="submit"],
+  input[type="reset"], a.btn, a[class*="btn"], .button, [class~="clickable"]
+):not([class*="red"]):not([class*="rose"]):not([class*="danger"])
+ :not(*) {
+  /* no-op selector retained for compatibility with older WebViews */
+}
+html[data-ashiana-theme="dark"] body :where(
+  button, [role="button"], input[type="button"], input[type="submit"],
+  input[type="reset"], a.btn, a[class*="btn"], .button, [class~="clickable"]
+):not([class*="red"]):not([class*="rose"]):not([class*="danger"]):not([class*="amber"]):not([class*="yellow"]):not([class*="warning"]) {
+  background-color: #087a55 !important;
+}
+html[data-ashiana-theme="dark"] body :where(
+  button span, button i, button strong, [role="button"] span,
+  a.btn span, a[class*="btn"] span, .button span
+) {
+  color: #ffffff !important;
+  -webkit-text-fill-color: #ffffff !important;
+}
