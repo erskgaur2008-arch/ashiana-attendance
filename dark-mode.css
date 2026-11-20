@@ -155,3 +155,38 @@ html[data-ashiana-theme="dark"] #admin-student-portal-class option:checked {
 html[data-ashiana-theme="dark"] #admin-tab-student-portal strong {
   color: #e7f5ed !important;
 }
+
+
+/* Force the six admin attendance KPI cards and their values to a consistent
+   dark-mode surface. The KPI cards are divs, not semantic card elements. */
+html[data-ashiana-theme="dark"] body div:has(> #kpi-total-staff),
+html[data-ashiana-theme="dark"] body div:has(> #kpi-present-today),
+html[data-ashiana-theme="dark"] body div:has(> #kpi-currently-working),
+html[data-ashiana-theme="dark"] body div:has(> #kpi-late-today),
+html[data-ashiana-theme="dark"] body div:has(> #kpi-on-leave),
+html[data-ashiana-theme="dark"] body div:has(> #kpi-total-hours) {
+  background: #14251e !important;
+  border-color: #355b4c !important;
+  opacity: 1 !important;
+}
+html[data-ashiana-theme="dark"] body #kpi-total-staff,
+html[data-ashiana-theme="dark"] body #kpi-present-today,
+html[data-ashiana-theme="dark"] body #kpi-currently-working,
+html[data-ashiana-theme="dark"] body #kpi-late-today,
+html[data-ashiana-theme="dark"] body #kpi-on-leave,
+html[data-ashiana-theme="dark"] body #kpi-total-hours {
+  color: #f4fff8 !important;
+  opacity: 1 !important;
+  -webkit-text-fill-color: #f4fff8 !important;
+  text-shadow: none !important;
+}
+html[data-ashiana-theme="dark"] body div:has(> #kpi-total-staff) > span,
+html[data-ashiana-theme="dark"] body div:has(> #kpi-present-today) > span,
+html[data-ashiana-theme="dark"] body div:has(> #kpi-currently-working) > span,
+html[data-ashiana-theme="dark"] body div:has(> #kpi-late-today) > span,
+html[data-ashiana-theme="dark"] body div:has(> #kpi-on-leave) > span,
+html[data-ashiana-theme="dark"] body div:has(> #kpi-total-hours) > span {
+  color: #c7d9cf !important;
+  opacity: 1 !important;
+  -webkit-text-fill-color: #c7d9cf !important;
+}
