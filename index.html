@@ -1904,13 +1904,15 @@
           <select id="login-role-select" onchange="window.__ashianaSetLoginRole(this.value)"
             class="w-full h-11 px-3 rounded-xl bg-white text-emerald-950 border-2 border-emerald-300/70 font-bold text-sm shadow-sm focus:outline-none focus:ring-2 focus:ring-emerald-300 cursor-pointer">
             <option value="teacher">Teacher / Staff</option>
+            <option value="principal">Principal</option>
             <option value="admin">Administrator</option>
             <option value="student">Student</option>
           </select>
           <p class="text-[10px] text-emerald-200 mt-1.5 text-center">Select your login role</p>
-          <div class="mt-3 grid grid-cols-3 gap-2">
+          <div class="mt-3 grid grid-cols-2 sm:grid-cols-4 gap-2">
             <a href="?login=admin" class="rounded-lg border border-emerald-300/40 bg-white/10 hover:bg-white/20 px-2 py-2 text-[9px] font-extrabold text-white text-center transition">Admin Login</a>
             <a href="?login=staff" class="rounded-lg border border-emerald-300/40 bg-white/10 hover:bg-white/20 px-2 py-2 text-[9px] font-extrabold text-white text-center transition">Staff Login</a>
+            <a href="?login=principal" class="rounded-lg border border-emerald-300/40 bg-white/10 hover:bg-white/20 px-2 py-2 text-[9px] font-extrabold text-white text-center transition">Principal Login</a>
             <a href="?login=student" class="rounded-lg border border-emerald-300/40 bg-white/10 hover:bg-white/20 px-2 py-2 text-[9px] font-extrabold text-white text-center transition">Student Login</a>
           </div>
         </div>
@@ -2023,6 +2025,7 @@
             }
             if (requested === "staff" || requested === "teacher" || requested === "teacher-staff") return "teacher";
             if (requested === "admin" || requested === "administrator") return "admin";
+            if (requested === "principal") return "principal";
             if (requested === "student") return "student";
           } catch (_) {}
           return "";
@@ -2055,9 +2058,10 @@
         }
 
         function applyAshianaLoginRole(role) {
-          var selected = ["teacher", "admin", "student"].indexOf(String(role)) >= 0 ? String(role) : "teacher";
+          var selected = ["teacher", "principal", "admin", "student"].indexOf(String(role)) >= 0 ? String(role) : "teacher";
           var map = {
             teacher: document.getElementById("teacher-login-form"),
+            principal: document.getElementById("teacher-login-form"),
             admin: document.getElementById("admin-login-form"),
             student: document.getElementById("student-login-form")
           };
@@ -2065,7 +2069,7 @@
           Object.keys(map).forEach(function (key) {
             var form = map[key];
             if (!form) return;
-            var active = key === selected;
+            var active = key === selected || (key === "teacher" && selected === "principal");
 
             // Use inline !important display as the final authority. This avoids
             // conflicts between Tailwind .hidden, the native hidden attribute,
@@ -2076,10 +2080,12 @@
             form.setAttribute("aria-hidden", active ? "false" : "true");
           });
 
+          var teacherForm = document.getElementById("teacher-login-form");
+          if (teacherForm) teacherForm.setAttribute("onsubmit", selected === "principal" ? "return window.__ashianaStandaloneLogin(\'principal\', event)" : "return window.__ashianaStandaloneLogin(\'teacher\', event)");
           var selector = document.getElementById("login-role-select");
           if (selector) selector.value = selected;
           var roleTitle = document.getElementById("login-role-title");
-          if (roleTitle) roleTitle.textContent = selected === "admin" ? "ADMIN LOGIN" : selected === "student" ? "STUDENT LOGIN" : "TEACHER LOGIN";
+          if (roleTitle) roleTitle.textContent = selected === "admin" ? "ADMIN LOGIN" : selected === "student" ? "STUDENT LOGIN" : selected === "principal" ? "PRINCIPAL LOGIN" : "TEACHER LOGIN";
           var nativeRole = document.getElementById("login-role-" + selected);
           if (nativeRole) nativeRole.checked = true;
 
@@ -2298,7 +2304,7 @@
           ashianaLoginButton(form, true, "Verifying…");
 
           try {
-            var client = role === "teacher"
+            var client = (role === "teacher" || role === "principal")
               ? await ashianaGetTeacherLoginClient()
               : role === "student"
                 ? await ashianaGetStudentLoginClient()
@@ -2307,7 +2313,7 @@
             // Teacher and Student use isolated pre-auth clients. Admin auth
             // uses the persistent main client so password and passkey sessions
             // follow the same server-authorized portal handoff.
-            if (role === "teacher") {
+            if (role === "teacher" || role === "principal") {
               var loginId = String(document.getElementById("teacher-login-id")?.value || "").trim();
               var pin = String(document.getElementById("teacher-login-pin")?.value || "").trim();
               if (!loginId || !/^\d{4}$/.test(pin)) throw new Error("Enter your Employee ID/email and exactly 4 digits.");
@@ -2330,6 +2336,9 @@
               if (!loginResult?.success || !loginResult?.staff?.email || !loginResult?.staff?.id) {
                 throw new Error(loginResult?.error || "Staff authentication failed.");
               }
+              var authenticatedRole = String(loginResult.staff.role || "").toLowerCase();
+              if (role === "principal" && !authenticatedRole.includes("principal")) throw new Error("This account is not assigned the Principal role. Please contact the Administrator.");
+              if (role === "teacher" && authenticatedRole.includes("principal")) throw new Error("This account is assigned to the Principal role. Please use Principal Login.");
 
               if (loginResult.session?.access_token && loginResult.session?.refresh_token) {
                 // The anonymous teacher client is only for pre-auth Edge Function
