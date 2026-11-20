@@ -190,3 +190,108 @@ html[data-ashiana-theme="dark"] body div:has(> #kpi-total-hours) > span {
   opacity: 1 !important;
   -webkit-text-fill-color: #c7d9cf !important;
 }
+
+
+/* App-wide high-contrast controls for every signed-in role in Dark Mode.
+   Keep semantic danger/warning actions distinct while making all labels,
+   borders, hover states and keyboard focus clearly visible. */
+html[data-ashiana-theme="dark"] body :where(
+  button,
+  [role="button"],
+  input[type="button"],
+  input[type="submit"],
+  input[type="reset"],
+  a.btn,
+  a[class*="btn"],
+  .button,
+  [class~="clickable"]
+) {
+  color: #ffffff !important;
+  -webkit-text-fill-color: #ffffff !important;
+  border: 1px solid #78c9a4 !important;
+  text-shadow: none !important;
+  opacity: 1 !important;
+  font-weight: 650;
+  box-shadow: 0 2px 8px rgba(0, 0, 0, .28);
+  text-decoration: none;
+}
+
+/* Primary / standard actions across Admin, Principal, Teacher, Staff and Student. */
+html[data-ashiana-theme="dark"] body :where(
+  button,
+  [role="button"],
+  input[type="button"],
+  input[type="submit"],
+  a.btn,
+  a[class*="btn"],
+  .button,
+  [class~="clickable"]
+):not([class*="red"]):not([class*="rose"]):not([class*="danger"])
+ :not([class*="amber"]):not([class*="yellow"]):not([class*="warning"]) {
+  background-color: #087a55 !important;
+}
+
+/* Preserve clear danger and warning meaning instead of painting every action green. */
+html[data-ashiana-theme="dark"] body :where(
+  button[class*="red"], button[class*="rose"], button[class*="danger"],
+  [role="button"][class*="red"], [role="button"][class*="danger"],
+  a[class*="red"], a[class*="danger"]
+) {
+  background-color: #a92335 !important;
+  border-color: #ff9aa5 !important;
+}
+html[data-ashiana-theme="dark"] body :where(
+  button[class*="amber"], button[class*="yellow"], button[class*="warning"],
+  [role="button"][class*="amber"], [role="button"][class*="warning"],
+  a[class*="amber"], a[class*="warning"]
+) {
+  background-color: #805000 !important;
+  border-color: #ffd27a !important;
+  color: #ffffff !important;
+  -webkit-text-fill-color: #ffffff !important;
+}
+
+/* Hover/pressed states remain distinct and legible. */
+html[data-ashiana-theme="dark"] body :where(
+  button, [role="button"], input[type="button"], input[type="submit"],
+  input[type="reset"], a.btn, a[class*="btn"], .button, [class~="clickable"]
+):not(:disabled):not([aria-disabled="true"]):hover {
+  filter: brightness(1.18);
+  border-color: #c0f5d9 !important;
+}
+html[data-ashiana-theme="dark"] body :where(
+  button, [role="button"], input[type="button"], input[type="submit"],
+  input[type="reset"], a.btn, a[class*="btn"], .button, [class~="clickable"]
+):not(:disabled):not([aria-disabled="true"]):active {
+  filter: brightness(.9);
+}
+html[data-ashiana-theme="dark"] body :where(
+  button, [role="button"], input[type="button"], input[type="submit"],
+  input[type="reset"], a.btn, a[class*="btn"], .button, [class~="clickable"]
+):focus-visible {
+  outline: 3px solid #b7ffda !important;
+  outline-offset: 3px !important;
+}
+
+/* Disabled actions are visibly disabled but their labels remain readable. */
+html[data-ashiana-theme="dark"] body :where(
+  button:disabled, [role="button"][aria-disabled="true"],
+  input[type="button"]:disabled, input[type="submit"]:disabled,
+  input[type="reset"]:disabled
+) {
+  background-color: #35483f !important;
+  color: #d2ded7 !important;
+  -webkit-text-fill-color: #d2ded7 !important;
+  border-color: #71877b !important;
+  opacity: 1 !important;
+  box-shadow: none !important;
+  cursor: not-allowed;
+}
+
+/* Theme switch keeps its own dedicated styling. */
+html[data-ashiana-theme="dark"] body #ashiana-theme-toggle {
+  background-color: #174333 !important;
+  color: #d9ffed !important;
+  -webkit-text-fill-color: #d9ffed !important;
+  border-color: #3d9270 !important;
+}
