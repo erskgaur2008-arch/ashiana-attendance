@@ -1,0 +1,75 @@
+/* Ashiana Attendance shared dark theme */
+html[data-ashiana-theme="dark"] {
+  color-scheme: dark;
+  background: #0b1713;
+}
+html[data-ashiana-theme="dark"] body {
+  background-color: #0b1713 !important;
+  color: #e5eee9 !important;
+}
+html[data-ashiana-theme="dark"] body :where(
+  section, article, aside, nav, header, footer, main, form,
+  [class*="card"], [class*="panel"], [class*="modal"], [class*="drawer"],
+  [class*="dropdown"], [class*="menu"], [class*="table"], [class*="list"],
+  [class*="item"], [class*="container"], [class*="surface"], [role="dialog"]
+) {
+  border-color: #29483d !important;
+}
+html[data-ashiana-theme="dark"] body :where(
+  section, article, aside, main, form, [class*="card"], [class*="panel"],
+  [class*="modal"], [class*="drawer"], [class*="dropdown"], [class*="menu"],
+  [class*="table"], [class*="list"], [class*="container"], [class*="surface"],
+  [role="dialog"]
+) {
+  background-color: #14251e !important;
+  color: #e5eee9 !important;
+}
+html[data-ashiana-theme="dark"] body :where(h1,h2,h3,h4,h5,h6,p,label,small,span,li,td,th,dt,dd) {
+  color: inherit;
+}
+html[data-ashiana-theme="dark"] body :where(input,select,textarea) {
+  background: #102019 !important;
+  color: #edf7f1 !important;
+  border-color: #355b4c !important;
+}
+html[data-ashiana-theme="dark"] body :where(input,select,textarea)::placeholder {
+  color: #a4b8ae !important;
+}
+html[data-ashiana-theme="dark"] body :where(button) {
+  border-color: #355b4c;
+}
+html[data-ashiana-theme="dark"] body :where(a) {
+  color: #7fe0b4;
+}
+html[data-ashiana-theme="dark"] body :where(hr) {
+  border-color: #29483d;
+}
+#ashiana-theme-toggle {
+  position: fixed;
+  right: max(16px, env(safe-area-inset-right));
+  bottom: max(22px, calc(env(safe-area-inset-bottom) + 14px));
+  z-index: 2147483000;
+  display: inline-flex;
+  align-items: center;
+  justify-content: center;
+  gap: 8px;
+  min-width: 54px;
+  min-height: 50px;
+  padding: 0 15px;
+  border: 1px solid rgba(0, 128, 85, .28);
+  border-radius: 999px;
+  background: #ffffff;
+  color: #006b49;
+  box-shadow: 0 5px 22px rgba(0,0,0,.18);
+  font: 700 14px/1 system-ui, sans-serif;
+  cursor: pointer;
+  -webkit-tap-highlight-color: transparent;
+}
+html[data-ashiana-theme="dark"] #ashiana-theme-toggle {
+  background: #174333;
+  color: #d9ffed;
+  border-color: #3d9270;
+}
+#ashiana-theme-toggle .ashiana-theme-icon { font-size: 20px; line-height: 1; }
+#ashiana-theme-toggle:focus-visible { outline: 3px solid #16a875; outline-offset: 3px; }
+@media print { #ashiana-theme-toggle { display: none !important; } }
