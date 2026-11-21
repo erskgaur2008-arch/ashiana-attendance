@@ -126,7 +126,10 @@ async function registerPushNotifications() {
             title,
             body,
             channelId: "school_updates",
+            // Foreground push alerts do not need exact timing. Keeping them
+            // inexact avoids Android's separate Alarms & reminders access screen.
             schedule: { at: new Date(Date.now() + 250) },
+            isExactNotification: false,
             extra: { category: String(data.category || "school_notice"), url: String(data.url || "/") }
           }]
         });
