@@ -59,6 +59,7 @@ jobs:
           cp dark-mode.css mobile/www/
           cp dark-mode.js mobile/www/
           cp portal-passkey-lock.js mobile/www/
+          cp event-photo-gallery.js mobile/www/
           cp ios-pwa.css mobile/www/
           cp manifest.webmanifest mobile/www/
           cp sw.js mobile/www/
@@ -84,6 +85,7 @@ jobs:
           path.write_text(html)
           PY
           test -s mobile/www/assets/vendor/supabase.js
+          test -s mobile/www/event-photo-gallery.js
       - name: Install dependencies
         shell: bash
         run: |
