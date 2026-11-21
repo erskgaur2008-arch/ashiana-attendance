@@ -55,11 +55,13 @@ jobs:
           path = Path("mobile/www/index.html")
           html = path.read_text()
           role = os.environ["APP_ROLE"]
+          html_tag = '<html lang="en">'
+          if html.count(html_tag) != 1:
+              raise SystemExit("Could not find expected HTML root tag")
+          html = html.replace(html_tag, '<html lang="en" data-ashiana-native-role="' + role + '">', 1)
           anchor = '  <script src="./assets/vendor/supabase.js" defer></script>'
           if html.count(anchor) != 1:
               raise SystemExit("Could not find expected Supabase script insertion point")
-          additions = anchor + '\n  <script>try{const u=new URL(window.location.href);u.searchParams.set("login","' + role + '");history.replaceState(null,"",u.toString());}catch(e){}</script>'
-          html = html.replace(anchor, additions, 1)
 
           # Replace every known production Supabase endpoint/key in this build copy only.
           html = html.replace("https://oalfzgluqroqbbrulhpr.supabase.co", os.environ["TEST_SUPABASE_URL"])

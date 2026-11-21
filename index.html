@@ -423,6 +423,8 @@
     /* Direct role-login links hide the selector only when a dedicated login URL is used. */
     #auth-gateway-view.login-route-only #login-role-select-wrap{display:none!important;}
     #auth-gateway-view.login-route-only .login-route-label{display:block;}
+    /* Role-specific Android APKs set this marker during packaging. Browser and PWA logins keep the selector. */
+    html[data-ashiana-native-role] #login-role-select-wrap{display:none!important;}
     /* Installed/PWA login pages: use the full mobile viewport without a trailing blank area. */
     @media (max-width: 640px){
       #auth-main{
@@ -2019,6 +2021,12 @@
         // No role selector is shown when one of these links is opened.
         function getAshianaLoginRouteRole() {
           try {
+            // The separately installed Android apps always open their assigned role.
+            var nativeRole = String(document.documentElement?.getAttribute("data-ashiana-native-role") || "").trim().toLowerCase();
+            if (nativeRole === "staff" || nativeRole === "teacher" || nativeRole === "teacher-staff") return "teacher";
+            if (nativeRole === "admin" || nativeRole === "administrator") return "admin";
+            if (nativeRole === "student") return "student";
+
             var params = new URLSearchParams(window.location.search || "");
             var requested = String(params.get("login") || params.get("role") || "").trim().toLowerCase();
             if (!requested && window.location.hash) {

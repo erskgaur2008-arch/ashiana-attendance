@@ -53,11 +53,10 @@ jobs:
           from pathlib import Path
           path = Path("mobile/www/index.html")
           html = path.read_text()
-          anchor = '  <script src="./assets/vendor/supabase.js" defer></script>'
-          if html.count(anchor) != 1:
-              raise SystemExit("Could not find the expected Supabase script anchor")
-          role_script = '<script>try{const u=new URL(window.location.href);u.searchParams.set("login","staff");history.replaceState(null,"",u.toString());}catch(e){}</script>'
-          html = html.replace(anchor, anchor + '\n' + role_script, 1)
+          html_tag = '<html lang="en">'
+          if html.count(html_tag) != 1:
+              raise SystemExit("Could not find the expected HTML root tag")
+          html = html.replace(html_tag, '<html lang="en" data-ashiana-native-role="staff">', 1)
           # Restrict this diagnostic APK to the one test staff identity. This is
           # injected only into the test build and never changes production source.
           identity_anchor = '              var staff = loginResult.staff;'

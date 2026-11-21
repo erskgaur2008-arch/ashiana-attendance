@@ -52,11 +52,10 @@ jobs:
           from pathlib import Path
           path = Path("mobile/www/index.html")
           html = path.read_text()
-          anchor = '  <script src="./assets/vendor/supabase.js" defer></script>'
-          if html.count(anchor) != 1:
-              raise SystemExit("Could not find the expected Supabase script anchor")
-          role_script = '<script>try{const u=new URL(window.location.href);u.searchParams.set("login","admin");history.replaceState(null,"",u.toString());}catch(e){}</script>'
-          html = html.replace(anchor, anchor + '\n' + role_script, 1)
+          html_tag = '<html lang="en">'
+          if html.count(html_tag) != 1:
+              raise SystemExit("Could not find the expected HTML root tag")
+          html = html.replace(html_tag, '<html lang="en" data-ashiana-native-role="admin">', 1)
           html = html.replace("https://oalfzgluqroqbbrulhpr.supabase.co", os.environ["TEST_SUPABASE_URL"])
           html = html.replace("https://oalfzgluqroqbbrluhpr.supabase.co", os.environ["TEST_SUPABASE_URL"])
           html = html.replace("sb_publishable_PND9f9FKbNrxlEakSgLKYA_5EsqLHkg", os.environ["TEST_SUPABASE_ANON_KEY"])
