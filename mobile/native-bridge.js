@@ -225,14 +225,14 @@ async function hasStudentBiometricEnrollment() {
   } catch (_) { return false; }
 }
 
-async function enableStudentBiometric(sessionToken) {
+async function enableStudentBiometric(deviceSecret) {
   if (!isNativeAndroid()) throw new Error("Fingerprint login is available only in the Android app.");
-  const token = String(sessionToken || "").trim();
-  if (!/^[a-f0-9]{64}$/i.test(token)) throw new Error("Student session expired. Sign in with Admission No. and DOB again.");
+  const secret = String(deviceSecret || "").trim();
+  if (!/^[a-f0-9]{64}$/i.test(secret)) throw new Error("Student device credential is invalid.");
   if (!(await studentBiometricAvailable())) throw new Error("No enrolled fingerprint is available. Set up a fingerprint in Android Settings first.");
   await NativeBiometric.setCredentials({
-    username: "student-session",
-    password: token,
+    username: "student-device",
+    password: secret,
     server: STUDENT_BIOMETRIC_SERVER,
     accessControl: AccessControl.BIOMETRY_CURRENT_SET,
     description: "Unlock Ashiana Student login with your enrolled fingerprint"
@@ -254,7 +254,7 @@ async function getStudentBiometricSessionToken() {
     maxAttempts: 3
   });
   const token = String(credentials?.password || "").trim();
-  if (!/^[a-f0-9]{64}$/i.test(token)) throw new Error("Saved Student sign-in is invalid. Sign in with Admission No. and DOB again.");
+  if (!/^[a-f0-9]{64}$/i.test(token)) throw new Error("Saved Student device credential is invalid. Sign in with Admission No. and DOB again.");
   return token;
 }
 
