@@ -507,7 +507,7 @@
   document.addEventListener("click", async event => {
     if (studentLogoutReplay || studentLogoutCleanupInProgress || currentRole()?.role !== "student") return;
     const control = event.target?.closest?.("button, a, [role='button']");
-    if (!control || !/\\b(log ?out|sign ?out)\\b/i.test(String(control.textContent || control.getAttribute("aria-label") || ""))) return;
+    if (!control || !/\b(log ?out|sign ?out)\b/i.test(String(control.textContent || control.getAttribute("aria-label") || ""))) return;
     const token = studentSessionToken();
     if (!token) return;
     event.preventDefault();
