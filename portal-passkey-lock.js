@@ -356,6 +356,8 @@
     }
   }
 
+  let studentFingerprintSetupInFlight = false;
+
   async function authenticateStudentFingerprint() {
     const native = window.AshianaNative;
     if (!native?.isAndroid?.() || typeof native.getStudentBiometricSessionToken !== "function") {
@@ -364,7 +366,11 @@
     const token = await native.getStudentBiometricSessionToken();
     // Ask the existing server endpoint to validate the opaque session before
     // restoring it locally. A biometric prompt alone never grants portal access.
-    await invoke("student", "status", { session_token: token });
+    try { await invoke("student", "status", { session_token: token }); }
+    catch (_) {
+      await native.disableStudentBiometric?.();
+      throw new Error("Your saved Student session has expired or was signed out. Please use Admission No. and DOB again.");
+    }
     const client = await authClient();
     try { await client.auth.signOut({ scope: "local" }); } catch (_) {}
     try { localStorage.removeItem(ADMIN_AUTH_STORAGE_KEY); } catch (_) {}
@@ -391,11 +397,12 @@
   }
 
   async function installStudentFingerprintSetup() {
-    if (!isNative() || currentRole()?.role !== "student" || !studentSessionToken()) return;
+    if (studentFingerprintSetupInFlight || !isNative() || currentRole()?.role !== "student" || !studentSessionToken()) return;
     if (document.getElementById("student-fingerprint-setup")) return;
     const native = window.AshianaNative;
     if (typeof native?.hasStudentBiometricEnrollment !== "function") return;
     if (await native.hasStudentBiometricEnrollment()) return;
+    studentFingerprintSetupInFlight = true;
     const button = document.createElement("button");
     button.id = "student-fingerprint-setup";
     button.type = "button";
@@ -413,6 +420,7 @@
       }
     });
     document.body.append(button);
+    studentFingerprintSetupInFlight = false;
   }
 
   async function installStudentLoginButton() {
