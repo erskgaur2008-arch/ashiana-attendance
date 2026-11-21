@@ -95,7 +95,25 @@ Deno.serve(async (req) => {
     subjectId = email;
   } else if ((action === "authentication-options" || action === "authentication-verify") && role === "student") {
     const session = String(body.session_token || "").trim();
-    if (session) {
+    const discoverableStudentLogin = !session && !String(body.admission_no || "").trim();
+    if (discoverableStudentLogin && action === "authentication-options") {
+      subjectId = "__student_passkey_discoverable_login__";
+    } else if (discoverableStudentLogin && action === "authentication-verify") {
+      const assertion = body.credential as { id?: string } | undefined;
+      if (!assertion || typeof assertion.id !== "string") return json({ error: "INVALID_CREDENTIAL" }, 400);
+      const { data: matched, error: matchError } = await db.from("portal_webauthn_credentials")
+        .select("subject_id").eq("subject_type", "student")
+        .eq("credential_id", assertion.id).eq("enabled", true).limit(1);
+      if (matchError || !matched?.length) return json({ error: "PASSKEY_LOGIN_UNAVAILABLE" }, 401);
+      subjectId = String(matched[0].subject_id || "");
+      const { data: row, error: rosterError } = await db.from("student_roster")
+        .select("id,enroll_no,name:student_name,status,school_code")
+        .eq("id", subjectId).eq("school_code", "ashiana").maybeSingle();
+      if (rosterError || !row || String(row.status || "").toLowerCase() !== "active") {
+        return json({ error: "PASSKEY_LOGIN_UNAVAILABLE" }, 401);
+      }
+      student = row;
+    } else if (session) {
       if (!/^[a-f0-9]{64}$/i.test(session)) return json({ error: "STUDENT_SESSION_REQUIRED" }, 401);
       const { data: id, error } = await db.rpc("student_session_student_id", { p_token: session });
       if (error || typeof id !== "string" || !id) return json({ error: "STUDENT_SESSION_EXPIRED" }, 401);
@@ -174,7 +192,7 @@ Deno.serve(async (req) => {
         userName: role === "admin" ? subjectId : String(student?.enroll_no || subjectId),
         userDisplayName: String(student?.name || (role === "admin" ? "Ashiana Administrator" : "Ashiana Student")),
         attestationType: "none",
-        authenticatorSelection: { residentKey: "preferred", userVerification: "required" },
+        authenticatorSelection: { residentKey: "required", userVerification: "required" },
         excludeCredentials: (existing || []).map((row: { credential_id: string }) => ({
           id: row.credential_id,
           type: "public-key" as const,
@@ -237,18 +255,23 @@ Deno.serve(async (req) => {
     }
 
     if (action === "authentication-options") {
-      const { data: credentials, error } = await db.from("portal_webauthn_credentials")
-        .select("credential_id,transports")
-        .eq("subject_type", role).eq("subject_id", subjectId).eq("enabled", true);
+      const discoverableLogin = role === "student" && subjectId === "__student_passkey_discoverable_login__";
+      const { data: credentials, error } = discoverableLogin
+        ? { data: [], error: null }
+        : await db.from("portal_webauthn_credentials")
+          .select("credential_id,transports")
+          .eq("subject_type", role).eq("subject_id", subjectId).eq("enabled", true);
       if (error) throw error;
-      if (!credentials?.length) return json({ error: "PASSKEY_LOGIN_UNAVAILABLE" }, 401);
+      if (!discoverableLogin && !credentials?.length) return json({ error: "PASSKEY_LOGIN_UNAVAILABLE" }, 401);
       const options = await generateAuthenticationOptions({
         rpID: RP_ID,
         userVerification: "required",
-        allowCredentials: credentials.map((row: { credential_id: string; transports?: string[] }) => ({
-          id: row.credential_id,
-          transports: row.transports as never,
-        })),
+        ...(discoverableLogin ? {} : {
+          allowCredentials: credentials.map((row: { credential_id: string; transports?: string[] }) => ({
+            id: row.credential_id,
+            transports: row.transports as never,
+          })),
+        }),
         challenge: challenge(),
       });
       await db.from("portal_webauthn_challenges").delete()
@@ -267,9 +290,12 @@ Deno.serve(async (req) => {
     if (action === "authentication-verify") {
       const assertion = body.credential as { id?: string } | undefined;
       if (!assertion || typeof assertion.id !== "string") return json({ error: "INVALID_CREDENTIAL" }, 400);
+      const challengeSubjectId = role === "student" && !String(body.session_token || "").trim() &&
+        !String(body.admission_no || "").trim()
+        ? "__student_passkey_discoverable_login__" : subjectId;
       const { data: storedChallenge, error } = await db.rpc("consume_portal_webauthn_challenge", {
         p_subject_type: role,
-        p_subject_id: subjectId,
+        p_subject_id: challengeSubjectId,
         p_purpose: "authentication",
       });
       if (error) throw error;
