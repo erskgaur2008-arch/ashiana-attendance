@@ -393,7 +393,7 @@
     await native.enableStudentBiometric(token);
     toast("Student fingerprint login is enabled on this phone.", "success");
     document.getElementById("student-fingerprint-setup")?.remove();
-    installStudentLoginButton();
+    installStudentFingerprintLoginButton();
   }
 
   async function installStudentFingerprintSetup() {
@@ -426,7 +426,7 @@
     }
   }
 
-  async function installStudentLoginButton() {
+  async function installStudentFingerprintLoginButton() {
     const form = document.getElementById("student-login-form");
     if (!form || document.getElementById("student-fingerprint-login")) return;
     if (!isNative() || typeof window.AshianaNative?.hasStudentBiometricEnrollment !== "function") return;
@@ -475,7 +475,7 @@
   }
 
   function watch() {
-    installStudentLoginButton().catch(error => console.warn("Student fingerprint button unavailable:", error?.message || error));
+    installStudentFingerprintLoginButton().catch(error => console.warn("Student fingerprint button unavailable:", error?.message || error));
     installStudentFingerprintSetup().catch(error => console.warn("Student fingerprint setup unavailable:", error?.message || error));
     const current = currentRole();
     if (!current) {
