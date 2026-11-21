@@ -399,28 +399,31 @@
   async function installStudentFingerprintSetup() {
     if (studentFingerprintSetupInFlight || !isNative() || currentRole()?.role !== "student" || !studentSessionToken()) return;
     if (document.getElementById("student-fingerprint-setup")) return;
-    const native = window.AshianaNative;
-    if (typeof native?.hasStudentBiometricEnrollment !== "function") return;
-    if (await native.hasStudentBiometricEnrollment()) return;
     studentFingerprintSetupInFlight = true;
-    const button = document.createElement("button");
-    button.id = "student-fingerprint-setup";
-    button.type = "button";
-    button.textContent = "Enable Fingerprint Login";
-    button.setAttribute("aria-label", "Enable Student fingerprint login on this phone");
-    button.style.cssText = "position:fixed;left:16px;right:16px;bottom:18px;z-index:10000;padding:13px 16px;border:0;border-radius:14px;background:#064e3b;color:white;font:700 14px system-ui,sans-serif;box-shadow:0 4px 18px #0003";
-    button.addEventListener("click", async () => {
-      button.disabled = true;
-      button.textContent = "Setting up fingerprint...";
-      try { await enableStudentFingerprint(); }
-      catch (error) {
-        toast(error.message || "Could not enable fingerprint login.", "error");
-        button.disabled = false;
-        button.textContent = "Enable Fingerprint Login";
-      }
-    });
-    document.body.append(button);
-    studentFingerprintSetupInFlight = false;
+    try {
+      const native = window.AshianaNative;
+      if (typeof native?.hasStudentBiometricEnrollment !== "function") return;
+      if (await native.hasStudentBiometricEnrollment()) return;
+      const button = document.createElement("button");
+      button.id = "student-fingerprint-setup";
+      button.type = "button";
+      button.textContent = "Enable Fingerprint Login";
+      button.setAttribute("aria-label", "Enable Student fingerprint login on this phone");
+      button.style.cssText = "position:fixed;left:16px;right:16px;bottom:18px;z-index:10000;padding:13px 16px;border:0;border-radius:14px;background:#064e3b;color:white;font:700 14px system-ui,sans-serif;box-shadow:0 4px 18px #0003";
+      button.addEventListener("click", async () => {
+        button.disabled = true;
+        button.textContent = "Setting up fingerprint...";
+        try { await enableStudentFingerprint(); }
+        catch (error) {
+          toast(error.message || "Could not enable fingerprint login.", "error");
+          button.disabled = false;
+          button.textContent = "Enable Fingerprint Login";
+        }
+      });
+      document.body.append(button);
+    } finally {
+      studentFingerprintSetupInFlight = false;
+    }
   }
 
   async function installStudentLoginButton() {
