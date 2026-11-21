@@ -1,11 +1,11 @@
-const CACHE_NAME = "ashiana-attendance-v50";
+const CACHE_NAME = "ashiana-attendance-v52";
 const APP_SHELL = [
   "./",
   "./index.html",
   "./portal-passkey-lock.js",
   "./event-photo-gallery.js",
-  "./dark-mode.css",
-  "./dark-mode.js",
+  "./dark-mode.css?v=3",
+  "./dark-mode.js?v=3",
   "./manifest.webmanifest",
   "./logo 2.png"
 ];
@@ -58,15 +58,21 @@ self.addEventListener("fetch", (event) => {
         try {
           const preload = await event.preloadResponse;
           const response = preload || await fetch(event.request);
-          // Inject the shared theme assets into app HTML without changing the
-          // large application document or any role-specific business logic.
+          // Add the shared theme assets for older or alternate app HTML builds.
+          // The primary page includes them directly; avoid duplicate resources.
           let page = response;
           const contentType = response && response.headers.get("content-type") || "";
           if (response && response.ok && contentType.includes("text/html")) {
             const html = await response.clone().text();
-            const withTheme = html
-              .replace(/<\/head>/i, '<link rel="stylesheet" href="./dark-mode.css?v=1"></head>')
-              .replace(/<\/body>/i, '<script src="./dark-mode.js?v=1" defer></script></body>');
+            const hasThemeCss = /<link\b[^>]*\bhref=["'][^"']*dark-mode\.css(?:\?[^"']*)?["'][^>]*>/i.test(html);
+            const hasThemeJs = /<script\b[^>]*\bsrc=["'][^"']*dark-mode\.js(?:\?[^"']*)?["'][^>]*>/i.test(html);
+            let withTheme = html;
+            if (!hasThemeCss) {
+              withTheme = withTheme.replace(/<\/head>/i, '<link rel="stylesheet" href="./dark-mode.css?v=3"></head>');
+            }
+            if (!hasThemeJs) {
+              withTheme = withTheme.replace(/<\/body>/i, '<script src="./dark-mode.js?v=3" defer></script></body>');
+            }
             if (withTheme !== html) {
               const headers = new Headers(response.headers);
               headers.delete("content-length");

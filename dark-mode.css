@@ -7,6 +7,12 @@ html[data-ashiana-theme="dark"] body {
   background-color: #0b1713 !important;
   color: #e5eee9 !important;
 }
+/* The app contains several role-specific light-theme color rules. In dark
+   mode, make descendants inherit a readable base, then restore semantic
+   utility colors below. */
+html[data-ashiana-theme="dark"] body :where(*) {
+  color: inherit !important;
+}
 html[data-ashiana-theme="dark"] body :where(
   section, article, aside, nav, header, footer, main, form,
   [class*="card"], [class*="panel"], [class*="modal"], [class*="drawer"],
@@ -74,25 +80,258 @@ html[data-ashiana-theme="dark"] #ashiana-theme-toggle {
 #ashiana-theme-toggle:focus-visible { outline: 3px solid #16a875; outline-offset: 3px; }
 @media print { #ashiana-theme-toggle { display: none !important; } }
 
-/* Tailwind-style utility classes used by several dashboard panels. */
+/* Darken pale utility surfaces across administrator, staff, teacher and student views. */
 html[data-ashiana-theme="dark"] body :where(
   [class*="bg-white"], [class*="bg-gray-50"], [class*="bg-gray-100"],
-  [class*="bg-slate-50"], [class*="bg-slate-100"], [class*="bg-neutral-50"],
-  [class*="bg-neutral-100"]
+  [class*="bg-gray-200"], [class*="bg-slate-50"], [class*="bg-slate-100"],
+  [class*="bg-slate-200"], [class*="bg-neutral-50"], [class*="bg-neutral-100"],
+  [class*="bg-neutral-200"], [class*="bg-zinc-50"], [class*="bg-zinc-100"],
+  [class*="bg-stone-50"], [class*="bg-stone-100"]
 ) {
   background-color: #14251e !important;
 }
 html[data-ashiana-theme="dark"] body :where(
-  [class*="text-gray-900"], [class*="text-gray-800"], [class*="text-slate-900"],
-  [class*="text-slate-800"], [class*="text-neutral-900"]
+  [class*="bg-emerald-50"], [class*="bg-emerald-100"], [class*="bg-green-50"],
+  [class*="bg-green-100"], [class*="bg-teal-50"], [class*="bg-teal-100"],
+  [class*="bg-lime-50"], [class*="bg-lime-100"], [class*="bg-ashiana-green-light"]
 ) {
-  color: #e5eee9 !important;
+  background-color: #102b22 !important;
 }
 html[data-ashiana-theme="dark"] body :where(
-  [class*="text-gray-700"], [class*="text-gray-600"], [class*="text-slate-700"],
-  [class*="text-slate-600"], [class*="text-neutral-700"]
+  [class*="bg-red-50"], [class*="bg-red-100"], [class*="bg-rose-50"],
+  [class*="bg-rose-100"], [class*="bg-pink-50"], [class*="bg-pink-100"],
+  [class*="bg-fuchsia-50"], [class*="bg-fuchsia-100"], [class*="bg-ashiana-red-light"]
+) {
+  background-color: #311d22 !important;
+}
+html[data-ashiana-theme="dark"] body :where(
+  [class*="bg-blue-50"], [class*="bg-blue-100"], [class*="bg-sky-50"],
+  [class*="bg-sky-100"], [class*="bg-cyan-50"], [class*="bg-cyan-100"]
+) {
+  background-color: #172839 !important;
+}
+html[data-ashiana-theme="dark"] body :where(
+  [class*="bg-indigo-50"], [class*="bg-indigo-100"], [class*="bg-violet-50"],
+  [class*="bg-violet-100"], [class*="bg-purple-50"], [class*="bg-purple-100"]
+) {
+  background-color: #241d33 !important;
+}
+html[data-ashiana-theme="dark"] body :where(
+  [class*="bg-amber-50"], [class*="bg-amber-100"], [class*="bg-yellow-50"],
+  [class*="bg-yellow-100"], [class*="bg-orange-50"], [class*="bg-orange-100"]
+) {
+  background-color: #302918 !important;
+}
+html[data-ashiana-theme="dark"] body :where(
+  [class*="from-emerald-50"], [class*="via-white"], [class*="to-white"], [class*="to-green-50"]
+) {
+  background-image: none !important;
+  background-color: #14251e !important;
+}
+
+/* Semantic foregrounds remain distinct while meeting contrast on dark surfaces. */
+html[data-ashiana-theme="dark"] body :where(
+  [class*="text-gray-"], [class*="text-slate-"], [class*="text-neutral-"],
+  [class*="text-zinc-"], [class*="text-stone-"]
 ) {
   color: #c3d4cb !important;
+}
+html[data-ashiana-theme="dark"] body :where(
+  [class*="text-emerald-"], [class*="text-green-"], [class*="text-teal-"], [class*="text-lime-"]
+) {
+  color: #6ee7b7 !important;
+}
+html[data-ashiana-theme="dark"] body :where(
+  [class*="text-blue-"], [class*="text-sky-"], [class*="text-cyan-"]
+) {
+  color: #93c5fd !important;
+}
+html[data-ashiana-theme="dark"] body :where(
+  [class*="text-amber-"], [class*="text-yellow-"], [class*="text-orange-"]
+) {
+  color: #fcd34d !important;
+}
+html[data-ashiana-theme="dark"] body :where(
+  [class*="text-red-"], [class*="text-rose-"], [class*="text-pink-"]
+) {
+  color: #fda4af !important;
+}
+html[data-ashiana-theme="dark"] body :where(
+  [class*="text-purple-"], [class*="text-violet-"], [class*="text-indigo-"], [class*="text-fuchsia-"]
+) {
+  color: #c4b5fd !important;
+}
+
+/* Student dashboard styles set dark text on a light surface with ID selectors.
+   Override those colors directly so calendar and other dashboard text inherit
+   the readable dark-theme foreground. */
+html[data-ashiana-theme="dark"] #student-portal-view #student-dashboard-panel {
+  background-color: #0b1713 !important;
+  color: #e5eee9 !important;
+}
+html[data-ashiana-theme="dark"] #student-portal-view #student-dashboard-panel .sticky {
+  background-color: #102019 !important;
+  border-color: #29483d !important;
+  color: #e5eee9 !important;
+}
+html[data-ashiana-theme="dark"] #student-portal-view #student-dashboard-panel .sticky button {
+  background-color: #174333 !important;
+  color: #d9ffed !important;
+}
+
+/* Override role-specific, high-specificity light-theme colors and surfaces. */
+html[data-ashiana-theme="dark"] body #auth-gateway-view > div:nth-child(2) {
+  background-color: #14251e !important;
+}
+html[data-ashiana-theme="dark"] body #auth-gateway-view {
+  background-color: #0b1713 !important;
+}
+html[data-ashiana-theme="dark"] body #login-hero::after {
+  background-color: #14251e !important;
+  border-top-color: #29483d !important;
+}
+html[data-ashiana-theme="dark"] body #auth-gateway-view form label {
+  color: #e5eee9 !important;
+}
+html[data-ashiana-theme="dark"] body #auth-gateway-view form input {
+  background-color: #102019 !important;
+  border-color: #355b4c !important;
+  color: #edf7f1 !important;
+}
+html[data-ashiana-theme="dark"] body #auth-gateway-view form input:focus {
+  background-color: #14251e !important;
+  border-color: #16a875 !important;
+}
+html[data-ashiana-theme="dark"] body #auth-gateway-view > div:last-child {
+  background-color: #0b1713 !important;
+  border-color: #29483d !important;
+  color: #c3d4cb !important;
+}
+
+html[data-ashiana-theme="dark"] body #admin-portal-view,
+html[data-ashiana-theme="dark"] body #admin-portal-view :nth-child(n),
+html[data-ashiana-theme="dark"] body #staff-portal-view,
+html[data-ashiana-theme="dark"] body #staff-portal-view :nth-child(n),
+html[data-ashiana-theme="dark"] body #teacher-portal-view,
+html[data-ashiana-theme="dark"] body #teacher-portal-view :nth-child(n) {
+  color: inherit !important;
+}
+html[data-ashiana-theme="dark"] body #admin-portal-view .admin-dashboard-card,
+html[data-ashiana-theme="dark"] body #staff-portal-view .staff-dashboard-card,
+html[data-ashiana-theme="dark"] body #teacher-portal-view .teacher-dashboard-card {
+  background-color: #14251e !important;
+  border-color: #29483d !important;
+}
+html[data-ashiana-theme="dark"] body #admin-portal-view > .grid.grid-cols-2.sm\:grid-cols-3.lg\:grid-cols-6 > div {
+  background-color: #14251e !important;
+}
+html[data-ashiana-theme="dark"] body #admin-portal-view .admin-dashboard-content,
+html[data-ashiana-theme="dark"] body #staff-portal-view .staff-dashboard-content,
+html[data-ashiana-theme="dark"] body #teacher-portal-view .teacher-dashboard-content {
+  background-color: #0b1713 !important;
+  background-image: none !important;
+}
+html[data-ashiana-theme="dark"] body #admin-portal-view .admin-quick-actions button,
+html[data-ashiana-theme="dark"] body #staff-portal-view .staff-action-card,
+html[data-ashiana-theme="dark"] body #teacher-portal-view .teacher-action-card {
+  background-color: #102b22 !important;
+  background-image: none !important;
+  border-color: #355b4c !important;
+}
+html[data-ashiana-theme="dark"] body #admin-portal-view .bg-emerald-50,
+html[data-ashiana-theme="dark"] body #staff-portal-view .bg-emerald-50,
+html[data-ashiana-theme="dark"] body #teacher-portal-view .bg-emerald-50 {
+  background-color: #102b22 !important;
+}
+html[data-ashiana-theme="dark"] body #admin-portal-view .text-emerald-700,
+html[data-ashiana-theme="dark"] body #staff-portal-view .text-emerald-700,
+html[data-ashiana-theme="dark"] body #teacher-portal-view .text-emerald-700 {
+  color: #6ee7b7 !important;
+}
+html[data-ashiana-theme="dark"] body #staff-portal-view .staff-quick-access {
+  background-color: #102b22 !important;
+  background-image: none !important;
+  border-color: #355b4c !important;
+}
+html[data-ashiana-theme="dark"] body #staff-portal-view .staff-quick-access-hint,
+html[data-ashiana-theme="dark"] body #staff-portal-view .staff-quick-action {
+  background-color: #14251e !important;
+  border-color: #355b4c !important;
+  color: #e5eee9 !important;
+}
+html[data-ashiana-theme="dark"] body #staff-portal-view .staff-quick-action-icon {
+  background-color: #1b3e31 !important;
+  color: #6ee7b7 !important;
+}
+html[data-ashiana-theme="dark"] body #admin-tab-directory tbody td:last-child button {
+  background-color: #102b22 !important;
+  border-color: #355b4c !important;
+  color: #6ee7b7 !important;
+}
+html[data-ashiana-theme="dark"] body #admin-tab-directory tbody td:last-child button[title*="Delete"] {
+  background-color: #311d22 !important;
+  border-color: #6b333b !important;
+  color: #fda4af !important;
+}
+html[data-ashiana-theme="dark"] body #admin-tab-directory tbody td:last-child button[title*="Reset"] {
+  background-color: #302918 !important;
+  border-color: #695526 !important;
+  color: #fcd34d !important;
+}
+
+html[data-ashiana-theme="dark"] body .staff-comm-list,
+html[data-ashiana-theme="dark"] body .staff-comm-messages,
+html[data-ashiana-theme="dark"] body .staff-comm-conversation,
+html[data-ashiana-theme="dark"] body .staff-comm-compose,
+html[data-ashiana-theme="dark"] body .staff-comm-card.composer-open .staff-comm-conversation,
+html[data-ashiana-theme="dark"] body .staff-comm-card.composer-open #staff-comm-compose-form {
+  background-color: #14251e !important;
+  background-image: none !important;
+  border-color: #29483d !important;
+}
+html[data-ashiana-theme="dark"] body .staff-comm-list-item:hover,
+html[data-ashiana-theme="dark"] body .staff-comm-list-item.active,
+html[data-ashiana-theme="dark"] body .staff-comm-msg.mine {
+  background-color: #102b22 !important;
+}
+html[data-ashiana-theme="dark"] body .staff-comm-msg.theirs {
+  background-color: #20332b !important;
+}
+
+/* The student home cards use later, custom gradient rules and hard-coded
+   foregrounds. Reset the full background shorthand and text directly here. */
+html[data-ashiana-theme="dark"] #student-portal-view.student-dashboard-shell>div {
+  background: #0b1713 !important;
+  border-color: #29483d !important;
+  color: #e5eee9 !important;
+}
+html[data-ashiana-theme="dark"] #student-portal-view.student-dashboard-shell>div>div:nth-child(2) {
+  background: #0b1713 !important;
+  color: #e5eee9 !important;
+}
+html[data-ashiana-theme="dark"] #student-portal-view.student-dashboard-shell>div>div:nth-child(2)>button:first-child {
+  background: #102b22 !important;
+  border-color: #355b4c !important;
+  color: #e5eee9 !important;
+}
+html[data-ashiana-theme="dark"] #student-portal-view.student-dashboard-shell>div>div:nth-child(2)>.grid>button {
+  background: #14251e !important;
+  border-color: #355b4c !important;
+  color: #e5eee9 !important;
+}
+html[data-ashiana-theme="dark"] #student-portal-view.student-dashboard-shell>div>div:nth-child(2)>button:first-child b,
+html[data-ashiana-theme="dark"] #student-portal-view.student-dashboard-shell>div>div:nth-child(2)>button:first-child span,
+html[data-ashiana-theme="dark"] #student-portal-view.student-dashboard-shell>div>div:nth-child(2)>.grid>button>b,
+html[data-ashiana-theme="dark"] #student-portal-view.student-dashboard-shell>div>div:nth-child(2)>.grid>button>span {
+  color: #e5eee9 !important;
+}
+html[data-ashiana-theme="dark"] #student-portal-view.student-dashboard-shell>div>div:nth-child(2)>.grid>button::after {
+  display: none !important;
+}
+html[data-ashiana-theme="dark"] #student-portal-view #student-dashboard-panel-body .border.rounded-2xl.p-4 {
+  background: #14251e !important;
+  border-color: #29483d !important;
+  color: #e5eee9 !important;
 }
 
 /* Keep role-restricted staff drawer items hidden. The app's custom
