@@ -208,12 +208,7 @@
       const token = studentSessionToken();
       if (!/^[a-f0-9]{64}$/i.test(token)) throw new Error("Student session expired. Sign in again with Admission No. and DOB.");
       extra.session_token = token;
-    } else {
-      const input = document.getElementById("student-login-admission");
-      const admission = String(input?.value || "").trim();
-      if (!admission) throw new Error("Enter your Admission No. first.");
-      extra.admission_no = admission;
-    }
+    } // Fresh student sign-in uses a discoverable passkey; no Admission No. or DOB is needed.
 
     const { options } = await invoke("student", "authentication-options", extra);
     const credential = await navigator.credentials.get({ publicKey: publicKeyOptions(options) });
@@ -376,7 +371,7 @@
         await authenticatePasskey("student", "login");
       } catch (error) {
         const message = error.message === "PASSKEY_LOGIN_UNAVAILABLE"
-          ? "Passkey sign-in could not verify that Admission No. Check the number or use your regular student login."
+          ? "No usable student passkey was found. Sign in with Admission No. and DOB, then register a passkey again."
           : error.message || "Student passkey sign-in failed.";
         toast(message, "error");
         button.disabled = false;
