@@ -76,6 +76,7 @@
   <!-- Supabase JS Client (v2) for PostgreSQL Cloud Sync -->
   <script src="./assets/vendor/supabase.js" defer></script>
   <script src="./dark-mode.js?v=3" defer></script>
+  <script src="./role-permissions.js?v=1" defer></script>
 
   <script>
     tailwind.config = {
@@ -2874,7 +2875,7 @@ id="student-portal-view" class="hidden flex-col w-full max-w-2xl space-y-4 stude
 </button><div><p class="text-[10px] uppercase tracking-widest text-emerald-200">Student Portal</p><h2 id="student-portal-name" class="font-extrabold text-lg leading-tight">Student</h2><p id="student-portal-class" class="text-xs text-emerald-100 mt-0.5">Class —</p></div></div><button onclick="handleLogout()" class="px-3 py-2 bg-white/10 hover:bg-white/20 rounded-xl text-xs font-bold flex items-center gap-1.5"><i data-lucide="log-out" class="w-4 h-4"></i>Sign Out</button></div>
         </div>
         <div class="p-4 sm:p-5 space-y-4">
-          <button type="button" onclick="studentDashboardSection('profile')" class="w-full p-4 rounded-2xl border border-emerald-100 bg-emerald-50/70 hover:bg-emerald-50 text-left flex items-center justify-between gap-3 transition-all shadow-sm" aria-label="Open student profile">
+          <button type="button" data-role-module="profile" onclick="studentDashboardSection('profile')" class="w-full p-4 rounded-2xl border border-emerald-100 bg-emerald-50/70 hover:bg-emerald-50 text-left flex items-center justify-between gap-3 transition-all shadow-sm" aria-label="Open student profile">
   <div class="flex items-center gap-3">
     <span class="w-11 h-11 rounded-xl bg-white border border-emerald-100 flex items-center justify-center"><i data-lucide="user-round" class="w-5 h-5 text-emerald-700"></i></span>
     <span><b class="block text-sm text-slate-900">Profile</b><span class="text-[10px] text-slate-500">View student details</span></span>
@@ -2882,17 +2883,17 @@ id="student-portal-view" class="hidden flex-col w-full max-w-2xl space-y-4 stude
   <span class="w-9 h-9 rounded-full bg-white border border-emerald-100 flex items-center justify-center"><i data-lucide="chevron-right" class="w-4 h-4 text-emerald-700"></i></span>
 </button>
           <div class="grid grid-cols-2 gap-3">
-            <button onclick="studentDashboardSection('mentor')" class="p-4 rounded-2xl border bg-violet-50 text-left"><i data-lucide="users-round" class="w-5 h-5 text-violet-700"></i><b class="block mt-2 text-sm">Your Mentor</b><span class="text-[10px] text-slate-500">Class & subject teachers</span></button>
-            <button onclick="studentDashboardSection('classmates')" class="p-4 rounded-2xl border bg-cyan-50 text-left"><i data-lucide="contact-round" class="w-5 h-5 text-cyan-700"></i><b class="block mt-2 text-sm">Classmates</b><span class="text-[10px] text-slate-500">Your section students</span></button>
-            <button onclick="studentDashboardSection('notice')" class="p-4 rounded-2xl border bg-amber-50 text-left"><i data-lucide="megaphone" class="w-5 h-5 text-amber-700"></i><b class="block mt-2 text-sm">Notice</b><span id="student-count-notices" class="text-[10px] text-slate-500">0 notices</span></button>
-            <button onclick="studentDashboardSection('attendance')" class="p-4 rounded-2xl border bg-emerald-50 text-left"><i data-lucide="calendar-check" class="w-5 h-5 text-emerald-700"></i><b class="block mt-2 text-sm">Attendance</b><span id="student-count-attendance" class="text-[10px] text-slate-500">0 records</span></button>
-            <button type="button" onclick="studentDashboardSection('report-card')" class="p-4 rounded-2xl border border-indigo-100 bg-indigo-50 text-left"><i data-lucide="graduation-cap" class="w-5 h-5 text-indigo-700"></i><b class="block mt-2 text-sm">Report Card</b><span class="text-[10px] text-slate-500">Full-year marks & grades</span></button>
-            <button type="button" onclick="studentDashboardSection('fees')" class="p-4 rounded-2xl border border-amber-200 bg-amber-50 text-left"><i data-lucide="wallet" class="w-5 h-5 text-amber-700"></i><b class="block mt-2 text-sm text-slate-900">Fees Management</b><span class="text-[10px] text-slate-600">Due, payments & receipts</span></button>
-            <button onclick="studentDashboardSection('homework')" class="p-4 rounded-2xl border bg-blue-50 text-left"><i data-lucide="book-open-check" class="w-5 h-5 text-blue-700"></i><b class="block mt-2 text-sm">Homework</b><span id="student-count-homework" class="text-[10px] text-slate-500">0 items</span></button>
-            <button onclick="studentDashboardSection('timetable')" class="p-4 rounded-2xl border bg-violet-50 text-left"><i data-lucide="calendar-clock" class="w-5 h-5 text-violet-700"></i><b class="block mt-2 text-sm">Timetable</b><span class="text-[10px] text-slate-500">Class schedule</span></button>
-            <button onclick="studentDashboardSection('leave')" class="p-4 rounded-2xl border bg-rose-50 text-left"><i data-lucide="file-pen-line" class="w-5 h-5 text-rose-700"></i><b class="block mt-2 text-sm">Leave Request</b><span class="text-[10px] text-slate-500">Apply / track</span></button>
-            <button onclick="studentDashboardSection('calendar')" class="p-4 rounded-2xl border bg-orange-50 text-left"><i data-lucide="calendar-days" class="w-5 h-5 text-orange-700"></i><b class="block mt-2 text-sm">School Calendar</b><span class="text-[10px] text-slate-500">Events & holidays</span></button>
-            <button onclick="createStudentPortalIdCard()" class="p-4 rounded-2xl border bg-slate-50 text-left"><i data-lucide="contact" class="w-5 h-5 text-slate-700"></i><b class="block mt-2 text-sm">ID Card</b><span class="text-[10px] text-slate-500">View digital ID</span></button>
+            <button data-role-module="mentor" onclick="studentDashboardSection('mentor')" class="p-4 rounded-2xl border bg-violet-50 text-left"><i data-lucide="users-round" class="w-5 h-5 text-violet-700"></i><b class="block mt-2 text-sm">Your Mentor</b><span class="text-[10px] text-slate-500">Class & subject teachers</span></button>
+            <button data-role-module="classmates" onclick="studentDashboardSection('classmates')" class="p-4 rounded-2xl border bg-cyan-50 text-left"><i data-lucide="contact-round" class="w-5 h-5 text-cyan-700"></i><b class="block mt-2 text-sm">Classmates</b><span class="text-[10px] text-slate-500">Your section students</span></button>
+            <button data-role-module="notice" onclick="studentDashboardSection('notice')" class="p-4 rounded-2xl border bg-amber-50 text-left"><i data-lucide="megaphone" class="w-5 h-5 text-amber-700"></i><b class="block mt-2 text-sm">Notice</b><span id="student-count-notices" class="text-[10px] text-slate-500">0 notices</span></button>
+            <button data-role-module="attendance" onclick="studentDashboardSection('attendance')" class="p-4 rounded-2xl border bg-emerald-50 text-left"><i data-lucide="calendar-check" class="w-5 h-5 text-emerald-700"></i><b class="block mt-2 text-sm">Attendance</b><span id="student-count-attendance" class="text-[10px] text-slate-500">0 records</span></button>
+            <button type="button" data-role-module="report-card" onclick="studentDashboardSection('report-card')" class="p-4 rounded-2xl border border-indigo-100 bg-indigo-50 text-left"><i data-lucide="graduation-cap" class="w-5 h-5 text-indigo-700"></i><b class="block mt-2 text-sm">Report Card</b><span class="text-[10px] text-slate-500">Full-year marks & grades</span></button>
+            <button type="button" data-role-module="fees" onclick="studentDashboardSection('fees')" class="p-4 rounded-2xl border border-amber-200 bg-amber-50 text-left"><i data-lucide="wallet" class="w-5 h-5 text-amber-700"></i><b class="block mt-2 text-sm text-slate-900">Fees Management</b><span class="text-[10px] text-slate-600">Due, payments & receipts</span></button>
+            <button data-role-module="homework" onclick="studentDashboardSection('homework')" class="p-4 rounded-2xl border bg-blue-50 text-left"><i data-lucide="book-open-check" class="w-5 h-5 text-blue-700"></i><b class="block mt-2 text-sm">Homework</b><span id="student-count-homework" class="text-[10px] text-slate-500">0 items</span></button>
+            <button data-role-module="timetable" onclick="studentDashboardSection('timetable')" class="p-4 rounded-2xl border bg-violet-50 text-left"><i data-lucide="calendar-clock" class="w-5 h-5 text-violet-700"></i><b class="block mt-2 text-sm">Timetable</b><span class="text-[10px] text-slate-500">Class schedule</span></button>
+            <button data-role-module="leave" onclick="studentDashboardSection('leave')" class="p-4 rounded-2xl border bg-rose-50 text-left"><i data-lucide="file-pen-line" class="w-5 h-5 text-rose-700"></i><b class="block mt-2 text-sm">Leave Request</b><span class="text-[10px] text-slate-500">Apply / track</span></button>
+            <button data-role-module="calendar" onclick="studentDashboardSection('calendar')" class="p-4 rounded-2xl border bg-orange-50 text-left"><i data-lucide="calendar-days" class="w-5 h-5 text-orange-700"></i><b class="block mt-2 text-sm">School Calendar</b><span class="text-[10px] text-slate-500">Events & holidays</span></button>
+            <button type="button" data-role-module="id-card" onclick="studentDashboardSection('id-card')" class="p-4 rounded-2xl border bg-slate-50 text-left"><i data-lucide="contact" class="w-5 h-5 text-slate-700"></i><b class="block mt-2 text-sm">ID Card</b><span class="text-[10px] text-slate-500">View digital ID</span></button>
           </div>
           <div id="student-dashboard-panel" class="fixed inset-0 z-[170] hidden bg-slate-50 overflow-y-auto">
             <div class="min-h-full">
@@ -2963,25 +2964,25 @@ id="student-dashboard-panel-body" class="space-y-3 text-xs"></div>
             </div>
           </div>
           <nav class="flex-1 overflow-y-auto p-3 space-y-1.5">
-            <button id="staff-drawer-punch" type="button" onclick="selectStaffDrawerTab('punch')" class="staff-drawer-item active">
+            <button id="staff-drawer-punch" data-role-module="punch" type="button" onclick="selectStaffDrawerTab('punch')" class="staff-drawer-item active">
               <i data-lucide="clock"></i><span>Punch</span>
             </button>
-            <button id="staff-drawer-students" type="button" onclick="selectStaffDrawerTab('students')" class="staff-drawer-item hidden">
+            <button id="staff-drawer-students" data-role-module="students" type="button" onclick="selectStaffDrawerTab('students')" class="staff-drawer-item hidden">
               <i data-lucide="clipboard-check"></i><span>Students</span>
             </button>
-            <button id="staff-drawer-communication" type="button" onclick="openStaffAdminCommunication()" class="staff-drawer-item">
+            <button id="staff-drawer-communication" data-role-module="communication" type="button" onclick="openStaffAdminCommunication()" class="staff-drawer-item">
               <i data-lucide="messages-square"></i><span>Administration</span>
             </button>
-            <button id="staff-drawer-history" type="button" onclick="selectStaffDrawerTab('history')" class="staff-drawer-item">
+            <button id="staff-drawer-history" data-role-module="history" type="button" onclick="selectStaffDrawerTab('history')" class="staff-drawer-item">
               <i data-lucide="calendar-days"></i><span>History</span>
             </button>
-            <button id="staff-drawer-leave" type="button" onclick="selectStaffDrawerLeave()" class="staff-drawer-item">
+            <button id="staff-drawer-leave" data-role-module="leave" type="button" onclick="selectStaffDrawerLeave()" class="staff-drawer-item">
               <i data-lucide="file-text"></i><span>Leave</span>
             </button>
-            <button id="staff-drawer-profile" type="button" onclick="selectStaffDrawerProfile()" class="staff-drawer-item">
+            <button id="staff-drawer-profile" data-role-module="profile" type="button" onclick="selectStaffDrawerProfile()" class="staff-drawer-item">
               <i data-lucide="user"></i><span>Profile</span>
             </button>
-            <button id="staff-drawer-biometric" type="button" onclick="selectStaffDrawerBiometric()" class="staff-drawer-item" aria-label="Open biometric attendance settings">
+            <button id="staff-drawer-biometric" data-role-module="biometric" type="button" onclick="selectStaffDrawerBiometric()" class="staff-drawer-item" aria-label="Open biometric attendance settings">
               <i data-lucide="fingerprint"></i><span id="staff-drawer-biometric-label">Biometric Status</span>
               <span id="staff-drawer-biometric-toggle" role="img" aria-label="Biometric status loading" class="ml-auto relative inline-flex items-center w-[76px] h-[34px] rounded-full bg-slate-200 border border-slate-300 shadow-inner transition-colors">
                 <span id="staff-drawer-biometric-toggle-text" class="absolute right-2 text-[11px] font-extrabold text-slate-500">OFF</span>
@@ -3002,7 +3003,7 @@ id="student-dashboard-panel-body" class="space-y-3 text-xs"></div>
         </aside>
 
         <!-- TAB 1: TODAY'S PUNCH DASHBOARD BODY -->
-        <div id="staff-tab-punch" class="staff-dashboard-scroll staff-dashboard-content flex-1 overflow-y-auto hide-scrollbar space-y-3">
+        <div id="staff-tab-punch" data-role-module="punch" data-role-module-mode="panel" class="staff-dashboard-scroll staff-dashboard-content flex-1 overflow-y-auto hide-scrollbar space-y-3">
           
           <!-- PRIMARY ACTION BUTTON: MARK ATTENDANCE -->
           <div class="staff-action-card bg-gradient-to-br from-emerald-50 to-green-50/80 rounded-2xl p-4 border border-emerald-200 shadow-sm text-center">
@@ -3028,7 +3029,7 @@ id="student-dashboard-panel-body" class="space-y-3 text-xs"></div>
 
           
           <!-- STUDENTS SECTION: TEACHER HOME ACCESS -->
-          <div id="teacher-home-students-section" class="hidden bg-gradient-to-br from-emerald-50 via-white to-green-50 rounded-2xl p-4 border border-emerald-200 shadow-sm">
+          <div id="teacher-home-students-section" data-role-module="students" class="hidden bg-gradient-to-br from-emerald-50 via-white to-green-50 rounded-2xl p-4 border border-emerald-200 shadow-sm">
             <div class="flex items-center gap-3">
               <div class="w-11 h-11 rounded-2xl bg-emerald-900 text-white flex items-center justify-center shadow-sm flex-shrink-0">
                 <i data-lucide="graduation-cap" class="w-5 h-5"></i>
@@ -3054,17 +3055,17 @@ id="student-dashboard-panel-body" class="space-y-3 text-xs"></div>
               <span class="staff-quick-access-hint">Everyday tasks</span>
             </div>
             <div class="staff-quick-access-grid">
-              <button type="button" onclick="selectStaffDrawerTab('history')" class="staff-quick-action">
+              <button type="button" data-role-module="history" onclick="selectStaffDrawerTab('history')" class="staff-quick-action">
                 <span class="staff-quick-action-icon"><i data-lucide="calendar-days"></i></span>
                 <span><strong>My History</strong><small>View punches</small></span>
                 <i data-lucide="chevron-right" class="staff-quick-chevron"></i>
               </button>
-              <button type="button" onclick="selectStaffDrawerLeave()" class="staff-quick-action">
+              <button type="button" data-role-module="leave" onclick="selectStaffDrawerLeave()" class="staff-quick-action">
                 <span class="staff-quick-action-icon"><i data-lucide="calendar-check"></i></span>
                 <span><strong>Leave</strong><small>Apply or review</small></span>
                 <i data-lucide="chevron-right" class="staff-quick-chevron"></i>
               </button>
-              <button type="button" onclick="selectStaffDrawerProfile()" class="staff-quick-action">
+              <button type="button" data-role-module="profile" onclick="selectStaffDrawerProfile()" class="staff-quick-action">
                 <span class="staff-quick-action-icon"><i data-lucide="user-round"></i></span>
                 <span><strong>My Profile</strong><small>View details</small></span>
                 <i data-lucide="chevron-right" class="staff-quick-chevron"></i>
@@ -3156,7 +3157,7 @@ id="student-dashboard-panel-body" class="space-y-3 text-xs"></div>
         </div>
 
         <!-- TAB 2: COMPLETE STAFF ATTENDANCE HISTORY VIEW -->
-        <div id="staff-tab-history" class="staff-dashboard-scroll staff-dashboard-content hidden flex-1 overflow-y-auto hide-scrollbar space-y-3">
+        <div id="staff-tab-history" data-role-module="history" data-role-module-mode="panel" class="staff-dashboard-scroll staff-dashboard-content hidden flex-1 overflow-y-auto hide-scrollbar space-y-3">
           
           <!-- Month & Filter Selector Card -->
           <div class="bg-white rounded-2xl p-3 shadow-sm border border-slate-200/80 space-y-2.5">
@@ -3223,7 +3224,7 @@ id="student-dashboard-panel-body" class="space-y-3 text-xs"></div>
           </div>
         </div>
 
-<div id="staff-tab-students" class="staff-dashboard-scroll staff-dashboard-content hidden flex-1 overflow-y-auto space-y-3">
+<div id="staff-tab-students" data-role-module="students" data-role-module-mode="panel" class="staff-dashboard-scroll staff-dashboard-content hidden flex-1 overflow-y-auto space-y-3">
   <!-- Student tools quick navigation -->
   <div class="bg-white rounded-2xl p-3 border border-slate-200 shadow-sm">
     <div class="flex items-center justify-between gap-2 mb-2">
@@ -3483,6 +3484,7 @@ id="admin-portal-view" class="hidden flex-col w-full space-y-4 admin-dashboard-s
         <button type="button" id="admin-nav-student-attendance" onclick="openAdminStudentAttendanceRecordsModal()" title="View Students Attendance"><i data-lucide="clipboard-check"></i><span>View Students Attendance</span></button>
         <button type="button" onclick="openAdminStudentAttendanceReport()" title="Students Attendance Report"><i data-lucide="clipboard-list"></i><span>Attendance Report</span></button><button type="button" onclick="openAdminAttendanceAnalytics()" title="Advanced Attendance Analytics"><i data-lucide="chart-no-axes-combined"></i><span>Analytics 2.0</span></button>
         <button type="button" onclick="window.switchAdminTab('directory')"><i data-lucide="users"></i><span>Faculty</span></button>
+        <button type="button" id="admin-nav-permissions" onclick="window.switchAdminTab('permissions')" title="Assign portal modules by role"><i data-lucide="shield-check"></i><span>Role Permissions</span></button>
         <button type="button" id="admin-live-location-launch" onclick="openStaffLiveLocationAdmin()" title="View live staff locations"><i data-lucide="map-pin"></i><span>Live Staff Location</span></button>
         <button type="button" onclick="openStaffAdminCommunication()" title="Staff ↔ Administration Communication"><i data-lucide="messages-square"></i><span>Communication</span></button>
         <button type="button" onclick="window.switchAdminTab('live')"><i data-lucide="radio"></i><span>Live Attendance</span></button>
@@ -4344,6 +4346,35 @@ id="admin-portal-view" class="hidden flex-col w-full space-y-4 admin-dashboard-s
           </div>
         </div>
 
+      </div>
+
+      <div id="admin-tab-permissions" class="hidden space-y-4">
+        <section class="rounded-2xl border border-slate-200 bg-white p-4 shadow-sm sm:p-5">
+          <div class="flex flex-col gap-3 sm:flex-row sm:items-start sm:justify-between">
+            <div>
+              <h3 class="text-base font-extrabold text-slate-900">Role Permissions</h3>
+              <p class="mt-1 max-w-2xl text-xs text-slate-500">Choose which portal pages each role can open. Changes apply after users sign in again. Existing database permissions still control which records and actions are allowed.</p>
+            </div>
+            <label class="text-[11px] font-bold text-slate-600">Role
+              <select id="role-permission-role" class="mt-1 min-w-36 rounded-xl border border-slate-300 bg-white p-2.5 text-xs">
+                <option value="TEACHER">Teacher</option>
+                <option value="STAFF">Staff</option>
+                <option value="STUDENT">Student</option>
+              </select>
+            </label>
+          </div>
+          <div id="role-permission-list" class="mt-4 grid gap-2 sm:grid-cols-2">
+            <p class="text-sm text-slate-500">Open this page to load saved permissions.</p>
+          </div>
+          <div class="mt-4 flex flex-col gap-3 border-t border-slate-100 pt-4 sm:flex-row sm:items-center sm:justify-between">
+            <p id="role-permission-status" class="text-xs text-emerald-700" role="status" aria-live="polite">Changes apply after the next sign in.</p>
+            <div class="flex gap-2">
+              <button type="button" onclick="window.AshianaRolePermissions?.restoreSelectedRoleDefaults()" class="rounded-xl border border-slate-200 px-3.5 py-2.5 text-xs font-bold text-slate-700">Restore defaults</button>
+              <button id="role-permission-save" type="button" onclick="window.AshianaRolePermissions?.saveSelectedRole()" class="rounded-xl bg-emerald-800 px-4 py-2.5 text-xs font-bold text-white">Save permissions</button>
+            </div>
+          </div>
+        </section>
+        <p class="px-1 text-[11px] text-slate-500">Administrator access remains full and cannot be disabled here. Staff accounts cannot be granted student attendance access unless their staff role is Teacher.</p>
       </div>
 
     </div>
@@ -7422,6 +7453,11 @@ async function studentDashboardSection(type){
     title=document.getElementById("student-dashboard-panel-title"),
     loading=document.getElementById("student-dashboard-panel-loading");
   if(!host||!panel)return;
+  if(!canOpenPortalModule(type)){
+    showToast("This portal module is disabled for your role. Contact the school administrator.","error");
+    return;
+  }
+  if(type==="id-card")return createStudentPortalIdCard();
   const names={notice:"Notice",attendance:"Attendance",homework:"Homework",timetable:"Timetable",leave:"Leave Request & Status",calendar:"School Calendar",fees:"Fees Management",profile:"Student Profile",mentor:"Your Mentor",classmates:"Classmates","report-card":"Report Card"};
   title.textContent=names[type]||"Dashboard";
   panel.classList.remove("hidden");
@@ -7803,6 +7839,10 @@ async function refreshStudentPortalData(){
 
 
     async function createStudentPortalIdCard(){
+      if(currentAuthUser?.type==='STUDENT'&&!canOpenPortalModule('id-card')){
+        showToast("ID Card is disabled for your role. Contact the school administrator.","error");
+        return;
+      }
       // Use only the authenticated student's own roster record.
       const s=currentAuthUser?.portalData?.student||currentAuthUser?.studentRecord;
       if(!s){showToast("Student profile is not loaded. Please sign in again.","error");return;}
@@ -7980,6 +8020,15 @@ async function refreshStudentPortalData(){
           globalHeader?.classList.add("hidden");
           globalStatusBanner?.classList.add("hidden");
           return;
+        }
+
+        try {
+          const role=currentAuthUser.type==='STAFF'?getAccessRole(currentAuthUser):currentAuthUser.type;
+          const permissionLoad=window.AshianaRolePermissions?.loadForUser({client:supabaseClient,user:currentAuthUser,role});
+          applyPortalModulePermissions();
+          if(permissionLoad&&typeof permissionLoad.then==='function')permissionLoad.then(applyPortalModulePermissions);
+        } catch(permissionError) {
+          console.warn("Could not initialize role module permissions:",permissionError);
         }
 
         authGateway?.classList.add("hidden");
@@ -8827,16 +8876,37 @@ async function refreshStudentPortalData(){
       const designation=String(user.staffRecord?.role||'').trim().toLowerCase();
       return /\b(teacher|tgt|pgt|prt|pre-primary teacher|special educator|pet)\b/.test(designation) ? 'TEACHER' : 'STAFF';
     }
-    function canAccessStudentAttendance(user=currentAuthUser){return getAccessRole(user)==='TEACHER';}
+    function canOpenPortalModule(moduleKey){
+      if(!currentAuthUser||currentAuthUser.type==='ADMIN')return true;
+      return window.AshianaRolePermissions?.canOpen(moduleKey) ?? true;
+    }
+    function applyPortalModulePermissions(){
+      if(!currentAuthUser)return;
+      document.querySelectorAll('[data-role-module]').forEach(el=>{
+        const allowed=canOpenPortalModule(el.dataset.roleModule);
+        if(el.dataset.roleModuleMode==='panel')el.style.display=allowed?'':'none';
+        else el.classList.toggle('hidden',!allowed);
+        if(allowed)el.removeAttribute('aria-hidden');else el.setAttribute('aria-hidden','true');
+      });
+      if(currentAuthUser.type==='STAFF'){
+        applyStaffRoleAccess();
+        const available=['punch','history','students'].filter(tab=>tab!=='students'||canAccessStudentAttendance());
+        const nextTab=available.includes(currentStaffTab)?currentStaffTab:available[0];
+        if(nextTab)void switchStaffTab(nextTab);
+      }
+    }
+    window.addEventListener('ashiana-role-permissions-updated',applyPortalModulePermissions);
+    function canAccessStudentAttendance(user=currentAuthUser){return getAccessRole(user)==='TEACHER'&&canOpenPortalModule('students');}
     function applyStaffRoleAccess(){
       const role=getAccessRole();
       const studentNav=document.getElementById('staff-nav-students');
       const drawerStudentNav=document.getElementById('staff-drawer-students');
       const studentHome=document.getElementById('teacher-home-students-section');
-      if(studentNav) studentNav.classList.toggle('hidden',role!=='TEACHER');
-      if(drawerStudentNav) drawerStudentNav.classList.toggle('hidden',role!=='TEACHER');
-      if(studentHome) studentHome.classList.toggle('hidden',role!=='TEACHER');
-      if(role!=='TEACHER' && currentStaffTab==='students') switchStaffTab('punch');
+      const studentAttendanceAllowed=role==='TEACHER'&&canOpenPortalModule('students');
+      if(studentNav) studentNav.classList.toggle('hidden',!studentAttendanceAllowed);
+      if(drawerStudentNav) drawerStudentNav.classList.toggle('hidden',!studentAttendanceAllowed);
+      if(studentHome) studentHome.classList.toggle('hidden',!studentAttendanceAllowed);
+      if(!studentAttendanceAllowed && currentStaffTab==='students') switchStaffTab('punch');
       const roleLabel=document.getElementById('staff-header-role');
       if(roleLabel && currentAuthUser?.staffRecord) roleLabel.innerText = (currentAuthUser.staffRecord.role||role)+' • '+currentAuthUser.staffRecord.empId;
     }
@@ -9742,10 +9812,12 @@ async function loadAdminStudentAttendance(){
       switchStaffTab(tab);
     }
     function selectStaffDrawerLeave(){
+      if(!canOpenPortalModule('leave'))return showToast("Leave requests are disabled for your role.","error");
       toggleStaffDrawer(false);
       openLeaveApplyModal();
     }
     function selectStaffDrawerProfile(){
+      if(!canOpenPortalModule('profile'))return showToast("Staff profile is disabled for your role.","error");
       toggleStaffDrawer(false);
       openStaffProfileModal();
     }
@@ -9756,7 +9828,7 @@ async function loadAdminStudentAttendance(){
       const knob=document.getElementById("staff-drawer-biometric-toggle-knob");
       const item=document.getElementById("staff-drawer-biometric");
       if(!label||!toggle||!toggleText||!knob||!item)return;
-      if(currentAuthUser?.type!=="STAFF"){item.classList.add("hidden");return;}
+      if(currentAuthUser?.type!=="STAFF"||!canOpenPortalModule('biometric')){item.classList.add("hidden");return;}
       item.classList.remove("hidden");
       try{
         let enabled=false;
@@ -9783,6 +9855,7 @@ async function loadAdminStudentAttendance(){
       }
     }
     async function selectStaffDrawerBiometric(){
+      if(!canOpenPortalModule('biometric'))return showToast("Biometric settings are disabled for your role.","error");
       const item=document.getElementById("staff-drawer-biometric");
       if(item)item.disabled=true;
       try{
@@ -9834,6 +9907,7 @@ async function loadAdminStudentAttendance(){
       finally{if(item)item.disabled=false;}
     }
     function selectStaffDrawerFees(){
+      if(!canOpenPortalModule('fees'))return showToast("Fee confirmations are disabled for your role.","error");
       toggleStaffDrawer(false);
       if(typeof window.openPrincipalFeesConsole==='function')window.openPrincipalFeesConsole();
     }
@@ -9845,6 +9919,13 @@ async function loadAdminStudentAttendance(){
     async function switchStaffTab(tab) {
       tab=['punch','history','students'].includes(String(tab||''))?String(tab):'punch';
       if(tab==='students'&&!canAccessStudentAttendance())tab='punch';
+      if(!canOpenPortalModule(tab)){
+        const allowed=['punch','history','students'].find(candidate=>
+          canOpenPortalModule(candidate)&&(candidate!=='students'||canAccessStudentAttendance())
+        );
+        if(!allowed){showToast("No portal modules are enabled for your role. Contact the school administrator.","error");return;}
+        tab=allowed;
+      }
       currentStaffTab = tab;
       saveStaffPortalTab(tab);
       const punchView = document.getElementById("staff-tab-punch");
@@ -11627,7 +11708,7 @@ window.addEventListener('load',async function(){
     }
 
     function switchAdminTab(tab) {
-      const allowedTabs = ['live', 'qr', 'directory', 'corrections', 'leave', 'audit', 'reports', 'attendance-rules', 'students', 'student-portal', 'report-cards'];
+      const allowedTabs = ['live', 'qr', 'directory', 'corrections', 'leave', 'audit', 'reports', 'attendance-rules', 'students', 'student-portal', 'report-cards', 'permissions'];
       if (!allowedTabs.includes(tab)) return;
       if (tab === "attendance-rules") loadStaffAttendanceRules();
 
@@ -11653,7 +11734,7 @@ window.addEventListener('load',async function(){
       });
 
       // Keep the selected quick-action visibly active.
-      ["reports","leave","corrections","student-portal","attendance-rules","report-cards"].forEach(t => {
+      ["reports","leave","corrections","student-portal","attendance-rules","report-cards","permissions"].forEach(t => {
         const quickBtn = document.getElementById(`admin-nav-${t}`);
         if (quickBtn) {
           quickBtn.style.borderColor = t === tab ? "#0A7E46" : "";
@@ -11697,6 +11778,9 @@ window.addEventListener('load',async function(){
         if (tab === 'report-cards' && currentAuthUser?.type === 'ADMIN') {
           void loadAdminReportCardLanguages();
           loadAdminReportCards();
+        }
+        if (tab === 'permissions' && currentAuthUser?.type === 'ADMIN') {
+          void window.AshianaRolePermissions?.loadAdminPanel(supabaseClient,currentAuthUser);
         }
       } catch (err) {
         console.error("Admin tab load error:", tab, err);
@@ -12889,6 +12973,10 @@ window.addEventListener('load',async function(){
     }
 
     function openStaffProfileModal() {
+      if(currentAuthUser?.type==='STAFF'&&!canOpenPortalModule('profile')){
+        showToast("Staff profile is disabled for your role.","error");
+        return;
+      }
       if (!currentStaffId) return;
       const staff = staffDatabase.find(s => s.id === currentStaffId);
       if (staff) {
@@ -13377,6 +13465,10 @@ window.addEventListener('load',async function(){
     }
 
     function openLeaveApplyModal() {
+      if(currentAuthUser?.type==='STAFF'&&!canOpenPortalModule('leave')){
+        showToast("Leave requests are disabled for your role.","error");
+        return;
+      }
       document.getElementById("leave-apply-modal")?.classList.remove("hidden");
       if (window.lucide) lucide.createIcons();
     }
@@ -14764,6 +14856,10 @@ function addMessage(text,type){
   function commIsAdmin(){return String(currentAuthUser?.type||'').toUpperCase()==='ADMIN';}
   window.openStaffAdminCommunication=async function(){
     if(!currentAuthUser||!['ADMIN','TEACHER','STAFF'].includes(String(currentAuthUser.type||''))) return;
+    if(currentAuthUser.type!=='ADMIN'&&!(window.AshianaRolePermissions?.canOpen('communication'))){
+      showToast("Staff communication is disabled for your role.","error");
+      return;
+    }
     const m=commModal(); if(!m)return; m.classList.add('open');
     const card=m.querySelector('.staff-comm-card');
     card?.classList.remove('composer-open','thread-open');
@@ -15577,6 +15673,7 @@ window.showStudentSchoolUpiQr=async function(accountId,installmentId){
   let feeMenuProbe={key:"",state:null};
   window.refreshStaffFeesMenu=async function(){
     const btn=$("staff-drawer-fees");if(!btn)return;
+    if(!(window.AshianaRolePermissions?.canOpen('fees'))){btn.classList.add("hidden");return;}
     try{
       const user=(typeof currentAuthUser!=="undefined"&&currentAuthUser)||null;
       const role=String(user?.staffRecord?.role||"").toLowerCase();

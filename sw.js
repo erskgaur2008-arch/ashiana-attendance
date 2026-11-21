@@ -1,4 +1,4 @@
-const CACHE_NAME = "ashiana-attendance-v53";
+const CACHE_NAME = "ashiana-attendance-v54";
 const APP_SHELL = [
   "./",
   "./index.html",
@@ -6,6 +6,7 @@ const APP_SHELL = [
   "./event-photo-gallery.js",
   "./dark-mode.css?v=3",
   "./dark-mode.js?v=3",
+  "./role-permissions.js?v=1",
   "./manifest.webmanifest",
   "./logo 2.png"
 ];
@@ -66,12 +67,16 @@ self.addEventListener("fetch", (event) => {
             const html = await response.clone().text();
             const hasThemeCss = /<link\b[^>]*\bhref=["'][^"']*dark-mode\.css(?:\?[^"']*)?["'][^>]*>/i.test(html);
             const hasThemeJs = /<script\b[^>]*\bsrc=["'][^"']*dark-mode\.js(?:\?[^"']*)?["'][^>]*>/i.test(html);
+            const hasRolePermissions = /<script\b[^>]*\bsrc=["'][^"']*role-permissions\.js(?:\?[^"']*)?["'][^>]*>/i.test(html);
             let withTheme = html;
             if (!hasThemeCss) {
               withTheme = withTheme.replace(/<\/head>/i, '<link rel="stylesheet" href="./dark-mode.css?v=3"></head>');
             }
             if (!hasThemeJs) {
               withTheme = withTheme.replace(/<\/body>/i, '<script src="./dark-mode.js?v=3" defer></script></body>');
+            }
+            if (!hasRolePermissions) {
+              withTheme = withTheme.replace(/<\/body>/i, '<script src="./role-permissions.js?v=1" defer></script></body>');
             }
             if (withTheme !== html) {
               const headers = new Headers(response.headers);
