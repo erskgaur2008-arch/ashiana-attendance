@@ -41,6 +41,8 @@ jobs:
           mkdir -p mobile/www/assets/vendor
           cp index.html mobile/www/
           cp portal-passkey-lock.js mobile/www/
+          cp event-photo-gallery.js mobile/www/
+          test -s mobile/www/event-photo-gallery.js
           cp ios-pwa.css mobile/www/
           cp manifest.webmanifest mobile/www/
           cp sw.js mobile/www/
