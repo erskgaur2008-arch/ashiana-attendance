@@ -9923,7 +9923,11 @@ async function loadAdminStudentAttendance(){
         const allowed=['punch','history','students'].find(candidate=>
           canOpenPortalModule(candidate)&&(candidate!=='students'||canAccessStudentAttendance())
         );
-        if(!allowed){showToast("No portal modules are enabled for your role. Contact the school administrator.","error");return;}
+        if(!allowed){
+          if(window.AshianaRolePermissions?.isReady?.()!==false)
+            showToast("No portal modules are enabled for your role. Contact the school administrator.","error");
+          return;
+        }
         tab=allowed;
       }
       currentStaffTab = tab;

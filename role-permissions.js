@@ -72,6 +72,10 @@
       : cloneDefaults(activeRole)[moduleKey] === true;
   }
 
+  function isReady() {
+    return !activeRole || activeRole === "ADMIN" || activeReady;
+  }
+
   function mergeRows(role, rows) {
     const merged = cloneDefaults(role);
     for (const row of Array.isArray(rows) ? rows : []) {
@@ -271,6 +275,7 @@
   window.AshianaRolePermissions = {
     loadForUser,
     canOpen,
+    isReady,
     loadAdminPanel,
     saveSelectedRole,
     restoreSelectedRoleDefaults
