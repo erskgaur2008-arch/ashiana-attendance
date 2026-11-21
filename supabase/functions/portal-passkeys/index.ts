@@ -255,15 +255,18 @@ Deno.serve(async (req) => {
     }
 
     if (action === "authentication-options") {
-      const { data: credentials, error } = await db.from("portal_webauthn_credentials")
-        .select("credential_id,transports")
-        .eq("subject_type", role).eq("subject_id", subjectId).eq("enabled", true);
+      const discoverableLogin = role === "student" && subjectId === "__student_passkey_discoverable_login__";
+      const { data: credentials, error } = discoverableLogin
+        ? { data: [], error: null }
+        : await db.from("portal_webauthn_credentials")
+          .select("credential_id,transports")
+          .eq("subject_type", role).eq("subject_id", subjectId).eq("enabled", true);
       if (error) throw error;
-      if (!credentials?.length) return json({ error: "PASSKEY_LOGIN_UNAVAILABLE" }, 401);
+      if (!discoverableLogin && !credentials?.length) return json({ error: "PASSKEY_LOGIN_UNAVAILABLE" }, 401);
       const options = await generateAuthenticationOptions({
         rpID: RP_ID,
         userVerification: "required",
-        ...(subjectId === "__student_passkey_discoverable_login__" ? {} : {
+        ...(discoverableLogin ? {} : {
           allowCredentials: credentials.map((row: { credential_id: string; transports?: string[] }) => ({
             id: row.credential_id,
             transports: row.transports as never,
