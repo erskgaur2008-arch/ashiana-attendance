@@ -207,6 +207,42 @@ jobs:
               if permission not in final_xml:
                   raise SystemExit(f"Required Android permission missing: {permission}")
           PY
+      - name: Configure persistent Ashiana signing key
+        shell: bash
+        env:
+          ASHIANA_ANDROID_KEYSTORE_BASE64: ${{ secrets.ASHIANA_ANDROID_KEYSTORE_BASE64 }}
+          ASHIANA_ANDROID_KEYSTORE_PASSWORD: ${{ secrets.ASHIANA_ANDROID_KEYSTORE_PASSWORD }}
+          ASHIANA_ANDROID_KEY_ALIAS: ${{ secrets.ASHIANA_ANDROID_KEY_ALIAS }}
+          ASHIANA_ANDROID_KEY_PASSWORD: ${{ secrets.ASHIANA_ANDROID_KEY_PASSWORD }}
+        run: |
+          set -euo pipefail
+          for name in ASHIANA_ANDROID_KEYSTORE_BASE64 ASHIANA_ANDROID_KEYSTORE_PASSWORD ASHIANA_ANDROID_KEY_ALIAS ASHIANA_ANDROID_KEY_PASSWORD; do
+            if [ -z "${!name}" ]; then
+              echo "::error::Missing GitHub Actions secret: $name"
+              exit 1
+            fi
+          done
+          printf '%s' "$ASHIANA_ANDROID_KEYSTORE_BASE64" | base64 --decode > android/app/ashiana-release.jks
+          test -s android/app/ashiana-release.jks
+          cat >> android/app/build.gradle <<'GRADLE'
+
+          // Ashiana persistent signing key: same certificate for every APK build.
+          android {
+              signingConfigs {
+                  ashianaRelease {
+                      storeFile file("ashiana-release.jks")
+                      storePassword System.getenv("ASHIANA_ANDROID_KEYSTORE_PASSWORD")
+                      keyAlias System.getenv("ASHIANA_ANDROID_KEY_ALIAS")
+                      keyPassword System.getenv("ASHIANA_ANDROID_KEY_PASSWORD")
+                  }
+              }
+              buildTypes {
+                  debug {
+                      signingConfig signingConfigs.ashianaRelease
+                  }
+              }
+          }
+          GRADLE
       - name: Build debug APK
         working-directory: android
         run: ./gradlew assembleDebug --no-daemon --stacktrace
