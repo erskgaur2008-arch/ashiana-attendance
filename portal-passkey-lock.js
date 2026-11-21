@@ -374,7 +374,6 @@
       throw new Error("Student fingerprint sign-in could not be verified. Please use Admission No. and DOB.");
     }
     const token = String(exchange.session_token);
-    const client = await authClient();
     try { await client.auth.signOut({ scope: "local" }); } catch (_) {}
     try { localStorage.removeItem(ADMIN_AUTH_STORAGE_KEY); } catch (_) {}
     try { sessionStorage.removeItem(ADMIN_AUTH_STORAGE_KEY); } catch (_) {}
