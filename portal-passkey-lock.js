@@ -426,27 +426,52 @@
     }
   }
 
+  let studentFingerprintLoginInstallInFlight = false;
+  let studentFingerprintLoginInFlight = false;
+
   async function installStudentFingerprintLoginButton() {
+    if (studentFingerprintLoginInstallInFlight) return;
     const form = document.getElementById("student-login-form");
-    if (!form || document.getElementById("student-fingerprint-login")) return;
-    if (!isNative() || typeof window.AshianaNative?.hasStudentBiometricEnrollment !== "function") return;
-    if (!(await window.AshianaNative.hasStudentBiometricEnrollment())) return;
-    const button = document.createElement("button");
-    button.id = "student-fingerprint-login";
-    button.type = "button";
-    button.textContent = "Sign in with Fingerprint";
-    button.className = "w-full py-3 mt-2 bg-emerald-800 text-white font-bold rounded-xl text-xs";
-    button.addEventListener("click", async () => {
-      button.disabled = true;
-      button.textContent = "Verifying fingerprint...";
-      try { await authenticateStudentFingerprint(); }
-      catch (error) {
-        toast(error.message || "Student fingerprint sign-in failed. Use Admission No. and DOB if needed.", "error");
-        button.disabled = false;
-        button.textContent = "Sign in with Fingerprint";
-      }
-    });
-    form.append(button);
+    if (!form || !isNative() || typeof window.AshianaNative?.hasStudentBiometricEnrollment !== "function") return;
+    // Remove any duplicates left by earlier page mutations or older builds.
+    const existing = form.querySelectorAll("#student-fingerprint-login");
+    if (existing.length > 1) Array.from(existing).slice(1).forEach(button => button.remove());
+    if (form.querySelector("#student-fingerprint-login")) return;
+    studentFingerprintLoginInstallInFlight = true;
+    try {
+      if (!(await window.AshianaNative.hasStudentBiometricEnrollment())) return;
+      // The form may have been replaced while the native enrollment check ran.
+      const currentForm = document.getElementById("student-login-form");
+      if (!currentForm || currentForm.querySelector("#student-fingerprint-login")) return;
+      const button = document.createElement("button");
+      button.id = "student-fingerprint-login";
+      button.type = "button";
+      button.textContent = "Sign in with Fingerprint";
+      button.className = "w-full py-3 mt-2 bg-emerald-800 text-white font-bold rounded-xl text-xs";
+      button.addEventListener("click", async () => {
+        if (studentFingerprintLoginInFlight) return;
+        studentFingerprintLoginInFlight = true;
+        button.disabled = true;
+        button.textContent = "Verifying fingerprint...";
+        try { await authenticateStudentFingerprint(); }
+        catch (error) {
+          // A server-rejected token means the student logged out or the
+          // session expired. Remove the unusable biometric action until a
+          // fresh Admission No. + DOB login enrolls a new token.
+          if (/expired|signed out|logged out/i.test(String(error?.message || ""))) button.remove();
+          else {
+            toast(error.message || "Student fingerprint sign-in failed. Use Admission No. and DOB if needed.", "error");
+            button.disabled = false;
+            button.textContent = "Sign in with Fingerprint";
+          }
+        } finally {
+          studentFingerprintLoginInFlight = false;
+        }
+      });
+      currentForm.append(button);
+    } finally {
+      studentFingerprintLoginInstallInFlight = false;
+    }
   }
 
   function installStudentLoginButton() {
