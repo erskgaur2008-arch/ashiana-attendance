@@ -356,6 +356,99 @@
     }
   }
 
+  let studentFingerprintSetupInFlight = false;
+
+  async function authenticateStudentFingerprint() {
+    const native = window.AshianaNative;
+    if (!native?.isAndroid?.() || typeof native.getStudentBiometricSessionToken !== "function") {
+      throw new Error("Fingerprint login is available only in the Android app. Use Admission No. and DOB.");
+    }
+    const token = await native.getStudentBiometricSessionToken();
+    // Ask the existing server endpoint to validate the opaque session before
+    // restoring it locally. A biometric prompt alone never grants portal access.
+    try { await invoke("student", "status", { session_token: token }); }
+    catch (_) {
+      await native.disableStudentBiometric?.();
+      throw new Error("Your saved Student session has expired or was signed out. Please use Admission No. and DOB again.");
+    }
+    const client = await authClient();
+    try { await client.auth.signOut({ scope: "local" }); } catch (_) {}
+    try { localStorage.removeItem(ADMIN_AUTH_STORAGE_KEY); } catch (_) {}
+    try { sessionStorage.removeItem(ADMIN_AUTH_STORAGE_KEY); } catch (_) {}
+    sessionStorage.setItem(STUDENT_TOKEN_KEY, token);
+    sessionStorage.setItem(RECENT_AUTH_KEY, "student");
+    await native.saveStudentSessionToken(token);
+    location.reload();
+    return true;
+  }
+
+  async function enableStudentFingerprint() {
+    const native = window.AshianaNative;
+    if (!native?.isAndroid?.() || typeof native.enableStudentBiometric !== "function") {
+      throw new Error("Fingerprint enrollment is available only in the Android app.");
+    }
+    const token = studentSessionToken();
+    if (!/^[a-f0-9]{64}$/i.test(token)) throw new Error("Please sign in with Admission No. and DOB before enabling fingerprint login.");
+    await invoke("student", "status", { session_token: token });
+    await native.enableStudentBiometric(token);
+    toast("Student fingerprint login is enabled on this phone.", "success");
+    document.getElementById("student-fingerprint-setup")?.remove();
+    installStudentFingerprintLoginButton();
+  }
+
+  async function installStudentFingerprintSetup() {
+    if (studentFingerprintSetupInFlight || !isNative() || currentRole()?.role !== "student" || !studentSessionToken()) return;
+    if (document.getElementById("student-fingerprint-setup")) return;
+    studentFingerprintSetupInFlight = true;
+    try {
+      const native = window.AshianaNative;
+      if (typeof native?.hasStudentBiometricEnrollment !== "function") return;
+      if (await native.hasStudentBiometricEnrollment()) return;
+      const button = document.createElement("button");
+      button.id = "student-fingerprint-setup";
+      button.type = "button";
+      button.textContent = "Enable Fingerprint Login";
+      button.setAttribute("aria-label", "Enable Student fingerprint login on this phone");
+      button.style.cssText = "position:fixed;left:16px;right:16px;bottom:18px;z-index:10000;padding:13px 16px;border:0;border-radius:14px;background:#064e3b;color:white;font:700 14px system-ui,sans-serif;box-shadow:0 4px 18px #0003";
+      button.addEventListener("click", async () => {
+        button.disabled = true;
+        button.textContent = "Setting up fingerprint...";
+        try { await enableStudentFingerprint(); }
+        catch (error) {
+          toast(error.message || "Could not enable fingerprint login.", "error");
+          button.disabled = false;
+          button.textContent = "Enable Fingerprint Login";
+        }
+      });
+      document.body.append(button);
+    } finally {
+      studentFingerprintSetupInFlight = false;
+    }
+  }
+
+  async function installStudentFingerprintLoginButton() {
+    const form = document.getElementById("student-login-form");
+    if (!form || document.getElementById("student-fingerprint-login")) return;
+    if (!isNative() || typeof window.AshianaNative?.hasStudentBiometricEnrollment !== "function") return;
+    if (!(await window.AshianaNative.hasStudentBiometricEnrollment())) return;
+    const button = document.createElement("button");
+    button.id = "student-fingerprint-login";
+    button.type = "button";
+    button.textContent = "Sign in with Fingerprint";
+    button.className = "w-full py-3 mt-2 bg-emerald-800 text-white font-bold rounded-xl text-xs";
+    button.addEventListener("click", async () => {
+      button.disabled = true;
+      button.textContent = "Verifying fingerprint...";
+      try { await authenticateStudentFingerprint(); }
+      catch (error) {
+        toast(error.message || "Student fingerprint sign-in failed. Use Admission No. and DOB if needed.", "error");
+        button.disabled = false;
+        button.textContent = "Sign in with Fingerprint";
+      }
+    });
+    form.append(button);
+  }
+
   function installStudentLoginButton() {
     const form = document.getElementById("student-login-form");
     if (!form || document.getElementById("student-passkey-login")) return;
@@ -382,7 +475,8 @@
   }
 
   function watch() {
-    installStudentLoginButton();
+    installStudentFingerprintLoginButton().catch(error => console.warn("Student fingerprint button unavailable:", error?.message || error));
+    installStudentFingerprintSetup().catch(error => console.warn("Student fingerprint setup unavailable:", error?.message || error));
     const current = currentRole();
     if (!current) {
       setupPrompted = { admin: false, student: false };

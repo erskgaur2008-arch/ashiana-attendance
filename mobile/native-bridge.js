@@ -207,6 +207,63 @@ async function clearStudentSessionToken() {
   return true;
 }
 
+const STUDENT_BIOMETRIC_SERVER = "com.ashiana.attendance.student.session.v1";
+
+async function studentBiometricAvailable() {
+  if (!isNativeAndroid()) return false;
+  try {
+    const result = await NativeBiometric.isAvailable({ useFallback: false });
+    return Boolean(result?.isAvailable);
+  } catch (_) { return false; }
+}
+
+async function hasStudentBiometricEnrollment() {
+  if (!isNativeAndroid()) return false;
+  try {
+    const result = await NativeBiometric.isCredentialsSaved({ server: STUDENT_BIOMETRIC_SERVER });
+    return Boolean(result?.isSaved);
+  } catch (_) { return false; }
+}
+
+async function enableStudentBiometric(sessionToken) {
+  if (!isNativeAndroid()) throw new Error("Fingerprint login is available only in the Android app.");
+  const token = String(sessionToken || "").trim();
+  if (!/^[a-f0-9]{64}$/i.test(token)) throw new Error("Student session expired. Sign in with Admission No. and DOB again.");
+  if (!(await studentBiometricAvailable())) throw new Error("No enrolled fingerprint is available. Set up a fingerprint in Android Settings first.");
+  await NativeBiometric.setCredentials({
+    username: "student-session",
+    password: token,
+    server: STUDENT_BIOMETRIC_SERVER,
+    accessControl: AccessControl.BIOMETRY_CURRENT_SET,
+    description: "Unlock Ashiana Student login with your enrolled fingerprint"
+  });
+  return true;
+}
+
+async function getStudentBiometricSessionToken() {
+  if (!isNativeAndroid()) throw new Error("Fingerprint login is available only in the Android app.");
+  const saved = await NativeBiometric.isCredentialsSaved({ server: STUDENT_BIOMETRIC_SERVER });
+  if (!saved?.isSaved) throw new Error("Fingerprint login is not enabled. Sign in with Admission No. and DOB first.");
+  const credentials = await NativeBiometric.getSecureCredentials({
+    server: STUDENT_BIOMETRIC_SERVER,
+    reason: "Verify your identity to sign in to Ashiana Student Portal",
+    title: "Student fingerprint verification",
+    subtitle: "Ashiana Public School",
+    description: "Use the fingerprint enrolled on this phone",
+    negativeButtonText: "Cancel",
+    maxAttempts: 3
+  });
+  const token = String(credentials?.password || "").trim();
+  if (!/^[a-f0-9]{64}$/i.test(token)) throw new Error("Saved Student sign-in is invalid. Sign in with Admission No. and DOB again.");
+  return token;
+}
+
+async function disableStudentBiometric() {
+  if (!isNativeAndroid()) return false;
+  try { await NativeBiometric.deleteCredentials({ server: STUDENT_BIOMETRIC_SERVER }); } catch (_) {}
+  return true;
+}
+
 const STAFF_BIOMETRIC_POINTER_KEY = "aps_staff_biometric_staff_id_v1";
 const STAFF_BIOMETRIC_SERVER_PREFIX = "com.ashiana.attendance.staff.";
 
@@ -340,5 +397,10 @@ window.AshianaNative = Object.freeze({
   disableStaffBiometric,
   saveStudentSessionToken,
   getStudentSessionToken,
-  clearStudentSessionToken
+  clearStudentSessionToken,
+  studentBiometricAvailable,
+  hasStudentBiometricEnrollment,
+  enableStudentBiometric,
+  getStudentBiometricSessionToken,
+  disableStudentBiometric
 });
