@@ -59,6 +59,7 @@ jobs:
           cp dark-mode.css mobile/www/
           cp dark-mode.js mobile/www/
           cp portal-passkey-lock.js mobile/www/
+          cp event-photo-gallery.js mobile/www/
           cp ios-pwa.css mobile/www/
           cp manifest.webmanifest mobile/www/
           cp sw.js mobile/www/
@@ -98,6 +99,8 @@ jobs:
               raise SystemExit("Dark Mode script does not create the expected toggle")
           print(f"Verified Dark Mode CSS and JS in {role} Android web bundle")
           PY
+          test -s mobile/www/event-photo-gallery.js
+          grep -q \"event-photo-gallery.js\" mobile/www/index.html
           test -s mobile/www/assets/vendor/supabase.js
       - name: Install dependencies
         shell: bash
