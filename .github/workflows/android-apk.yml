@@ -224,16 +224,28 @@ jobs:
           done
           printf '%s' "$ASHIANA_ANDROID_KEYSTORE_BASE64" | base64 --decode > android/app/ashiana-release.jks
           test -s android/app/ashiana-release.jks
+          # Write temporary Gradle properties so the signing values are read reliably
+          # by Gradle even when it launches a separate daemon process.
+          cat > android/keystore.properties <<EOF
+          storePassword=$ASHIANA_ANDROID_KEYSTORE_PASSWORD
+          keyAlias=$ASHIANA_ANDROID_KEY_ALIAS
+          keyPassword=$ASHIANA_ANDROID_KEY_PASSWORD
+          EOF
           cat >> android/app/build.gradle <<'GRADLE'
 
           // Ashiana persistent signing key: same certificate for every APK build.
+          def ashianaSigningProperties = new Properties()
+          def ashianaSigningFile = rootProject.file("keystore.properties")
+          if (ashianaSigningFile.exists()) {
+              ashianaSigningFile.withInputStream { ashianaSigningProperties.load(it) }
+          }
           android {
               signingConfigs {
                   ashianaRelease {
                       storeFile file("ashiana-release.jks")
-                      storePassword System.getenv("ASHIANA_ANDROID_KEYSTORE_PASSWORD")
-                      keyAlias System.getenv("ASHIANA_ANDROID_KEY_ALIAS")
-                      keyPassword System.getenv("ASHIANA_ANDROID_KEY_PASSWORD")
+                      storePassword ashianaSigningProperties.getProperty("storePassword")
+                      keyAlias ashianaSigningProperties.getProperty("keyAlias")
+                      keyPassword ashianaSigningProperties.getProperty("keyPassword")
                   }
               }
               buildTypes {
