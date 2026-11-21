@@ -363,14 +363,17 @@
     if (!native?.isAndroid?.() || typeof native.getStudentBiometricSessionToken !== "function") {
       throw new Error("Fingerprint login is available only in the Android app. Use Admission No. and DOB.");
     }
-    const token = await native.getStudentBiometricSessionToken();
-    // Ask the existing server endpoint to validate the opaque session before
-    // restoring it locally. A biometric prompt alone never grants portal access.
-    try { await invoke("student", "status", { session_token: token }); }
-    catch (_) {
-      await native.disableStudentBiometric?.();
-      throw new Error("Your saved Student session has expired or was signed out. Please use Admission No. and DOB again.");
+    const deviceSecret = await native.getStudentBiometricSessionToken();
+    // Exchange the biometric-protected device credential for a fresh,
+    // revocable Student session. Logout never revokes the device credential.
+    const client = await authClient();
+    const { data: exchange, error: exchangeError } = await client.rpc("student_biometric_login", {
+      p_device_secret: deviceSecret
+    });
+    if (exchangeError || !exchange?.success || !/^[a-f0-9]{64}$/i.test(String(exchange.session_token || ""))) {
+      throw new Error("Student fingerprint sign-in could not be verified. Please use Admission No. and DOB.");
     }
+    const token = String(exchange.session_token);
     const client = await authClient();
     try { await client.auth.signOut({ scope: "local" }); } catch (_) {}
     try { localStorage.removeItem(ADMIN_AUTH_STORAGE_KEY); } catch (_) {}
@@ -390,7 +393,18 @@
     const token = studentSessionToken();
     if (!/^[a-f0-9]{64}$/i.test(token)) throw new Error("Please sign in with Admission No. and DOB before enabling fingerprint login.");
     await invoke("student", "status", { session_token: token });
-    await native.enableStudentBiometric(token);
+    const deviceSecret = Array.from(crypto.getRandomValues(new Uint8Array(32)), byte => byte.toString(16).padStart(2, "0")).join("");
+    const client = await authClient();
+    const { data: enrolled, error: enrollError } = await client.rpc("student_biometric_enroll", {
+      p_session_token: token,
+      p_device_secret: deviceSecret
+    });
+    if (enrollError || !enrolled?.success) throw new Error("Could not register this phone for Student fingerprint login.");
+    try { await native.enableStudentBiometric(deviceSecret); }
+    catch (error) {
+      try { await client.rpc("student_biometric_revoke", { p_device_secret: deviceSecret }); } catch (_) {}
+      throw error;
+    }
     toast("Student fingerprint login is enabled on this phone.", "success");
     document.getElementById("student-fingerprint-setup")?.remove();
     installStudentFingerprintLoginButton();
@@ -434,6 +448,10 @@
       remove.addEventListener("click", async () => {
         remove.disabled = true;
         try {
+          const deviceSecret = await native.getStudentBiometricSessionToken();
+          const client = await authClient();
+          const { error: revokeError } = await client.rpc("student_biometric_revoke", { p_device_secret: deviceSecret });
+          if (revokeError) throw new Error("Could not remove the server registration. Please try again.");
           await native.disableStudentBiometric?.();
           toast("Student fingerprint login has been removed from this phone.", "success");
           panel.remove();
@@ -550,7 +568,8 @@
       // always erased even if the network is unavailable.
       try { await client.rpc("student_session_revoke", { p_token: token }); }
       catch (error) { console.warn("Student session revocation during logout:", error?.message || error); }
-      try { await window.AshianaNative?.disableStudentBiometric?.(); } catch (_) {}
+      // Keep the device-bound biometric credential registered. Only the
+      // active session is revoked and removed on logout.
       try { await window.AshianaNative?.clearStudentSessionToken?.(); } catch (_) {}
       try { sessionStorage.removeItem(STUDENT_TOKEN_KEY); } catch (_) {}
       try { localStorage.removeItem(STUDENT_TOKEN_KEY); } catch (_) {}
