@@ -499,6 +499,37 @@
     form.append(button);
   }
 
+  // Revoke and erase the Student biometric session before the existing
+  // logout handler runs. This prevents a fingerprint from reopening a
+  // session that the student has explicitly signed out of.
+  let studentLogoutCleanupInProgress = false;
+  let studentLogoutReplay = false;
+  document.addEventListener("click", async event => {
+    if (studentLogoutReplay || studentLogoutCleanupInProgress || currentRole()?.role !== "student") return;
+    const control = event.target?.closest?.("button, a, [role='button']");
+    if (!control || !/\\b(log ?out|sign ?out)\\b/i.test(String(control.textContent || control.getAttribute("aria-label") || ""))) return;
+    const token = studentSessionToken();
+    if (!token) return;
+    event.preventDefault();
+    event.stopImmediatePropagation();
+    studentLogoutCleanupInProgress = true;
+    try {
+      const client = await authClient();
+      // Best-effort server revocation; local and biometric credentials are
+      // always erased even if the network is unavailable.
+      try { await client.rpc("student_session_revoke", { p_token: token }); }
+      catch (error) { console.warn("Student session revocation during logout:", error?.message || error); }
+      try { await window.AshianaNative?.disableStudentBiometric?.(); } catch (_) {}
+      try { await window.AshianaNative?.clearStudentSessionToken?.(); } catch (_) {}
+      try { sessionStorage.removeItem(STUDENT_TOKEN_KEY); } catch (_) {}
+      try { localStorage.removeItem(STUDENT_TOKEN_KEY); } catch (_) {}
+    } finally {
+      studentLogoutCleanupInProgress = false;
+      studentLogoutReplay = true;
+      try { control.click(); } finally { queueMicrotask(() => { studentLogoutReplay = false; }); }
+    }
+  }, true);
+
   function watch() {
     installStudentFingerprintLoginButton().catch(error => console.warn("Student fingerprint button unavailable:", error?.message || error));
     installStudentFingerprintSetup().catch(error => console.warn("Student fingerprint setup unavailable:", error?.message || error));
