@@ -14,7 +14,8 @@
     STUDENT: {
       profile: true, mentor: true, classmates: true, notice: true,
       attendance: true, "report-card": true, fees: true, homework: true,
-      timetable: true, leave: true, calendar: true, "id-card": true
+      timetable: true, leave: true, calendar: true, "id-card": true,
+      "event-photos": true
     }
   };
   const MODULES = {
@@ -38,7 +39,8 @@
       ["attendance", "Attendance"], ["report-card", "Report card"],
       ["fees", "Fees management"], ["homework", "Homework"],
       ["timetable", "Timetable"], ["leave", "Leave requests"],
-      ["calendar", "School calendar"], ["id-card", "ID card"]
+      ["calendar", "School calendar"], ["id-card", "ID card"],
+      ["event-photos", "Event photos (view only)", "Students can browse published school event galleries."]
     ]
   };
   const ROLE_LABELS = { STAFF: "Staff", TEACHER: "Teacher", STUDENT: "Student" };
@@ -191,7 +193,8 @@
     list.innerHTML = MODULES[role].map(([key, label, note]) => {
       const locked = role === "STAFF" && key === "students";
       const checked = current[key] === true;
-      const lockNote = locked ? `<span class="block text-[11px] text-slate-500">${note}</span>` : "";
+      const showNote = locked || (role === "STUDENT" && key === "event-photos");
+      const lockNote = showNote && note ? `<span class="block text-[11px] text-slate-500">${note}</span>` : "";
       return `<label class="flex items-center justify-between gap-4 rounded-xl border border-slate-200 bg-white px-4 py-3 ${locked ? "opacity-70" : "cursor-pointer"}">
         <span class="min-w-0"><strong class="block text-sm text-slate-800">${label}</strong>${lockNote}</span>
         <input type="checkbox" class="h-5 w-5 shrink-0 accent-emerald-700" data-role-permission-key="${key}" ${checked ? "checked" : ""} ${locked ? "disabled" : ""} aria-label="Allow ${label} for ${ROLE_LABELS[role]}">

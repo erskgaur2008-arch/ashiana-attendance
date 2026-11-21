@@ -7,7 +7,24 @@ async function api(action,extra={}){const c=await client();if(!c?.functions?.inv
 function studentToken(){return String(sessionStorage.getItem("aps_student_session_token_v1")||localStorage.getItem("aps_student_session_token_v1")||"");}
 function showMessage(host,msg,error=false){host.innerHTML='<div class="p-3 rounded-xl text-sm '+(error?'bg-rose-50 text-rose-800':'bg-emerald-50 text-emerald-800')+'">'+esc(msg)+'</div>';}
 async function renderStudentGallery(host){showMessage(host,"Loading school event photos…");try{const data=await api("student-list",{student_session_token:studentToken()});if(!data.events?.length){showMessage(host,"No published event photos are available for your class yet.");return;}host.innerHTML=data.events.map(e=>'<article class="bg-white border border-orange-100 rounded-2xl p-4 mb-4"><div class="flex justify-between gap-2"><div><h4 class="font-extrabold text-slate-900">'+esc(e.title)+'</h4><p class="text-xs text-slate-500">'+esc(e.event_date)+'</p></div><span class="text-[10px] font-bold bg-orange-50 text-orange-700 rounded-full px-2 py-1 self-start">'+esc(e.photos.length)+' photos</span></div>'+(e.description?'<p class="text-sm text-slate-600 mt-2">'+esc(e.description)+'</p>':'')+'<div class="grid grid-cols-2 sm:grid-cols-3 gap-2 mt-3">'+e.photos.map(p=>'<button type="button" class="text-left" data-gallery-photo="'+esc(p.url)+'" data-gallery-caption="'+esc(p.caption)+'"><img loading="lazy" src="'+esc(p.url)+'" alt="'+esc(p.caption||e.title)+'" class="w-full aspect-square object-cover rounded-xl bg-slate-100"><span class="block text-[10px] text-slate-500 mt-1">'+esc(p.caption||"View photo")+'</span></button>').join("")+'</div></article>').join("");host.querySelectorAll("[data-gallery-photo]").forEach(b=>b.addEventListener("click",()=>{const w=document.createElement("div");w.className="fixed inset-0 z-[250] bg-black/90 flex flex-col items-center justify-center p-4";w.innerHTML='<button type="button" class="self-end text-white text-2xl p-3" aria-label="Close photo">×</button><img src="'+esc(b.dataset.galleryPhoto)+'" alt="'+esc(b.dataset.galleryCaption)+'" class="max-w-full max-h-[78vh] object-contain rounded-xl"><p class="text-white text-sm mt-3">'+esc(b.dataset.galleryCaption)+'</p>';w.addEventListener("click",()=>w.remove());document.body.appendChild(w);}));}catch(e){showMessage(host,e.message||"Unable to load event photos.",true);}}
-function installStudent(){const portal=$("student-portal-view");if(!portal||$("student-event-gallery-button"))return;const grid=portal.querySelector(".grid.grid-cols-2");if(!grid)return;const b=document.createElement("button");b.id="student-event-gallery-button";b.type="button";b.className="p-4 rounded-2xl border border-orange-200 bg-orange-50 text-left";b.innerHTML='<i data-lucide="images" class="w-5 h-5 text-orange-700"></i><b class="block mt-2 text-sm">Event Photos</b><span class="text-[10px] text-slate-500">School event galleries</span>';b.addEventListener("click",()=>{if(typeof window.studentDashboardSection==="function"){window.studentDashboardSection("event-photos");setTimeout(()=>{const h=$("student-dashboard-panel-body");if(h)renderStudentGallery(h);},250);}else{const panel=$("student-dashboard-panel");if(panel){panel.classList.remove("hidden");const h=$("student-dashboard-panel-body");if(h)renderStudentGallery(h);}}});grid.appendChild(b);if(window.lucide)window.lucide.createIcons();}
+function installStudent(){
+ const portal=$("student-portal-view");if(!portal||$("student-event-gallery-button"))return;
+ const grid=portal.querySelector(".grid.grid-cols-2");if(!grid)return;
+ const b=document.createElement("button");b.id="student-event-gallery-button";b.type="button";b.dataset.roleModule="event-photos";b.className="p-4 rounded-2xl border border-orange-200 bg-orange-50 text-left";
+ b.innerHTML='<i data-lucide="images" class="w-5 h-5 text-orange-700"></i><b class="block mt-2 text-sm">Event Photos</b><span class="text-[10px] text-slate-500">View published school galleries</span>';
+ const applyPermission=()=>b.classList.toggle("hidden",window.AshianaRolePermissions?.canOpen?.("event-photos")!==true);
+ window.addEventListener("ashiana-role-permissions-updated",applyPermission);applyPermission();
+ b.addEventListener("click",async()=>{
+  if(typeof window.studentDashboardSection==="function"){
+   await window.studentDashboardSection("event-photos");
+   const host=$("student-dashboard-panel-body");if(host)await renderStudentGallery(host);
+  }else{
+   const panel=$("student-dashboard-panel"),host=$("student-dashboard-panel-body");
+   if(panel&&host){panel.classList.remove("hidden");await renderStudentGallery(host);}
+  }
+ });
+ grid.appendChild(b);if(window.lucide)window.lucide.createIcons();
+}
 function syncAdminGalleryClassOptions(sel){
 const target=$("epg-class"),section=$("epg-section");
 if(!sel||!target)return;
