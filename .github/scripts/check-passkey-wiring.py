@@ -14,7 +14,7 @@ checks = {
     "Supabase client opts into Auth passkeys": "experimental: { passkey: true }" in html and "[auth.passkey]\nenabled = true" in supabase_config,
     "Admin passkey is checked by server authorization RPC": "authorize_admin_login" in html,
     "Admin unlock requires an exact account match": "!expectedEmail || email !== expectedEmail" in ui,
-    "Student passkey login supports admission-free discoverable credentials": 'getElementById("student-login-admission")' not in ui and "__student_passkey_discoverable_login__" in edge and "credential_id", assertion.id" in edge and 'residentKey: "required"' in edge,
+    "Student passkey login supports admission-free discoverable credentials": 'getElementById("student-login-admission")' not in ui and "__student_passkey_discoverable_login__" in edge and '"credential_id", assertion.id' in edge and 'residentKey: "required"' in edge,
     "Student dashboard session is minted only after assertion": '"authentication-verify"' in ui and "student_session_tokens" in edge,
     "Student session is revalidated server-side": "student_session_student_id" in edge,
     "Android uses native Credential Manager plugin": '"@capgo/capacitor-passkey"' in package and "CapacitorPasskey.autoShimWebAuthn()" in native,
