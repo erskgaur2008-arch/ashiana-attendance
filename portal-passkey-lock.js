@@ -542,13 +542,37 @@
       }
     };
 
+    // A normal tap performs the useful action immediately: authenticate if
+    // this device is enrolled, otherwise register using the live Admission No.
+    // and DOB fields. Long-press/context menu keeps the remove action available.
+    trigger.setAttribute("aria-label", "Student fingerprint sign-in or registration");
+    trigger.removeAttribute("aria-haspopup");
     trigger.onclick = async () => {
-      if (!menu.hidden) {
-        menu.hidden = true;
-        trigger.setAttribute("aria-expanded", "false");
-        return;
+      if (trigger.disabled) return;
+      trigger.disabled = true;
+      try {
+        const enrolled = await window.AshianaNative.hasStudentBiometricEnrollment();
+        if (enrolled) {
+          await authenticateStudentFingerprint();
+          return;
+        }
+        await refresh();
+        const registerAction = Array.from(menu.querySelectorAll('[role="menuitem"]'))
+          .find(item => /register fingerprint/i.test(item.textContent || ""));
+        if (!registerAction) throw new Error("Fingerprint registration is not available. Please try again.");
+        registerAction.click();
+      } catch (error) {
+        toast(error.message || "Student fingerprint action failed.", "error");
+      } finally {
+        trigger.disabled = false;
       }
+    };
+    trigger.oncontextmenu = async event => {
+      event.preventDefault();
       await refresh();
+      const removeAction = Array.from(menu.querySelectorAll('[role="menuitem"]'))
+        .find(item => /remove fingerprint/i.test(item.textContent || ""));
+      if (!removeAction) return;
       menu.hidden = false;
       trigger.setAttribute("aria-expanded", "true");
     };
