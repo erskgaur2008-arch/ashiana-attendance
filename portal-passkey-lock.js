@@ -409,14 +409,22 @@
     installStudentFingerprintLoginButton();
   }
 
+  let studentFingerprintControlsInstallInFlight = false;
+
   async function installStudentFingerprintLoginControls() {
-    if (!isNative()) return;
+    if (studentFingerprintControlsInstallInFlight || !isNative()) return;
     const form = document.getElementById("student-login-form");
     if (!form || form.querySelector("#student-fingerprint-register") || form.querySelector("#student-fingerprint-remove")) return;
 
     const native = window.AshianaNative;
     if (typeof native?.hasStudentBiometricEnrollment !== "function") return;
-    const enrolled = await native.hasStudentBiometricEnrollment();
+    studentFingerprintControlsInstallInFlight = true;
+    try {
+      const enrolled = await native.hasStudentBiometricEnrollment();
+      // The MutationObserver can fire many times while the native check is
+      // pending. Re-resolve the live form and re-check IDs before appending.
+      const currentForm = document.getElementById("student-login-form");
+      if (!currentForm || currentForm.querySelector("#student-fingerprint-register") || currentForm.querySelector("#student-fingerprint-remove")) return;
 
     const register = document.createElement("button");
     register.id = "student-fingerprint-register";
@@ -501,7 +509,10 @@
       }
     });
 
-    form.append(register, remove);
+    currentForm.append(register, remove);
+    } finally {
+      studentFingerprintControlsInstallInFlight = false;
+    }
   }
   let studentFingerprintLoginInstallInFlight = false;
   let studentFingerprintLoginInFlight = false;
