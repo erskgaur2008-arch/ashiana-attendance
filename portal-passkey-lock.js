@@ -413,6 +413,33 @@
 
   async function installStudentFingerprintLoginControls() {
     if (studentFingerprintControlsInstallInFlight || !isNative()) return;
+    // Compact the Student-only green login banner on mobile and keep its
+    // logo/title hierarchy intact. Other roles retain their existing layout.
+    if (!document.getElementById("student-login-compact-hero-style")) {
+      const style = document.createElement("style");
+      style.id = "student-login-compact-hero-style";
+      style.textContent = `
+        @media (max-width: 640px) {
+          #auth-gateway-view[data-login-role-active="student"] #login-hero {
+            padding: 14px 14px 30px !important;
+          }
+          #auth-gateway-view[data-login-role-active="student"] #login-hero .login-school-logo {
+            width: 72px !important;
+            height: 72px !important;
+            margin-bottom: 7px !important;
+          }
+          #auth-gateway-view[data-login-role-active="student"] #login-hero h2 {
+            font-size: 1.25rem !important;
+            line-height: 1.25 !important;
+          }
+          #auth-gateway-view[data-login-role-active="student"] #login-hero .login-school-subtitle {
+            margin-top: 3px !important;
+            font-size: .9rem !important;
+          }
+        }
+      `;
+      document.head.append(style);
+    }
     const form = document.getElementById("student-login-form");
     if (!form) return;
     // Remove legacy separate fingerprint controls and any duplicate icon controls.
@@ -424,7 +451,7 @@
       trigger = document.createElement("button");
       trigger.id = "student-fingerprint-actions";
       trigger.type = "button";
-      trigger.className = "inline-flex items-center justify-center w-14 h-14 mt-3 mx-auto rounded-full border border-emerald-200 bg-emerald-50 text-emerald-800 shadow-sm";
+      trigger.className = "flex items-center justify-center w-14 h-14 mt-3 mx-auto rounded-full border border-emerald-200 bg-emerald-50 text-emerald-800 shadow-sm";
       trigger.setAttribute("aria-label", "Student fingerprint options");
       trigger.setAttribute("aria-haspopup", "menu");
       trigger.setAttribute("aria-expanded", "false");
@@ -437,6 +464,7 @@
       menu.id = "student-fingerprint-menu";
       menu.className = "w-full mt-2 p-3 rounded-2xl border border-emerald-100 bg-white shadow-lg space-y-2";
       menu.hidden = true;
+      menu.style.setProperty("display", "none", "important");
       menu.setAttribute("role", "menu");
       form.append(menu);
     }
@@ -460,6 +488,7 @@
         if (enrolled) {
           addAction("Sign in with fingerprint", async () => {
             menu.hidden = true;
+            menu.style.setProperty("display", "none", "important");
             trigger.setAttribute("aria-expanded", "false");
             try { await authenticateStudentFingerprint(); }
             catch (error) { toast(error.message || "Student fingerprint sign-in failed.", "error"); }
@@ -521,6 +550,7 @@
               }
               toast("Student fingerprint login is registered on this phone.", "success");
               menu.hidden = true;
+              menu.style.setProperty("display", "none", "important");
               trigger.setAttribute("aria-expanded", "false");
               await refresh();
             } catch (error) {
@@ -542,19 +572,45 @@
       }
     };
 
+    // A normal tap performs the useful action immediately: authenticate if
+    // this device is enrolled, otherwise register using the live Admission No.
+    // and DOB fields. Long-press/context menu keeps the remove action available.
+    trigger.setAttribute("aria-label", "Student fingerprint sign-in or registration");
+    trigger.removeAttribute("aria-haspopup");
     trigger.onclick = async () => {
-      if (!menu.hidden) {
-        menu.hidden = true;
-        trigger.setAttribute("aria-expanded", "false");
-        return;
+      if (trigger.disabled) return;
+      trigger.disabled = true;
+      try {
+        const enrolled = await window.AshianaNative.hasStudentBiometricEnrollment();
+        if (enrolled) {
+          await authenticateStudentFingerprint();
+          return;
+        }
+        await refresh();
+        const registerAction = Array.from(menu.querySelectorAll('[role="menuitem"]'))
+          .find(item => /register fingerprint/i.test(item.textContent || ""));
+        if (!registerAction) throw new Error("Fingerprint registration is not available. Please try again.");
+        registerAction.click();
+      } catch (error) {
+        toast(error.message || "Student fingerprint action failed.", "error");
+      } finally {
+        trigger.disabled = false;
       }
+    };
+    trigger.oncontextmenu = async event => {
+      event.preventDefault();
       await refresh();
+      const removeAction = Array.from(menu.querySelectorAll('[role="menuitem"]'))
+        .find(item => /remove fingerprint/i.test(item.textContent || ""));
+      if (!removeAction) return;
       menu.hidden = false;
+      menu.style.setProperty("display", "block", "important");
       trigger.setAttribute("aria-expanded", "true");
     };
     document.addEventListener("click", event => {
       if (!form.contains(event.target)) {
         menu.hidden = true;
+        menu.style.setProperty("display", "none", "important");
         trigger.setAttribute("aria-expanded", "false");
       }
     });
