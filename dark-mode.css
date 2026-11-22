@@ -80,6 +80,25 @@ html[data-ashiana-theme="dark"] #ashiana-theme-toggle {
 #ashiana-theme-toggle:focus-visible { outline: 3px solid #16a875; outline-offset: 3px; }
 @media print { #ashiana-theme-toggle { display: none !important; } }
 
+/* In the Student Portal, keep the theme control in the header instead of
+   floating over dashboard cards or the Event Photos tile. */
+.ashiana-theme-header { flex-wrap: wrap; row-gap: 10px; }
+.ashiana-theme-header > div:first-child { flex: 1 1 190px; min-width: 0; }
+#ashiana-theme-toggle.ashiana-theme-inline {
+  position: static;
+  flex: 0 0 auto;
+  min-width: 42px;
+  min-height: 42px;
+  margin-left: auto;
+  padding: 0 10px;
+  box-shadow: 0 2px 8px rgba(0,0,0,.12);
+}
+@media (max-width: 480px) {
+  #ashiana-theme-toggle.ashiana-theme-inline .ashiana-theme-label { display: none; }
+  #ashiana-theme-toggle.ashiana-theme-inline { width: 42px; padding: 0; }
+}
+
+
 /* Darken pale utility surfaces across administrator, staff, teacher and student views. */
 html[data-ashiana-theme="dark"] body :where(
   [class*="bg-white"], [class*="bg-gray-50"], [class*="bg-gray-100"],

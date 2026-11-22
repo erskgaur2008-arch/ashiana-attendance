@@ -31,7 +31,25 @@
     button.addEventListener("click", () => {
       setTheme(root.getAttribute("data-ashiana-theme") === "dark" ? "light" : "dark");
     });
+    const placeToggle = () => {
+      const portal = document.getElementById("student-portal-view");
+      const header = portal?.querySelector(":scope > div > div:first-child > div:first-child");
+      const studentVisible = portal && !portal.classList.contains("hidden") && header;
+      if (studentVisible) {
+        header.classList.add("ashiana-theme-header");
+        button.classList.add("ashiana-theme-inline");
+        if (button.parentElement !== header) header.appendChild(button);
+      } else {
+        button.classList.remove("ashiana-theme-inline");
+        if (button.parentElement !== document.body) document.body.appendChild(button);
+      }
+    };
     document.body.appendChild(button);
+    placeToggle();
+    const studentPortal = document.getElementById("student-portal-view");
+    if (studentPortal && window.MutationObserver) {
+      new MutationObserver(placeToggle).observe(studentPortal, { attributes: true, attributeFilter: ["class"] });
+    }
     setTheme(root.getAttribute("data-ashiana-theme") || "light");
   };
   if (document.readyState === "loading") document.addEventListener("DOMContentLoaded", addToggle, { once: true });
