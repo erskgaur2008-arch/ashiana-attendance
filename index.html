@@ -7306,7 +7306,7 @@ function renderStudentAttendanceNotifications(){
   if(window.lucide)window.lucide.createIcons();
 }
 
-function populateStudentPortal(s){if(!s)return;const set=(id,v)=>{const e=document.getElementById(id);if(e)e.textContent=v||"—";};set("student-portal-name",s.student_name);set("student-portal-class","Class "+(s.class_name||"—")+" • Section "+(s.section||"—"));set("student-portal-admission",s.enroll_no);set("student-portal-roll",s.roll_no);set("student-portal-section",s.section);set("student-portal-category",s.category);set("student-portal-dob",s.dob?new Date(s.dob+"T00:00:00").toLocaleDateString("en-IN",{day:"2-digit",month:"short",year:"numeric"}):"—");set("student-portal-father",s.father_name);set("student-portal-mother",s.mother_name);set("student-portal-phone",s.phone_number);set("student-portal-address",s.address);const av=document.getElementById("student-portal-avatar-content");if(av){av.textContent=(s.student_name||"ST").split(/\s+/).map(x=>x[0]).join("").slice(0,2).toUpperCase();getStudentPhotoUrl(s).then(url=>{if(url)av.innerHTML='<img src="'+studentEscape(url)+'" class="w-full h-full object-cover" alt="Student photo">';}).catch(()=>{});}const d=currentAuthUser?.portalData||{};document.getElementById("student-count-notices").textContent=(d.notices||[]).length+" notices";document.getElementById("student-count-attendance").textContent=(d.attendance||[]).length+" records";document.getElementById("student-count-homework").textContent=(d.homework||[]).length+" items";renderStudentAttendanceNotifications();}
+function populateStudentPortal(s){if(!s)return;const set=(id,v)=>{const e=document.getElementById(id);if(e)e.textContent=v||"—";};set("student-portal-name",s.student_name);set("student-portal-class","Class "+(s.class_name||"—")+" • Section "+(s.section||"—"));set("student-portal-admission",s.enroll_no);set("student-portal-roll",s.roll_no);set("student-portal-section",s.section);set("student-portal-category",s.category);set("student-portal-dob",s.dob?new Date(s.dob+"T00:00:00").toLocaleDateString("en-IN",{day:"2-digit",month:"short",year:"numeric"}):"—");set("student-portal-father",s.father_name);set("student-portal-mother",s.mother_name);set("student-portal-phone",s.phone_number);set("student-portal-address",s.address);const av=document.getElementById("student-portal-avatar-content");if(av){const initials=(s.student_name||"ST").split(/\s+/).map(x=>x[0]).join("").slice(0,2).toUpperCase(),photoKey=String(s.id||s.enroll_no||"")+"|"+String(s.photo_path||"");const existing=av.querySelector("img[data-student-profile-avatar]");if(!existing||existing.dataset.photoKey!==photoKey){av.textContent=initials;getStudentPhotoUrl(s).then(url=>{if(!url||!av.isConnected)return;const current=currentAuthUser?.portalData?.student||currentAuthUser?.studentRecord||{};if(String(current.id||current.enroll_no||"")+"|"+String(current.photo_path||"")!==photoKey)return;const img=document.createElement("img");img.dataset.studentProfileAvatar="1";img.dataset.photoKey=photoKey;img.src=url;img.alt="Student photo";img.className="w-full h-full object-cover";img.onerror=()=>{if(img.isConnected)img.replaceWith(document.createTextNode(initials));};av.replaceChildren(img);}).catch(()=>{});}}const d=currentAuthUser?.portalData||{};document.getElementById("student-count-notices").textContent=(d.notices||[]).length+" notices";document.getElementById("student-count-attendance").textContent=(d.attendance||[]).length+" records";document.getElementById("student-count-homework").textContent=(d.homework||[]).length+" items";renderStudentAttendanceNotifications();}
 
 function studentAttendanceIsNonWorkingDay(date){
   const d=new Date(date+"T00:00:00");
@@ -9243,36 +9243,37 @@ async function loadAdminStudents(){
     async function saveEditedStudent(event){event.preventDefault();if(currentAuthUser?.type!=='ADMIN'||!supabaseClient)return showToast('Administrator session required.','error');const v=id=>document.getElementById(id)?.value?.trim()||'',id=v('edit-student-id'),existing=adminStudentRows.find(x=>x.id===id),file=document.getElementById('edit-student-photo')?.files?.[0],btn=document.getElementById('btn-save-student-details');if(!existing)return showToast('Student record not found.','error');if(file&&(file.size>2*1024*1024||!/^image\/(jpeg|png|webp)$/i.test(file.type)))return showToast('Student photo must be JPG, PNG or WebP and 2 MB or smaller.','error');if(btn){btn.disabled=true;btn.textContent='Saving…';}try{let photoPath=existing.photo_path||null;if(file){const ext=(file.type.split('/')[1]||'jpeg').replace('jpeg','jpg'),path='ashiana/'+id+'-'+Date.now()+'.'+ext;const {error:uploadError}=await supabaseClient.storage.from('student-photos').upload(path,file,{cacheControl:'3600',upsert:false,contentType:file.type});if(uploadError)throw uploadError;photoPath=path;if(existing.photo_path)await supabaseClient.storage.from('student-photos').remove([existing.photo_path]);}const payload={enroll_no:v('edit-student-enroll').toUpperCase(),student_name:v('edit-student-name'),class_name:v('edit-student-class'),section:v('edit-student-section').toUpperCase(),gender:v('edit-student-gender')||'Not Specified',category:v('edit-student-category')||'Not Specified',status:v('edit-student-status'),roll_no:v('edit-student-roll')||null,dob:v('edit-student-dob')||null,mother_name:v('edit-student-mother'),father_name:v('edit-student-father'),phone_number:v('edit-student-phone'),address:v('edit-student-address'),photo_path:photoPath};const {error}=await supabaseClient.from('student_roster').update(payload).eq('id',id).eq('school_code',APS_STUDENT_SCHOOL);if(error)throw error;closeStudentEditModal();showToast('Student details updated.','success');await loadAdminStudents();}catch(e){showToast('Update failed: '+(e.message||e),'error');}finally{if(btn){btn.disabled=false;btn.textContent='Save Changes';}}}
     function studentIdInitials(s){return String(s?.student_name||'ST').split(/\s+/).map(x=>x[0]).join('').slice(0,2).toUpperCase();}
     function studentDobText(v){if(!v)return '—';const d=new Date(v+'T00:00:00');return isNaN(d)?v:d.toLocaleDateString('en-IN',{day:'2-digit',month:'short',year:'numeric'});}
+    // Cache signed URLs for 50 minutes (the server signs them for 60) and
+    // coalesce concurrent requests so dashboard refreshes reuse one URL.
+    const studentPhotoUrlCache=new Map();
     async function getStudentPhotoUrl(s){
       if(!s?.enroll_no||!supabaseClient)return '';
-      // Admins already have Storage access, so use a signed URL directly.
-      // This avoids routing the admin preview through the student credential function.
-      if(currentAuthUser?.type==='ADMIN' && s?.photo_path){
-        try{
-          const {data,error}=await supabaseClient.storage.from('student-photos').createSignedUrl(s.photo_path,3600);
-          if(!error&&data?.signedUrl)return data.signedUrl;
-        }catch(e){console.warn('Admin student photo URL failed:',e);}
-      }
-      try{
-        if(currentAuthUser?.type==='STUDENT'){
-          const token=String(await window.AshianaNative?.getStudentSessionToken?.() || sessionStorage.getItem("aps_student_session_token_v1") || "");
-          // Android uses the secure native session token. Browser/PWA sessions may
-          // not have that native token, so try it when available and otherwise
-          // continue to the existing DOB-verified web fallback below.
-          if(/^[a-f0-9]{64}$/i.test(token)){
-            const {data,error}=await supabaseClient.functions.invoke('student-photo-url',{body:{enroll_no:String(s.enroll_no),session_token:token}});
-            if(error)throw error;
-            if(data?.success&&data?.photo_url)return data.photo_url;
-          }
+      const cacheKey=String(s.id||s.enroll_no)+'|'+String(s.photo_path||'');
+      const cached=studentPhotoUrlCache.get(cacheKey);
+      if(cached&&cached.expiresAt>Date.now())return cached.promise;
+      const request=(async()=>{
+        if(currentAuthUser?.type==='ADMIN'&&s?.photo_path){
+          try{const {data,error}=await supabaseClient.storage.from('student-photos').createSignedUrl(s.photo_path,3600);if(!error&&data?.signedUrl)return data.signedUrl;}catch(e){console.warn('Admin student photo URL failed:',e);}
         }
-        if(!s?.dob)return '';
-        const iso=String(s.dob).slice(0,10),dt=iso.split('-');
-        const dobPassword=dt.length===3?dt[2]+dt[1]+dt[0]:'';
-        if(!/^\d{8}$/.test(dobPassword))return '';
-        const {data,error}=await supabaseClient.functions.invoke('student-photo-url',{body:{enroll_no:String(s.enroll_no),dob_password:dobPassword}});
-        if(error)throw error;
-        return data?.success&&data?.photo_url?data.photo_url:'';
-      }catch(e){console.warn('Student photo load failed:',e);return '';}
+        try{
+          if(currentAuthUser?.type==='STUDENT'){
+            const token=String(await window.AshianaNative?.getStudentSessionToken?.()||sessionStorage.getItem("aps_student_session_token_v1")||"");
+            if(/^[a-f0-9]{64}$/i.test(token)){
+              const {data,error}=await supabaseClient.functions.invoke('student-photo-url',{body:{enroll_no:String(s.enroll_no),session_token:token}});
+              if(error)throw error;if(data?.success&&data?.photo_url)return data.photo_url;
+            }
+          }
+          if(!s?.dob)return '';
+          const iso=String(s.dob).slice(0,10),dt=iso.split('-'),dobPassword=dt.length===3?dt[2]+dt[1]+dt[0]:'';
+          if(!/^\\d{8}$/.test(dobPassword))return '';
+          const {data,error}=await supabaseClient.functions.invoke('student-photo-url',{body:{enroll_no:String(s.enroll_no),dob_password:dobPassword}});
+          if(error)throw error;return data?.success&&data?.photo_url?data.photo_url:'';
+        }catch(e){console.warn('Student photo load failed:',e);return '';}
+      })();
+      const entry={expiresAt:Date.now()+50*60*1000,promise:request};
+      studentPhotoUrlCache.set(cacheKey,entry);
+      const url=await request;if(!url&&studentPhotoUrlCache.get(cacheKey)===entry)studentPhotoUrlCache.delete(cacheKey);
+      return url;
     }
     function renderStudentCardQr(container,student){
       if(!container)return;
