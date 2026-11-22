@@ -534,13 +534,39 @@
       };
 
       trigger.addEventListener("click", async () => {
-        if (!menu.hidden) {
-          menu.hidden = true;
-          trigger.setAttribute("aria-expanded", "false");
-          return;
+        if (studentFingerprintActionInFlight) return;
+        studentFingerprintActionInFlight = true;
+        trigger.disabled = true;
+        try {
+          const active = await window.AshianaNative.hasStudentBiometricEnrollment();
+          if (active) {
+            await authenticateStudentFingerprint();
+            return;
+          }
+          await refresh();
+          const register = menu.querySelector("#student-fingerprint-register");
+          if (register) register.click();
+        } catch (error) {
+          toast(error.message || "Fingerprint action is unavailable.", "error");
+        } finally {
+          studentFingerprintActionInFlight = false;
+          trigger.disabled = false;
         }
+      });
+
+      // Keep device removal available without interrupting the normal one-tap
+      // fingerprint flow: long-press / context-menu opens the removal action.
+      trigger.addEventListener("contextmenu", async event => {
+        event.preventDefault();
         try {
           await refresh();
+          const active = await window.AshianaNative.hasStudentBiometricEnrollment();
+          if (!active) {
+            toast("No Student fingerprint is registered on this phone.", "info");
+            return;
+          }
+          const signIn = menu.querySelector("#student-fingerprint-signin");
+          signIn?.remove();
           menu.hidden = false;
           trigger.setAttribute("aria-expanded", "true");
         } catch (error) {
