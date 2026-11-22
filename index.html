@@ -5474,7 +5474,7 @@ id="admin-portal-view" class="hidden flex-col w-full space-y-4 admin-dashboard-s
       return data;
     }
 
-    async function restoreSupabaseSession() {
+    async function restoreSupabaseSession(prefetchedNativeStudentToken) {
       if (!supabaseClient) return false;
       try {
         // The UI session saved by the login bridge is authoritative for the
@@ -5488,8 +5488,10 @@ id="admin-portal-view" class="hidden flex-col w-full space-y-4 admin-dashboard-s
         let savedUser = null;
         let secureStudentToken = "";
         try {
-          if (window.AshianaNative?.isAndroid?.() &&
-              typeof window.AshianaNative.getStudentSessionToken === "function") {
+          if (prefetchedNativeStudentToken) {
+            secureStudentToken = String(await prefetchedNativeStudentToken || "");
+          } else if (window.AshianaNative?.isAndroid?.() &&
+                     typeof window.AshianaNative.getStudentSessionToken === "function") {
             secureStudentToken = String(await window.AshianaNative.getStudentSessionToken() || "");
           }
         } catch (secureStorageError) {
@@ -5523,7 +5525,19 @@ id="admin-portal-view" class="hidden flex-col w-full space-y-4 admin-dashboard-s
           // Auth account. On every reload, revalidate the stored credential
           // against the server before restoring the Student portal. This keeps
           // refresh persistence without trusting a client-editable role alone.
-          try { await supabaseClient.auth.signOut({ scope: 'local' }); } catch (_) {}
+          // Student login already clears the shared Admin/Staff Auth storage.
+          // Avoid an unnecessary Auth sign-out on every Student app launch; only
+          // clear it when a persisted shared Auth session is actually present.
+          const sharedAuthKey = "sb-oalfzgluqroqbbrulhpr-auth-token";
+          let hasSharedAuthSession = false;
+          try {
+            hasSharedAuthSession = Boolean(
+              localStorage.getItem(sharedAuthKey) || sessionStorage.getItem(sharedAuthKey)
+            );
+          } catch (_) {}
+          if (hasSharedAuthSession) {
+            try { await supabaseClient.auth.signOut({ scope: 'local' }); } catch (_) {}
+          }
 
           const studentToken = String(secureStudentToken || "");
           if (!/^[a-f0-9]{64}$/i.test(studentToken)) throw new Error('STUDENT_SESSION_INVALID');
@@ -14617,6 +14631,19 @@ window.addEventListener('load',async function(){
 
     // App Initialization
     async function bootstrapApp() {
+      // Read the native Student token immediately and overlap secure-storage
+      // access with Supabase initialization. Session validation still happens
+      // on the server before the Student dashboard is displayed.
+      const nativeStudentTokenPromise = (() => {
+        if (window.AshianaNative?.isAndroid?.() &&
+            typeof window.AshianaNative.getStudentSessionToken === "function") {
+          return window.AshianaNative.getStudentSessionToken().catch(error => {
+            console.warn("Secure Student session could not be read:", error?.message || error);
+            return "";
+          });
+        }
+        return Promise.resolve("");
+      })();
       setupAppBackButtonHandling();
 
       // Bind login controls only after the DOM exists.
@@ -14650,7 +14677,7 @@ window.addEventListener('load',async function(){
 
       let restored = false;
       authHydrationInProgress = true;
-      try { restored = await restoreSupabaseSession(); } catch (e) {
+      try { restored = await restoreSupabaseSession(nativeStudentTokenPromise); } catch (e) {
         console.error("Session restore error:", e);
         restored = false;
       } finally {
