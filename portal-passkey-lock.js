@@ -409,6 +409,45 @@
     installStudentFingerprintLoginButton();
   }
 
+  let studentFingerprintMenu = null;
+
+  function ensureStudentFingerprintMenu() {
+    const form = document.getElementById("student-login-form");
+    if (!form) return null;
+    let shell = form.querySelector("#student-fingerprint-menu-shell");
+    if (!shell) {
+      shell = document.createElement("div");
+      shell.id = "student-fingerprint-menu-shell";
+      shell.className = "relative w-full mt-3 flex justify-center";
+      const trigger = document.createElement("button");
+      trigger.type = "button";
+      trigger.id = "student-fingerprint-menu-trigger";
+      trigger.setAttribute("aria-label", "Fingerprint options");
+      trigger.setAttribute("aria-expanded", "false");
+      trigger.title = "Fingerprint options";
+      trigger.className = "w-14 h-14 rounded-full border border-emerald-200 bg-emerald-50 text-emerald-800 shadow-sm flex items-center justify-center";
+      trigger.innerHTML = '<svg viewBox="0 0 24 24" width="27" height="27" fill="none" stroke="currentColor" stroke-width="1.8" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true"><path d="M12 11a2 2 0 0 0-2 2c0 2.5-.4 4.5-1.2 6.2"/><path d="M14 13c0 3.2-.5 5.8-1.5 8"/><path d="M8.2 15.2c-.2 1.7-.6 3.1-1.3 4.4"/><path d="M5.5 13a6.5 6.5 0 0 1 13 0c0 2.1-.2 4-.6 5.7"/><path d="M8 9.2a5 5 0 0 1 8 4"/><path d="M12 3a10 10 0 0 0-10 10"/><path d="M22 13a10 10 0 0 0-1-4.3"/></svg>';
+      const menu = document.createElement("div");
+      menu.id = "student-fingerprint-menu";
+      menu.hidden = true;
+      menu.className = "absolute z-50 bottom-full mb-2 w-full max-w-sm rounded-2xl border border-emerald-100 bg-white p-3 shadow-xl flex flex-col gap-2";
+      trigger.addEventListener("click", () => {
+        menu.hidden = !menu.hidden;
+        trigger.setAttribute("aria-expanded", String(!menu.hidden));
+      });
+      document.addEventListener("click", event => {
+        if (!shell.contains(event.target)) {
+          menu.hidden = true;
+          trigger.setAttribute("aria-expanded", "false");
+        }
+      });
+      shell.append(menu, trigger);
+      form.append(shell);
+    }
+    studentFingerprintMenu = shell.querySelector("#student-fingerprint-menu");
+    return studentFingerprintMenu;
+  }
+
   let studentFingerprintControlsInstallInFlight = false;
 
   async function installStudentFingerprintLoginControls() {
@@ -444,7 +483,7 @@
         register.id = "student-fingerprint-register";
         register.type = "button";
         register.className = "w-full py-3 mt-2 bg-violet-50 text-violet-800 border border-violet-200 font-bold rounded-xl text-sm";
-        currentForm.append(register);
+        (ensureStudentFingerprintMenu() || currentForm).append(register);
       }
       register.textContent = enrolled ? "Fingerprint Registered" : "Register Fingerprint for Attendance";
       register.disabled = Boolean(enrolled);
@@ -457,7 +496,7 @@
         remove.type = "button";
         remove.textContent = "Remove fingerprint login from this phone";
         remove.className = "w-full py-3 mt-2 bg-emerald-50 text-emerald-800 border border-emerald-200 font-bold rounded-xl text-sm";
-        currentForm.append(remove);
+        (ensureStudentFingerprintMenu() || currentForm).append(remove);
       }
       remove.hidden = !enrolled;
 
@@ -590,7 +629,7 @@
           studentFingerprintLoginInFlight = false;
         }
       });
-      currentForm.append(button);
+      (ensureStudentFingerprintMenu() || currentForm).append(button);
     } finally {
       studentFingerprintLoginInstallInFlight = false;
     }
