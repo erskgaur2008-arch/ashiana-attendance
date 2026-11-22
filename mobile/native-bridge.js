@@ -161,6 +161,21 @@ async function registerPushNotifications() {
 
 const STUDENT_SESSION_STORAGE_KEY = "session_token";
 const STUDENT_SESSION_STORAGE_PREFIX = "ashiana_student_session_v2_";
+const STUDENT_LEGACY_CREDENTIAL_CLEANUP_KEY = "aps_student_legacy_credential_cleanup_v1";
+
+async function cleanupLegacyStudentCredentialsOnce() {
+  if (!isNativeAndroid()) return;
+  try {
+    if (window.localStorage.getItem(STUDENT_LEGACY_CREDENTIAL_CLEANUP_KEY) === "done") return;
+  } catch (_) {}
+  try {
+    await SecureStorage.setKeyPrefix("ashiana_student_session_v1_");
+    await SecureStorage.remove("credentials");
+    try { window.localStorage.setItem(STUDENT_LEGACY_CREDENTIAL_CLEANUP_KEY, "done"); } catch (_) {}
+  } catch (error) {
+    console.warn("Legacy Student credential cleanup was deferred:", error?.message || error);
+  }
+}
 
 async function setStudentSessionStoragePrefix() {
   await SecureStorage.setKeyPrefix(STUDENT_SESSION_STORAGE_PREFIX);
@@ -170,22 +185,15 @@ async function saveStudentSessionToken(token) {
   if (!isNativeAndroid()) throw new Error("Secure student session storage is available only in the Android app.");
   const value = String(token || "").trim();
   if (!/^[a-f0-9]{64}$/i.test(value)) throw new Error("Student session token is invalid.");
+  await cleanupLegacyStudentCredentialsOnce();
   await setStudentSessionStoragePrefix();
   await SecureStorage.set(STUDENT_SESSION_STORAGE_KEY, value);
-  try {
-    await SecureStorage.setKeyPrefix("ashiana_student_session_v1_");
-    await SecureStorage.remove("credentials");
-  } catch (_) {}
   return true;
 }
 
 async function getStudentSessionToken() {
   if (!isNativeAndroid()) return null;
-  // One-time cleanup for installs that used the old DOB-credential implementation.
-  try {
-    await SecureStorage.setKeyPrefix("ashiana_student_session_v1_");
-    await SecureStorage.remove("credentials");
-  } catch (_) {}
+  await cleanupLegacyStudentCredentialsOnce();
   await setStudentSessionStoragePrefix();
   const stored = await SecureStorage.get(STUDENT_SESSION_STORAGE_KEY);
   const token = typeof stored === "string" ? stored.trim() : "";
@@ -198,12 +206,9 @@ async function getStudentSessionToken() {
 
 async function clearStudentSessionToken() {
   if (!isNativeAndroid()) return false;
+  await cleanupLegacyStudentCredentialsOnce();
   await setStudentSessionStoragePrefix();
   await SecureStorage.remove(STUDENT_SESSION_STORAGE_KEY);
-  try {
-    await SecureStorage.setKeyPrefix("ashiana_student_session_v1_");
-    await SecureStorage.remove("credentials");
-  } catch (_) {}
   return true;
 }
 

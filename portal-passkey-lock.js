@@ -352,7 +352,9 @@
       setupDialog(role);
     } catch (error) {
       console.warn("Could not load " + role + " passkey status:", error?.message || error);
-      toast("Passkey setup is currently unavailable. You can continue with your usual sign-in.", "info");
+      if (role !== "student") {
+        toast("Passkey setup is currently unavailable. You can continue with your usual sign-in.", "info");
+      }
     }
   }
 
