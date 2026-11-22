@@ -487,8 +487,8 @@
             const fields = Array.from(liveForm?.querySelectorAll("input") || [])
               .filter(input => input.type !== "hidden" && !input.disabled);
             const admission = String(fields[0]?.value || "").trim();
-            const dob = String(fields[1]?.value || "").replace(/\\D/g, "");
-            if (!admission || !/^\\d{8}$/.test(dob)) {
+            const dob = String(fields[1]?.value || "").replace(/\D/g, "");
+            if (!admission || !/^\d{8}$/.test(dob)) {
               toast("Enter your Admission No. and DOB (DDMMYYYY) above, then register fingerprint.", "error");
               return;
             }
