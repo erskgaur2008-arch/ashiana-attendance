@@ -437,6 +437,7 @@
       menu.id = "student-fingerprint-menu";
       menu.className = "w-full mt-2 p-3 rounded-2xl border border-emerald-100 bg-white shadow-lg space-y-2";
       menu.hidden = true;
+      menu.style.setProperty("display", "none", "important");
       menu.setAttribute("role", "menu");
       form.append(menu);
     }
@@ -460,6 +461,7 @@
         if (enrolled) {
           addAction("Sign in with fingerprint", async () => {
             menu.hidden = true;
+            menu.style.setProperty("display", "none", "important");
             trigger.setAttribute("aria-expanded", "false");
             try { await authenticateStudentFingerprint(); }
             catch (error) { toast(error.message || "Student fingerprint sign-in failed.", "error"); }
@@ -521,6 +523,7 @@
               }
               toast("Student fingerprint login is registered on this phone.", "success");
               menu.hidden = true;
+              menu.style.setProperty("display", "none", "important");
               trigger.setAttribute("aria-expanded", "false");
               await refresh();
             } catch (error) {
@@ -574,11 +577,13 @@
         .find(item => /remove fingerprint/i.test(item.textContent || ""));
       if (!removeAction) return;
       menu.hidden = false;
+      menu.style.setProperty("display", "block", "important");
       trigger.setAttribute("aria-expanded", "true");
     };
     document.addEventListener("click", event => {
       if (!form.contains(event.target)) {
         menu.hidden = true;
+        menu.style.setProperty("display", "none", "important");
         trigger.setAttribute("aria-expanded", "false");
       }
     });
