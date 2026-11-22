@@ -406,168 +406,158 @@
     }
     toast("Student fingerprint login is enabled on this phone.", "success");
     document.getElementById("student-fingerprint-setup")?.remove();
-    installStudentFingerprintLoginButton();
   }
 
   let studentFingerprintControlsInstallInFlight = false;
+  let studentFingerprintMenuRefreshInFlight = false;
 
   async function installStudentFingerprintLoginControls() {
     if (studentFingerprintControlsInstallInFlight || !isNative()) return;
     const form = document.getElementById("student-login-form");
-    if (!form || form.querySelector("#student-fingerprint-register") || form.querySelector("#student-fingerprint-remove")) return;
+    if (!form) return;
+    // Remove legacy separate fingerprint controls and any duplicate icon controls.
+    for (const id of ["student-fingerprint-register", "student-fingerprint-remove", "student-fingerprint-login"]) {
+      form.querySelectorAll("#" + id).forEach(node => node.remove());
+    }
+    let trigger = form.querySelector("#student-fingerprint-actions");
+    if (!trigger) {
+      trigger = document.createElement("button");
+      trigger.id = "student-fingerprint-actions";
+      trigger.type = "button";
+      trigger.className = "inline-flex items-center justify-center w-14 h-14 mt-3 mx-auto rounded-full border border-emerald-200 bg-emerald-50 text-emerald-800 shadow-sm";
+      trigger.setAttribute("aria-label", "Student fingerprint options");
+      trigger.setAttribute("aria-haspopup", "menu");
+      trigger.setAttribute("aria-expanded", "false");
+      trigger.innerHTML = '<svg viewBox="0 0 24 24" width="26" height="26" fill="none" stroke="currentColor" stroke-width="1.8" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true"><path d="M12 11a2 2 0 0 0-2 2c0 2.5-.3 4.4-1.2 6.2"/><path d="M14 13c0 3.1-.4 5.6-1.4 7.7"/><path d="M8.5 15.5c-.2 1.5-.6 2.8-1.3 4"/><path d="M6.5 13a5.5 5.5 0 0 1 11 0c0 1.1 0 2.1-.1 3"/><path d="M4.5 13a7.5 7.5 0 0 1 15 0"/><path d="M10 7.2a4 4 0 0 1 6 3.5"/><path d="M3 16.5c.5 1.3 1.1 2.4 1.9 3.4"/></svg>';
+      form.append(trigger);
+    }
+    let menu = form.querySelector("#student-fingerprint-menu");
+    if (!menu) {
+      menu = document.createElement("div");
+      menu.id = "student-fingerprint-menu";
+      menu.className = "w-full mt-2 p-3 rounded-2xl border border-emerald-100 bg-white shadow-lg space-y-2";
+      menu.hidden = true;
+      menu.setAttribute("role", "menu");
+      form.append(menu);
+    }
 
-    const native = window.AshianaNative;
-    if (typeof native?.hasStudentBiometricEnrollment !== "function") return;
-    studentFingerprintControlsInstallInFlight = true;
-    try {
-      const enrolled = await native.hasStudentBiometricEnrollment();
-      // The MutationObserver can fire many times while the native check is
-      // pending. Re-resolve the live form and re-check IDs before appending.
-      const currentForm = document.getElementById("student-login-form");
-      if (!currentForm || currentForm.querySelector("#student-fingerprint-register") || currentForm.querySelector("#student-fingerprint-remove")) return;
+    const refresh = async () => {
+      if (studentFingerprintMenuRefreshInFlight) return;
+      studentFingerprintMenuRefreshInFlight = true;
+      try {
+        const enrolled = await window.AshianaNative.hasStudentBiometricEnrollment();
+        menu.replaceChildren();
+        const addAction = (label, action, tone) => {
+          const item = document.createElement("button");
+          item.type = "button";
+          item.role = "menuitem";
+          item.textContent = label;
+          item.className = "w-full py-3 px-4 rounded-xl text-sm font-semibold " + tone;
+          item.addEventListener("click", action);
+          menu.append(item);
+        };
 
-    const register = document.createElement("button");
-    register.id = "student-fingerprint-register";
-    register.type = "button";
-    register.textContent = "Register Fingerprint for Attendance";
-    register.className = "w-full py-3 mt-2 bg-violet-50 text-violet-800 border border-violet-200 font-bold rounded-xl text-xs";
-    register.addEventListener("click", async () => {
-      const fields = Array.from(form.querySelectorAll("input")).filter(input => input.type !== "hidden" && !input.disabled);
-      const admission = String(fields[0]?.value || "").trim();
-      const dob = String(fields[1]?.value || "").replace(/\\D/g, "");
-      if (!admission || !/^\\d{8}$/.test(dob)) {
-        toast("Enter your Admission No. and DOB (DDMMYYYY) above, then register fingerprint.", "error");
+        if (enrolled) {
+          addAction("Sign in with fingerprint", async () => {
+            menu.hidden = true;
+            trigger.setAttribute("aria-expanded", "false");
+            try { await authenticateStudentFingerprint(); }
+            catch (error) { toast(error.message || "Student fingerprint sign-in failed.", "error"); }
+          }, "bg-emerald-800 text-white");
+          addAction("Remove fingerprint login from this phone", async event => {
+            const item = event.currentTarget;
+            item.disabled = true;
+            try {
+              const deviceSecret = await window.AshianaNative.getStudentBiometricSessionToken();
+              const client = await authClient();
+              const { error } = await client.rpc("student_biometric_revoke", { p_device_secret: deviceSecret });
+              if (error) throw new Error(error.message || "Could not revoke this phone's fingerprint registration.");
+              await window.AshianaNative.disableStudentBiometric?.();
+              toast("Student fingerprint login removed from this phone.", "success");
+              await refresh();
+            } catch (error) {
+              toast(error.message || "Could not remove Student fingerprint login.", "error");
+              item.disabled = false;
+            }
+          }, "bg-emerald-50 text-emerald-900 border border-emerald-200");
+        } else {
+          addAction("Register fingerprint for attendance", async event => {
+            const item = event.currentTarget;
+            const liveForm = document.getElementById("student-login-form");
+            const fields = Array.from(liveForm?.querySelectorAll("input") || [])
+              .filter(input => input.type !== "hidden" && !input.disabled);
+            const admission = String(fields[0]?.value || "").trim();
+            const dob = String(fields[1]?.value || "").replace(/\D/g, "");
+            if (!admission || !/^\d{8}$/.test(dob)) {
+              toast("Enter your Admission No. and DOB (DDMMYYYY) above, then register fingerprint.", "error");
+              return;
+            }
+            item.disabled = true;
+            item.textContent = "Registering fingerprint...";
+            let temporaryToken = "";
+            try {
+              const client = await authClient();
+              const { data: login, error: loginError } = await client.rpc("student_session_start", {
+                p_school_code: "ashiana",
+                p_enroll_no: admission,
+                p_dob_password: dob
+              });
+              if (loginError) throw new Error(loginError.message || "Student verification service is unavailable.");
+              if (!login?.success || !/^[a-f0-9]{64}$/i.test(String(login.session_token || ""))) {
+                throw new Error(login?.message || "Admission No. or DOB is incorrect.");
+              }
+              temporaryToken = String(login.session_token);
+              const deviceSecret = Array.from(crypto.getRandomValues(new Uint8Array(32)), byte => byte.toString(16).padStart(2, "0")).join("");
+              const { data: result, error: enrollError } = await client.rpc("student_biometric_enroll", {
+                p_session_token: temporaryToken,
+                p_device_secret: deviceSecret
+              });
+              if (enrollError) throw new Error(enrollError.message || "Student fingerprint registration service is unavailable.");
+              if (!result?.success) throw new Error(result?.code || "Student fingerprint registration was rejected.");
+              try { await window.AshianaNative.enableStudentBiometric(deviceSecret); }
+              catch (error) {
+                try { await client.rpc("student_biometric_revoke", { p_device_secret: deviceSecret }); } catch (_) {}
+                throw error;
+              }
+              toast("Student fingerprint login is registered on this phone.", "success");
+              menu.hidden = true;
+              trigger.setAttribute("aria-expanded", "false");
+              await refresh();
+            } catch (error) {
+              toast(error.message || "Could not register Student fingerprint.", "error");
+              item.disabled = false;
+              item.textContent = "Register fingerprint for attendance";
+            } finally {
+              if (temporaryToken) {
+                try {
+                  const client = await authClient();
+                  await client.rpc("student_session_revoke", { p_token: temporaryToken });
+                } catch (_) {}
+              }
+            }
+          }, "bg-violet-50 text-violet-800 border border-violet-200");
+        }
+      } finally {
+        studentFingerprintMenuRefreshInFlight = false;
+      }
+    };
+
+    trigger.onclick = async () => {
+      if (!menu.hidden) {
+        menu.hidden = true;
+        trigger.setAttribute("aria-expanded", "false");
         return;
       }
-      register.disabled = true;
-      register.textContent = "Registering fingerprint...";
-      let temporaryToken = "";
-      try {
-        const client = await authClient();
-        const { data: login, error: loginError } = await client.rpc("student_session_start", {
-          p_school_code: "ashiana",
-          p_enroll_no: admission,
-          p_dob_password: dob
-        });
-        if (loginError) throw new Error(loginError.message || "Student verification service is unavailable.");
-        if (!login?.success || !/^[a-f0-9]{64}$/i.test(String(login.session_token || ""))) {
-          throw new Error(login?.message || "Admission No. or DOB is incorrect.");
-        }
-        temporaryToken = String(login.session_token);
-        const deviceSecret = Array.from(crypto.getRandomValues(new Uint8Array(32)), byte => byte.toString(16).padStart(2, "0")).join("");
-        const { data: result, error: enrollError } = await client.rpc("student_biometric_enroll", {
-          p_session_token: temporaryToken,
-          p_device_secret: deviceSecret
-        });
-        if (enrollError) throw new Error(enrollError.message || "Student fingerprint registration service is unavailable.");
-        if (!result?.success) throw new Error(result?.code || "Student fingerprint registration was rejected.");
-        try {
-          await native.enableStudentBiometric(deviceSecret);
-        } catch (error) {
-          try { await client.rpc("student_biometric_revoke", { p_device_secret: deviceSecret }); } catch (_) {}
-          throw error;
-        }
-        toast("Student fingerprint login is registered on this phone.", "success");
-        register.textContent = "Fingerprint Registered";
-        register.disabled = true;
-        remove.hidden = false;
-      } catch (error) {
-        toast(error.message || "Could not register Student fingerprint.", "error");
-        register.disabled = false;
-        register.textContent = "Register Fingerprint for Attendance";
-      } finally {
-        if (temporaryToken) {
-          try {
-            const client = await authClient();
-            await client.rpc("student_session_revoke", { p_token: temporaryToken });
-          } catch (_) {}
-        }
+      await refresh();
+      menu.hidden = false;
+      trigger.setAttribute("aria-expanded", "true");
+    };
+    document.addEventListener("click", event => {
+      if (!form.contains(event.target)) {
+        menu.hidden = true;
+        trigger.setAttribute("aria-expanded", "false");
       }
     });
-
-    const remove = document.createElement("button");
-    remove.id = "student-fingerprint-remove";
-    remove.type = "button";
-    remove.textContent = "Remove fingerprint login from this phone";
-    remove.hidden = !enrolled;
-    remove.className = "w-full py-3 mt-2 bg-emerald-50 text-emerald-800 border border-emerald-200 font-bold rounded-xl text-xs";
-    remove.addEventListener("click", async () => {
-      remove.disabled = true;
-      try {
-        const deviceSecret = await native.getStudentBiometricSessionToken();
-        const client = await authClient();
-        const { error } = await client.rpc("student_biometric_revoke", { p_device_secret: deviceSecret });
-        if (error) throw new Error(error.message || "Could not revoke this phone's fingerprint registration.");
-        await native.disableStudentBiometric?.();
-        remove.hidden = true;
-        register.disabled = false;
-        register.textContent = "Register Fingerprint for Attendance";
-        toast("Student fingerprint login removed from this phone.", "success");
-      } catch (error) {
-        toast(error.message || "Could not remove Student fingerprint login.", "error");
-        remove.disabled = false;
-      }
-    });
-
-    currentForm.append(register, remove);
-    } finally {
-      studentFingerprintControlsInstallInFlight = false;
-    }
-  }
-  let studentFingerprintLoginInstallInFlight = false;
-  let studentFingerprintLoginInFlight = false;
-
-  async function installStudentFingerprintLoginButton() {
-    if (studentFingerprintLoginInstallInFlight) return;
-    const form = document.getElementById("student-login-form");
-    if (!form || !isNative() || typeof window.AshianaNative?.hasStudentBiometricEnrollment !== "function") return;
-    // Remove any duplicates left by earlier page mutations or older builds.
-    const existing = form.querySelectorAll("#student-fingerprint-login");
-    if (existing.length > 1) Array.from(existing).slice(1).forEach(button => button.remove());
-    if (form.querySelector("#student-fingerprint-login")) return;
-    studentFingerprintLoginInstallInFlight = true;
-    try {
-      if (!(await window.AshianaNative.hasStudentBiometricEnrollment())) return;
-      // The form may have been replaced while the native enrollment check ran.
-      const currentForm = document.getElementById("student-login-form");
-      if (!currentForm || currentForm.querySelector("#student-fingerprint-login")) return;
-      const button = document.createElement("button");
-      button.id = "student-fingerprint-login";
-      button.type = "button";
-      button.textContent = "Sign in with Fingerprint";
-      button.className = "w-full py-3 mt-2 bg-emerald-800 text-white font-bold rounded-xl text-xs";
-      button.addEventListener("click", async () => {
-        if (studentFingerprintLoginInFlight) return;
-        studentFingerprintLoginInFlight = true;
-        button.disabled = true;
-        button.textContent = "Verifying fingerprint...";
-        try {
-          const enrolled = await window.AshianaNative.hasStudentBiometricEnrollment();
-          if (!enrolled) {
-            button.remove();
-            toast("Student fingerprint is not registered on this phone. Sign in with Admission No. and DOB, then register it from the Student portal.", "error");
-            return;
-          }
-          await authenticateStudentFingerprint();
-        }
-        catch (error) {
-          // A server-rejected token means the student logged out or the
-          // session expired. Remove the unusable biometric action until a
-          // fresh Admission No. + DOB login enrolls a new token.
-          if (/expired|signed out|logged out/i.test(String(error?.message || ""))) button.remove();
-          else {
-            toast(error.message || "Student fingerprint sign-in failed. Use Admission No. and DOB if needed.", "error");
-            button.disabled = false;
-            button.textContent = "Sign in with Fingerprint";
-          }
-        } finally {
-          studentFingerprintLoginInFlight = false;
-        }
-      });
-      currentForm.append(button);
-    } finally {
-      studentFingerprintLoginInstallInFlight = false;
-    }
   }
 
   function installStudentLoginButton() {
@@ -628,7 +618,6 @@
   }, true);
 
   function watch() {
-    installStudentFingerprintLoginButton().catch(error => console.warn("Student fingerprint button unavailable:", error?.message || error));
     installStudentFingerprintLoginControls().catch(error => console.warn("Student fingerprint controls unavailable:", error?.message || error));
     const current = currentRole();
     if (!current) {
