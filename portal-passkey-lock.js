@@ -430,14 +430,17 @@
       const menu = document.createElement("div");
       menu.id = "student-fingerprint-menu";
       menu.hidden = true;
+      menu.style.display = "none";
       menu.className = "absolute z-50 bottom-full mb-2 w-full max-w-sm rounded-2xl border border-emerald-100 bg-white p-3 shadow-xl flex flex-col gap-2";
       trigger.addEventListener("click", () => {
         menu.hidden = !menu.hidden;
+        menu.style.display = menu.hidden ? "none" : "flex";
         trigger.setAttribute("aria-expanded", String(!menu.hidden));
       });
       document.addEventListener("click", event => {
         if (!shell.contains(event.target)) {
           menu.hidden = true;
+          menu.style.display = "none";
           trigger.setAttribute("aria-expanded", "false");
         }
       });
@@ -487,6 +490,7 @@
       }
       register.textContent = enrolled ? "Fingerprint Registered" : "Register Fingerprint for Attendance";
       register.disabled = Boolean(enrolled);
+      register.hidden = Boolean(enrolled);
       register.setAttribute("aria-live", "polite");
 
       let remove = currentForm.querySelector("#student-fingerprint-remove");
