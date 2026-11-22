@@ -413,6 +413,33 @@
 
   async function installStudentFingerprintLoginControls() {
     if (studentFingerprintControlsInstallInFlight || !isNative()) return;
+    // Compact the Student-only green login banner on mobile and keep its
+    // logo/title hierarchy intact. Other roles retain their existing layout.
+    if (!document.getElementById("student-login-compact-hero-style")) {
+      const style = document.createElement("style");
+      style.id = "student-login-compact-hero-style";
+      style.textContent = `
+        @media (max-width: 640px) {
+          #auth-gateway-view[data-login-role-active="student"] #login-hero {
+            padding: 14px 14px 30px !important;
+          }
+          #auth-gateway-view[data-login-role-active="student"] #login-hero .login-school-logo {
+            width: 72px !important;
+            height: 72px !important;
+            margin-bottom: 7px !important;
+          }
+          #auth-gateway-view[data-login-role-active="student"] #login-hero h2 {
+            font-size: 1.25rem !important;
+            line-height: 1.25 !important;
+          }
+          #auth-gateway-view[data-login-role-active="student"] #login-hero .login-school-subtitle {
+            margin-top: 3px !important;
+            font-size: .9rem !important;
+          }
+        }
+      `;
+      document.head.append(style);
+    }
     const form = document.getElementById("student-login-form");
     if (!form) return;
     // Remove legacy separate fingerprint controls and any duplicate icon controls.
@@ -424,7 +451,7 @@
       trigger = document.createElement("button");
       trigger.id = "student-fingerprint-actions";
       trigger.type = "button";
-      trigger.className = "inline-flex items-center justify-center w-14 h-14 mt-3 mx-auto rounded-full border border-emerald-200 bg-emerald-50 text-emerald-800 shadow-sm";
+      trigger.className = "flex items-center justify-center w-14 h-14 mt-3 mx-auto rounded-full border border-emerald-200 bg-emerald-50 text-emerald-800 shadow-sm";
       trigger.setAttribute("aria-label", "Student fingerprint options");
       trigger.setAttribute("aria-haspopup", "menu");
       trigger.setAttribute("aria-expanded", "false");
