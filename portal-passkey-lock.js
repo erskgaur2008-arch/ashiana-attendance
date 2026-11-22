@@ -537,6 +537,7 @@
         if (studentFingerprintActionInFlight) return;
         studentFingerprintActionInFlight = true;
         trigger.disabled = true;
+        let delegatedToRegistration = false;
         try {
           const active = await window.AshianaNative.hasStudentBiometricEnrollment();
           if (active) {
@@ -545,12 +546,21 @@
           }
           await refresh();
           const register = menu.querySelector("#student-fingerprint-register");
-          if (register) register.click();
+          if (register) {
+            // Let the registration action own the in-flight guard and native
+            // biometric prompt; do not swallow its click behind our guard.
+            studentFingerprintActionInFlight = false;
+            trigger.disabled = false;
+            delegatedToRegistration = true;
+            register.click();
+          }
         } catch (error) {
           toast(error.message || "Fingerprint action is unavailable.", "error");
         } finally {
-          studentFingerprintActionInFlight = false;
-          trigger.disabled = false;
+          if (!delegatedToRegistration) {
+            studentFingerprintActionInFlight = false;
+            trigger.disabled = false;
+          }
         }
       });
 
