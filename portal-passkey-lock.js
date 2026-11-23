@@ -659,6 +659,26 @@
     studentLogoutCleanupInProgress = true;
     try {
       const client = await authClient();
+      // Remove this phone's Student push registration before revoking the session.
+      // Failure is non-blocking: logout must still complete and revoke the session.
+      try {
+        const payload = { action: "student-unsubscribe", sessionToken: token };
+        if (isNative()) {
+          payload.platform = "android";
+          payload.deviceToken = String(window.AshianaNative?.getRegisteredPushToken?.() || "");
+        } else {
+          payload.platform = "web";
+          const registration = await navigator.serviceWorker?.getRegistration?.();
+          const subscription = await registration?.pushManager?.getSubscription?.();
+          payload.endpoint = String(subscription?.endpoint || "");
+        }
+        if ((payload.platform === "android" && payload.deviceToken) || (payload.platform === "web" && payload.endpoint)) {
+          const { error } = await client.functions.invoke("push-notifications", { body: payload });
+          if (error) console.warn("Student push unsubscribe failed during logout:", error.message || error);
+        }
+      } catch (error) {
+        console.warn("Student push unsubscribe during logout:", error?.message || error);
+      }
       // Best-effort server revocation; local and biometric credentials are
       // always erased even if the network is unavailable.
       try { await client.rpc("student_session_revoke", { p_token: token }); }
