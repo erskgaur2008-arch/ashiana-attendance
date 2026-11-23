@@ -68,34 +68,33 @@ function installAdminDashboardCard(){
  const section=$("admin-event-gallery");
  const portal=$("admin-portal-view");
  if(!section||!portal||$("admin-event-gallery-dashboard-card"))return;
- const existingCards=portal.querySelectorAll(".admin-dashboard-card");
- if(!existingCards.length)return;
- const grid=existingCards[0].parentElement;
- if(!grid)return;
+ // The live Admin dashboard uses .admin-quick-actions (not .admin-dashboard-card).
+ const grid=portal.querySelector(".admin-quick-actions");
+ const firstCard=grid&&grid.querySelector("button");
+ if(!grid||!firstCard)return;
  const card=document.createElement("button");
  card.id="admin-event-gallery-dashboard-card";
  card.type="button";
- card.className=existingCards[0].className;
+ card.className=firstCard.className;
  card.setAttribute("aria-label","Open Event Photo Gallery");
- card.innerHTML='<i data-lucide="images" class="w-6 h-6 mb-2 text-orange-600"></i><span class="block font-bold">Event Photo Gallery</span><span class="block text-xs opacity-70 mt-1">Create events and manage school photographs</span>';
+ card.innerHTML='<i data-lucide="images"></i><span>Event Photo Gallery</span>';
  grid.appendChild(card);
- const placeholder=document.createComment("Event Photo Gallery position");
- section.parentNode.insertBefore(placeholder,section);
+ // Keep the gallery out of Student Portal Management from initial render onward.
+ const placeholder=document.createComment("Event Photo Gallery is opened from the Admin dashboard card");
+ if(section.parentNode)section.parentNode.insertBefore(placeholder,section);
  const overlay=document.createElement("div");
  overlay.id="admin-event-gallery-overlay";
  overlay.className="fixed inset-0 z-[240] hidden overflow-y-auto bg-slate-950/60 p-3 sm:p-6";
  overlay.innerHTML='<div class="max-w-4xl mx-auto my-4 bg-slate-50 rounded-2xl shadow-2xl overflow-hidden"><div class="sticky top-0 z-10 flex items-center justify-between gap-3 bg-white border-b px-4 py-3"><div><h2 class="font-extrabold text-slate-900">Event Photo Gallery</h2><p class="text-xs text-slate-500">Admin gallery management</p></div><button type="button" data-close-gallery class="rounded-xl px-4 py-2 bg-slate-100 text-slate-800 font-bold" aria-label="Close Event Photo Gallery">Close ✕</button></div><div data-gallery-modal-content class="p-3 sm:p-5"></div></div>';
  document.body.appendChild(overlay);
  const contentHost=overlay.querySelector("[data-gallery-modal-content]");
- const close=()=>{
-  overlay.classList.add("hidden");
-  if(placeholder.parentNode)placeholder.parentNode.insertBefore(section,placeholder);
- };
+ // Move the existing manager once, preserving all existing event/photo handlers and state.
+ contentHost.appendChild(section);
+ section.classList.remove("mt-4");
+ const close=()=>overlay.classList.add("hidden");
  overlay.querySelector("[data-close-gallery]").addEventListener("click",close);
  overlay.addEventListener("click",e=>{if(e.target===overlay)close();});
  card.addEventListener("click",()=>{
-  contentHost.appendChild(section);
-  section.classList.remove("mt-4");
   overlay.classList.remove("hidden");
   if(window.lucide)window.lucide.createIcons();
  });
