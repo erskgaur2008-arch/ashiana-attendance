@@ -259,6 +259,34 @@ Deno.serve(async (req: Request) => {
     return json({ success: true, platform, androidPushConfigured: Boolean(fcmAccount), webPushConfigured });
   }
 
+  // Student logout removes only this student's current device subscription.
+  // Validate the still-active session before the client revokes it.
+  if (action === "student-unsubscribe") {
+    const token = String(body.sessionToken || "").trim();
+    const platform = String(body.platform || "");
+    if (!/^[a-f0-9]{64}$/i.test(token)) return json({ error: "INVALID_STUDENT_SESSION" }, 401);
+    if (platform !== "android" && platform !== "web") return json({ error: "INVALID_PLATFORM" }, 400);
+    const studentClient = createClient(url, anon, { auth: { persistSession: false, autoRefreshToken: false } });
+    const { data: bundle, error: bundleError } = await studentClient.rpc("student_portal_bundle_by_session", { p_token: token });
+    const student = (bundle?.student || {}) as Record<string, unknown>;
+    const enrollNo = String(student.enroll_no || student.admission_no || "").trim().toUpperCase();
+    if (bundleError || !bundle?.success || !enrollNo) return json({ error: "INVALID_STUDENT_SESSION" }, 401);
+    let query = service.from("student_push_subscriptions").delete()
+      .eq("school_code", "ashiana").eq("enroll_no", enrollNo).eq("platform", platform);
+    if (platform === "android") {
+      const deviceToken = String(body.deviceToken || "").trim();
+      if (deviceToken.length < 20 || deviceToken.length > 4096) return json({ error: "INVALID_DEVICE_TOKEN" }, 400);
+      query = query.eq("device_token", deviceToken);
+    } else {
+      const endpoint = String(body.endpoint || "").trim();
+      if (!endpoint.startsWith("https://")) return json({ error: "INVALID_ENDPOINT" }, 400);
+      query = query.eq("endpoint", endpoint);
+    }
+    const { error: deleteError } = await query;
+    if (deleteError) return json({ error: "STUDENT_UNSUBSCRIBE_FAILED" }, 500);
+    return json({ success: true });
+  }
+
   const auth = req.headers.get("Authorization") || "";
   const client = createClient(url, anon, {
     global: { headers: { Authorization: auth } },

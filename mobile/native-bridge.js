@@ -89,6 +89,11 @@ async function requestNotificationPermission() {
 
 let pushListenersRegistered = false;
 
+function getRegisteredPushToken() {
+  try { return String(window.localStorage.getItem("aps_student_fcm_device_token_v1") || "").trim(); }
+  catch (_) { return ""; }
+}
+
 async function registerPushNotifications() {
   if (!isNativeAndroid()) throw new Error("Native push notifications are available only in the Android app.");
   const permission = await PushNotifications.checkPermissions();
@@ -161,6 +166,7 @@ async function registerPushNotifications() {
         if (settled) return;
         settled = true;
         cleanup();
+        try { window.localStorage.setItem("aps_student_fcm_device_token_v1", String(token.value || "")); } catch (_) {}
         resolve(token.value);
       });
       registrationErrorListener = await PushNotifications.addListener("registrationError", error => {
@@ -413,6 +419,7 @@ window.AshianaNative = Object.freeze({
   printHtml,
   saveBlob,
   registerPushNotifications,
+  getRegisteredPushToken,
   requestNotificationPermission,
   ensurePasskeyReady,
   passkeySupported,
