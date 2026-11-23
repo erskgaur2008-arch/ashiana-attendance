@@ -142,19 +142,41 @@ async function registerPushNotifications() {
 
   return await new Promise(async (resolve, reject) => {
     let settled = false;
+    let registrationListener = null;
+    let registrationErrorListener = null;
+    const cleanup = () => {
+      clearTimeout(timeout);
+      try { registrationListener?.remove(); } catch (_) {}
+      try { registrationErrorListener?.remove(); } catch (_) {}
+    };
     const timeout = setTimeout(() => {
-      if (!settled) { settled = true; reject(new Error("Timed out waiting for a Firebase device token. Check Firebase Android configuration.")); }
+      if (!settled) {
+        settled = true;
+        cleanup();
+        reject(new Error("Timed out waiting for a Firebase device token. Check Firebase Android configuration."));
+      }
     }, 20000);
-    await PushNotifications.addListener("registration", token => {
-      if (settled) return;
-      settled = true; clearTimeout(timeout); resolve(token.value);
-    });
-    await PushNotifications.addListener("registrationError", error => {
-      if (settled) return;
-      settled = true; clearTimeout(timeout); reject(new Error(error?.error || "Push registration failed."));
-    });
-    try { await PushNotifications.register(); }
-    catch (error) { if (!settled) { settled = true; clearTimeout(timeout); reject(error); } }
+    try {
+      registrationListener = await PushNotifications.addListener("registration", token => {
+        if (settled) return;
+        settled = true;
+        cleanup();
+        resolve(token.value);
+      });
+      registrationErrorListener = await PushNotifications.addListener("registrationError", error => {
+        if (settled) return;
+        settled = true;
+        cleanup();
+        reject(new Error(error?.error || "Push registration failed."));
+      });
+      await PushNotifications.register();
+    } catch (error) {
+      if (!settled) {
+        settled = true;
+        cleanup();
+        reject(error);
+      }
+    }
   });
 }
 
