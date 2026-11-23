@@ -2538,7 +2538,7 @@
               sessionStorage.setItem("aps_login_handoff_v1", "STUDENT");
               // Register this device using the existing student credential check. Do not block login on push setup.
               if (typeof window.__ashianaRegisterStudentPush === "function") {
-                window.__ashianaRegisterStudentPush({ client: studentClient, admissionNo: admission, dobPassword: dob });
+                window.__ashianaRegisterStudentPush({ client: studentClient, sessionToken: studentSessionToken, admissionNo: admission, dobPassword: dob });
               }
 
               if (typeof window.__ashianaFinishStudentLogin === "function") {
@@ -5566,6 +5566,11 @@ id="admin-portal-view" class="hidden flex-col w-full space-y-4 admin-dashboard-s
           sessionStorage.removeItem("aps_login_handoff_v1");
           currentAuthUser = restoredStudentUser;
           currentStaffId = null;
+          // Re-register this Android/web device after secure-session restoration.
+          // Use the revocable session token; never persist or reconstruct the DOB.
+          if (typeof window.__ashianaRegisterStudentPush === "function") {
+            window.__ashianaRegisterStudentPush({ client: supabaseClient, sessionToken: studentToken });
+          }
           return true;
         }
 
@@ -15151,13 +15156,16 @@ function addMessage(text,type){
     const client=options?.client;
     const admissionNo=String(options?.admissionNo||'').trim().toUpperCase();
     const dobPassword=String(options?.dobPassword||'').replace(/\D/g,'');
-    if(!client?.functions?.invoke||!admissionNo||!/^\d{8}$/.test(dobPassword))return;
+    const sessionToken=String(options?.sessionToken||'').trim();
+    const hasSessionToken=/^[a-f0-9]{64}$/i.test(sessionToken);
+    const hasLegacyCredentials=Boolean(admissionNo&&/^\d{8}$/.test(dobPassword));
+    if(!client?.functions?.invoke||(!hasSessionToken&&!hasLegacyCredentials))return;
     const native=Boolean(window.AshianaNative?.isAndroid?.());
     if(native){
       if(!window.AshianaNative?.registerPushNotifications)return;
       const deviceToken=await window.AshianaNative.registerPushNotifications();
       const {error}=await client.functions.invoke('push-notifications',{body:{
-        action:'student-subscribe',schoolCode:'ashiana',admissionNo,dobPassword,platform:'android',deviceToken
+        action:'student-subscribe',schoolCode:'ashiana',sessionToken:hasSessionToken?sessionToken:undefined,admissionNo,dobPassword,platform:'android',deviceToken
       }});
       if(error)throw error;
       return;
@@ -15183,7 +15191,7 @@ function addMessage(text,type){
     let sub=await reg.pushManager.getSubscription();
     if(!sub)sub=await reg.pushManager.subscribe({userVisibleOnly:true,applicationServerKey:key});
     const {error}=await client.functions.invoke('push-notifications',{body:{
-      action:'student-subscribe',schoolCode:'ashiana',admissionNo,dobPassword,platform:'web',subscription:sub.toJSON()
+      action:'student-subscribe',schoolCode:'ashiana',sessionToken:hasSessionToken?sessionToken:undefined,admissionNo,dobPassword,platform:'web',subscription:sub.toJSON()
     }});
     if(error){
       studentPushDiagnostic('registration_failed',{reason:'subscription_request_failed',code:error.code||null,status:error.status||null});
