@@ -63,6 +63,45 @@ list.querySelectorAll("[data-add-photos]").forEach(inp=>inp.onchange=async()=>{t
 async function upload(eventId,file,caption){if(file.size>1*1024*1024)throw Error(file.name+" exceeds 1 MB.");const allowed={"image/jpeg":{ext:[".jpg",".jpeg"],sig:[255,216,255]},"image/png":{ext:[".png"],sig:[137,80,78,71,13,10,26,10]},"image/webp":{ext:[".webp"],riff:true}};const kind=allowed[file.type];if(!kind)throw Error(file.name+": unsupported image type. Choose JPG, PNG or WebP.");const lower=file.name.toLowerCase();if(!kind.ext.some(ext=>lower.endsWith(ext)))throw Error(file.name+": file extension does not match its image type.");const head=new Uint8Array(await file.slice(0,12).arrayBuffer());if(kind.riff){if(String.fromCharCode(...head.slice(0,4))!=="RIFF"||String.fromCharCode(...head.slice(8,12))!=="WEBP")throw Error(file.name+": file content is not a valid WebP image.");}else if(!kind.sig.every((v,i)=>head[i]===v))throw Error(file.name+": file content does not match the selected image type.");const base64=await new Promise((resolve,reject)=>{const r=new FileReader();r.onload=()=>resolve(r.result);r.onerror=reject;r.readAsDataURL(file);});return api("upload-photo",{event_id:eventId,file_name:file.name,mime_type:file.type,base64,caption});}
 $("epg-publish").onclick=async()=>{const status=$("epg-status"),a=$("epg-audience").value,t=parseTarget();try{status.textContent="Saving event…";const d=await api("create-event",{title:$("epg-title").value,description:$("epg-description").value,event_date:$("epg-date").value,audience_type:a,class_name:a==="ALL"?"":t.cls,section:a==="SECTION"?$("epg-section").value:"",status:"DRAFT"});const files=Array.from($("epg-files").files||[]);for(const f of files){status.textContent="Uploading "+f.name+"…";await upload(d.id,f,"");}if(files.length){await api("update-event",{id:d.id,title:$("epg-title").value,description:$("epg-description").value,event_date:$("epg-date").value,audience_type:a,class_name:a==="ALL"?"":t.cls,section:a==="SECTION"?$("epg-section").value:"",status:"PUBLISHED"});}status.textContent=files.length?"Event published with photos.":"Event saved as draft; add photos before publishing.";await refresh();}catch(e){status.textContent=e.message||"Could not save event.";status.className="text-xs text-rose-700";}};
 $("epg-refresh").onclick=refresh;refresh();}
-function boot(){installStudent();installAdmin();const observer=new MutationObserver(()=>{installStudent();installAdmin();});observer.observe(document.body,{childList:true,subtree:true});}
+
+function installAdminDashboardCard(){
+ const section=$("admin-event-gallery");
+ const portal=$("admin-portal-view");
+ if(!section||!portal||$("admin-event-gallery-dashboard-card"))return;
+ const existingCards=portal.querySelectorAll(".admin-dashboard-card");
+ if(!existingCards.length)return;
+ const grid=existingCards[0].parentElement;
+ if(!grid)return;
+ const card=document.createElement("button");
+ card.id="admin-event-gallery-dashboard-card";
+ card.type="button";
+ card.className=existingCards[0].className;
+ card.setAttribute("aria-label","Open Event Photo Gallery");
+ card.innerHTML='<i data-lucide="images" class="w-6 h-6 mb-2 text-orange-600"></i><span class="block font-bold">Event Photo Gallery</span><span class="block text-xs opacity-70 mt-1">Create events and manage school photographs</span>';
+ grid.appendChild(card);
+ const placeholder=document.createComment("Event Photo Gallery position");
+ section.parentNode.insertBefore(placeholder,section);
+ const overlay=document.createElement("div");
+ overlay.id="admin-event-gallery-overlay";
+ overlay.className="fixed inset-0 z-[240] hidden overflow-y-auto bg-slate-950/60 p-3 sm:p-6";
+ overlay.innerHTML='<div class="max-w-4xl mx-auto my-4 bg-slate-50 rounded-2xl shadow-2xl overflow-hidden"><div class="sticky top-0 z-10 flex items-center justify-between gap-3 bg-white border-b px-4 py-3"><div><h2 class="font-extrabold text-slate-900">Event Photo Gallery</h2><p class="text-xs text-slate-500">Admin gallery management</p></div><button type="button" data-close-gallery class="rounded-xl px-4 py-2 bg-slate-100 text-slate-800 font-bold" aria-label="Close Event Photo Gallery">Close ✕</button></div><div data-gallery-modal-content class="p-3 sm:p-5"></div></div>';
+ document.body.appendChild(overlay);
+ const contentHost=overlay.querySelector("[data-gallery-modal-content]");
+ const close=()=>{
+  overlay.classList.add("hidden");
+  if(placeholder.parentNode)placeholder.parentNode.insertBefore(section,placeholder);
+ };
+ overlay.querySelector("[data-close-gallery]").addEventListener("click",close);
+ overlay.addEventListener("click",e=>{if(e.target===overlay)close();});
+ card.addEventListener("click",()=>{
+  contentHost.appendChild(section);
+  section.classList.remove("mt-4");
+  overlay.classList.remove("hidden");
+  if(window.lucide)window.lucide.createIcons();
+ });
+ if(window.lucide)window.lucide.createIcons();
+}
+
+function boot(){installStudent();installAdmin();installAdminDashboardCard();const observer=new MutationObserver(()=>{installStudent();installAdmin();installAdminDashboardCard();});observer.observe(document.body,{childList:true,subtree:true});}
 if(document.readyState==="loading")document.addEventListener("DOMContentLoaded",boot);else boot();
 })();
