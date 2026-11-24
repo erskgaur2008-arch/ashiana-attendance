@@ -304,7 +304,10 @@ Deno.serve(async (req: Request) => {
     const { data: admins, error: adminError } = await service.from("admin_users")
       .select("email")
       .eq("active", true)
-      .eq("role", "super_admin")
+      // admin_users stores role values as uppercase (for example SUPER_ADMIN).
+      // Use a case-insensitive exact pattern so legacy casing cannot block
+      // an otherwise authorized active super administrator.
+      .ilike("role", "SUPER_ADMIN")
       .ilike("email", escapeLike(callerEmail))
       .limit(1);
     if (adminError || !admins?.length) return json({ error: "ADMIN_REQUIRED" }, 403);
