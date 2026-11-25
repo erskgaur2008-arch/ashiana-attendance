@@ -1,0 +1,14 @@
+title = "Ashiana Attendance Gitleaks configuration"
+
+[[allowlists]]
+description = "Supabase publishable client key embedded in the two browser/native client files; this is intentionally public and is not a service-role credential."
+condition = "AND"
+paths = [
+  '''staff-push-registration\.js''',
+  '''mobile/native-bridge\.js''',
+]
+regexes = [
+  '''sb_publishable_[A-Za-z0-9_-]{20,}''',
+]
+regexTarget = "secret"
+ruleIDs = ["generic-api-key"]
