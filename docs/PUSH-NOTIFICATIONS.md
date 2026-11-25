@@ -42,6 +42,26 @@
 - Test Android background notifications and Web/PWA notifications separately.
 - Test teacher, staff, admin and student login, refresh, logout, QR attendance, ID-card generation and existing notice management.
 
+## Parent–School Messaging notifications (new feature)
+
+- A parent/guardian message or reply triggers a best-effort push to the authorized assigned teacher, Principal/Vice Principal, or School Administration account.
+- A staff/admin reply triggers a best-effort push to the student's registered Android/Web devices.
+- The existing FCM and Web Push delivery providers and subscription tables are reused. Parent message payloads include only the conversation subject and thread ID; message text, admission number, DOB/password, session token, and device tokens are not included in the notification.
+- Notification delivery is idempotency-guarded per message. A delivery failure never rolls back a saved message.
+- Tapping a Web Push notification focuses the app and requests that the authenticated portal open the matching conversation. Android opens the app through the existing FCM notification path; deep-link behavior must be verified on the built APK.
+- The additive migration creates a service-role-only delivery ledger and a restricted SQL helper that resolves staff auth recipients. It does not alter existing student or staff records.
+
+## Parent message notification verification
+
+1. Apply the additive migration in an isolated Ashiana test project and deploy the updated Edge Function there.
+2. Ensure a teacher and an administrator have granted push permission and have active rows in push_subscriptions.
+3. Send a parent message to an assigned teacher; verify only the intended teacher receives it.
+4. Send a parent message to Principal/Vice Principal and School Administration; verify the correct authorized recipients receive it.
+5. Reply as staff; verify only the student's registered devices receive the notification.
+6. Test Android and Web/PWA separately, including background/closed app behavior and tapping the notification.
+7. Verify duplicate invocation does not send a second notification, expired student sessions are rejected, unauthorized staff cannot trigger a notification, and push failure does not affect message delivery.
+8. Re-test existing school notices, attendance, leave, homework/timetable notifications, and all role logins.
+
 ## Safety
 
 - No production database migration, Edge Function deployment, secret update, merge or APK build is performed by this change.
