@@ -1831,6 +1831,16 @@
 #parent-school-messages-modal .staff-comm-list-item.family-chat-staff-item .family-chat-preview{font-size:12px}
 #parent-school-messages-modal .staff-comm-list-item.family-chat-staff-item .family-chat-meta{font-size:10px}
 @media(max-width:700px){
+ #student-dashboard-panel.student-messages-fullscreen{overflow:hidden!important;background:#efeae2!important}
+ #student-dashboard-panel.student-messages-fullscreen>.min-h-full{height:100dvh;min-height:100dvh;display:flex;flex-direction:column}
+ #student-dashboard-panel.student-messages-fullscreen>.min-h-full>.sticky{display:none!important}
+ #student-dashboard-panel.student-messages-fullscreen>.min-h-full>.p-4{padding:0!important;max-width:none!important;width:100%;height:100%;min-height:0;flex:1;display:flex;flex-direction:column}
+ #student-dashboard-panel.student-messages-fullscreen #student-dashboard-panel-body{height:100%;min-height:0;flex:1;display:flex;flex-direction:column;overflow:hidden}
+ #student-dashboard-panel.student-messages-fullscreen #student-dashboard-panel-body>section{height:100%;min-height:0;display:flex;flex-direction:column;gap:0!important}
+ #student-dashboard-panel.student-messages-fullscreen .family-chat-thread{height:100%;height:100dvh;min-height:0;max-height:none;flex:1;border-radius:0;border:0}
+ #student-dashboard-panel.student-messages-fullscreen #family-message-thread-list{flex:1;overflow-y:auto;padding-bottom:env(safe-area-inset-bottom)}
+ #student-dashboard-panel.student-messages-fullscreen .family-chat-thread-messages{min-height:0;flex:1;overscroll-behavior:contain}
+ #student-dashboard-panel.student-messages-fullscreen .family-chat-compose{padding-bottom:max(8px,env(safe-area-inset-bottom))}
  #student-dashboard-panel-body .family-chat-thread{height:calc(100dvh - 230px);min-height:55dvh;max-height:none;border-radius:0;border-left:0;border-right:0}
  #parent-school-messages-modal .staff-comm-head{display:none}
  #parent-school-messages-modal .staff-comm-card{height:100dvh!important;max-height:100dvh!important;border-radius:0!important}
@@ -7772,7 +7782,7 @@ function studentNoticePublisherLabel(value){
 }
 function closeStudentDashboardSection(){
   const panel=document.getElementById("student-dashboard-panel");
-  if(panel)panel.classList.add("hidden");
+  if(panel){panel.classList.add("hidden");panel.classList.remove("student-messages-fullscreen");}
   document.body.classList.remove("overflow-hidden");
 }
 async function submitStudentFeePayment(event){
@@ -14264,6 +14274,18 @@ window.addEventListener('load',async function(){
             window.__ashianaActivePrintFrame = null;
             return;
           }
+          const parentMessagesModal=document.getElementById("parent-school-messages-modal");
+          if(parentMessagesModal?.classList.contains("open")){
+            if(parentMessagesModal.querySelector(".staff-comm-card")?.classList.contains("thread-open"))window.backToParentSchoolMessageList?.();
+            else window.closeParentSchoolMessages?.();
+            return;
+          }
+          const studentPanelForBack=document.getElementById("student-dashboard-panel");
+          if(studentPanelForBack&&!studentPanelForBack.classList.contains("hidden")&&studentPanelForBack.classList.contains("student-messages-fullscreen")){
+            if(studentPanelForBack.querySelector(".family-chat-thread"))window.renderFamilyMessagesPanel?.(document.getElementById("student-dashboard-panel-body"));
+            else closeStudentDashboardSection();
+            return;
+          }
           const visibleModal = Array.from(document.querySelectorAll('[id$="-modal"]'))
             .find(el => !el.classList.contains("hidden"));
           if (visibleModal) {
@@ -15248,6 +15270,7 @@ function addMessage(text,type){
 
   window.renderFamilyMessagesPanel=async function(host){
     if(!host)return;
+    document.getElementById("student-dashboard-panel")?.classList.add("student-messages-fullscreen");
     host.innerHTML='<div class="p-4 rounded-2xl bg-white border text-sm text-slate-500">Loading messages…</div>';
     familyStudentToken=await readFamilyToken();
     if(!/^[a-f0-9]{64}$/i.test(familyStudentToken)||!supabaseClient){
@@ -15315,6 +15338,7 @@ function addMessage(text,type){
   };
 
   window.openFamilySchoolThread=async function(threadId){
+    document.getElementById("student-dashboard-panel")?.classList.add("student-messages-fullscreen");
     const host=document.getElementById("student-dashboard-panel-body");
     if(!host)return;
     host.innerHTML='<div class="p-4 rounded-2xl bg-white border text-sm text-slate-500">Loading conversation…</div>';
