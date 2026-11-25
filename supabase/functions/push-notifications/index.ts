@@ -645,6 +645,17 @@ Deno.serve(async (req: Request) => {
     });
   }
 
+  if (action === "subscribe") {
+    const email = String(userData.user.email || "").trim().toLowerCase();
+    if (!email) return json({ error: "ACTIVE_STAFF_REQUIRED" }, 403);
+    const { data: adminRows, error: adminLookupError } = await service.from("admin_users")
+      .select("email").eq("active", true).ilike("email", escapeLike(email)).limit(1);
+    const { data: staffRows, error: staffLookupError } = await service.from("staff")
+      .select("email").eq("status", "ACTIVE").ilike("email", escapeLike(email)).limit(1);
+    if (adminLookupError || staffLookupError) return json({ error: "SUBSCRIPTION_AUTHORIZATION_UNAVAILABLE" }, 503);
+    if (!adminRows?.length && !staffRows?.length) return json({ error: "ACTIVE_STAFF_REQUIRED" }, 403);
+  }
+
   if (action === "subscribe" && String(body.platform || "") === "android") {
     const token = String(body.deviceToken || "");
     if (token.length < 20 || token.length > 4096) return json({ error: "INVALID_DEVICE_TOKEN" }, 400);
