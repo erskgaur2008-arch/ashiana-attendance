@@ -367,17 +367,15 @@ Deno.serve(async (req: Request) => {
       rows = (data || []) as Array<Record<string, unknown>>;
       isStudentTarget = true;
     }
-    // A missing subscription is not a completed delivery. Do not claim the
-    // message yet: a staff member may enable notifications later and a retry
-    // must still be able to deliver it.
-    const { data: priorDelivery, error: priorDeliveryError } = await service
-      .from("parent_message_push_deliveries").select("message_id")
-      .eq("message_id", latestMessage.id).maybeSingle();
-    if (priorDeliveryError) {
-      console.error("Parent message notification ledger lookup failed:", priorDeliveryError.message);
-      return json({ error: "MESSAGE_NOTIFICATION_LOOKUP_FAILED" }, 500);
+    // Claim atomically after recipient/subscription lookup. If delivery is
+    // incomplete, the claim is released below so a later retry can proceed.
+    const { error: claimError } = await service.from("parent_message_push_deliveries")
+      .insert({ message_id: latestMessage.id });
+    if (claimError) {
+      if (String((claimError as { code?: string }).code || "") === "23505") return json({ success: true, duplicate: true, sent: 0 });
+      console.error("Parent message notification claim failed:", claimError.message);
+      return json({ error: "MESSAGE_NOTIFICATION_CLAIM_FAILED" }, 500);
     }
-    if (priorDelivery) return json({ success: true, duplicate: true, sent: 0 });
     const webRows = rows.filter(row => row.platform === "web");
     const androidRows = rows.filter(row => row.platform === "android");
     if (webPushConfigured && webRows.length) webpush.setVapidDetails(vapidSubject, vapidPublic, vapidPrivate);
@@ -413,12 +411,10 @@ Deno.serve(async (req: Request) => {
     // Mark complete only when every discovered target was processed successfully.
     // Zero subscriptions, provider failures, or unconfigured platforms remain
     // retryable; a later invocation can deliver after registration/configuration.
-    if (sent > 0 && failed === 0 && skipped === 0) {
-      const { error: claimError } = await service.from("parent_message_push_deliveries")
-        .insert({ message_id: latestMessage.id });
-      if (claimError && String((claimError as { code?: string }).code || "") !== "23505") {
-        console.error("Parent message notification completion record failed:", claimError.message);
-      }
+    if (sent === 0 || failed > 0 || skipped > 0) {
+      const { error: releaseError } = await service.from("parent_message_push_deliveries")
+        .delete().eq("message_id", latestMessage.id);
+      if (releaseError) console.error("Parent message notification retry claim could not be released:", releaseError.message);
     }
     return json({ success: true, duplicate: false, subscriptionsFound: rows.length, sent, sentWeb, sentAndroid, failed, skipped, retryable: sent === 0 || failed > 0 || skipped > 0 });
   }
