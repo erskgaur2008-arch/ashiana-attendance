@@ -340,12 +340,6 @@ Deno.serve(async (req: Request) => {
     if (!senderIsParent && !["STAFF", "ADMIN"].includes(String(latestMessage.sender_type))) return json({ error: "MESSAGE_NOT_FROM_STAFF" }, 403);
     const createdAt = Date.parse(String(latestMessage.created_at || ""));
     if (!Number.isFinite(createdAt) || Date.now() - createdAt > 10 * 60 * 1000) return json({ error: "MESSAGE_NOTIFICATION_WINDOW_EXPIRED" }, 409);
-    const { error: claimError } = await service.from("parent_message_push_deliveries").insert({ message_id: latestMessage.id });
-    if (claimError) {
-      if (String((claimError as { code?: string }).code || "") === "23505") return json({ success: true, duplicate: true, sent: 0 });
-      console.error("Parent message notification claim failed:", claimError.message);
-      return json({ error: "MESSAGE_NOTIFICATION_CLAIM_FAILED" }, 500);
-    }
     const title = senderIsParent ? "New parent message" : "School replied to your message";
     const notificationBody = String(thread.subject || "You have a new message").slice(0, 140);
     let rows: Array<Record<string, unknown>> = [];
@@ -372,6 +366,14 @@ Deno.serve(async (req: Request) => {
       if (error) return json({ error: "MESSAGE_SUBSCRIPTION_LOOKUP_FAILED" }, 500);
       rows = (data || []) as Array<Record<string, unknown>>;
       isStudentTarget = true;
+    }
+    // Claim only after recipient/subscription lookup succeeds so transient
+    // lookup failures can be retried without losing the notification.
+    const { error: claimError } = await service.from("parent_message_push_deliveries").insert({ message_id: latestMessage.id });
+    if (claimError) {
+      if (String((claimError as { code?: string }).code || "") === "23505") return json({ success: true, duplicate: true, sent: 0 });
+      console.error("Parent message notification claim failed:", claimError.message);
+      return json({ error: "MESSAGE_NOTIFICATION_CLAIM_FAILED" }, 500);
     }
     const webRows = rows.filter(row => row.platform === "web");
     const androidRows = rows.filter(row => row.platform === "android");
