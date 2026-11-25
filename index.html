@@ -15073,7 +15073,7 @@ function addMessage(text,type){
     const verifiedEmail=await ensureStaffCommAuth();
     const {data,error}=await supabaseClient.from('staff_communication_messages').select('id,sender_email,sender_name,sender_role,body,created_at').eq('thread_id',id).order('created_at',{ascending:true});
     if(error){msgs.innerHTML='<div class="text-xs text-rose-600 p-4">'+esc(error.message)+'</div>';return;}
-    msgs.innerHTML=(data||[]).map(x=>'<div class="staff-comm-msg '+(x.sender_email.toLowerCase()===verifiedEmail?'mine':'theirs')+'"><div class="text-[9px] font-extrabold text-slate-500 mb-1">'+(esc(x.sender_name||((x.sender_email.toLowerCase()===verifiedEmail)?'You':x.sender_role)))+' • '+new Date(x.created_at).toLocaleString('en-IN',{day:'numeric',month:'short',hour:'2-digit',minute:'2-digit'})+'</div>'+esc(x.body)+'</div>').join('')||'<div class="staff-comm-empty"><div>No messages yet.</div></div>';
+    msgs.innerHTML=(data||[]).map(x=>'<div class="staff-comm-msg '+(x.sender_email.toLowerCase()===verifiedEmail?'mine':'theirs')+'" data-message-id="'+esc(x.id)+'"><div class="text-[9px] font-extrabold text-slate-500 mb-1">'+(esc(x.sender_name||((x.sender_email.toLowerCase()===verifiedEmail)?'You':x.sender_role)))+' • '+new Date(x.created_at).toLocaleString('en-IN',{day:'numeric',month:'short',hour:'2-digit',minute:'2-digit'})+'</div>'+esc(x.body)+'</div>').join('')||'<div class="staff-comm-empty"><div>No messages yet.</div></div>';
     msgs.scrollTop=msgs.scrollHeight;
     const isClosed=t.status==='CLOSED';
     reply.classList.toggle('hidden',isClosed);
@@ -15206,27 +15206,44 @@ function addMessage(text,type){
     await loadStaffComm();
     if(staffCommCurrentThread?.id===id) await openStaffCommThread(id);
   };
-  let staffCommRealtimeTimer=null;
+  let staffCommRealtimeTimer=null,staffCommThreadRefreshBusy=false;
+  async function refreshStaffCommThreadInBackground(id){
+    if(!id||staffCommThreadRefreshBusy||!commModal()?.classList.contains('open'))return;
+    staffCommThreadRefreshBusy=true;
+    try{
+      const verifiedEmail=await ensureStaffCommAuth();
+      const {data,error}=await supabaseClient.from('staff_communication_messages').select('id,sender_email,sender_name,sender_role,body,created_at').eq('thread_id',id).order('created_at',{ascending:true});
+      if(error)throw error;if(staffCommCurrentThread?.id!==id)return;
+      const msgs=document.getElementById('staff-comm-messages');if(!msgs)return;
+      const existing=new Set([...msgs.querySelectorAll('[data-message-id]')].map(node=>node.getAttribute('data-message-id')));
+      const nearBottom=msgs.scrollHeight-msgs.scrollTop-msgs.clientHeight<72;
+      const empty=msgs.querySelector('.staff-comm-empty');if(empty&&(data||[]).length)empty.remove();
+      for(const m of data||[]){if(existing.has(String(m.id)))continue;const mine=String(m.sender_email||'').toLowerCase()===verifiedEmail;
+        msgs.insertAdjacentHTML('beforeend','<div class="staff-comm-msg '+(mine?'mine':'theirs')+'" data-message-id="'+esc(m.id)+'"><div class="text-[9px] font-extrabold text-slate-500 mb-1">'+esc(m.sender_name||(mine?'You':m.sender_role))+' • '+new Date(m.created_at).toLocaleString('en-IN',{day:'numeric',month:'short',hour:'2-digit',minute:'2-digit'})+'</div>'+esc(m.body)+'</div>');
+        existing.add(String(m.id));
+      }
+      if(nearBottom)msgs.scrollTop=msgs.scrollHeight;
+    }catch(error){console.warn('Staff communication background refresh failed:',error?.message||error);}
+    finally{staffCommThreadRefreshBusy=false;}
+  }
   function setupCommRealtime(){
     if(window.__ashianaStaffCommChannel||!supabaseClient)return;
     const refresh=()=>{
       if(staffCommRealtimeTimer)clearTimeout(staffCommRealtimeTimer);
       staffCommRealtimeTimer=setTimeout(async()=>{
         if(!commModal()?.classList.contains('open'))return;
+        const id=staffCommCurrentThread?.id||null;
         await loadStaffComm();
-        if(staffCommCurrentThread?.id){
-          const draft=document.getElementById('staff-comm-reply');
-          if(!draft||(draft.value.trim()===''&&document.activeElement!==draft))await openStaffCommThread(staffCommCurrentThread.id);
-        }
-      },250);
+        if(id)await refreshStaffCommThreadInBackground(id);
+      },350);
     };
     window.__ashianaStaffCommChannel=supabaseClient.channel('staff-admin-communication')
       .on('postgres_changes',{event:'*',schema:'public',table:'staff_communication_threads'},refresh)
       .on('postgres_changes',{event:'*',schema:'public',table:'staff_communication_messages'},refresh)
       .subscribe();
   }
-  document.addEventListener('visibilitychange',()=>{if(document.visibilityState==='visible'&&commModal()?.classList.contains('open'))loadStaffComm();});
-  window.addEventListener('online',()=>{if(commModal()?.classList.contains('open'))loadStaffComm();});
+  document.addEventListener('visibilitychange',()=>{if(document.visibilityState==='visible'&&commModal()?.classList.contains('open')){const id=staffCommCurrentThread?.id||null;loadStaffComm().then(()=>id&&refreshStaffCommThreadInBackground(id));}});
+  window.addEventListener('online',()=>{if(commModal()?.classList.contains('open')){const id=staffCommCurrentThread?.id||null;loadStaffComm().then(()=>id&&refreshStaffCommThreadInBackground(id));}});
   window.addEventListener('beforeunload',()=>{if(window.__ashianaStaffCommChannel&&supabaseClient){try{supabaseClient.removeChannel(window.__ashianaStaffCommChannel);}catch(_){} }});
 })();
 </script>
@@ -15283,28 +15300,75 @@ function addMessage(text,type){
       ? (mine?(studentName||"Parent"):String(message.sender_name||"Teacher"))
       : (mine?"You":String(message.sender_name||"School"));
     const bubbleSide=viewer==="staff"?(mine?"theirs":"mine"):(mine?"mine":"theirs");
-    return '<div class="staff-comm-msg '+bubbleSide+'"><div class="text-[9px] font-extrabold text-slate-500 mb-1">'+esc(senderLabel)+' · '+esc(dateLabel(message.created_at))+'</div><div>'+esc(message.body||"")+'</div></div>';
+    return '<div class="staff-comm-msg '+bubbleSide+'" data-message-id="'+esc(message.id||"")+'"><div class="text-[9px] font-extrabold text-slate-500 mb-1">'+esc(senderLabel)+' · '+esc(dateLabel(message.created_at))+'</div><div>'+esc(message.body||"")+'</div></div>';
+  }
+  function appendOnlyNewFamilyMessages(container,messages,studentName="",viewer="parent"){
+    if(!container)return;
+    const existing=new Set([...container.querySelectorAll("[data-message-id]")].map(node=>node.getAttribute("data-message-id")));
+    const wasNearBottom=container.scrollHeight-container.scrollTop-container.clientHeight<72;
+    const empty=container.querySelector(".text-center,.staff-comm-empty");
+    if(empty&&(messages||[]).length)empty.remove();
+    for(const message of messages||[]){
+      const id=String(message.id||"");if(!id||existing.has(id))continue;
+      container.insertAdjacentHTML("beforeend",familyThreadMessageMarkup(message,studentName,viewer));existing.add(id);
+    }
+    if(wasNearBottom)container.scrollTop=container.scrollHeight;
   }
 
+  let familyMessageRefreshInFlight=false;
+  async function refreshFamilySchoolThreadInBackground(threadId){
+    if(familyMessageRefreshInFlight||!threadId||!supabaseClient)return;
+    const panel=document.getElementById("student-dashboard-panel");
+    if(!panel||panel.classList.contains("hidden")||document.visibilityState==="hidden")return;
+    familyMessageRefreshInFlight=true;
+    try{
+      const token=await readFamilyToken();
+      const {data,error}=await supabaseClient.rpc("parent_messages_student_thread",{p_token:token,p_thread_id:threadId});
+      if(error)throw error;if(!data?.success)throw new Error(messageError(data?.code));
+      if(familyCurrentThreadId!==threadId)return;
+      appendOnlyNewFamilyMessages(document.getElementById("family-message-thread-messages"),data.messages||[],"","parent");
+    }catch(error){console.warn("Family message background refresh failed:",error?.message||error);}
+    finally{familyMessageRefreshInFlight=false;}
+  }
   function startFamilyMessagePolling(){
     if(window.__ashianaFamilyMessagePoll)return;
     window.__ashianaFamilyMessagePoll=window.setInterval(async()=>{
-      const panel=document.getElementById("student-dashboard-panel");
-      const host=document.getElementById("student-dashboard-panel-body");
+      const panel=document.getElementById("student-dashboard-panel"),host=document.getElementById("student-dashboard-panel-body");
       if(!panel||panel.classList.contains("hidden")||!panel.classList.contains("student-messages-fullscreen")||document.visibilityState==="hidden"||!host)return;
       try{
         if(familyCurrentThreadId){
           const reply=document.getElementById("family-message-reply");
           if(reply&&(reply.value.trim()||document.activeElement===reply))return;
-          await window.openFamilySchoolThread(familyCurrentThreadId);
+          await refreshFamilySchoolThreadInBackground(familyCurrentThreadId);
         }else{
           const compose=document.getElementById("family-message-compose");
           if(compose&&!compose.classList.contains("hidden"))return;
-          await window.renderFamilyMessagesPanel(host);
+          await window.refreshFamilyMessageListInBackground(host);
         }
       }catch(error){console.warn("Family message refresh failed:",error?.message||error);}
     },10000);
   }
+  window.refreshFamilyMessageListInBackground=async function(host){
+    if(!host||!supabaseClient||window.__familyListRefreshBusy)return;
+    window.__familyListRefreshBusy=true;
+    try{
+      const token=await readFamilyToken();
+      const {data,error}=await supabaseClient.rpc("parent_messages_student_list",{p_token:token});
+      if(error)throw error;if(!data?.success)throw new Error(messageError(data?.code));
+      const list=document.getElementById("family-message-thread-list");if(!list)return;
+      const threads=Array.isArray(data.threads)?data.threads:[];
+      for(const thread of threads){
+        const id=String(thread.id);
+        const markup='<button type="button" data-family-thread="'+esc(id)+'" class="family-chat-list-item"><span class="family-chat-avatar">'+esc(String(thread.recipient_name||"S").trim().charAt(0).toUpperCase())+'</span><span class="family-chat-copy"><span class="family-chat-row"><strong>'+esc(thread.recipient_name||"School")+'</strong>'+(thread.unread?'<span class="staff-comm-pill bg-rose-100 text-rose-700">NEW</span>':'')+'</span><span class="family-chat-preview">'+esc(thread.subject||"New conversation")+'</span><span class="family-chat-meta">'+esc(statusLabel(thread.status))+' · '+esc(dateLabel(thread.last_message_at))+'</span></span></button>';
+        const current=[...list.querySelectorAll("[data-family-thread]")].find(node=>node.dataset.familyThread===id);
+        if(current){const tmp=document.createElement("div");tmp.innerHTML=markup;current.replaceWith(tmp.firstElementChild);}
+        else list.insertAdjacentHTML("afterbegin",markup);
+      }
+      list.querySelectorAll("[data-family-thread]").forEach(button=>{if(!button.dataset.refreshBound){button.dataset.refreshBound="1";button.addEventListener("click",()=>window.openFamilySchoolThread(button.dataset.familyThread));}});
+      if(!threads.length&&!list.querySelector("[data-family-thread]"))list.innerHTML='<div class="rounded-2xl border border-dashed border-slate-300 bg-white p-5 text-center text-xs text-slate-500">No conversations yet. Send a message to get started.</div>';
+    }catch(error){console.warn("Family message list background refresh failed:",error?.message||error);}
+    finally{window.__familyListRefreshBusy=false;}
+  };
 
   window.renderFamilyMessagesPanel=async function(host){
     if(!host)return;
@@ -15427,18 +15491,26 @@ function addMessage(text,type){
     list.innerHTML=staffThreads.map(thread=>'<button type="button" data-parent-message-thread="'+esc(thread.id)+'" class="staff-comm-list-item family-chat-staff-item '+(staffCurrentThreadId===thread.id?'active':'')+'"><span class="family-chat-avatar">'+esc(String(thread.student_name||"S").trim().charAt(0).toUpperCase())+'</span><span class="family-chat-copy"><span class="family-chat-row"><strong>'+esc(thread.student_name||"Student")+'</strong>'+(thread.unread?'<span class="staff-comm-pill bg-rose-100 text-rose-700">NEW</span>':'')+'</span><span class="family-chat-preview">'+esc(thread.subject||"New conversation")+'</span><span class="family-chat-meta">'+esc(thread.class_name||"")+' '+esc(thread.section||"")+' · '+esc(dateLabel(thread.last_message_at))+'</span></span></button>').join("");
     list.querySelectorAll("[data-parent-message-thread]").forEach(button=>button.addEventListener("click",()=>window.openParentSchoolMessageThread(button.dataset.parentMessageThread)));
   }
-  let parentMessageRealtimeTimer=null;
+  let parentMessageRealtimeTimer=null,parentSchoolThreadRefreshBusy=false;
+  async function refreshParentSchoolThreadInBackground(threadId){
+    if(!threadId||parentSchoolThreadRefreshBusy||!document.getElementById("parent-school-messages-modal")?.classList.contains("open"))return;
+    parentSchoolThreadRefreshBusy=true;
+    try{
+      const {data,error}=await supabaseClient.rpc("parent_messages_staff_thread",{p_thread_id:threadId});
+      if(error)throw error;if(staffCurrentThreadId!==threadId)return;
+      appendOnlyNewFamilyMessages(document.getElementById("parent-school-message-thread-body"),data?.messages||[],data?.thread?.student_name||"Student","staff");
+    }catch(error){console.warn("Parent-school background refresh failed:",error?.message||error);}
+    finally{parentSchoolThreadRefreshBusy=false;}
+  }
   function setupParentSchoolRealtime(){
     if(window.__ashianaParentSchoolChannel||!supabaseClient)return;
     const refresh=()=>{
       if(parentMessageRealtimeTimer)clearTimeout(parentMessageRealtimeTimer);
       parentMessageRealtimeTimer=setTimeout(async()=>{
         if(!document.getElementById("parent-school-messages-modal")?.classList.contains("open"))return;
+        const id=staffCurrentThreadId||null;
         await window.refreshParentSchoolMessages();
-        if(staffCurrentThreadId){
-          const draft=document.getElementById("parent-school-message-reply");
-          if(!draft||(draft.value.trim()===""&&document.activeElement!==draft))await window.openParentSchoolMessageThread(staffCurrentThreadId);
-        }
+        if(id)await refreshParentSchoolThreadInBackground(id);
       },250);
     };
     window.__ashianaParentSchoolChannel=supabaseClient.channel("parent-school-messages-live")
@@ -15446,8 +15518,8 @@ function addMessage(text,type){
       .on("postgres_changes",{event:"*",schema:"public",table:"parent_message_messages"},refresh)
       .subscribe();
   }
-  document.addEventListener("visibilitychange",()=>{if(document.visibilityState==="visible"&&document.getElementById("parent-school-messages-modal")?.classList.contains("open")){window.refreshParentSchoolMessages();const draft=document.getElementById("parent-school-message-reply");if(staffCurrentThreadId&&(!draft||(draft.value.trim()===""&&document.activeElement!==draft)))window.openParentSchoolMessageThread(staffCurrentThreadId);}});
-  window.addEventListener("online",()=>{if(document.getElementById("parent-school-messages-modal")?.classList.contains("open")){setupParentSchoolRealtime();window.refreshParentSchoolMessages();}});
+  document.addEventListener("visibilitychange",()=>{if(document.visibilityState==="visible"&&document.getElementById("parent-school-messages-modal")?.classList.contains("open")){const id=staffCurrentThreadId||null;window.refreshParentSchoolMessages().then(()=>id&&refreshParentSchoolThreadInBackground(id));}});
+  window.addEventListener("online",()=>{if(document.getElementById("parent-school-messages-modal")?.classList.contains("open")){setupParentSchoolRealtime();const id=staffCurrentThreadId||null;window.refreshParentSchoolMessages().then(()=>id&&refreshParentSchoolThreadInBackground(id));}});
   window.openParentSchoolMessages=async function(){
     const role=String(currentAuthUser?.type||"").toUpperCase();
     if(!supabaseClient||!currentAuthUser||!['ADMIN','PRINCIPAL','STAFF','TEACHER'].includes(role)){showToast("Sign in with a school staff account to open parent messages.","error");return;}
@@ -15466,7 +15538,7 @@ function addMessage(text,type){
   window.refreshParentSchoolMessages=async function(){
     const list=document.getElementById("parent-school-message-list"),body=document.getElementById("parent-school-message-thread-body");
     if(!list||!supabaseClient)return;
-    list.innerHTML='<div class="p-5 text-xs text-slate-400">Loading parent messages…</div>';
+    if(!staffThreads.length)list.innerHTML='<div class="p-5 text-xs text-slate-400">Loading parent messages…</div>';
     try{
       const {data,error}=await supabaseClient.rpc("parent_messages_staff_list");
       if(error)throw error;
