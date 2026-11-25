@@ -9,7 +9,7 @@ const headers = {
   "Cache-Control": "no-store",
 };
 const json = (value: unknown, status = 200) => new Response(JSON.stringify(value), { status, headers });
-const categories = new Set(["school_notice", "leave_status", "homework_timetable", "attendance_update"]);
+const categories = new Set(["school_notice", "leave_status", "homework_timetable", "attendance_update", "parent_message"]);
 const FCM_SCOPE = "https://www.googleapis.com/auth/firebase.messaging";
 const FCM_TOKEN_URL = "https://oauth2.googleapis.com/token";
 
@@ -75,7 +75,7 @@ async function getFcmAccessToken(account: ServiceAccount) {
   return String(result.access_token);
 }
 
-async function sendFcm(accessToken: string, projectId: string, deviceToken: string, title: string, message: string, category: string) {
+async function sendFcm(accessToken: string, projectId: string, deviceToken: string, title: string, message: string, category: string, threadId?: string) {
   const response = await fetch("https://fcm.googleapis.com/v1/projects/" + encodeURIComponent(projectId) + "/messages:send", {
     method: "POST",
     headers: { Authorization: "Bearer " + accessToken, "Content-Type": "application/json" },
@@ -83,7 +83,7 @@ async function sendFcm(accessToken: string, projectId: string, deviceToken: stri
       message: {
         token: deviceToken,
         notification: { title, body: message },
-        data: { category, url: "/" },
+        data: { category, url: "/", ...(threadId ? { threadId } : {}) },
         android: { priority: "high", notification: { channel_id: "school_updates", sound: "default" } },
       },
     }),
@@ -94,6 +94,20 @@ async function sendFcm(accessToken: string, projectId: string, deviceToken: stri
     return { ok: false, status: response.status, detail };
   }
   return { ok: true, status: response.status, detail: "" };
+}
+
+async function sendAccountWebPush(row: { id: string; subscription: Record<string, unknown> | null }, title: string, message: string, category: string, threadId: string, service: { from: (table: string) => any }) {
+  if (!row.subscription) return false;
+  try {
+    await webpush.sendNotification(row.subscription as WebPushSubscription, JSON.stringify({
+      title, body: message, category, tag: category + ":" + threadId, url: "/", threadId,
+    }));
+    return true;
+  } catch (error) {
+    const status = Number((error as { statusCode?: number })?.statusCode || 0);
+    if (status === 404 || status === 410) await service.from("push_subscriptions").delete().eq("id", row.id);
+    return false;
+  }
 }
 
 function normalizeServiceAccount() {
@@ -107,11 +121,11 @@ function normalizeServiceAccount() {
   }
 }
 
-async function sendWebPush(row: StudentPushRow, title: string, message: string, category: string, service: { from: (table: string) => any }) {
+async function sendWebPush(row: StudentPushRow, title: string, message: string, category: string, service: { from: (table: string) => any }, threadId?: string) {
   if (!row.subscription) return false;
   try {
     await webpush.sendNotification(row.subscription as WebPushSubscription, JSON.stringify({
-      title, body: message, category, tag: category + ":" + crypto.randomUUID(), url: "/",
+      title, body: message, category, tag: threadId ? category + ":" + threadId : category + ":" + crypto.randomUUID(), url: "/", ...(threadId ? { threadId } : {}),
     }));
     return true;
   } catch (error) {
@@ -285,6 +299,114 @@ Deno.serve(async (req: Request) => {
     const { error: deleteError } = await query;
     if (deleteError) return json({ error: "STUDENT_UNSUBSCRIBE_FAILED" }, 500);
     return json({ success: true });
+  }
+
+  if (action === "send-parent-message") {
+    const threadId = String(body.threadId || "").trim();
+    if (!/^[0-9a-f-]{36}$/i.test(threadId)) return json({ error: "INVALID_THREAD" }, 400);
+    const sessionToken = String(body.sessionToken || "").trim();
+    let senderIsParent = false;
+    let verifiedStudentId = "";
+    if (sessionToken) {
+      if (!/^[a-f0-9]{64}$/i.test(sessionToken)) return json({ error: "INVALID_STUDENT_SESSION" }, 401);
+      const anonClient = createClient(url, anon, { auth: { persistSession: false, autoRefreshToken: false } });
+      const { data: bundle, error: bundleError } = await anonClient.rpc("student_portal_bundle_by_session", { p_token: sessionToken });
+      const student = (bundle?.student || {}) as Record<string, unknown>;
+      if (bundleError || !bundle?.success || !student.id) return json({ error: "INVALID_STUDENT_SESSION" }, 401);
+      senderIsParent = true;
+      verifiedStudentId = String(student.id);
+    } else {
+      const authHeader = req.headers.get("Authorization") || "";
+      if (!authHeader) return json({ error: "AUTH_REQUIRED" }, 401);
+      const callerClient = createClient(url, anon, {
+        global: { headers: { Authorization: authHeader } },
+        auth: { persistSession: false, autoRefreshToken: false },
+      });
+      const { data: caller, error: callerError } = await callerClient.auth.getUser();
+      if (callerError || !caller.user) return json({ error: "AUTH_REQUIRED" }, 401);
+      const { data: access, error: accessError } = await callerClient.rpc("parent_messages_staff_thread", { p_thread_id: threadId });
+      if (accessError || !access?.success) return json({ error: "THREAD_ACCESS_DENIED" }, 403);
+    }
+    const { data: thread, error: threadError } = await service.from("parent_message_threads")
+      .select("id,student_id,recipient_type,recipient_staff_id,subject")
+      .eq("id", threadId).eq("school_code", "ashiana").maybeSingle();
+    if (threadError || !thread) return json({ error: "THREAD_NOT_FOUND" }, 404);
+    if (senderIsParent && String(thread.student_id) !== verifiedStudentId) return json({ error: "THREAD_ACCESS_DENIED" }, 403);
+    const { data: latestMessage, error: messageError } = await service.from("parent_message_messages")
+      .select("id,sender_type,created_at")
+      .eq("thread_id", threadId).order("created_at", { ascending: false }).limit(1).maybeSingle();
+    if (messageError || !latestMessage) return json({ error: "MESSAGE_NOT_FOUND" }, 404);
+    if (senderIsParent && latestMessage.sender_type !== "PARENT_GUARDIAN") return json({ error: "MESSAGE_NOT_FROM_PARENT" }, 403);
+    if (!senderIsParent && !["STAFF", "ADMIN"].includes(String(latestMessage.sender_type))) return json({ error: "MESSAGE_NOT_FROM_STAFF" }, 403);
+    const createdAt = Date.parse(String(latestMessage.created_at || ""));
+    if (!Number.isFinite(createdAt) || Date.now() - createdAt > 10 * 60 * 1000) return json({ error: "MESSAGE_NOTIFICATION_WINDOW_EXPIRED" }, 409);
+    const title = senderIsParent ? "New parent message" : "School replied to your message";
+    const notificationBody = String(thread.subject || "You have a new message").slice(0, 140);
+    let rows: Array<Record<string, unknown>> = [];
+    let isStudentTarget = false;
+    if (senderIsParent) {
+      const { data: targetUsers, error: targetError } = await service.rpc("parent_messages_notification_target_users", { p_thread_id: threadId });
+      if (targetError) {
+        console.error("Parent message recipient lookup failed:", targetError.message);
+        return json({ error: "MESSAGE_RECIPIENT_LOOKUP_FAILED" }, 500);
+      }
+      const userIds = (targetUsers || []).map((item: Record<string, unknown>) => String(item.user_id || "")).filter(Boolean);
+      if (userIds.length) {
+        const { data, error } = await service.from("push_subscriptions").select("id,platform,subscription,device_token,user_id").in("user_id", userIds);
+        if (error) return json({ error: "MESSAGE_SUBSCRIPTION_LOOKUP_FAILED" }, 500);
+        rows = (data || []) as Array<Record<string, unknown>>;
+      }
+    } else {
+      const { data: student, error: studentError } = await service.from("student_roster")
+        .select("enroll_no").eq("id", thread.student_id).eq("school_code", "ashiana").maybeSingle();
+      if (studentError || !student?.enroll_no) return json({ error: "MESSAGE_STUDENT_LOOKUP_FAILED" }, 500);
+      const { data, error } = await service.from("student_push_subscriptions")
+        .select("id,platform,subscription,device_token,enroll_no")
+        .eq("school_code", "ashiana").ilike("enroll_no", escapeLike(String(student.enroll_no)));
+      if (error) return json({ error: "MESSAGE_SUBSCRIPTION_LOOKUP_FAILED" }, 500);
+      rows = (data || []) as Array<Record<string, unknown>>;
+      isStudentTarget = true;
+    }
+    // Claim only after recipient/subscription lookup succeeds so transient
+    // lookup failures can be retried without losing the notification.
+    const { error: claimError } = await service.from("parent_message_push_deliveries").insert({ message_id: latestMessage.id });
+    if (claimError) {
+      if (String((claimError as { code?: string }).code || "") === "23505") return json({ success: true, duplicate: true, sent: 0 });
+      console.error("Parent message notification claim failed:", claimError.message);
+      return json({ error: "MESSAGE_NOTIFICATION_CLAIM_FAILED" }, 500);
+    }
+    const webRows = rows.filter(row => row.platform === "web");
+    const androidRows = rows.filter(row => row.platform === "android");
+    if (webPushConfigured && webRows.length) webpush.setVapidDetails(vapidSubject, vapidPublic, vapidPrivate);
+    let fcmAccessToken = "";
+    if (androidRows.length && fcmAccount) {
+      try { fcmAccessToken = await getFcmAccessToken(fcmAccount); }
+      catch (error) { console.error("Parent message FCM setup failed:", (error as Error)?.message || "unknown error"); }
+    }
+    let sentWeb = 0, sentAndroid = 0, failed = 0, skipped = 0;
+    for (const row of webRows) {
+      if (!webPushConfigured) { skipped++; continue; }
+      const ok = isStudentTarget
+        ? await sendWebPush(row as unknown as StudentPushRow, title, notificationBody, "parent_message", service, threadId)
+        : await sendAccountWebPush(row as { id: string; subscription: Record<string, unknown> | null }, title, notificationBody, "parent_message", threadId, service);
+      if (ok) sentWeb++; else failed++;
+    }
+    const jobs: Array<Promise<void>> = [];
+    for (const row of androidRows) {
+      if (!fcmAccessToken || !fcmAccount) { skipped++; continue; }
+      jobs.push(sendFcm(fcmAccessToken, fcmAccount.project_id, String(row.device_token || ""), title, notificationBody, "parent_message", threadId)
+        .then(async result => {
+          if (result.ok) sentAndroid++;
+          else {
+            failed++;
+            if (result.detail === "UNREGISTERED" || result.status === 404) {
+              await service.from(isStudentTarget ? "student_push_subscriptions" : "push_subscriptions").delete().eq("id", row.id);
+            }
+          }
+        }));
+    }
+    for (let i = 0; i < jobs.length; i += 20) await Promise.allSettled(jobs.slice(i, i + 20));
+    return json({ success: true, duplicate: false, subscriptionsFound: rows.length, sent: sentWeb + sentAndroid, sentWeb, sentAndroid, failed, skipped });
   }
 
   const auth = req.headers.get("Authorization") || "";
