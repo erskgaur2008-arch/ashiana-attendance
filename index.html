@@ -15214,7 +15214,10 @@ function addMessage(text,type){
       staffCommRealtimeTimer=setTimeout(async()=>{
         if(!commModal()?.classList.contains('open'))return;
         await loadStaffComm();
-        if(staffCommCurrentThread?.id)await openStaffCommThread(staffCommCurrentThread.id);
+        if(staffCommCurrentThread?.id){
+          const draft=document.getElementById('staff-comm-reply');
+          if(!draft||(draft.value.trim()===''&&document.activeElement!==draft))await openStaffCommThread(staffCommCurrentThread.id);
+        }
       },250);
     };
     window.__ashianaStaffCommChannel=supabaseClient.channel('staff-admin-communication')
@@ -15432,7 +15435,10 @@ function addMessage(text,type){
       parentMessageRealtimeTimer=setTimeout(async()=>{
         if(!document.getElementById("parent-school-messages-modal")?.classList.contains("open"))return;
         await window.refreshParentSchoolMessages();
-        if(staffCurrentThreadId)await window.openParentSchoolMessageThread(staffCurrentThreadId);
+        if(staffCurrentThreadId){
+          const draft=document.getElementById("parent-school-message-reply");
+          if(!draft||(draft.value.trim()===""&&document.activeElement!==draft))await window.openParentSchoolMessageThread(staffCurrentThreadId);
+        }
       },250);
     };
     window.__ashianaParentSchoolChannel=supabaseClient.channel("parent-school-messages-live")
@@ -15440,7 +15446,7 @@ function addMessage(text,type){
       .on("postgres_changes",{event:"*",schema:"public",table:"parent_message_messages"},refresh)
       .subscribe();
   }
-  document.addEventListener("visibilitychange",()=>{if(document.visibilityState==="visible"&&document.getElementById("parent-school-messages-modal")?.classList.contains("open")){window.refreshParentSchoolMessages();if(staffCurrentThreadId)window.openParentSchoolMessageThread(staffCurrentThreadId);}});
+  document.addEventListener("visibilitychange",()=>{if(document.visibilityState==="visible"&&document.getElementById("parent-school-messages-modal")?.classList.contains("open")){window.refreshParentSchoolMessages();const draft=document.getElementById("parent-school-message-reply");if(staffCurrentThreadId&&(!draft||(draft.value.trim()===""&&document.activeElement!==draft)))window.openParentSchoolMessageThread(staffCurrentThreadId);}});
   window.addEventListener("online",()=>{if(document.getElementById("parent-school-messages-modal")?.classList.contains("open")){setupParentSchoolRealtime();window.refreshParentSchoolMessages();}});
   window.openParentSchoolMessages=async function(){
     const role=String(currentAuthUser?.type||"").toUpperCase();
