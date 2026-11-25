@@ -15255,6 +15255,12 @@ function addMessage(text,type){
       });
       if(error)throw error;
       if(!data?.success)throw new Error(messageError(data?.code));
+      try{
+        const {error:pushError}=await supabaseClient.functions.invoke("push-notifications",{body:{
+          action:"send-parent-message",threadId:data.thread_id,sessionToken:token
+        }});
+        if(pushError)console.warn("Parent message push notification could not be sent:",pushError.message||"request failed");
+      }catch(pushError){console.warn("Parent message push notification unavailable:",pushError?.message||"request failed");}
       await window.openFamilySchoolThread(data.thread_id);
     }catch(error){if(status)status.textContent=messageError(error?.code||error?.message||error);}
     finally{if(button){button.disabled=false;button.textContent="Send message";}}
@@ -15290,6 +15296,12 @@ function addMessage(text,type){
       const {data,error}=await supabaseClient.rpc("parent_messages_student_reply",{p_token:token,p_thread_id:threadId,p_body:body});
       if(error)throw error;
       if(!data?.success)throw new Error(messageError(data?.code));
+      try{
+        const {error:pushError}=await supabaseClient.functions.invoke("push-notifications",{body:{
+          action:"send-parent-message",threadId,sessionToken:token
+        }});
+        if(pushError)console.warn("Parent reply push notification could not be sent:",pushError.message||"request failed");
+      }catch(pushError){console.warn("Parent reply push notification unavailable:",pushError?.message||"request failed");}
       await window.openFamilySchoolThread(threadId);
     }catch(error){showToast(messageError(error?.code||error?.message||error),"error");if(button){button.disabled=false;button.textContent="Send";}}
   };
@@ -15360,6 +15372,12 @@ function addMessage(text,type){
       const {data,error}=await supabaseClient.rpc("parent_messages_staff_reply",{p_thread_id:staffCurrentThreadId,p_body:body});
       if(error)throw error;
       if(!data?.success)throw new Error(messageError(data?.code));
+      try{
+        const {error:pushError}=await supabaseClient.functions.invoke("push-notifications",{body:{
+          action:"send-parent-message",threadId:staffCurrentThreadId
+        }});
+        if(pushError)console.warn("School reply push notification could not be sent:",pushError.message||"request failed");
+      }catch(pushError){console.warn("School reply push notification unavailable:",pushError?.message||"request failed");}
       if(input)input.value="";
       await window.refreshParentSchoolMessages();await window.openParentSchoolMessageThread(staffCurrentThreadId);
     }catch(error){showToast(messageError(error?.code||error?.message||error),"error");}
@@ -15373,6 +15391,19 @@ function addMessage(text,type){
       await window.refreshParentSchoolMessages();await window.openParentSchoolMessageThread(threadId);
     }catch(error){showToast("Could not update conversation: "+(error?.message||error),"error");}
   };
+  if("serviceWorker" in navigator){
+    navigator.serviceWorker.addEventListener("message",event=>{
+      const payload=event.data||{};
+      const threadId=String(payload.threadId||"");
+      if(payload.type!=="ASHIANA_OPEN_PARENT_MESSAGE"||!/^[0-9a-f-]{36}$/i.test(threadId))return;
+      const role=String(currentAuthUser?.type||"").toUpperCase();
+      if(role==="STUDENT"&&typeof window.openFamilySchoolThread==="function"){
+        window.openFamilySchoolThread(threadId);
+      }else if(["ADMIN","STAFF","TEACHER"].includes(role)&&typeof window.openParentSchoolMessages==="function"){
+        window.openParentSchoolMessages().then(()=>window.openParentSchoolMessageThread(threadId));
+      }
+    });
+  }
   document.addEventListener("keydown",event=>{if(event.key==="Escape")window.closeParentSchoolMessages();});
 })();
 </script>
