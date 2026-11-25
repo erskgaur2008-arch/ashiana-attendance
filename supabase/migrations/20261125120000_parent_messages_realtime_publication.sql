@@ -1,6 +1,23 @@
 -- Live updates for Parent–School Messages.
--- Student family messages continue to use the token-validated RPC polling
--- path in the client; this publication is for authenticated school staff views.
+-- Only authenticated school staff who can access a conversation may receive
+-- its Realtime row events. Student family messages remain token-RPC based.
+grant select on public.parent_message_threads, public.parent_message_messages to authenticated;
+grant execute on function private.parent_message_staff_can_access_thread(uuid) to authenticated;
+
+drop policy if exists parent_message_threads_realtime_select on public.parent_message_threads;
+create policy parent_message_threads_realtime_select
+  on public.parent_message_threads
+  for select
+  to authenticated
+  using (private.parent_message_staff_can_access_thread(id));
+
+drop policy if exists parent_message_messages_realtime_select on public.parent_message_messages;
+create policy parent_message_messages_realtime_select
+  on public.parent_message_messages
+  for select
+  to authenticated
+  using (private.parent_message_staff_can_access_thread(thread_id));
+
 do $$
 begin
   if not exists (
