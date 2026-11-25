@@ -367,9 +367,10 @@ Deno.serve(async (req: Request) => {
       rows = (data || []) as Array<Record<string, unknown>>;
       isStudentTarget = true;
     }
-    // Claim only after recipient/subscription lookup succeeds so transient
-    // lookup failures can be retried without losing the notification.
-    const { error: claimError } = await service.from("parent_message_push_deliveries").insert({ message_id: latestMessage.id });
+    // Claim atomically after recipient/subscription lookup. If delivery is
+    // incomplete, the claim is released below so a later retry can proceed.
+    const { error: claimError } = await service.from("parent_message_push_deliveries")
+      .insert({ message_id: latestMessage.id });
     if (claimError) {
       if (String((claimError as { code?: string }).code || "") === "23505") return json({ success: true, duplicate: true, sent: 0 });
       console.error("Parent message notification claim failed:", claimError.message);
@@ -406,7 +407,16 @@ Deno.serve(async (req: Request) => {
         }));
     }
     for (let i = 0; i < jobs.length; i += 20) await Promise.allSettled(jobs.slice(i, i + 20));
-    return json({ success: true, duplicate: false, subscriptionsFound: rows.length, sent: sentWeb + sentAndroid, sentWeb, sentAndroid, failed, skipped });
+    const sent = sentWeb + sentAndroid;
+    // Mark complete only when every discovered target was processed successfully.
+    // Zero subscriptions, provider failures, or unconfigured platforms remain
+    // retryable; a later invocation can deliver after registration/configuration.
+    if (sent === 0 || failed > 0 || skipped > 0) {
+      const { error: releaseError } = await service.from("parent_message_push_deliveries")
+        .delete().eq("message_id", latestMessage.id);
+      if (releaseError) console.error("Parent message notification retry claim could not be released:", releaseError.message);
+    }
+    return json({ success: true, duplicate: false, subscriptionsFound: rows.length, sent, sentWeb, sentAndroid, failed, skipped, retryable: sent === 0 || failed > 0 || skipped > 0 });
   }
 
   const auth = req.headers.get("Authorization") || "";
@@ -629,6 +639,17 @@ Deno.serve(async (req: Request) => {
       sent: sentWeb + sentAndroid, sentWeb, sentAndroid, failed, skipped,
       webPushConfigured, androidPushConfigured: Boolean(fcmAccessToken),
     });
+  }
+
+  if (action === "subscribe") {
+    const email = String(userData.user.email || "").trim().toLowerCase();
+    if (!email) return json({ error: "ACTIVE_STAFF_REQUIRED" }, 403);
+    const { data: adminRows, error: adminLookupError } = await service.from("admin_users")
+      .select("email").eq("active", true).ilike("email", escapeLike(email)).limit(1);
+    const { data: staffRows, error: staffLookupError } = await service.from("staff")
+      .select("email").eq("status", "ACTIVE").ilike("email", escapeLike(email)).limit(1);
+    if (adminLookupError || staffLookupError) return json({ error: "SUBSCRIPTION_AUTHORIZATION_UNAVAILABLE" }, 503);
+    if (!adminRows?.length && !staffRows?.length) return json({ error: "ACTIVE_STAFF_REQUIRED" }, 403);
   }
 
   if (action === "subscribe" && String(body.platform || "") === "android") {

@@ -1,4 +1,4 @@
-const CACHE_NAME = "ashiana-attendance-v59";
+const CACHE_NAME = "ashiana-attendance-v60";
 const APP_SHELL = [
   "./",
   "./index.html",
@@ -7,6 +7,7 @@ const APP_SHELL = [
   "./dark-mode.css?v=3",
   "./dark-mode.js?v=3",
   "./role-permissions.js?v=1",
+  "./staff-push-registration.js",
   "./manifest.webmanifest",
   "./logo 2.png"
 ];
@@ -68,6 +69,7 @@ self.addEventListener("fetch", (event) => {
             const hasThemeCss = /<link\b[^>]*\bhref=["'][^"']*dark-mode\.css(?:\?[^"']*)?["'][^>]*>/i.test(html);
             const hasThemeJs = /<script\b[^>]*\bsrc=["'][^"']*dark-mode\.js(?:\?[^"']*)?["'][^>]*>/i.test(html);
             const hasRolePermissions = /<script\b[^>]*\bsrc=["'][^"']*role-permissions\.js(?:\?[^"']*)?["'][^>]*>/i.test(html);
+            const hasStaffPushRegistration = /<script\b[^>]*\bsrc=["'][^"']*staff-push-registration\.js(?:\?[^"']*)?["'][^>]*>/i.test(html);
             let withTheme = html;
             if (!hasThemeCss) {
               withTheme = withTheme.replace(/<\/head>/i, '<link rel="stylesheet" href="./dark-mode.css?v=3"></head>');
@@ -77,6 +79,9 @@ self.addEventListener("fetch", (event) => {
             }
             if (!hasRolePermissions) {
               withTheme = withTheme.replace(/<\/body>/i, '<script src="./role-permissions.js?v=1" defer></script></body>');
+            }
+            if (!hasStaffPushRegistration) {
+              withTheme = withTheme.replace(/<\/body>/i, '<script src="./staff-push-registration.js?v=1" defer></script></body>');
             }
             if (withTheme !== html) {
               const headers = new Headers(response.headers);
