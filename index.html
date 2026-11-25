@@ -15216,7 +15216,7 @@ function addMessage(text,type){
 <div id="parent-school-messages-modal" class="staff-comm-modal" role="dialog" aria-modal="true" aria-labelledby="parent-school-messages-title">
   <div class="staff-comm-card">
     <div class="staff-comm-head">
-      <div class="min-w-0"><div class="text-[9px] uppercase tracking-[.16em] text-emerald-100 font-bold">Family Inbox</div><h2 id="parent-school-messages-title" class="text-base sm:text-lg font-extrabold mt-0.5">Parent Messages</h2></div>
+      <div class="min-w-0"><h2 id="parent-school-messages-title" class="text-base sm:text-lg font-extrabold">Messages</h2></div>
       <div class="flex items-center gap-2"><button type="button" onclick="refreshParentSchoolMessages()" class="px-3 py-2 rounded-xl bg-white/10 hover:bg-white/20 text-[10px] font-bold">Refresh</button><button type="button" onclick="closeParentSchoolMessages()" class="w-9 h-9 rounded-xl bg-white/10 hover:bg-white/20 flex items-center justify-center" aria-label="Close parent messages"><i data-lucide="x"></i></button></div>
     </div>
     <div class="staff-comm-body">
@@ -16823,6 +16823,13 @@ window.showStudentSchoolUpiQr=async function(accountId,installmentId){
 })();
 </script>
 
+<style id="staff-parent-messages-heading-fix">
+@media(max-width:700px){
+ #parent-school-messages-modal .staff-comm-head{display:flex!important;flex:0 0 auto;min-height:58px;padding:calc(10px + env(safe-area-inset-top)) 16px 10px!important}
+ #parent-school-messages-modal .staff-comm-card:not(.thread-open) .staff-comm-head{display:flex!important}
+ #parent-school-messages-modal .staff-comm-card.thread-open .staff-comm-head{display:none!important}
+}
+</style>
 <script src="./event-photo-gallery.js" defer></script>
 <script src="./portal-passkey-lock.js" defer></script>
 
