@@ -1,4 +1,4 @@
-const CACHE_NAME = "ashiana-attendance-v58";
+const CACHE_NAME = "ashiana-attendance-v59";
 const APP_SHELL = [
   "./",
   "./index.html",
@@ -131,14 +131,15 @@ self.addEventListener("push", (event) => {
   const title = String(payload.title || "Ashiana Public School").slice(0, 120);
   const body = String(payload.body || "You have a new school update.").slice(0, 500);
   const category = String(payload.category || "school_notice");
-  const allowed = ["school_notice", "leave_status", "homework_timetable", "attendance_update"];
+  const allowed = ["school_notice", "leave_status", "homework_timetable", "attendance_update", "parent_message"];
   const safeCategory = allowed.includes(category) ? category : "school_notice";
+  const threadId = /^[0-9a-f-]{36}$/i.test(String(payload.threadId || "")) ? String(payload.threadId) : null;
   event.waitUntil(self.registration.showNotification(title, {
     body,
     icon: "./logo%202.png",
     badge: "./logo%202.png",
-    tag: String(payload.tag || safeCategory).slice(0, 120),
-    data: { category: safeCategory },
+    tag: String(payload.tag || (threadId ? safeCategory + ":" + threadId : safeCategory)).slice(0, 120),
+    data: { category: safeCategory, threadId },
     renotify: false
   }));
 });
@@ -146,14 +147,19 @@ self.addEventListener("push", (event) => {
 self.addEventListener("notificationclick", (event) => {
   event.notification.close();
   const target = new URL("./", self.registration.scope).href;
+  const threadId = String(event.notification.data?.threadId || "");
   event.waitUntil((async () => {
     const clients = await self.clients.matchAll({ type: "window", includeUncontrolled: true });
     for (const client of clients) {
       if (client.url.startsWith(self.registration.scope) && "focus" in client) {
         await client.focus();
+        if (threadId) client.postMessage({ type: "ASHIANA_OPEN_PARENT_MESSAGE", threadId });
         return;
       }
     }
-    if (self.clients.openWindow) await self.clients.openWindow(target);
+    if (self.clients.openWindow) {
+      const opened = await self.clients.openWindow(target);
+      if (opened && threadId) opened.postMessage({ type: "ASHIANA_OPEN_PARENT_MESSAGE", threadId });
+    }
   })());
 });
