@@ -33,6 +33,7 @@ After login, the Student Portal provides:
 
 - **Profile** — View student details, parents, phone and address.
 - **Notice** — Read notices published for the student's class.
+- **Message School** — A parent or guardian can start a private conversation with an assigned class/subject teacher, the Principal/Vice Principal, or School Administration, then read and send replies from the same portal.
 - **Attendance** — View attendance records and Present/Absent/Leave counts.
 - **Homework** — View subject-wise homework, descriptions and due dates.
 - **Timetable** — View periods, subjects, teachers and rooms when published.
@@ -41,7 +42,10 @@ After login, the Student Portal provides:
 - **ID Card** — Open the digital student ID card and print it from the preview.
 
 ## 4. Teacher / Staff User Manual
-The staff side menu contains **Punch, Students (teachers only), History, Leave, Profile, and Sign Out**.
+The staff side menu contains **Punch, Students (teachers only), Parent Messages, History, Leave, Profile, and Sign Out**.
+
+### Parent Messages
+Open **Parent Messages** to review conversations addressed to your class/subject assignment or school role. Reply in the thread and update its status when it is resolved. Administrators can review all family conversations.
 
 ### A. Smart QR Attendance Scanner
 1. Tap **MARK ATTENDANCE** or **Scan QR** in the teacher's Student Attendance panel. Both buttons open the same scanner.

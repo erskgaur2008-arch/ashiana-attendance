@@ -15,7 +15,7 @@
       profile: true, mentor: true, classmates: true, notice: true,
       attendance: true, "report-card": true, fees: true, homework: true,
       timetable: true, leave: true, calendar: true, "id-card": true,
-      "event-photos": true
+      "event-photos": true, messages: true
     }
   };
   const MODULES = {
@@ -36,6 +36,7 @@
     STUDENT: [
       ["profile", "Profile"], ["mentor", "Your mentor"],
       ["classmates", "Classmates"], ["notice", "Notices"],
+      ["messages", "Family messages", "Parents and guardians can contact an assigned teacher, Principal, or School Administration."],
       ["attendance", "Attendance"], ["report-card", "Report card"],
       ["fees", "Fees management"], ["homework", "Homework"],
       ["timetable", "Timetable"], ["leave", "Leave requests"],

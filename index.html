@@ -1032,6 +1032,10 @@
 .staff-comm-pill{display:inline-flex;align-items:center;padding:3px 7px;border-radius:999px;font-size:9px;font-weight:800}.staff-comm-recipient-picker{position:relative}.staff-comm-recipient-trigger{width:100%;min-height:42px;display:flex;align-items:center;justify-content:space-between;gap:8px;text-align:left;border:1px solid #e2e8f0;border-radius:12px;background:#fff;padding:9px 11px;font-size:11px}.staff-comm-recipient-panel{position:absolute;left:0;right:0;top:calc(100% + 5px);z-index:30;background:#fff;border:1px solid #e2e8f0;border-radius:14px;box-shadow:0 18px 40px rgba(15,23,42,.16);max-height:250px;overflow:auto;padding:6px}.staff-comm-recipient-row{display:flex;align-items:center;gap:8px;padding:9px 8px;border-radius:10px;font-size:11px}.staff-comm-recipient-row:hover{background:#f0fdf4}.staff-comm-recipient-row input{accent-color:#0a7e46}
 .staff-comm-empty{height:100%;display:flex;align-items:center;justify-content:center;text-align:center;color:#64748b;padding:30px}
 @media(max-width:700px){.staff-comm-card{height:94dvh;border-radius:20px}.staff-comm-body{grid-template-columns:1fr;position:relative}.staff-comm-list{height:100%;max-height:none;border-right:0;border-bottom:0;overflow-y:auto}.staff-comm-conversation{min-height:0;height:100%;display:flex}.staff-comm-msg{max-width:90%}.staff-comm-card.thread-open .staff-comm-list{display:none}.staff-comm-card.thread-open .staff-comm-conversation{display:flex}.staff-comm-mobile-back{display:inline-flex!important}.staff-comm-card:not(.thread-open) .staff-comm-mobile-back{display:none!important}}
+#parent-school-messages-modal{z-index:280}
+#parent-school-messages-modal .staff-comm-card{width:min(1100px,96vw);height:min(92dvh,820px)}
+#parent-school-messages-modal .staff-comm-head{background:linear-gradient(135deg,#075e54,#128c7e)}
+#parent-school-messages-modal .staff-comm-list-item .family-message-summary{white-space:normal;overflow-wrap:anywhere}
 </style>
 <style id="staff-comm-whatsapp-ui">
 .staff-comm-modal{background:rgba(0,0,0,.55)!important;backdrop-filter:blur(6px)!important;padding:0!important}
@@ -2894,6 +2898,7 @@ id="student-portal-view" class="hidden flex-col w-full max-w-2xl space-y-4 stude
             <button data-role-module="mentor" onclick="studentDashboardSection('mentor')" class="p-4 rounded-2xl border bg-violet-50 text-left"><i data-lucide="users-round" class="w-5 h-5 text-violet-700"></i><b class="block mt-2 text-sm">Your Mentor</b><span class="text-[10px] text-slate-500">Class & subject teachers</span></button>
             <button data-role-module="classmates" onclick="studentDashboardSection('classmates')" class="p-4 rounded-2xl border bg-cyan-50 text-left"><i data-lucide="contact-round" class="w-5 h-5 text-cyan-700"></i><b class="block mt-2 text-sm">Classmates</b><span class="text-[10px] text-slate-500">Your section students</span></button>
             <button data-role-module="notice" onclick="studentDashboardSection('notice')" class="p-4 rounded-2xl border bg-amber-50 text-left"><i data-lucide="megaphone" class="w-5 h-5 text-amber-700"></i><b class="block mt-2 text-sm">Notice</b><span id="student-count-notices" class="text-[10px] text-slate-500">0 notices</span></button>
+            <button type="button" data-role-module="messages" onclick="studentDashboardSection('messages')" class="p-4 rounded-2xl border border-emerald-200 bg-emerald-50 text-left"><i data-lucide="messages-square" class="w-5 h-5 text-emerald-700"></i><b class="block mt-2 text-sm">Message School</b><span class="text-[10px] text-slate-600">Contact a teacher or school leader</span></button>
             <button data-role-module="attendance" onclick="studentDashboardSection('attendance')" class="p-4 rounded-2xl border bg-emerald-50 text-left"><i data-lucide="calendar-check" class="w-5 h-5 text-emerald-700"></i><b class="block mt-2 text-sm">Attendance</b><span id="student-count-attendance" class="text-[10px] text-slate-500">0 records</span></button>
             <button type="button" data-role-module="report-card" onclick="studentDashboardSection('report-card')" class="p-4 rounded-2xl border border-indigo-100 bg-indigo-50 text-left"><i data-lucide="graduation-cap" class="w-5 h-5 text-indigo-700"></i><b class="block mt-2 text-sm">Report Card</b><span class="text-[10px] text-slate-500">Full-year marks & grades</span></button>
             <button type="button" data-role-module="fees" onclick="studentDashboardSection('fees')" class="p-4 rounded-2xl border border-amber-200 bg-amber-50 text-left"><i data-lucide="wallet" class="w-5 h-5 text-amber-700"></i><b class="block mt-2 text-sm text-slate-900">Fees Management</b><span class="text-[10px] text-slate-600">Due, payments & receipts</span></button>
@@ -2901,7 +2906,6 @@ id="student-portal-view" class="hidden flex-col w-full max-w-2xl space-y-4 stude
             <button data-role-module="timetable" onclick="studentDashboardSection('timetable')" class="p-4 rounded-2xl border bg-violet-50 text-left"><i data-lucide="calendar-clock" class="w-5 h-5 text-violet-700"></i><b class="block mt-2 text-sm">Timetable</b><span class="text-[10px] text-slate-500">Class schedule</span></button>
             <button data-role-module="leave" onclick="studentDashboardSection('leave')" class="p-4 rounded-2xl border bg-rose-50 text-left"><i data-lucide="file-pen-line" class="w-5 h-5 text-rose-700"></i><b class="block mt-2 text-sm">Leave Request</b><span class="text-[10px] text-slate-500">Apply / track</span></button>
             <button data-role-module="calendar" onclick="studentDashboardSection('calendar')" class="p-4 rounded-2xl border bg-orange-50 text-left"><i data-lucide="calendar-days" class="w-5 h-5 text-orange-700"></i><b class="block mt-2 text-sm">School Calendar</b><span class="text-[10px] text-slate-500">Events & holidays</span></button>
-            <button type="button" data-role-module="id-card" onclick="studentDashboardSection('id-card')" class="p-4 rounded-2xl border bg-slate-50 text-left"><i data-lucide="contact" class="w-5 h-5 text-slate-700"></i><b class="block mt-2 text-sm">ID Card</b><span class="text-[10px] text-slate-500">View digital ID</span></button>
           </div>
           <div id="student-dashboard-panel" class="fixed inset-0 z-[170] hidden bg-slate-50 overflow-y-auto">
             <div class="min-h-full">
@@ -2980,6 +2984,9 @@ id="student-dashboard-panel-body" class="space-y-3 text-xs"></div>
             </button>
             <button id="staff-drawer-communication" data-role-module="communication" type="button" onclick="openStaffAdminCommunication()" class="staff-drawer-item">
               <i data-lucide="messages-square"></i><span>Administration</span>
+            </button>
+            <button id="staff-drawer-parent-messages" type="button" onclick="openParentSchoolMessages()" class="staff-drawer-item">
+              <i data-lucide="message-square-text"></i><span>Parent Messages</span>
             </button>
             <button id="staff-drawer-history" data-role-module="history" type="button" onclick="selectStaffDrawerTab('history')" class="staff-drawer-item">
               <i data-lucide="calendar-days"></i><span>History</span>
@@ -3495,6 +3502,7 @@ id="admin-portal-view" class="hidden flex-col w-full space-y-4 admin-dashboard-s
         <button type="button" id="admin-nav-permissions" onclick="window.switchAdminTab('permissions')" title="Assign portal modules by role"><i data-lucide="shield-check"></i><span>Role Permissions</span></button>
         <button type="button" id="admin-live-location-launch" onclick="openStaffLiveLocationAdmin()" title="View live staff locations"><i data-lucide="map-pin"></i><span>Live Staff Location</span></button>
         <button type="button" onclick="openStaffAdminCommunication()" title="Staff ↔ Administration Communication"><i data-lucide="messages-square"></i><span>Communication</span></button>
+        <button type="button" onclick="openParentSchoolMessages()" title="Messages from parents and guardians"><i data-lucide="message-square-text"></i><span>Parent Messages</span></button>
         <button type="button" onclick="window.switchAdminTab('live')"><i data-lucide="radio"></i><span>Live Attendance</span></button>
         <button type="button" onclick="window.switchAdminTab('qr')"><i data-lucide="qr-code"></i><span>Daily QR</span></button>
         <button type="button" id="admin-nav-reports" onclick="window.switchAdminTab('reports')"><i data-lucide="file-spreadsheet"></i><span>Report</span></button>
@@ -7501,7 +7509,7 @@ async function studentDashboardSection(type){
     return;
   }
   if(type==="id-card")return createStudentPortalIdCard();
-  const names={notice:"Notice",attendance:"Attendance",homework:"Homework",timetable:"Timetable",leave:"Leave Request & Status",calendar:"School Calendar",fees:"Fees Management",profile:"Student Profile",mentor:"Your Mentor",classmates:"Classmates","report-card":"Report Card","event-photos":"Event Photos"};
+  const names={notice:"Notice",messages:"Message School",attendance:"Attendance",homework:"Homework",timetable:"Timetable",leave:"Leave Request & Status",calendar:"School Calendar",fees:"Fees Management",profile:"Student Profile",mentor:"Your Mentor",classmates:"Classmates","report-card":"Report Card","event-photos":"Event Photos"};
   title.textContent=names[type]||"Dashboard";
   panel.classList.remove("hidden");
   document.body.classList.add("overflow-hidden");
@@ -7524,6 +7532,11 @@ async function studentDashboardSection(type){
   }catch(e){console.warn("Student portal refresh failed:",e);}
   const fresh=currentAuthUser?.portalData||d;
   const sValue=(key)=>currentAuthUser?.studentRecord?.[key]||"—";
+  if(type==="messages"){
+    if(loading)loading.classList.add("hidden");
+    await window.renderFamilyMessagesPanel?.(host);
+    return;
+  }
   if(type==="fees"){
     host.innerHTML='<div class="p-4 bg-white border rounded-2xl"><p class="text-sm font-bold text-slate-800">Loading your fee account…</p><p class="mt-1 text-xs text-slate-500">Your fee details are private to your student session.</p></div>';
     const token=String(await window.AshianaNative?.getStudentSessionToken?.() || sessionStorage.getItem("aps_student_session_token_v1") || "");
@@ -15132,6 +15145,235 @@ function addMessage(text,type){
     window.__ashianaStaffCommChannel=supabaseClient.channel('staff-admin-communication').on('postgres_changes',{event:'*',schema:'public',table:'staff_communication_threads'},()=>loadStaffComm()).on('postgres_changes',{event:'INSERT',schema:'public',table:'staff_communication_messages'},()=>{if(commModal()?.classList.contains('open'))loadStaffComm();}).subscribe();
   }
   window.addEventListener('beforeunload',()=>{if(window.__ashianaStaffCommChannel&&supabaseClient){try{supabaseClient.removeChannel(window.__ashianaStaffCommChannel);}catch(_){} }});
+})();
+</script>
+<div id="parent-school-messages-modal" class="staff-comm-modal" role="dialog" aria-modal="true" aria-labelledby="parent-school-messages-title">
+  <div class="staff-comm-card">
+    <div class="staff-comm-head">
+      <div class="min-w-0"><div class="text-[9px] uppercase tracking-[.16em] text-emerald-100 font-bold">Family Inbox</div><h2 id="parent-school-messages-title" class="text-base sm:text-lg font-extrabold mt-0.5">Parent Messages</h2></div>
+      <div class="flex items-center gap-2"><button type="button" onclick="refreshParentSchoolMessages()" class="px-3 py-2 rounded-xl bg-white/10 hover:bg-white/20 text-[10px] font-bold">Refresh</button><button type="button" onclick="closeParentSchoolMessages()" class="w-9 h-9 rounded-xl bg-white/10 hover:bg-white/20 flex items-center justify-center" aria-label="Close parent messages"><i data-lucide="x"></i></button></div>
+    </div>
+    <div class="staff-comm-body">
+      <div class="staff-comm-list"><div id="parent-school-message-list" class="min-h-full"></div></div>
+      <div class="staff-comm-conversation">
+        <div id="parent-school-message-thread-head" class="p-3 border-b bg-white hidden"></div>
+        <div id="parent-school-message-thread-body" class="staff-comm-messages"><div class="staff-comm-empty"><div><div class="text-2xl mb-2">💬</div><div class="font-bold text-slate-700">Select a parent conversation</div><div class="text-[10px] mt-1">Only the assigned recipient group and school administrators can view these messages.</div></div></div></div>
+        <form id="parent-school-message-reply-form" class="staff-comm-compose hidden" onsubmit="replyToParentSchoolMessage(event)">
+          <div class="flex gap-2"><textarea id="parent-school-message-reply" required maxlength="4000" class="flex-1 border border-slate-200 rounded-xl p-2.5 text-xs outline-none focus:border-emerald-500" placeholder="Write a reply…"></textarea><button class="self-end px-4 py-2.5 rounded-xl bg-ashiana-green text-white text-xs font-bold">Send</button></div>
+        </form>
+      </div>
+    </div>
+  </div>
+</div>
+<script>
+(function(){
+  const esc=value=>String(value??"").replace(/[&<>"']/g,ch=>({"&":"&amp;","<":"&lt;",">":"&gt;","\"":"&quot;","'":"&#39;"}[ch]));
+  const dateLabel=value=>{const date=new Date(value||"");return Number.isNaN(date.getTime())?"":date.toLocaleString("en-IN",{day:"numeric",month:"short",hour:"2-digit",minute:"2-digit"});};
+  const statusLabel=value=>String(value||"OPEN").replaceAll("_"," ");
+  let familyTeachers=[];
+  let familyStudentToken="";
+  let staffThreads=[];
+  let staffCurrentThreadId="";
+
+  async function readFamilyToken(){
+    try{
+      const nativeToken=await window.AshianaNative?.getStudentSessionToken?.();
+      if(nativeToken)return String(nativeToken);
+    }catch(_){}
+    try{return String(sessionStorage.getItem("aps_student_session_token_v1")||localStorage.getItem("aps_student_session_token_v1")||"");}catch(_){return "";}
+  }
+  function messageError(code){
+    const messages={
+      STUDENT_SESSION_EXPIRED:"Your Student Portal session expired. Sign in again to continue.",
+      TEACHER_NOT_ASSIGNED:"That teacher is no longer assigned to this class. Refresh and choose another teacher.",
+      PRINCIPAL_NOT_AVAILABLE:"A Principal or Vice Principal is not available for messages right now.",
+      ADMINISTRATION_NOT_AVAILABLE:"School Administration is not available for messages right now.",
+      THREAD_NOT_FOUND_OR_CLOSED:"This conversation is closed or unavailable.",
+      THREAD_CLOSED:"This conversation is closed. Start a new message if you still need help."
+    };
+    return messages[code]||String(code||"The message could not be sent.").replaceAll("_"," ");
+  }
+  function familyThreadMessageMarkup(message){
+    const mine=message.sender_type==="PARENT_GUARDIAN";
+    return '<div class="staff-comm-msg '+(mine?"mine":"theirs")+'"><div class="text-[9px] font-extrabold text-slate-500 mb-1">'+esc(message.sender_name||"School")+' · '+esc(dateLabel(message.created_at))+'</div><div>'+esc(message.body||"")+'</div></div>';
+  }
+
+  window.renderFamilyMessagesPanel=async function(host){
+    if(!host)return;
+    host.innerHTML='<div class="p-4 rounded-2xl bg-white border text-sm text-slate-500">Loading messages…</div>';
+    familyStudentToken=await readFamilyToken();
+    if(!/^[a-f0-9]{64}$/i.test(familyStudentToken)||!supabaseClient){
+      host.innerHTML='<div class="p-4 rounded-2xl border border-rose-200 bg-rose-50 text-sm text-rose-800">Your Student Portal session is unavailable. Please sign in again.</div>';
+      return;
+    }
+    try{
+      const [targetsResult,listResult]=await Promise.all([
+        supabaseClient.rpc("parent_messages_student_targets",{p_token:familyStudentToken}),
+        supabaseClient.rpc("parent_messages_student_list",{p_token:familyStudentToken})
+      ]);
+      if(targetsResult.error)throw targetsResult.error;
+      if(listResult.error)throw listResult.error;
+      if(!targetsResult.data?.success||!listResult.data?.success)throw new Error(messageError(targetsResult.data?.code||listResult.data?.code));
+      familyTeachers=Array.isArray(targetsResult.data.teachers)?targetsResult.data.teachers:[];
+      const recipientOptions=familyTeachers.map(teacher=>'<option value="TEACHER:'+esc(teacher.staff_id)+'">'+esc(teacher.name)+' ('+esc(teacher.role)+')</option>').join("");
+      host.innerHTML='<section class="space-y-3">'+
+        '<div class="rounded-2xl border border-emerald-200 bg-emerald-50 p-3"><div class="font-extrabold text-emerald-900">Contact your child’s school</div><p class="mt-1 text-[11px] leading-relaxed text-emerald-800">Use the student’s Student Portal sign-in. Choose an assigned teacher, Principal, or School Administration. Replies appear here.</p></div>'+
+        '<div class="flex items-center justify-between gap-2"><div><h4 class="text-sm font-extrabold text-slate-900">Conversations</h4><p class="text-[10px] text-slate-500">Messages are private to the family and intended school recipients.</p></div><button type="button" id="family-message-new" class="rounded-xl bg-emerald-700 px-3 py-2 text-[11px] font-extrabold text-white">New message</button></div>'+
+        '<form id="family-message-compose" class="hidden space-y-2 rounded-2xl border bg-white p-3">'+
+          '<label class="block text-[11px] font-bold text-slate-700">Send to<select id="family-message-recipient-type" required class="mt-1 w-full rounded-xl border border-slate-200 p-2.5 text-xs"><option value="">Choose who to contact</option>'+recipientOptions+'<option value="PRINCIPAL">Principal / Vice Principal</option><option value="SCHOOL_ADMINISTRATION">School Administration</option></select></label>'+
+          '<label class="block text-[11px] font-bold text-slate-700">Subject<input id="family-message-subject" required maxlength="160" class="mt-1 w-full rounded-xl border border-slate-200 p-2.5 text-xs" placeholder="What would you like to discuss?"></label>'+
+          '<label class="block text-[11px] font-bold text-slate-700">Message<textarea id="family-message-body" required maxlength="4000" rows="4" class="mt-1 w-full rounded-xl border border-slate-200 p-2.5 text-xs" placeholder="Write your message…"></textarea></label>'+
+          '<div id="family-message-compose-status" class="min-h-4 text-[10px] text-slate-500" role="status"></div><div class="flex justify-end gap-2"><button id="family-message-cancel" type="button" class="rounded-xl bg-slate-100 px-3 py-2 text-[11px] font-bold text-slate-700">Cancel</button><button class="rounded-xl bg-emerald-700 px-4 py-2 text-[11px] font-extrabold text-white">Send message</button></div>'+
+        '</form><div id="family-message-thread-list" class="space-y-2"></div></section>';
+      const list=document.getElementById("family-message-thread-list");
+      const threads=Array.isArray(listResult.data.threads)?listResult.data.threads:[];
+      list.innerHTML=threads.length?threads.map(thread=>'<button type="button" data-family-thread="'+esc(thread.id)+'" class="w-full rounded-2xl border border-slate-200 bg-white p-3 text-left shadow-sm hover:border-emerald-300"><div class="flex items-start justify-between gap-2"><span class="min-w-0 font-extrabold text-xs text-slate-900">'+esc(thread.subject)+'</span>'+(thread.unread?'<span class="rounded-full bg-rose-100 px-2 py-1 text-[9px] font-extrabold text-rose-700">NEW</span>':'')+'</div><div class="mt-1 text-[10px] text-slate-500">To '+esc(thread.recipient_name)+' · '+esc(statusLabel(thread.status))+'</div><div class="mt-1 text-[9px] text-slate-400">'+esc(dateLabel(thread.last_message_at))+'</div></button>').join(""):'<div class="rounded-2xl border border-dashed border-slate-300 bg-white p-5 text-center text-xs text-slate-500">No conversations yet. Send a message to get started.</div>';
+      document.getElementById("family-message-new")?.addEventListener("click",()=>{document.getElementById("family-message-compose")?.classList.remove("hidden");document.getElementById("family-message-subject")?.focus();});
+      document.getElementById("family-message-cancel")?.addEventListener("click",()=>document.getElementById("family-message-compose")?.classList.add("hidden"));
+      document.getElementById("family-message-compose")?.addEventListener("submit",window.sendFamilySchoolMessage);
+      list.querySelectorAll("[data-family-thread]").forEach(button=>button.addEventListener("click",()=>window.openFamilySchoolThread(button.dataset.familyThread)));
+      if(window.lucide)lucide.createIcons();
+    }catch(error){
+      host.innerHTML='<div class="p-4 rounded-2xl border border-rose-200 bg-rose-50 text-sm text-rose-800">Could not load messages: '+esc(error?.message||error)+'</div>';
+    }
+  };
+
+  window.sendFamilySchoolMessage=async function(event){
+    event.preventDefault();
+    const status=document.getElementById("family-message-compose-status");
+    const recipientValue=document.getElementById("family-message-recipient-type")?.value||"";
+    const recipientType=recipientValue.startsWith("TEACHER:")?"TEACHER":recipientValue;
+    const teacherId=recipientValue.startsWith("TEACHER:")?recipientValue.slice(8):null;
+    const subject=document.getElementById("family-message-subject")?.value.trim()||"";
+    const body=document.getElementById("family-message-body")?.value.trim()||"";
+    const button=event.currentTarget.querySelector("button[type=submit],button:not([type])");
+    if(button){button.disabled=true;button.textContent="Sending…";}
+    try{
+      const token=await readFamilyToken();
+      const {data,error}=await supabaseClient.rpc("parent_messages_student_create",{
+        p_token:token,p_recipient_type:recipientType,p_recipient_staff_id:teacherId,p_subject:subject,p_body:body
+      });
+      if(error)throw error;
+      if(!data?.success)throw new Error(messageError(data?.code));
+      await window.openFamilySchoolThread(data.thread_id);
+    }catch(error){if(status)status.textContent=messageError(error?.code||error?.message||error);}
+    finally{if(button){button.disabled=false;button.textContent="Send message";}}
+  };
+
+  window.openFamilySchoolThread=async function(threadId){
+    const host=document.getElementById("student-dashboard-panel-body");
+    if(!host)return;
+    host.innerHTML='<div class="p-4 rounded-2xl bg-white border text-sm text-slate-500">Loading conversation…</div>';
+    try{
+      familyStudentToken=await readFamilyToken();
+      const {data,error}=await supabaseClient.rpc("parent_messages_student_thread",{p_token:familyStudentToken,p_thread_id:threadId});
+      if(error)throw error;
+      if(!data?.success)throw new Error(messageError(data?.code));
+      const thread=data.thread||{},messages=Array.isArray(data.messages)?data.messages:[];
+      host.innerHTML='<section class="flex min-h-[55vh] flex-col overflow-hidden rounded-2xl border border-slate-200 bg-white">'+
+        '<div class="flex items-center gap-2 border-b border-slate-200 p-3"><button type="button" id="family-message-back" class="h-9 w-9 rounded-xl bg-slate-100 font-bold text-slate-700" aria-label="Back to messages">←</button><div class="min-w-0 flex-1"><div class="truncate text-xs font-extrabold text-slate-900">'+esc(thread.subject)+'</div><div class="mt-0.5 text-[9px] text-slate-500">To '+esc(thread.recipient_name)+' · '+esc(statusLabel(thread.status))+'</div></div></div>'+
+        '<div id="family-message-thread-messages" class="min-h-[220px] flex-1 space-y-2 overflow-y-auto bg-slate-50 p-3">'+(messages.map(familyThreadMessageMarkup).join("")||'<div class="text-center text-xs text-slate-500">No messages yet.</div>')+'</div>'+
+        (thread.status==="CLOSED"?'<div class="border-t bg-slate-100 p-3 text-center text-[10px] font-bold text-slate-600">This conversation is closed.</div>':'<form id="family-message-reply-form" class="flex gap-2 border-t border-slate-200 bg-white p-3"><textarea id="family-message-reply" required maxlength="4000" rows="2" class="min-w-0 flex-1 rounded-xl border border-slate-200 p-2.5 text-xs" placeholder="Write a reply…"></textarea><button class="self-end rounded-xl bg-emerald-700 px-4 py-2.5 text-xs font-extrabold text-white">Send</button></form>')+
+        '</section>';
+      document.getElementById("family-message-back")?.addEventListener("click",()=>window.renderFamilyMessagesPanel(host));
+      document.getElementById("family-message-reply-form")?.addEventListener("submit",event=>window.replyFamilySchoolThread(event,threadId));
+      const messageHost=document.getElementById("family-message-thread-messages");if(messageHost)messageHost.scrollTop=messageHost.scrollHeight;
+    }catch(error){host.innerHTML='<div class="p-4 rounded-2xl border border-rose-200 bg-rose-50 text-sm text-rose-800">Could not open this conversation: '+esc(error?.message||error)+'<button type="button" onclick="renderFamilyMessagesPanel(document.getElementById(\'student-dashboard-panel-body\'))" class="ml-2 font-bold underline">Back</button></div>';}
+  };
+
+  window.replyFamilySchoolThread=async function(event,threadId){
+    event.preventDefault();
+    const input=document.getElementById("family-message-reply"),body=input?.value.trim()||"";
+    const button=event.currentTarget.querySelector("button");if(button){button.disabled=true;button.textContent="Sending…";}
+    try{
+      const token=await readFamilyToken();
+      const {data,error}=await supabaseClient.rpc("parent_messages_student_reply",{p_token:token,p_thread_id:threadId,p_body:body});
+      if(error)throw error;
+      if(!data?.success)throw new Error(messageError(data?.code));
+      await window.openFamilySchoolThread(threadId);
+    }catch(error){showToast(messageError(error?.code||error?.message||error),"error");if(button){button.disabled=false;button.textContent="Send";}}
+  };
+
+  function renderStaffThreads(){
+    const list=document.getElementById("parent-school-message-list");if(!list)return;
+    if(!staffThreads.length){list.innerHTML='<div class="staff-comm-empty min-h-[220px]"><div><div class="text-2xl mb-2">📭</div><div class="font-bold">No parent messages</div><div class="text-[10px] mt-1">Messages routed to your assigned role will appear here.</div></div></div>';return;}
+    list.innerHTML=staffThreads.map(thread=>'<button type="button" data-parent-message-thread="'+esc(thread.id)+'" class="staff-comm-list-item '+(staffCurrentThreadId===thread.id?'active':'')+'"><div class="flex items-center justify-between gap-2"><span class="truncate font-extrabold text-[11px] text-slate-800">'+esc(thread.subject)+'</span>'+(thread.unread?'<span class="staff-comm-pill bg-rose-100 text-rose-700">NEW</span>':'')+'</div><div class="family-message-summary mt-1 text-[9px] text-slate-600">'+esc(thread.student_name)+' · '+esc(thread.class_name)+'-'+esc(thread.section)+'</div><div class="mt-1 truncate text-[9px] text-slate-500">To '+esc(thread.recipient_name)+' · '+esc(statusLabel(thread.status))+'</div><div class="mt-1 text-[9px] text-slate-400">'+esc(dateLabel(thread.last_message_at))+'</div></button>').join("");
+    list.querySelectorAll("[data-parent-message-thread]").forEach(button=>button.addEventListener("click",()=>window.openParentSchoolMessageThread(button.dataset.parentMessageThread)));
+  }
+  window.openParentSchoolMessages=async function(){
+    const role=String(currentAuthUser?.type||"").toUpperCase();
+    if(!supabaseClient||!currentAuthUser||!['ADMIN','STAFF','TEACHER'].includes(role)){showToast("Sign in with a school staff account to open parent messages.","error");return;}
+    const modal=document.getElementById("parent-school-messages-modal");if(!modal)return;
+    modal.classList.add("open");modal.querySelector(".staff-comm-card")?.classList.remove("thread-open");
+    staffCurrentThreadId="";
+    await window.refreshParentSchoolMessages();
+  };
+  window.closeParentSchoolMessages=function(){
+    document.getElementById("parent-school-messages-modal")?.classList.remove("open");
+    document.getElementById("parent-school-messages-modal")?.querySelector(".staff-comm-card")?.classList.remove("thread-open");
+    staffCurrentThreadId="";
+  };
+  window.refreshParentSchoolMessages=async function(){
+    const list=document.getElementById("parent-school-message-list"),body=document.getElementById("parent-school-message-thread-body");
+    if(!list||!supabaseClient)return;
+    list.innerHTML='<div class="p-5 text-xs text-slate-400">Loading parent messages…</div>';
+    try{
+      const {data,error}=await supabaseClient.rpc("parent_messages_staff_list");
+      if(error)throw error;
+      if(!data?.success)throw new Error("School staff access required.");
+      staffThreads=Array.isArray(data.threads)?data.threads:[];
+      renderStaffThreads();
+      if(body&&!staffCurrentThreadId)body.innerHTML='<div class="staff-comm-empty"><div><div class="text-2xl mb-2">💬</div><div class="font-bold text-slate-700">Select a parent conversation</div></div></div>';
+    }catch(error){list.innerHTML='<div class="p-5 text-xs text-rose-600">Unable to load parent messages: '+esc(error?.message||error)+'</div>';}
+  };
+  window.openParentSchoolMessageThread=async function(threadId){
+    if(!threadId||!supabaseClient)return;
+    staffCurrentThreadId=threadId;renderStaffThreads();
+    const head=document.getElementById("parent-school-message-thread-head"),body=document.getElementById("parent-school-message-thread-body"),reply=document.getElementById("parent-school-message-reply-form");
+    if(!head||!body||!reply)return;
+    head.classList.remove("hidden");document.getElementById("parent-school-messages-modal")?.querySelector(".staff-comm-card")?.classList.add("thread-open");
+    body.innerHTML='<div class="p-4 text-xs text-slate-500">Loading conversation…</div>';
+    try{
+      const {data,error}=await supabaseClient.rpc("parent_messages_staff_thread",{p_thread_id:threadId});
+      if(error)throw error;
+      if(!data?.success)throw new Error("You cannot access this family conversation.");
+      const thread=data.thread||{},messages=Array.isArray(data.messages)?data.messages:[];
+      head.innerHTML='<div class="flex items-center justify-between gap-2"><div class="flex min-w-0 items-center gap-2"><button type="button" class="staff-comm-mobile-back hidden h-8 w-8 items-center justify-center rounded-lg bg-slate-100 text-slate-700" onclick="backToParentSchoolMessageList()" aria-label="Back to parent messages">←</button><div class="min-w-0"><div class="truncate text-sm font-extrabold text-slate-800">'+esc(thread.subject)+'</div><div class="mt-0.5 text-[9px] text-slate-500">'+esc(thread.student_name)+' · '+esc(thread.class_name)+'-'+esc(thread.section)+' · '+esc(thread.recipient_name)+'</div></div></div><select id="parent-school-message-status" aria-label="Conversation status" class="max-w-[128px] rounded-lg border p-1.5 text-[9px]">'+["OPEN","IN_PROGRESS","RESOLVED","CLOSED"].map(value=>'<option value="'+value+'" '+(thread.status===value?'selected':'')+'>'+statusLabel(value)+'</option>').join("")+'</select></div>';
+      body.innerHTML=messages.map(familyThreadMessageMarkup).join("")||'<div class="staff-comm-empty"><div>No messages yet.</div></div>';
+      const closed=thread.status==="CLOSED";reply.classList.toggle("hidden",closed);
+      if(closed)body.innerHTML+='<div class="mt-3 rounded-xl border border-slate-200 bg-slate-100 p-3 text-center text-[10px] font-bold text-slate-600">This conversation is closed.</div>';
+      document.getElementById("parent-school-message-status")?.addEventListener("change",event=>window.setParentSchoolMessageStatus(threadId,event.target.value));
+      body.scrollTop=body.scrollHeight;
+    }catch(error){body.innerHTML='<div class="p-4 text-xs text-rose-600">Could not open this conversation: '+esc(error?.message||error)+'</div>';reply.classList.add("hidden");}
+  };
+  window.backToParentSchoolMessageList=function(){
+    document.getElementById("parent-school-messages-modal")?.querySelector(".staff-comm-card")?.classList.remove("thread-open");
+    document.getElementById("parent-school-message-thread-head")?.classList.add("hidden");
+    document.getElementById("parent-school-message-reply-form")?.classList.add("hidden");
+    staffCurrentThreadId="";renderStaffThreads();
+  };
+  window.replyToParentSchoolMessage=async function(event){
+    event.preventDefault();if(!staffCurrentThreadId)return;
+    const input=document.getElementById("parent-school-message-reply"),body=input?.value.trim()||"",button=event.currentTarget.querySelector("button");
+    if(button){button.disabled=true;button.textContent="Sending…";}
+    try{
+      const {data,error}=await supabaseClient.rpc("parent_messages_staff_reply",{p_thread_id:staffCurrentThreadId,p_body:body});
+      if(error)throw error;
+      if(!data?.success)throw new Error(messageError(data?.code));
+      if(input)input.value="";
+      await window.refreshParentSchoolMessages();await window.openParentSchoolMessageThread(staffCurrentThreadId);
+    }catch(error){showToast(messageError(error?.code||error?.message||error),"error");}
+    finally{if(button){button.disabled=false;button.textContent="Send";}}
+  };
+  window.setParentSchoolMessageStatus=async function(threadId,status){
+    try{
+      const {data,error}=await supabaseClient.rpc("parent_messages_staff_set_status",{p_thread_id:threadId,p_status:status});
+      if(error)throw error;
+      if(!data?.success)throw new Error(messageError(data?.code));
+      await window.refreshParentSchoolMessages();await window.openParentSchoolMessageThread(threadId);
+    }catch(error){showToast("Could not update conversation: "+(error?.message||error),"error");}
+  };
+  document.addEventListener("keydown",event=>{if(event.key==="Escape")window.closeParentSchoolMessages();});
 })();
 </script>
 <!-- Full-screen Daily Attendance QR preview: intentionally shows only the QR and close control. -->
