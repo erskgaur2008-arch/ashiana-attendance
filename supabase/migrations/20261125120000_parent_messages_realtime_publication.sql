@@ -1,6 +1,7 @@
 -- Live updates for Parent–School Messages.
 -- Only authenticated school staff who can access a conversation may receive
 -- its Realtime row events. Student family messages remain token-RPC based.
+grant usage on schema private to authenticated;
 grant select on public.parent_message_threads, public.parent_message_messages to authenticated;
 grant execute on function private.parent_message_staff_can_access_thread(uuid) to authenticated;
 
