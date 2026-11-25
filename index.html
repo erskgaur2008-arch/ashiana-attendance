@@ -15242,7 +15242,8 @@ function addMessage(text,type){
     const senderLabel=viewer==="staff"
       ? (mine?(studentName||"Parent"):String(message.sender_name||"Teacher"))
       : (mine?"You":String(message.sender_name||"School"));
-    return '<div class="staff-comm-msg '+(mine?"theirs":"mine")+'"><div class="text-[9px] font-extrabold text-slate-500 mb-1">'+esc(senderLabel)+' · '+esc(dateLabel(message.created_at))+'</div><div>'+esc(message.body||"")+'</div></div>';
+    const bubbleSide=viewer==="staff"?(mine?"theirs":"mine"):(mine?"mine":"theirs");
+    return '<div class="staff-comm-msg '+bubbleSide+'"><div class="text-[9px] font-extrabold text-slate-500 mb-1">'+esc(senderLabel)+' · '+esc(dateLabel(message.created_at))+'</div><div>'+esc(message.body||"")+'</div></div>';
   }
 
   window.renderFamilyMessagesPanel=async function(host){
