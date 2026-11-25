@@ -15206,10 +15206,24 @@ function addMessage(text,type){
     await loadStaffComm();
     if(staffCommCurrentThread?.id===id) await openStaffCommThread(id);
   };
+  let staffCommRealtimeTimer=null;
   function setupCommRealtime(){
     if(window.__ashianaStaffCommChannel||!supabaseClient)return;
-    window.__ashianaStaffCommChannel=supabaseClient.channel('staff-admin-communication').on('postgres_changes',{event:'*',schema:'public',table:'staff_communication_threads'},()=>loadStaffComm()).on('postgres_changes',{event:'INSERT',schema:'public',table:'staff_communication_messages'},()=>{if(commModal()?.classList.contains('open'))loadStaffComm();}).subscribe();
+    const refresh=()=>{
+      if(staffCommRealtimeTimer)clearTimeout(staffCommRealtimeTimer);
+      staffCommRealtimeTimer=setTimeout(async()=>{
+        if(!commModal()?.classList.contains('open'))return;
+        await loadStaffComm();
+        if(staffCommCurrentThread?.id)await openStaffCommThread(staffCommCurrentThread.id);
+      },250);
+    };
+    window.__ashianaStaffCommChannel=supabaseClient.channel('staff-admin-communication')
+      .on('postgres_changes',{event:'*',schema:'public',table:'staff_communication_threads'},refresh)
+      .on('postgres_changes',{event:'*',schema:'public',table:'staff_communication_messages'},refresh)
+      .subscribe();
   }
+  document.addEventListener('visibilitychange',()=>{if(document.visibilityState==='visible'&&commModal()?.classList.contains('open'))loadStaffComm();});
+  window.addEventListener('online',()=>{if(commModal()?.classList.contains('open'))loadStaffComm();});
   window.addEventListener('beforeunload',()=>{if(window.__ashianaStaffCommChannel&&supabaseClient){try{supabaseClient.removeChannel(window.__ashianaStaffCommChannel);}catch(_){} }});
 })();
 </script>
@@ -15238,6 +15252,7 @@ function addMessage(text,type){
   const statusLabel=value=>String(value||"OPEN").replaceAll("_"," ");
   let familyTeachers=[];
   let familyStudentToken="";
+  let familyCurrentThreadId="";
   let staffThreads=[];
   let staffCurrentThreadId="";
 
@@ -15268,8 +15283,30 @@ function addMessage(text,type){
     return '<div class="staff-comm-msg '+bubbleSide+'"><div class="text-[9px] font-extrabold text-slate-500 mb-1">'+esc(senderLabel)+' · '+esc(dateLabel(message.created_at))+'</div><div>'+esc(message.body||"")+'</div></div>';
   }
 
+  function startFamilyMessagePolling(){
+    if(window.__ashianaFamilyMessagePoll)return;
+    window.__ashianaFamilyMessagePoll=window.setInterval(async()=>{
+      const panel=document.getElementById("student-dashboard-panel");
+      const host=document.getElementById("student-dashboard-panel-body");
+      if(!panel||panel.classList.contains("hidden")||!panel.classList.contains("student-messages-fullscreen")||document.visibilityState==="hidden"||!host)return;
+      try{
+        if(familyCurrentThreadId){
+          const reply=document.getElementById("family-message-reply");
+          if(reply&&(reply.value.trim()||document.activeElement===reply))return;
+          await window.openFamilySchoolThread(familyCurrentThreadId);
+        }else{
+          const compose=document.getElementById("family-message-compose");
+          if(compose&&!compose.classList.contains("hidden"))return;
+          await window.renderFamilyMessagesPanel(host);
+        }
+      }catch(error){console.warn("Family message refresh failed:",error?.message||error);}
+    },10000);
+  }
+
   window.renderFamilyMessagesPanel=async function(host){
     if(!host)return;
+    familyCurrentThreadId="";
+    startFamilyMessagePolling();
     document.getElementById("student-dashboard-panel")?.classList.add("student-messages-fullscreen");
     host.innerHTML='<div class="p-4 rounded-2xl bg-white border text-sm text-slate-500">Loading messages…</div>';
     familyStudentToken=await readFamilyToken();
@@ -15303,6 +15340,7 @@ function addMessage(text,type){
       document.getElementById("family-message-cancel")?.addEventListener("click",()=>document.getElementById("family-message-compose")?.classList.add("hidden"));
       document.getElementById("family-message-compose")?.addEventListener("submit",window.sendFamilySchoolMessage);
       list.querySelectorAll("[data-family-thread]").forEach(button=>button.addEventListener("click",()=>window.openFamilySchoolThread(button.dataset.familyThread)));
+      startFamilyMessagePolling();
       if(window.lucide)lucide.createIcons();
     }catch(error){
       host.innerHTML='<div class="p-4 rounded-2xl border border-rose-200 bg-rose-50 text-sm text-rose-800">Could not load messages: '+esc(error?.message||error)+'</div>';
@@ -15338,6 +15376,8 @@ function addMessage(text,type){
   };
 
   window.openFamilySchoolThread=async function(threadId){
+    familyCurrentThreadId=threadId||"";
+    startFamilyMessagePolling();
     document.getElementById("student-dashboard-panel")?.classList.add("student-messages-fullscreen");
     const host=document.getElementById("student-dashboard-panel-body");
     if(!host)return;
@@ -15384,18 +15424,38 @@ function addMessage(text,type){
     list.innerHTML=staffThreads.map(thread=>'<button type="button" data-parent-message-thread="'+esc(thread.id)+'" class="staff-comm-list-item family-chat-staff-item '+(staffCurrentThreadId===thread.id?'active':'')+'"><span class="family-chat-avatar">'+esc(String(thread.student_name||"S").trim().charAt(0).toUpperCase())+'</span><span class="family-chat-copy"><span class="family-chat-row"><strong>'+esc(thread.student_name||"Student")+'</strong>'+(thread.unread?'<span class="staff-comm-pill bg-rose-100 text-rose-700">NEW</span>':'')+'</span><span class="family-chat-preview">'+esc(thread.subject||"New conversation")+'</span><span class="family-chat-meta">'+esc(thread.class_name||"")+' '+esc(thread.section||"")+' · '+esc(dateLabel(thread.last_message_at))+'</span></span></button>').join("");
     list.querySelectorAll("[data-parent-message-thread]").forEach(button=>button.addEventListener("click",()=>window.openParentSchoolMessageThread(button.dataset.parentMessageThread)));
   }
+  let parentMessageRealtimeTimer=null;
+  function setupParentSchoolRealtime(){
+    if(window.__ashianaParentSchoolChannel||!supabaseClient)return;
+    const refresh=()=>{
+      if(parentMessageRealtimeTimer)clearTimeout(parentMessageRealtimeTimer);
+      parentMessageRealtimeTimer=setTimeout(async()=>{
+        if(!document.getElementById("parent-school-messages-modal")?.classList.contains("open"))return;
+        await window.refreshParentSchoolMessages();
+        if(staffCurrentThreadId)await window.openParentSchoolMessageThread(staffCurrentThreadId);
+      },250);
+    };
+    window.__ashianaParentSchoolChannel=supabaseClient.channel("parent-school-messages-live")
+      .on("postgres_changes",{event:"*",schema:"public",table:"parent_message_threads"},refresh)
+      .on("postgres_changes",{event:"*",schema:"public",table:"parent_message_messages"},refresh)
+      .subscribe();
+  }
+  document.addEventListener("visibilitychange",()=>{if(document.visibilityState==="visible"&&document.getElementById("parent-school-messages-modal")?.classList.contains("open")){window.refreshParentSchoolMessages();if(staffCurrentThreadId)window.openParentSchoolMessageThread(staffCurrentThreadId);}});
+  window.addEventListener("online",()=>{if(document.getElementById("parent-school-messages-modal")?.classList.contains("open")){setupParentSchoolRealtime();window.refreshParentSchoolMessages();}});
   window.openParentSchoolMessages=async function(){
     const role=String(currentAuthUser?.type||"").toUpperCase();
-    if(!supabaseClient||!currentAuthUser||!['ADMIN','STAFF','TEACHER'].includes(role)){showToast("Sign in with a school staff account to open parent messages.","error");return;}
+    if(!supabaseClient||!currentAuthUser||!['ADMIN','PRINCIPAL','STAFF','TEACHER'].includes(role)){showToast("Sign in with a school staff account to open parent messages.","error");return;}
     const modal=document.getElementById("parent-school-messages-modal");if(!modal)return;
     modal.classList.add("open");modal.querySelector(".staff-comm-card")?.classList.remove("thread-open");
     staffCurrentThreadId="";
+    setupParentSchoolRealtime();
     await window.refreshParentSchoolMessages();
   };
   window.closeParentSchoolMessages=function(){
     document.getElementById("parent-school-messages-modal")?.classList.remove("open");
     document.getElementById("parent-school-messages-modal")?.querySelector(".staff-comm-card")?.classList.remove("thread-open");
     staffCurrentThreadId="";
+    if(window.__ashianaParentSchoolChannel&&supabaseClient){try{supabaseClient.removeChannel(window.__ashianaParentSchoolChannel);}catch(_){}window.__ashianaParentSchoolChannel=null;}
   };
   window.refreshParentSchoolMessages=async function(){
     const list=document.getElementById("parent-school-message-list"),body=document.getElementById("parent-school-message-thread-body");
@@ -15435,6 +15495,8 @@ function addMessage(text,type){
     document.getElementById("parent-school-message-thread-head")?.classList.add("hidden");
     document.getElementById("parent-school-message-reply-form")?.classList.add("hidden");
     staffCurrentThreadId="";renderStaffThreads();
+    const body=document.getElementById("parent-school-message-thread-body");
+    if(body)body.innerHTML='<div class="staff-comm-empty"><div><div class="text-2xl mb-2">💬</div><div class="font-bold text-slate-700">Select a parent conversation</div></div></div>';
   };
   window.replyToParentSchoolMessage=async function(event){
     event.preventDefault();if(!staffCurrentThreadId)return;
