@@ -413,6 +413,62 @@ if (isNativeAndroid()) {
   }).catch(error => console.warn("Android Back handler registration failed:", error));
 }
 
+// Register native FCM tokens for authenticated Staff/Admin accounts. Student
+// subscriptions use the separate revocable-session flow in the Student portal.
+const STAFF_ADMIN_AUTH_KEY = "sb-oalfzgluqroqbbrulhpr-auth-token";
+const PUSH_FUNCTION_URL = "https://oalfzgluqroqbbrulhpr.supabase.co/functions/v1/push-notifications";
+const PUSH_ANON_KEY = "sb_publishable_PND9f9FKbNrxlEakSgLKYA_5EsqLHkg";
+let staffPushRegistrationInFlight = false;
+async function registerStaffPushForSession() {
+  if (!isNativeAndroid() || staffPushRegistrationInFlight) return false;
+  let accessToken = "";
+  try {
+    const auth = JSON.parse(window.localStorage.getItem(STAFF_ADMIN_AUTH_KEY) || "null");
+    accessToken = String(auth?.access_token || "");
+  } catch (_) {}
+  if (!accessToken) return false;
+  staffPushRegistrationInFlight = true;
+  try {
+    const deviceToken = await registerPushNotifications();
+    if (!deviceToken) throw new Error("Firebase did not return a device token.");
+    const response = await fetch(PUSH_FUNCTION_URL, {
+      method: "POST",
+      headers: {
+        "Content-Type": "application/json",
+        apikey: PUSH_ANON_KEY,
+        Authorization: "Bearer " + accessToken
+      },
+      body: JSON.stringify({ action: "subscribe", platform: "android", deviceToken })
+    });
+    const result = await response.json().catch(() => ({}));
+    if (!response.ok) throw new Error(result.error || "Staff push subscription could not be saved.");
+    return true;
+  } catch (error) {
+    console.warn("Staff/Admin push registration failed:", error?.message || error);
+    return false;
+  } finally {
+    staffPushRegistrationInFlight = false;
+  }
+}
+
+// Auth storage is written in the same tab, so periodically detect a completed
+// Staff/Admin sign-in. No student session token is read or persisted here.
+if (isNativeAndroid()) {
+  let lastStaffAuthToken = "";
+  window.setInterval(() => {
+    let current = "";
+    try {
+      const auth = JSON.parse(window.localStorage.getItem(STAFF_ADMIN_AUTH_KEY) || "null");
+      current = String(auth?.access_token || "");
+    } catch (_) {}
+    if (current && current !== lastStaffAuthToken) {
+      lastStaffAuthToken = current;
+      registerStaffPushForSession().catch(error => console.warn("Staff push registration:", error?.message || error));
+    }
+    if (!current) lastStaffAuthToken = "";
+  }, 8000);
+}
+
 window.AshianaNative = Object.freeze({
   isAndroid: isNativeAndroid,
   getCurrentPosition,
