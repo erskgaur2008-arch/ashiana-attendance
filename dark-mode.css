@@ -396,7 +396,7 @@ html[data-ashiana-theme="dark"] #student-portal-view #student-dashboard-panel-bo
   #parent-school-messages-modal .staff-comm-card.teacher-compose-open .staff-comm-list { display: none !important; }
   #parent-school-messages-modal .staff-comm-card.teacher-compose-open .staff-comm-conversation { display: flex !important; height: 100%; min-height: 0; }
   #parent-school-messages-modal .staff-comm-card.teacher-compose-open #teacher-message-compose-panel { display: flex !important; flex-direction: column; }
-  #parent-school-messages-modal .staff-comm-card:not(.teacher-compose-open) #teacher-message-new-button-mobile { display: block !important; }
+  #parent-school-messages-modal .staff-comm-card:not(.teacher-compose-open) #teacher-message-new-button-mobile:not(.hidden) { display: block !important; }
   #parent-school-messages-modal .staff-comm-card.teacher-compose-open #teacher-message-new-button-mobile { display: none !important; }
 }
 @media (min-width: 701px) {
