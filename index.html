@@ -15254,7 +15254,7 @@ function addMessage(text,type){
       <div class="flex items-center gap-2"><button id="teacher-message-new-button" type="button" onclick="openTeacherMessageComposer()" class="hidden px-3 py-2 rounded-xl bg-white text-emerald-800 text-[10px] font-extrabold">New message</button><button type="button" onclick="refreshParentSchoolMessages()" class="px-3 py-2 rounded-xl bg-white/10 hover:bg-white/20 text-[10px] font-bold">Refresh</button><button type="button" onclick="closeParentSchoolMessages()" class="w-9 h-9 rounded-xl bg-white/10 hover:bg-white/20 flex items-center justify-center" aria-label="Close parent messages"><i data-lucide="x"></i></button></div>
     </div>
     <div class="staff-comm-body">
-      <div class="staff-comm-list"><div id="parent-school-message-list" class="min-h-full"></div></div>
+      <div class="staff-comm-list"><button id="teacher-message-new-button-mobile" type="button" onclick="openTeacherMessageComposer()" class="hidden w-full m-2 mb-0 rounded-xl bg-emerald-700 px-4 py-3 text-xs font-extrabold text-white">＋ New message to students</button><div id="parent-school-message-list" class="min-h-full"></div></div>
       <div class="staff-comm-conversation">
         <section id="teacher-message-compose-panel" class="hidden flex-1 min-h-0 overflow-y-auto bg-slate-50 p-4 space-y-3">
           <div class="flex items-center justify-between gap-3"><div><h3 class="text-sm font-extrabold text-slate-900">New message to students</h3><p class="text-[10px] text-slate-500 mt-1">Only students assigned to your classes or subjects are available.</p></div><button type="button" onclick="closeTeacherMessageComposer()" class="w-9 h-9 rounded-xl bg-white border text-slate-600" aria-label="Close composer">✕</button></div>
@@ -15551,6 +15551,7 @@ function addMessage(text,type){
     const modal=document.getElementById("parent-school-messages-modal");if(!modal)return;
     modal.classList.add("open");modal.querySelector(".staff-comm-card")?.classList.remove("thread-open");
     const newMessageButton=document.getElementById("teacher-message-new-button");if(newMessageButton)newMessageButton.classList.toggle("hidden",role!=="TEACHER");
+    const mobileNewMessageButton=document.getElementById("teacher-message-new-button-mobile");if(mobileNewMessageButton)mobileNewMessageButton.classList.toggle("hidden",role!=="TEACHER");
     document.getElementById("teacher-message-compose-panel")?.classList.add("hidden");
     document.getElementById("parent-school-message-thread-body")?.classList.remove("hidden");
     staffCurrentThreadId="";
@@ -15652,7 +15653,9 @@ function addMessage(text,type){
     if(String(currentAuthUser?.type||"").toUpperCase()!=="TEACHER"||!supabaseClient)return;
     const panel=document.getElementById("teacher-message-compose-panel");
     if(!panel)return;
-    document.getElementById("parent-school-messages-modal")?.querySelector(".staff-comm-card")?.classList.remove("thread-open");
+    const commCard=document.getElementById("parent-school-messages-modal")?.querySelector(".staff-comm-card");
+    commCard?.classList.remove("thread-open");
+    commCard?.classList.add("teacher-compose-open");
     panel.classList.remove("hidden");
     document.getElementById("parent-school-message-thread-head")?.classList.add("hidden");
     document.getElementById("parent-school-message-thread-body")?.classList.add("hidden");
@@ -15674,6 +15677,7 @@ function addMessage(text,type){
   };
   window.closeTeacherMessageComposer=function(){
     document.getElementById("teacher-message-compose-panel")?.classList.add("hidden");
+    document.getElementById("parent-school-messages-modal")?.querySelector(".staff-comm-card")?.classList.remove("teacher-compose-open");
     document.getElementById("parent-school-message-thread-body")?.classList.remove("hidden");
     staffCurrentThreadId="";window.refreshParentSchoolMessages();
   };
@@ -15719,6 +15723,7 @@ function addMessage(text,type){
       showToast("Message sent to "+count+" student(s).","success");
       await window.refreshParentSchoolMessages();
       document.getElementById("teacher-message-compose-panel")?.classList.add("hidden");
+      document.getElementById("parent-school-messages-modal")?.querySelector(".staff-comm-card")?.classList.remove("teacher-compose-open");
       document.getElementById("parent-school-message-thread-body")?.classList.remove("hidden");
     }catch(error){if(status)status.textContent="Message could not be sent: "+String(error?.message||error);showToast("Message could not be sent: "+String(error?.message||error),"error");}
     finally{if(button){button.disabled=false;button.textContent="Send message";}}
