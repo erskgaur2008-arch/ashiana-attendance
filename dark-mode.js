@@ -32,15 +32,25 @@
       setTheme(root.getAttribute("data-ashiana-theme") === "dark" ? "light" : "dark");
     });
     const placeToggle = () => {
+      const staffModal = document.getElementById("parent-school-messages-modal");
+      const staffHead = staffModal?.classList.contains("open") &&
+        staffModal.querySelector(".staff-comm-card.thread-open #parent-school-message-thread-head:not(.hidden)");
+      const studentPanel = document.getElementById("student-dashboard-panel");
+      const studentThreadHead = studentPanel?.classList.contains("student-messages-fullscreen")
+        ? studentPanel.querySelector(".family-chat-thread-head") : null;
       const portal = document.getElementById("student-portal-view");
-      const header = portal?.querySelector(":scope > div > div:first-child > div:first-child");
-      const studentVisible = portal && !portal.classList.contains("hidden") && header;
-      if (studentVisible) {
-        header.classList.add("ashiana-theme-header");
+      const studentHeader = portal?.querySelector(":scope > div > div:first-child > div:first-child");
+      const destination = staffHead || studentThreadHead || null;
+      if (destination) {
+        button.classList.add("ashiana-theme-inline", "ashiana-theme-chat-inline");
+        if (button.parentElement !== destination) destination.appendChild(button);
+      } else if (portal && !portal.classList.contains("hidden") && studentHeader) {
+        studentHeader.classList.add("ashiana-theme-header");
         button.classList.add("ashiana-theme-inline");
-        if (button.parentElement !== header) header.appendChild(button);
+        button.classList.remove("ashiana-theme-chat-inline");
+        if (button.parentElement !== studentHeader) studentHeader.appendChild(button);
       } else {
-        button.classList.remove("ashiana-theme-inline");
+        button.classList.remove("ashiana-theme-inline", "ashiana-theme-chat-inline");
         if (button.parentElement !== document.body) document.body.appendChild(button);
       }
     };
@@ -49,6 +59,15 @@
     const studentPortal = document.getElementById("student-portal-view");
     if (studentPortal && window.MutationObserver) {
       new MutationObserver(placeToggle).observe(studentPortal, { attributes: true, attributeFilter: ["class"] });
+    }
+    if (window.MutationObserver) {
+      new MutationObserver(placeToggle).observe(document.body, { childList: true, subtree: true });
+      const staffModal = document.getElementById("parent-school-messages-modal");
+      const staffThreadHead = document.getElementById("parent-school-message-thread-head");
+      if (staffModal) new MutationObserver(placeToggle).observe(staffModal, { attributes: true, attributeFilter: ["class"] });
+      if (staffThreadHead) new MutationObserver(placeToggle).observe(staffThreadHead, { attributes: true, attributeFilter: ["class"] });
+      const studentPanel = document.getElementById("student-dashboard-panel");
+      if (studentPanel) new MutationObserver(placeToggle).observe(studentPanel, { attributes: true, attributeFilter: ["class"] });
     }
     setTheme(root.getAttribute("data-ashiana-theme") || "light");
   };
