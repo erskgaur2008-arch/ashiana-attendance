@@ -8,17 +8,17 @@
 - Admin notice publishing invokes the Edge Function after the notice row is saved. A push delivery failure does not roll back or delete the published notice.
 - Student device subscriptions are stored separately in `student_push_subscriptions`, with RLS enabled and no direct grants to browser/mobile roles. The Edge Function writes and reads these rows using the service role.
 
-## Student attendance notifications (PR under review)
+## Student attendance notifications
 
 - The teacher attendance-save flow and the student QR attendance flow request a targeted notification only after the database confirms a successful save. The manual save path compares existing statuses first, so saving unchanged values does not create repeated alerts.
 - The existing `push-notifications` Edge Function validates the active admin/staff caller and checks the saved attendance row before creating an in-app notification and sending Web Push/FCM to subscriptions matching that student's admission number.
 - The additive `20261022_student_attendance_notifications.sql` migration creates a private notification table and extends `student_portal_bundle_by_session` to return only the signed-in student's notification history. The Student Portal displays the most recent notifications in its dashboard.
 - Notification delivery is best-effort: a push failure must not undo attendance that has already been saved. Duplicate notifications for the same student/date/status are suppressed.
-- This feature is not active until the migration and updated Edge Function are reviewed, tested, and separately deployed to the intended Supabase project. This PR does not apply migrations, deploy functions, merge, or build an APK.
+- In the connected Ashiana Supabase project, the attendance-notification table and student portal RPC are present, and the active `push-notifications` Edge Function includes the targeted attendance action. In-app delivery is stored for the matching student and shown in their portal. Actual phone/browser push delivery still depends on that student's device subscription and the relevant FCM/Web Push configuration.
 
 ## Attendance notification verification
 
-1. Apply the migration to an isolated test project first and deploy the updated Edge Function there.
+1. Verify the saved attendance creates an in-app alert for the matching student in the connected project.
 2. Register a student Android device and/or grant Web Push permission from that student's portal.
 3. Mark a student Present by QR; verify the matching student sees an in-app notification and receives a phone/browser push when delivery is configured.
 4. Mark or change attendance through the Class Teacher's Save Attendance flow; verify only changed records create notifications.
@@ -28,11 +28,11 @@
 
 ## Required configuration before real delivery
 
-1. Apply `supabase/migrations/20261015_student_push_subscriptions.sql` to the intended Supabase project only after review. It creates a new table and indexes; it does not modify existing student records.
+1. The connected project already has the student push-subscription table. For another environment, review and apply `supabase/migrations/20261015_student_push_subscriptions.sql` first. It creates a new table and indexes; it does not modify existing student records.
 2. In Supabase Edge Function secrets, set `FCM_SERVICE_ACCOUNT_JSON` to the complete Firebase service-account JSON for the Android app's Firebase project. Enable the Firebase Cloud Messaging API for that project. Never commit that JSON or its private key to GitHub.
 3. Ensure `VAPID_PUBLIC_KEY`, `VAPID_PRIVATE_KEY`, and `VAPID_SUBJECT` are set for Web Push.
 4. For Android APK builds, add a GitHub Actions repository secret named `GOOGLE_SERVICES_JSON` containing the complete `google-services.json` for the Firebase Android app whose package ID matches the generated APK. The workflow installs this file only during the build and applies the Google Services Gradle plugin; the JSON is not committed. Without this secret, APK builds continue but Android token registration will not work.
-5. Deploy the updated Edge Function only after the migration and secrets are configured in a test Supabase project. This PR does not deploy anything.
+5. The connected project already has an active `push-notifications` Edge Function. For another environment, deploy the updated Edge Function after its migration and secrets are configured.
 
 ## Verification checklist
 
@@ -64,6 +64,6 @@
 
 ## Safety
 
-- No production database migration, Edge Function deployment, secret update, merge or APK build is performed by this change.
+- The production status above reflects read-only checks of the connected project; this documentation change does not alter Edge Function secrets or build an APK.
 - The existing `push_subscriptions` table and its authenticated-user subscription path are preserved.
 - The new student subscription table is separate and access is restricted to the Edge Function service role.
