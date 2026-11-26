@@ -132,8 +132,8 @@ begin
     raise exception 'Active teacher account not found.' using errcode = '42501';
   end if;
 
-  select count(distinct x)::integer into v_unique_count
-    from unnest(p_student_ids) as x;
+  select count(distinct requested.student_id)::integer into v_unique_count
+    from unnest(p_student_ids) as requested(student_id);
   if v_unique_count <> cardinality(p_student_ids) then
     return jsonb_build_object('success', false, 'code', 'DUPLICATE_RECIPIENTS');
   end if;
