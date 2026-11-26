@@ -359,3 +359,35 @@ html[data-ashiana-theme="dark"] #student-portal-view #student-dashboard-panel-bo
 .staff-side-drawer .staff-drawer-item.hidden {
   display: none !important;
 }
+
+
+/* Messaging composer: keep the theme switch inside the conversation header,
+   never fixed over the message input or Send control. */
+#ashiana-theme-toggle.ashiana-theme-chat-inline {
+  position: static !important;
+  inset: auto !important;
+  z-index: 2 !important;
+  flex: 0 0 auto !important;
+  width: 38px !important;
+  min-width: 38px !important;
+  min-height: 38px !important;
+  height: 38px !important;
+  margin: 0 0 0 auto !important;
+  padding: 0 !important;
+  border-radius: 50% !important;
+  box-shadow: none !important;
+  background: rgba(255,255,255,.16) !important;
+  color: #fff !important;
+  border: 1px solid rgba(255,255,255,.32) !important;
+}
+#ashiana-theme-toggle.ashiana-theme-chat-inline .ashiana-theme-label { display: none !important; }
+#ashiana-theme-toggle.ashiana-theme-chat-inline .ashiana-theme-icon { font-size: 19px !important; }
+#parent-school-messages-modal .staff-comm-compose { padding-bottom: max(12px, env(safe-area-inset-bottom)) !important; }
+#parent-school-messages-modal .staff-comm-compose > div { align-items: flex-end; }
+#parent-school-messages-modal .staff-comm-compose textarea { min-width: 0; }
+.family-chat-compose { padding-bottom: max(10px, env(safe-area-inset-bottom)) !important; }
+.family-chat-compose .family-chat-send { flex: 0 0 44px; position: static !important; }
+@media (max-width: 700px) {
+  #parent-school-messages-modal .staff-comm-compose { position: relative; z-index: 1; }
+  #parent-school-messages-modal .staff-comm-compose button { flex: 0 0 auto; min-width: 66px; min-height: 44px; }
+}
