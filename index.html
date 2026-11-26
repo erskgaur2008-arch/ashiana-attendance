@@ -15581,7 +15581,11 @@ function addMessage(text,type){
   };
   window.openParentSchoolMessageThread=async function(threadId){
     if(!threadId||!supabaseClient)return;
-    staffCurrentThreadId=threadId;renderStaffThreads();
+    staffCurrentThreadId=threadId;
+    document.getElementById("teacher-message-compose-panel")?.classList.add("hidden");
+    document.getElementById("parent-school-messages-modal")?.querySelector(".staff-comm-card")?.classList.remove("teacher-compose-open");
+    document.getElementById("parent-school-message-thread-body")?.classList.remove("hidden");
+    renderStaffThreads();
     const head=document.getElementById("parent-school-message-thread-head"),body=document.getElementById("parent-school-message-thread-body"),reply=document.getElementById("parent-school-message-reply-form");
     if(!head||!body||!reply)return;
     head.classList.remove("hidden");document.getElementById("parent-school-messages-modal")?.querySelector(".staff-comm-card")?.classList.add("thread-open");
@@ -15656,6 +15660,7 @@ function addMessage(text,type){
     const commCard=document.getElementById("parent-school-messages-modal")?.querySelector(".staff-comm-card");
     commCard?.classList.remove("thread-open");
     commCard?.classList.add("teacher-compose-open");
+    staffCurrentThreadId="";
     panel.classList.remove("hidden");
     document.getElementById("parent-school-message-thread-head")?.classList.add("hidden");
     document.getElementById("parent-school-message-thread-body")?.classList.add("hidden");
