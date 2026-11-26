@@ -3036,6 +3036,9 @@ id="student-dashboard-panel-body" class="space-y-3 text-xs"></div>
             <button id="staff-drawer-students" data-role-module="students" type="button" onclick="selectStaffDrawerTab('students')" class="staff-drawer-item hidden">
               <i data-lucide="clipboard-check"></i><span>Students</span>
             </button>
+            <button id="staff-drawer-tasks" data-role-module="tasks" type="button" onclick="selectStaffDrawerTab('tasks')" class="staff-drawer-item hidden">
+              <i data-lucide="list-checks"></i><span>My Tasks</span><span id="staff-task-count" class="ml-auto hidden min-w-5 rounded-full bg-rose-500 px-1.5 py-0.5 text-center text-[9px] font-extrabold text-white">0</span>
+            </button>
             <button id="staff-drawer-communication" data-role-module="communication" type="button" onclick="openStaffAdminCommunication()" class="staff-drawer-item">
               <i data-lucide="messages-square"></i><span>Administration</span>
             </button>
@@ -3292,6 +3295,16 @@ id="student-dashboard-panel-body" class="space-y-3 text-xs"></div>
             </div>
           </div>
         </div>
+
+<div id="staff-tab-tasks" data-role-module="tasks" data-role-module-mode="panel" class="staff-dashboard-scroll staff-dashboard-content hidden flex-1 overflow-y-auto space-y-3">
+  <section class="rounded-2xl border border-emerald-100 bg-white p-4 shadow-sm">
+    <div class="flex items-start justify-between gap-3">
+      <div><h3 class="text-sm font-black text-slate-900">My Tasks</h3><p class="mt-1 text-[11px] text-slate-500">Review deadlines and post progress updates. Your administrator sees updates live.</p></div>
+      <button type="button" onclick="window.loadTeacherTaskBoard?.()" class="shrink-0 rounded-xl bg-slate-100 px-3 py-2 text-[10px] font-bold text-slate-700"><i data-lucide="refresh-cw" class="mr-1 inline h-3.5 w-3.5"></i>Refresh</button>
+    </div>
+  </section>
+  <div id="teacher-task-board" class="space-y-3"><div class="rounded-2xl border bg-white p-5 text-center text-xs text-slate-500">Loading your tasks…</div></div>
+</div>
 
 <div id="staff-tab-students" data-role-module="students" data-role-module-mode="panel" class="staff-dashboard-scroll staff-dashboard-content hidden flex-1 overflow-y-auto space-y-3">
   <!-- Student tools quick navigation -->
@@ -3553,6 +3566,7 @@ id="admin-portal-view" class="hidden flex-col w-full space-y-4 admin-dashboard-s
         <button type="button" id="admin-nav-student-attendance" onclick="openAdminStudentAttendanceRecordsModal()" title="View Students Attendance"><i data-lucide="clipboard-check"></i><span>View Students Attendance</span></button>
         <button type="button" onclick="openAdminStudentAttendanceReport()" title="Students Attendance Report"><i data-lucide="clipboard-list"></i><span>Attendance Report</span></button><button type="button" onclick="openAdminAttendanceAnalytics()" title="Advanced Attendance Analytics"><i data-lucide="chart-no-axes-combined"></i><span>Analytics 2.0</span></button>
         <button type="button" onclick="window.switchAdminTab('directory')"><i data-lucide="users"></i><span>Faculty</span></button>
+        <button type="button" id="admin-nav-tasks" onclick="window.switchAdminTab('tasks')" title="Assign staff tasks and track progress"><i data-lucide="list-checks"></i><span>Staff Tasks</span></button>
         <button type="button" id="admin-nav-permissions" onclick="window.switchAdminTab('permissions')" title="Assign portal modules by role"><i data-lucide="shield-check"></i><span>Role Permissions</span></button>
         <button type="button" id="admin-live-location-launch" onclick="openStaffLiveLocationAdmin()" title="View live staff locations"><i data-lucide="map-pin"></i><span>Live Staff Location</span></button>
         <button type="button" onclick="openStaffAdminCommunication()" title="Staff ↔ Administration Communication"><i data-lucide="messages-square"></i><span>Communication</span></button>
@@ -3754,6 +3768,32 @@ id="admin-portal-view" class="hidden flex-col w-full space-y-4 admin-dashboard-s
           </div>
         </div>
       </div>
+
+<div id="admin-tab-tasks" class="hidden space-y-4" style="display:none">
+  <section class="rounded-2xl border border-emerald-100 bg-white p-4 shadow-sm sm:p-5">
+    <div>
+      <h3 class="flex items-center gap-2 text-base font-extrabold text-slate-900"><i data-lucide="list-checks" class="h-5 w-5 text-emerald-700"></i>Assign a Staff Task</h3>
+      <p class="mt-1 text-xs text-slate-500">Set a deadline and follow each assignee’s progress as updates arrive.</p>
+    </div>
+    <form id="admin-teacher-task-form" class="mt-4 grid gap-3 sm:grid-cols-2" onsubmit="window.createTeacherTask(event)">
+      <label class="text-[11px] font-bold text-slate-600">Teacher or staff member<select id="admin-task-assignee" required class="mt-1 w-full rounded-xl border border-slate-300 bg-white p-2.5 text-xs"><option value="">Loading staff…</option></select></label>
+      <label class="text-[11px] font-bold text-slate-600">Deadline<input id="admin-task-deadline" type="date" required class="mt-1 w-full rounded-xl border border-slate-300 bg-white p-2.5 text-xs"></label>
+      <label class="text-[11px] font-bold text-slate-600 sm:col-span-2">Task title<input id="admin-task-title" type="text" maxlength="180" required placeholder="What needs to be done?" class="mt-1 w-full rounded-xl border border-slate-300 bg-white p-2.5 text-xs"></label>
+      <label class="text-[11px] font-bold text-slate-600 sm:col-span-2">Instructions<textarea id="admin-task-description" maxlength="4000" rows="3" placeholder="Add details or expected outcome" class="mt-1 w-full rounded-xl border border-slate-300 bg-white p-2.5 text-xs"></textarea></label>
+      <div class="flex flex-col justify-end gap-2 sm:col-span-2 sm:flex-row sm:items-center">
+        <p id="admin-task-feedback" class="mr-auto text-xs text-slate-500" role="status" aria-live="polite"></p>
+        <button id="admin-task-submit" type="submit" class="rounded-xl bg-emerald-800 px-4 py-2.5 text-xs font-extrabold text-white shadow-sm">Assign Task</button>
+      </div>
+    </form>
+  </section>
+  <section class="rounded-2xl border border-slate-200 bg-white p-4 shadow-sm sm:p-5">
+    <div class="flex flex-wrap items-center justify-between gap-3">
+      <div><h3 class="text-sm font-extrabold text-slate-900">Task Progress</h3><p class="mt-1 text-[11px] text-slate-500">This board refreshes instantly when teachers post progress.</p></div>
+      <div class="flex items-center gap-2"><span id="admin-task-summary" class="text-[10px] font-bold text-slate-500">Loading…</span><button type="button" onclick="window.loadAdminTeacherTasks?.()" class="rounded-xl bg-slate-100 px-3 py-2 text-[10px] font-bold text-slate-700">Refresh</button></div>
+    </div>
+    <div id="admin-teacher-task-board" class="mt-4 space-y-3"><div class="rounded-xl border bg-slate-50 p-5 text-center text-xs text-slate-500">Loading tasks…</div></div>
+  </section>
+</div>
 
 <div id="admin-tab-students" class="hidden space-y-3">
   <div class="bg-white rounded-2xl border p-4">
@@ -8030,6 +8070,7 @@ async function refreshStudentPortalData(){
 
 
     async function handleLogout(message = "Signed out safely.") {
+      try { window.closeTeacherTaskRealtime?.(); } catch (_) {}
       try { if (supabaseClient) await supabaseClient.auth.signOut({ scope: 'local' }); } catch (e) {}
       try { sessionStorage.removeItem(staffPortalTabStorageKey(currentAuthUser)); } catch (_) {}
       currentAuthUser = null;
@@ -8967,7 +9008,7 @@ async function refreshStudentPortalData(){
       }
     }
 
-    // Staff Mobile Tab Switching (Punch vs History)
+    // Staff mobile portal area switching.
     let currentStaffTab = 'punch';
     // Preserve the teacher's current area if the browser reloads or restores
     // this page while they switch to another app or browser tab.
@@ -8979,7 +9020,9 @@ async function refreshStudentPortalData(){
       if(user?.type!=='STAFF')return 'punch';
       try{
         const saved=sessionStorage.getItem(staffPortalTabStorageKey(user));
-        if(['punch','history','students'].includes(saved)&&(saved!=='students'||canAccessStudentAttendance(user)))return saved;
+        if(['punch','history','students','tasks'].includes(saved)&&
+          (saved!=='students'||canAccessStudentAttendance(user))&&
+          (saved!=='tasks'||(['TEACHER','STAFF'].includes(getAccessRole(user))&&canOpenPortalModule('tasks'))))return saved;
       }catch(_){}
       return 'punch';
     }
@@ -9010,7 +9053,10 @@ async function refreshStudentPortalData(){
       });
       if(currentAuthUser.type==='STAFF'){
         applyStaffRoleAccess();
-        const available=['punch','history','students'].filter(tab=>tab!=='students'||canAccessStudentAttendance());
+        const available=['punch','history','students','tasks'].filter(tab=>
+          (tab!=='students'||canAccessStudentAttendance())&&
+          (tab!=='tasks'||(['TEACHER','STAFF'].includes(getAccessRole())&&canOpenPortalModule('tasks')))
+        );
         const nextTab=available.includes(currentStaffTab)?currentStaffTab:available[0];
         if(nextTab)void switchStaffTab(nextTab);
       }
@@ -9021,12 +9067,18 @@ async function refreshStudentPortalData(){
       const role=getAccessRole();
       const studentNav=document.getElementById('staff-nav-students');
       const drawerStudentNav=document.getElementById('staff-drawer-students');
+      const drawerTaskNav=document.getElementById('staff-drawer-tasks');
       const studentHome=document.getElementById('teacher-home-students-section');
       const studentAttendanceAllowed=role==='TEACHER'&&canOpenPortalModule('students');
+      const staffTasksAllowed=['TEACHER','STAFF'].includes(role)&&canOpenPortalModule('tasks');
       if(studentNav) studentNav.classList.toggle('hidden',!studentAttendanceAllowed);
       if(drawerStudentNav) drawerStudentNav.classList.toggle('hidden',!studentAttendanceAllowed);
+      if(drawerTaskNav) drawerTaskNav.classList.toggle('hidden',!staffTasksAllowed);
       if(studentHome) studentHome.classList.toggle('hidden',!studentAttendanceAllowed);
+      if(staffTasksAllowed)void window.loadTeacherTaskBoard?.(true);
+      else window.closeTeacherTaskRealtime?.();
       if(!studentAttendanceAllowed && currentStaffTab==='students') switchStaffTab('punch');
+      if(!staffTasksAllowed && currentStaffTab==='tasks') switchStaffTab('punch');
       const roleLabel=document.getElementById('staff-header-role');
       if(roleLabel && currentAuthUser?.staffRecord) roleLabel.innerText = (currentAuthUser.staffRecord.role||role)+' • '+currentAuthUser.staffRecord.empId;
     }
@@ -9923,7 +9975,7 @@ async function loadAdminStudentAttendance(){
       if(window.lucide)lucide.createIcons();
     }
     function updateStaffDrawerActive(tab){
-      ['punch','students','history'].forEach(k=>{
+      ['punch','students','history','tasks'].forEach(k=>{
         const b=document.getElementById('staff-drawer-'+k);
         if(b)b.classList.toggle('active',k===tab);
       });
@@ -10038,11 +10090,14 @@ async function loadAdminStudentAttendance(){
     }
 
     async function switchStaffTab(tab) {
-      tab=['punch','history','students'].includes(String(tab||''))?String(tab):'punch';
+      tab=['punch','history','students','tasks'].includes(String(tab||''))?String(tab):'punch';
       if(tab==='students'&&!canAccessStudentAttendance())tab='punch';
+      if(tab==='tasks'&&(!['TEACHER','STAFF'].includes(getAccessRole())||!canOpenPortalModule('tasks')))tab='punch';
       if(!canOpenPortalModule(tab)){
-        const allowed=['punch','history','students'].find(candidate=>
-          canOpenPortalModule(candidate)&&(candidate!=='students'||canAccessStudentAttendance())
+        const allowed=['punch','history','students','tasks'].find(candidate=>
+          canOpenPortalModule(candidate)&&
+          (candidate!=='students'||canAccessStudentAttendance())&&
+          (candidate!=='tasks'||(['TEACHER','STAFF'].includes(getAccessRole())&&canOpenPortalModule('tasks')))
         );
         if(!allowed){
           if(window.AshianaRolePermissions?.isReady?.()!==false)
@@ -10056,24 +10111,30 @@ async function loadAdminStudentAttendance(){
       const punchView = document.getElementById("staff-tab-punch");
       const historyView = document.getElementById("staff-tab-history");
       const studentsView = document.getElementById("staff-tab-students");
+      const tasksView = document.getElementById("staff-tab-tasks");
       updateStaffDrawerActive(tab);
 
       if (tab === 'punch') {
         if (punchView) punchView.classList.remove("hidden");
         if (historyView) historyView.classList.add("hidden");
         studentsView?.classList.add('hidden');
+        tasksView?.classList.add('hidden');
 
         refreshStaffUI();
       } else if (tab === 'history') {
         if (punchView) punchView.classList.add("hidden");
         studentsView?.classList.add('hidden');
+        tasksView?.classList.add('hidden');
         if (historyView) historyView.classList.remove("hidden");
         renderStaffHistory();
       } else if(tab === 'students') {
-        punchView?.classList.add('hidden');historyView?.classList.add('hidden');studentsView?.classList.remove('hidden');
+        punchView?.classList.add('hidden');historyView?.classList.add('hidden');tasksView?.classList.add('hidden');studentsView?.classList.remove('hidden');
 
         const date=document.getElementById('teacher-student-date');if(date){const today=studentDateToday();date.value=today;date.min=today;date.max=today;}
         await loadTeacherPortalManager(); if(teacherIsClassTeacher()) await openTeacherStudentLeavePopup();
+      } else if(tab==='tasks') {
+        punchView?.classList.add('hidden');historyView?.classList.add('hidden');studentsView?.classList.add('hidden');tasksView?.classList.remove('hidden');
+        await window.loadTeacherTaskBoard?.();
       }
       if (window.lucide) lucide.createIcons();
     }
@@ -11833,7 +11894,7 @@ window.addEventListener('load',async function(){
     }
 
     function switchAdminTab(tab) {
-      const allowedTabs = ['live', 'qr', 'directory', 'corrections', 'leave', 'audit', 'reports', 'attendance-rules', 'students', 'student-portal', 'report-cards', 'permissions'];
+      const allowedTabs = ['live', 'qr', 'directory', 'corrections', 'leave', 'audit', 'reports', 'attendance-rules', 'students', 'student-portal', 'report-cards', 'permissions', 'tasks'];
       if (!allowedTabs.includes(tab)) return;
       if (tab === "attendance-rules") loadStaffAttendanceRules();
 
@@ -11859,7 +11920,7 @@ window.addEventListener('load',async function(){
       });
 
       // Keep the selected quick-action visibly active.
-      ["reports","leave","corrections","student-portal","attendance-rules","report-cards","permissions"].forEach(t => {
+      ["reports","leave","corrections","student-portal","attendance-rules","report-cards","permissions","tasks"].forEach(t => {
         const quickBtn = document.getElementById(`admin-nav-${t}`);
         if (quickBtn) {
           quickBtn.style.borderColor = t === tab ? "#0A7E46" : "";
@@ -11903,6 +11964,9 @@ window.addEventListener('load',async function(){
         if (tab === 'report-cards' && currentAuthUser?.type === 'ADMIN') {
           void loadAdminReportCardLanguages();
           loadAdminReportCards();
+        }
+        if (tab === 'tasks' && currentAuthUser?.type === 'ADMIN') {
+          void window.loadAdminTeacherTasks?.();
         }
         if (tab === 'permissions' && currentAuthUser?.type === 'ADMIN') {
           void window.AshianaRolePermissions?.loadAdminPanel(supabaseClient,currentAuthUser);
@@ -14800,6 +14864,344 @@ window.addEventListener('load',async function(){
       bootstrapApp();
     }
   </script>
+
+<script>
+(() => {
+  "use strict";
+
+  const SCHOOL = "ashiana";
+  const TASKS_TABLE = "teacher_tasks";
+  const UPDATES_TABLE = "teacher_task_progress_updates";
+  const STATUS_LABELS = {
+    NOT_STARTED: "Not started",
+    IN_PROGRESS: "In progress",
+    BLOCKED: "Blocked",
+    COMPLETED: "Completed"
+  };
+  let taskAssignees = [];
+  let taskRealtimeChannel = null;
+  let taskRealtimeKey = "";
+  let taskReloadTimer = 0;
+
+  function escapeTaskText(value) {
+    return String(value ?? "").replace(/[&<>"']/g, char => ({
+      "&": "&amp;", "<": "&lt;", ">": "&gt;", '"': "&quot;", "'": "&#39;"
+    })[char]);
+  }
+
+  function indiaToday() {
+    const parts = new Intl.DateTimeFormat("en-CA", {
+      timeZone: "Asia/Kolkata", year: "numeric", month: "2-digit", day: "2-digit"
+    }).formatToParts(new Date());
+    const values = Object.fromEntries(parts.map(part => [part.type, part.value]));
+    return `${values.year}-${values.month}-${values.day}`;
+  }
+
+  function formatTaskDate(value) {
+    const date = String(value || "").slice(0, 10);
+    if (!/^\d{4}-\d{2}-\d{2}$/.test(date)) return "No deadline";
+    return new Date(`${date}T00:00:00+05:30`).toLocaleDateString("en-IN", {
+      timeZone: "Asia/Kolkata", day: "numeric", month: "short", year: "numeric"
+    });
+  }
+
+  function formatTaskTime(value) {
+    const date = new Date(value);
+    return Number.isNaN(date.getTime()) ? "" : date.toLocaleString("en-IN", {
+      timeZone: "Asia/Kolkata", day: "numeric", month: "short", hour: "numeric", minute: "2-digit"
+    });
+  }
+
+  async function authenticatedTaskUser() {
+    if (!supabaseClient) throw new Error("The cloud connection is unavailable.");
+    const { data, error } = await supabaseClient.auth.getUser();
+    if (error || !data?.user?.email) throw new Error("Your staff session expired. Sign in again.");
+    return {
+      email: String(data.user.email).trim().toLowerCase(),
+      name: String(currentAuthUser?.staffRecord?.name || currentAuthUser?.name || data.user.email).trim()
+    };
+  }
+
+  async function fetchTaskBundle(isAdmin) {
+    const user = await authenticatedTaskUser();
+    let query = supabaseClient.from(TASKS_TABLE)
+      .select("id,school_code,assigned_to_staff_id,assigned_to_email,assigned_to_name,title,description,due_date,created_by_email,created_by_name,created_at,updated_at")
+      .eq("school_code", SCHOOL)
+      .order("due_date", { ascending: true })
+      .order("created_at", { ascending: false });
+    if (!isAdmin) query = query.eq("assigned_to_email", user.email);
+    const { data: tasks, error: taskError } = await query;
+    if (taskError) throw taskError;
+
+    const taskRows = Array.isArray(tasks) ? tasks : [];
+    if (!taskRows.length) return { user, tasks: [], updatesByTask: new Map() };
+    const { data: updates, error: updateError } = await supabaseClient.from(UPDATES_TABLE)
+      .select("id,task_id,progress_percent,status,note,updated_by_email,updated_by_name,created_at")
+      .in("task_id", taskRows.map(task => task.id))
+      .order("created_at", { ascending: false })
+      .limit(5000);
+    if (updateError) throw updateError;
+    const updatesByTask = new Map();
+    (updates || []).forEach(update => {
+      if (!updatesByTask.has(update.task_id)) updatesByTask.set(update.task_id, []);
+      updatesByTask.get(update.task_id).push(update);
+    });
+    return { user, tasks: taskRows, updatesByTask };
+  }
+
+  function taskState(updates) {
+    const latest = updates?.[0] || null;
+    return {
+      latest,
+      status: String(latest?.status || "NOT_STARTED"),
+      progress: Number(latest?.progress_percent || 0)
+    };
+  }
+
+  function taskStatusClass(status) {
+    if (status === "COMPLETED") return "bg-emerald-100 text-emerald-800";
+    if (status === "BLOCKED") return "bg-rose-100 text-rose-800";
+    if (status === "IN_PROGRESS") return "bg-blue-100 text-blue-800";
+    return "bg-slate-100 text-slate-700";
+  }
+
+  function renderTaskHistory(updates) {
+    const rows = (updates || []).slice(0, 4);
+    if (!rows.length) return '<p class="mt-3 text-[10px] text-slate-400">No progress updates yet.</p>';
+    return '<div class="mt-3 space-y-2 border-t border-slate-100 pt-3">' + rows.map(update =>
+      '<div class="rounded-xl bg-slate-50 px-3 py-2">' +
+        '<div class="flex flex-wrap items-center justify-between gap-2 text-[10px]">' +
+          '<span class="font-extrabold text-slate-700">' + escapeTaskText(STATUS_LABELS[update.status] || update.status) + ' · ' + Number(update.progress_percent || 0) + '%</span>' +
+          '<span class="text-slate-400">' + escapeTaskText(formatTaskTime(update.created_at)) + '</span>' +
+        '</div>' +
+        (update.note ? '<p class="mt-1 whitespace-pre-wrap break-words text-[11px] text-slate-600">' + escapeTaskText(update.note) + '</p>' : '') +
+        '<p class="mt-1 text-[9px] text-slate-400">Updated by ' + escapeTaskText(update.updated_by_name || update.updated_by_email || "Teacher") + '</p>' +
+      '</div>'
+    ).join("") + '</div>';
+  }
+
+  function renderTaskCard(task, updates, isAdmin) {
+    const state = taskState(updates);
+    const overdue = task.due_date < indiaToday() && state.status !== "COMPLETED";
+    const id = escapeTaskText(task.id);
+    const progress = Math.max(0, Math.min(100, state.progress));
+    const dueClass = overdue ? "text-rose-700" : "text-slate-500";
+    return '<article class="rounded-2xl border border-slate-200 bg-white p-4 shadow-sm">' +
+      '<div class="flex flex-wrap items-start justify-between gap-3">' +
+        '<div class="min-w-0 flex-1">' +
+          '<div class="flex flex-wrap items-center gap-2">' +
+            '<span class="rounded-full px-2 py-1 text-[9px] font-extrabold ' + taskStatusClass(state.status) + '">' + escapeTaskText(STATUS_LABELS[state.status] || state.status) + '</span>' +
+            (overdue ? '<span class="rounded-full bg-rose-50 px-2 py-1 text-[9px] font-extrabold text-rose-700">Overdue</span>' : '') +
+          '</div>' +
+          '<h4 class="mt-2 break-words text-sm font-extrabold text-slate-900">' + escapeTaskText(task.title) + '</h4>' +
+          (task.description ? '<p class="mt-1 whitespace-pre-wrap break-words text-xs leading-5 text-slate-600">' + escapeTaskText(task.description) + '</p>' : '') +
+          '<p class="mt-2 text-[10px] font-bold ' + dueClass + '">Deadline: ' + escapeTaskText(formatTaskDate(task.due_date)) + '</p>' +
+          (isAdmin ? '<p class="mt-1 text-[10px] text-slate-500">Assigned to <b class="text-slate-700">' + escapeTaskText(task.assigned_to_name) + '</b> · ' + escapeTaskText(task.assigned_to_email) + '</p>' : '') +
+        '</div>' +
+        '<div class="w-full max-w-32 shrink-0 sm:w-32">' +
+          '<div class="flex items-center justify-between text-[10px] font-extrabold text-slate-600"><span>Progress</span><span>' + progress + '%</span></div>' +
+          '<div class="mt-2 h-2 overflow-hidden rounded-full bg-slate-100"><div class="h-full rounded-full bg-emerald-600" style="width:' + progress + '%"></div></div>' +
+        '</div>' +
+      '</div>' +
+      renderTaskHistory(updates) +
+      (!isAdmin && state.status !== "COMPLETED" ?
+        '<form data-task-update-form="' + id + '" class="mt-3 grid gap-2 border-t border-slate-100 pt-3 sm:grid-cols-[1fr_100px]">' +
+          '<label class="text-[10px] font-bold text-slate-600">Update status<select name="status" class="mt-1 w-full rounded-xl border border-slate-300 bg-white p-2 text-xs">' +
+            Object.entries(STATUS_LABELS).map(([value, label]) => '<option value="' + value + '" ' + (state.status === value ? 'selected' : '') + '>' + label + '</option>').join("") +
+          '</select></label>' +
+          '<label class="text-[10px] font-bold text-slate-600">Progress %<input name="progress" type="number" min="0" max="100" step="5" value="' + progress + '" required class="mt-1 w-full rounded-xl border border-slate-300 p-2 text-xs"></label>' +
+          '<label class="text-[10px] font-bold text-slate-600 sm:col-span-2">Progress note<textarea name="note" maxlength="2000" rows="2" placeholder="What is done or what is blocking you?" class="mt-1 w-full rounded-xl border border-slate-300 p-2 text-xs"></textarea></label>' +
+          '<button type="button" onclick="window.submitTeacherTaskProgress(\'' + id + '\')" class="rounded-xl bg-emerald-800 px-3 py-2.5 text-xs font-extrabold text-white sm:col-span-2">Save Progress Update</button>' +
+        '</form>' : (!isAdmin ? '<p class="mt-3 border-t border-emerald-100 pt-3 text-[10px] font-bold text-emerald-700">Task completed.</p>' : '')) +
+      '</article>';
+  }
+
+  function renderTaskBoards(bundle, isAdmin) {
+    const host = document.getElementById(isAdmin ? "admin-teacher-task-board" : "teacher-task-board");
+    if (!host) return;
+    const { tasks, updatesByTask } = bundle;
+    if (!tasks.length) {
+      host.innerHTML = '<div class="rounded-2xl border border-dashed border-slate-300 bg-slate-50 p-6 text-center text-xs text-slate-500">' +
+        (isAdmin ? 'No tasks assigned yet. Use the form above to assign the first task.' : 'You do not have any assigned tasks yet.') + '</div>';
+    } else {
+      host.innerHTML = tasks.map(task => renderTaskCard(task, updatesByTask.get(task.id) || [], isAdmin)).join("");
+    }
+    if (isAdmin) {
+      const states = tasks.map(task => taskState(updatesByTask.get(task.id) || []));
+      const open = states.filter(state => state.status !== "COMPLETED").length;
+      const late = tasks.filter((task, index) => task.due_date < indiaToday() && states[index].status !== "COMPLETED").length;
+      const done = states.length - open;
+      const summary = document.getElementById("admin-task-summary");
+      if (summary) summary.textContent = `${tasks.length} total · ${open} open · ${late} overdue · ${done} complete`;
+    } else {
+      const open = tasks.filter(task => taskState(updatesByTask.get(task.id) || []).status !== "COMPLETED").length;
+      const badge = document.getElementById("staff-task-count");
+      if (badge) {
+        badge.textContent = open > 99 ? "99+" : String(open);
+        badge.classList.toggle("hidden", open === 0);
+        badge.title = `${open} open task${open === 1 ? "" : "s"}`;
+      }
+    }
+    if (window.lucide) window.lucide.createIcons();
+  }
+
+  function subscribeTaskBoard(isAdmin, email) {
+    if (!supabaseClient?.channel) return;
+    const role = isAdmin ? "admin" : "teacher";
+    const key = `${role}:${String(email || "").toLowerCase()}`;
+    if (taskRealtimeKey === key && taskRealtimeChannel) return;
+    window.closeTeacherTaskRealtime?.();
+    taskRealtimeKey = key;
+    taskRealtimeChannel = supabaseClient.channel("teacher-task-board-" + key.replace(/[^a-z0-9_-]/g, "-"))
+      .on("postgres_changes", { event: "*", schema: "public", table: TASKS_TABLE }, () => queueTaskBoardRefresh(isAdmin))
+      .on("postgres_changes", { event: "*", schema: "public", table: UPDATES_TABLE }, () => queueTaskBoardRefresh(isAdmin))
+      .subscribe(status => {
+        if (status === "CHANNEL_ERROR" || status === "TIMED_OUT") console.warn("Task progress live updates are reconnecting.");
+      });
+  }
+
+  function queueTaskBoardRefresh(isAdmin) {
+    window.clearTimeout(taskReloadTimer);
+    taskReloadTimer = window.setTimeout(() => {
+      if (isAdmin) void window.loadAdminTeacherTasks?.(true);
+      else void window.loadTeacherTaskBoard?.(true);
+    }, 160);
+  }
+
+  window.closeTeacherTaskRealtime = function () {
+    if (taskRealtimeChannel && supabaseClient?.removeChannel) {
+      try { void supabaseClient.removeChannel(taskRealtimeChannel); } catch (_) {}
+    }
+    taskRealtimeChannel = null;
+    taskRealtimeKey = "";
+    window.clearTimeout(taskReloadTimer);
+  };
+
+  async function loadTaskAssignees() {
+    const select = document.getElementById("admin-task-assignee");
+    if (!select) return;
+    select.innerHTML = '<option value="">Loading staff…</option>';
+    const { data, error } = await supabaseClient.from("staff")
+      .select("id,name,role,email,status")
+      .eq("status", "ACTIVE")
+      .not("email", "is", null)
+      .order("name", { ascending: true });
+    if (error) throw error;
+    taskAssignees = (data || []).filter(row => String(row.email || "").trim());
+    select.innerHTML = '<option value="">Select a staff member</option>' + taskAssignees.map(assignee =>
+      '<option value="' + escapeTaskText(assignee.id) + '">' + escapeTaskText(assignee.name || assignee.email) +
+      (assignee.role ? ' · ' + escapeTaskText(assignee.role) : '') + '</option>'
+    ).join("");
+    if (!taskAssignees.length) select.innerHTML = '<option value="">No active staff with email found</option>';
+  }
+
+  window.loadAdminTeacherTasks = async function (silent = false) {
+    if (currentAuthUser?.type !== "ADMIN" || !supabaseClient) return;
+    const host = document.getElementById("admin-teacher-task-board");
+    try {
+      const deadline = document.getElementById("admin-task-deadline");
+      if (deadline && !deadline.min) { deadline.min = indiaToday(); deadline.value = indiaToday(); }
+      if (!taskAssignees.length) await loadTaskAssignees();
+      const bundle = await fetchTaskBundle(true);
+      renderTaskBoards(bundle, true);
+      subscribeTaskBoard(true, bundle.user.email);
+    } catch (error) {
+      console.warn("Staff task board could not load:", error?.message || error);
+      if (host) host.innerHTML = '<div class="rounded-xl border border-amber-200 bg-amber-50 p-4 text-xs text-amber-900">Task tracking is unavailable. Apply the staff task migration and confirm your administrator session, then refresh.</div>';
+      const summary = document.getElementById("admin-task-summary");
+      if (summary) summary.textContent = "Unable to load";
+      if (!silent) showToast("Task board could not load: " + (error?.message || error), "error");
+    }
+  };
+
+  window.createTeacherTask = async function (event) {
+    event?.preventDefault?.();
+    const feedback = document.getElementById("admin-task-feedback");
+    const button = document.getElementById("admin-task-submit");
+    if (currentAuthUser?.type !== "ADMIN" || !supabaseClient) return showToast("Administrator access is required to assign tasks.", "error");
+    const assignee = taskAssignees.find(row => String(row.id) === String(document.getElementById("admin-task-assignee")?.value || ""));
+    const title = String(document.getElementById("admin-task-title")?.value || "").trim();
+    const description = String(document.getElementById("admin-task-description")?.value || "").trim();
+    const dueDate = String(document.getElementById("admin-task-deadline")?.value || "");
+    if (!assignee || !title || !dueDate) {
+      if (feedback) feedback.textContent = "Choose a staff member, enter a title, and set the deadline.";
+      return;
+    }
+    try {
+      const user = await authenticatedTaskUser();
+      if (button) { button.disabled = true; button.textContent = "Assigning…"; }
+      const { error } = await supabaseClient.from(TASKS_TABLE).insert({
+        school_code: SCHOOL,
+        assigned_to_staff_id: assignee.id,
+        assigned_to_email: String(assignee.email).trim().toLowerCase(),
+        assigned_to_name: String(assignee.name || assignee.email).trim(),
+        title,
+        description,
+        due_date: dueDate,
+        created_by_email: user.email,
+        created_by_name: String(currentAuthUser?.username || currentAuthUser?.name || user.name || "Administrator").trim()
+      });
+      if (error) throw error;
+      document.getElementById("admin-teacher-task-form")?.reset();
+      const deadline = document.getElementById("admin-task-deadline");
+      if (deadline) { deadline.min = indiaToday(); deadline.value = indiaToday(); }
+      if (feedback) feedback.textContent = "Task assigned to " + (assignee.name || assignee.email) + ".";
+      showToast("Task assigned to " + (assignee.name || "staff member") + ".", "success");
+      await window.loadAdminTeacherTasks?.(true);
+    } catch (error) {
+      if (feedback) feedback.textContent = "Task was not assigned: " + (error?.message || error);
+      showToast("Task was not assigned: " + (error?.message || error), "error");
+    } finally {
+      if (button) { button.disabled = false; button.textContent = "Assign Task"; }
+    }
+  };
+
+  window.loadTeacherTaskBoard = async function (silent = false) {
+    if (currentAuthUser?.type !== "STAFF" || !["TEACHER", "STAFF"].includes(getAccessRole()) || !canOpenPortalModule("tasks") || !supabaseClient) return;
+    const host = document.getElementById("teacher-task-board");
+    try {
+      const bundle = await fetchTaskBundle(false);
+      renderTaskBoards(bundle, false);
+      subscribeTaskBoard(false, bundle.user.email);
+    } catch (error) {
+      console.warn("Staff tasks could not load:", error?.message || error);
+      if (host) host.innerHTML = '<div class="rounded-xl border border-amber-200 bg-amber-50 p-4 text-xs text-amber-900">Tasks are unavailable right now. Contact the administrator if this keeps happening.</div>';
+      if (!silent) showToast("Your assigned tasks could not load: " + (error?.message || error), "error");
+    }
+  };
+
+  window.submitTeacherTaskProgress = async function (taskId) {
+    if (currentAuthUser?.type !== "STAFF" || !["TEACHER", "STAFF"].includes(getAccessRole()) || !canOpenPortalModule("tasks") || !supabaseClient) return showToast("Staff access is required to update task progress.", "error");
+    const form = document.querySelector('[data-task-update-form="' + String(taskId).replace(/[^a-zA-Z0-9-]/g, "") + '"]');
+    if (!form) return;
+    const button = form.querySelector("button[type=button]");
+    const status = String(form.elements.status?.value || "IN_PROGRESS");
+    const progress = status === "COMPLETED" ? 100 : status === "NOT_STARTED" ? 0 : Number(form.elements.progress?.value);
+    const note = String(form.elements.note?.value || "").trim();
+    if (!Number.isInteger(progress) || progress < 0 || progress > 100) return showToast("Progress must be between 0 and 100.", "error");
+    try {
+      const user = await authenticatedTaskUser();
+      if (button) { button.disabled = true; button.textContent = "Saving…"; }
+      const { error } = await supabaseClient.from(UPDATES_TABLE).insert({
+        task_id: taskId,
+        school_code: SCHOOL,
+        progress_percent: progress,
+        status,
+        note,
+        updated_by_email: user.email,
+        updated_by_name: user.name
+      });
+      if (error) throw error;
+      showToast("Progress update saved.", "success");
+      await window.loadTeacherTaskBoard?.(true);
+    } catch (error) {
+      showToast("Progress update was not saved: " + (error?.message || error), "error");
+    } finally {
+      if (button?.isConnected) { button.disabled = false; button.textContent = "Save Progress Update"; }
+    }
+  };
+})();
+</script>
 
 <!-- AI Assistant v1: secure Gemini gateway. Student access remains disabled until student authentication is upgraded to a verifiable Auth session. -->
 <style>

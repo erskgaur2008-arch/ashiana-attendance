@@ -93,6 +93,12 @@ Regression coverage should include:
 
 QR codes identify records; they must not be the only authorization mechanism. The backend must verify permissions and the attendance operation.
 
+### Staff tasks
+- Administrators can assign a task to one active teacher or staff member with a due date and instructions.
+- Teachers and staff can post status, percent-complete, and note updates; each update is retained as history.
+- The administrator task board and staff task list subscribe to Supabase Realtime so progress changes appear while both portals are open.
+- See [Staff Task Tracking](docs/TEACHER-TASKS.md) for the required database migration and rollout steps.
+
 ### Student records and bulk upload
 
 Student fields discussed for the application include admission number, roll number, name, class, section, gender, category, status, date of birth, parent/guardian names, address, phone number, and photo.

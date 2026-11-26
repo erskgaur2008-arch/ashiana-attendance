@@ -5,11 +5,11 @@
   const DEFAULTS = {
     STAFF: {
       punch: true, history: true, students: false, communication: true,
-      leave: true, profile: true, biometric: true, fees: true
+      leave: true, profile: true, biometric: true, fees: true, tasks: true
     },
     TEACHER: {
       punch: true, history: true, students: true, communication: true,
-      leave: true, profile: true, biometric: true, fees: true
+      leave: true, profile: true, biometric: true, fees: true, tasks: true
     },
     STUDENT: {
       profile: true, mentor: true, classmates: true, notice: true,
@@ -22,6 +22,7 @@
     STAFF: [
       ["punch", "Punch & attendance"], ["history", "Attendance history"],
       ["students", "Student attendance", "Teacher designation required"],
+      ["tasks", "Assigned tasks", "View assignments and submit progress updates"],
       ["communication", "Staff communication"], ["leave", "Leave requests"],
       ["profile", "Staff profile"], ["biometric", "Biometric settings"],
       ["fees", "Fee confirmations", "Existing Principal authorization is still required"]
@@ -31,6 +32,7 @@
       ["students", "Student attendance"], ["communication", "Staff communication"],
       ["leave", "Leave requests"], ["profile", "Staff profile"],
       ["biometric", "Biometric settings"],
+      ["tasks", "Assigned tasks", "View assignments and submit progress updates"],
       ["fees", "Fee confirmations", "Existing Principal authorization is still required"]
     ],
     STUDENT: [
