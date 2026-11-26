@@ -62,6 +62,12 @@
     }
     if (window.MutationObserver) {
       new MutationObserver(placeToggle).observe(document.body, { childList: true, subtree: true });
+      const staffModal = document.getElementById("parent-school-messages-modal");
+      const staffThreadHead = document.getElementById("parent-school-message-thread-head");
+      if (staffModal) new MutationObserver(placeToggle).observe(staffModal, { attributes: true, attributeFilter: ["class"] });
+      if (staffThreadHead) new MutationObserver(placeToggle).observe(staffThreadHead, { attributes: true, attributeFilter: ["class"] });
+      const studentPanel = document.getElementById("student-dashboard-panel");
+      if (studentPanel) new MutationObserver(placeToggle).observe(studentPanel, { attributes: true, attributeFilter: ["class"] });
     }
     setTheme(root.getAttribute("data-ashiana-theme") || "light");
   };
