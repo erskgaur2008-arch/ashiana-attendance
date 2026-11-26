@@ -15251,11 +15251,36 @@ function addMessage(text,type){
   <div class="staff-comm-card">
     <div class="staff-comm-head">
       <div class="min-w-0"><h2 id="parent-school-messages-title" class="text-base sm:text-lg font-extrabold">Messages</h2></div>
-      <div class="flex items-center gap-2"><button type="button" onclick="refreshParentSchoolMessages()" class="px-3 py-2 rounded-xl bg-white/10 hover:bg-white/20 text-[10px] font-bold">Refresh</button><button type="button" onclick="closeParentSchoolMessages()" class="w-9 h-9 rounded-xl bg-white/10 hover:bg-white/20 flex items-center justify-center" aria-label="Close parent messages"><i data-lucide="x"></i></button></div>
+      <div class="flex items-center gap-2"><button id="teacher-message-new-button" type="button" onclick="openTeacherMessageComposer()" class="hidden px-3 py-2 rounded-xl bg-white text-emerald-800 text-[10px] font-extrabold">New message</button><button type="button" onclick="refreshParentSchoolMessages()" class="px-3 py-2 rounded-xl bg-white/10 hover:bg-white/20 text-[10px] font-bold">Refresh</button><button type="button" onclick="closeParentSchoolMessages()" class="w-9 h-9 rounded-xl bg-white/10 hover:bg-white/20 flex items-center justify-center" aria-label="Close parent messages"><i data-lucide="x"></i></button></div>
     </div>
     <div class="staff-comm-body">
       <div class="staff-comm-list"><div id="parent-school-message-list" class="min-h-full"></div></div>
       <div class="staff-comm-conversation">
+        <section id="teacher-message-compose-panel" class="hidden flex-1 min-h-0 overflow-y-auto bg-slate-50 p-4 space-y-3">
+          <div class="flex items-center justify-between gap-3"><div><h3 class="text-sm font-extrabold text-slate-900">New message to students</h3><p class="text-[10px] text-slate-500 mt-1">Only students assigned to your classes or subjects are available.</p></div><button type="button" onclick="closeTeacherMessageComposer()" class="w-9 h-9 rounded-xl bg-white border text-slate-600" aria-label="Close composer">✕</button></div>
+          <form id="teacher-message-compose-form" class="space-y-3" onsubmit="sendTeacherStudentMessage(event)">
+            <label class="block text-xs font-bold text-slate-700">Send to
+              <select id="teacher-message-mode" required class="mt-1 w-full rounded-xl border border-slate-200 bg-white p-3 text-xs" onchange="updateTeacherMessageRecipientControls()">
+                <option value="individual">Individual student</option><option value="multiple">Multiple students</option><option value="class">Entire class / section</option>
+              </select>
+            </label>
+            <div id="teacher-message-class-wrap" class="hidden"><label class="block text-xs font-bold text-slate-700">Class / Section
+              <select id="teacher-message-class" class="mt-1 w-full rounded-xl border border-slate-200 bg-white p-3 text-xs" onchange="updateTeacherMessageRecipientControls()"></select>
+            </label></div>
+            <label id="teacher-message-students-wrap" class="block text-xs font-bold text-slate-700">Student
+              <select id="teacher-message-students" required class="mt-1 w-full rounded-xl border border-slate-200 bg-white p-3 text-xs" size="5"></select>
+              <span id="teacher-message-student-help" class="block mt-1 text-[10px] font-normal text-slate-500">Choose one assigned student.</span>
+            </label>
+            <label class="block text-xs font-bold text-slate-700">Subject
+              <input id="teacher-message-subject" required maxlength="160" class="mt-1 w-full rounded-xl border border-slate-200 bg-white p-3 text-xs" placeholder="Enter message subject">
+            </label>
+            <label class="block text-xs font-bold text-slate-700">Message
+              <textarea id="teacher-message-body" required maxlength="4000" rows="5" class="mt-1 w-full rounded-xl border border-slate-200 bg-white p-3 text-xs" placeholder="Write your message…"></textarea>
+            </label>
+            <div id="teacher-message-compose-status" class="text-[10px] text-slate-500" role="status" aria-live="polite"></div>
+            <div class="flex justify-end gap-2"><button type="button" onclick="closeTeacherMessageComposer()" class="px-4 py-2.5 rounded-xl bg-white border text-xs font-bold">Cancel</button><button id="teacher-message-send-button" type="submit" class="px-5 py-2.5 rounded-xl bg-emerald-700 text-white text-xs font-extrabold">Send message</button></div>
+          </form>
+        </section>
         <div id="parent-school-message-thread-head" class="p-3 border-b bg-white hidden"></div>
         <div id="parent-school-message-thread-body" class="staff-comm-messages"><div class="staff-comm-empty"><div><div class="text-2xl mb-2">💬</div><div class="font-bold text-slate-700">Select a parent conversation</div><div class="text-[10px] mt-1">Only the assigned recipient group and school administrators can view these messages.</div></div></div></div>
         <form id="parent-school-message-reply-form" class="staff-comm-compose hidden" onsubmit="replyToParentSchoolMessage(event)">
@@ -15525,6 +15550,9 @@ function addMessage(text,type){
     if(!supabaseClient||!currentAuthUser||!['ADMIN','PRINCIPAL','STAFF','TEACHER'].includes(role)){showToast("Sign in with a school staff account to open parent messages.","error");return;}
     const modal=document.getElementById("parent-school-messages-modal");if(!modal)return;
     modal.classList.add("open");modal.querySelector(".staff-comm-card")?.classList.remove("thread-open");
+    const newMessageButton=document.getElementById("teacher-message-new-button");if(newMessageButton)newMessageButton.classList.toggle("hidden",role!=="TEACHER");
+    document.getElementById("teacher-message-compose-panel")?.classList.add("hidden");
+    document.getElementById("parent-school-message-thread-body")?.classList.remove("hidden");
     staffCurrentThreadId="";
     setupParentSchoolRealtime();
     await window.refreshParentSchoolMessages();
@@ -15533,6 +15561,8 @@ function addMessage(text,type){
     document.getElementById("parent-school-messages-modal")?.classList.remove("open");
     document.getElementById("parent-school-messages-modal")?.querySelector(".staff-comm-card")?.classList.remove("thread-open");
     staffCurrentThreadId="";
+    document.getElementById("teacher-message-compose-panel")?.classList.add("hidden");
+    document.getElementById("parent-school-message-thread-body")?.classList.remove("hidden");
     if(window.__ashianaParentSchoolChannel&&supabaseClient){try{supabaseClient.removeChannel(window.__ashianaParentSchoolChannel);}catch(_){}window.__ashianaParentSchoolChannel=null;}
   };
   window.refreshParentSchoolMessages=async function(){
@@ -15616,6 +15646,83 @@ function addMessage(text,type){
       }
     });
   }
+  let teacherMessageTargets=[];
+  let teacherMessageClasses=[];
+  window.openTeacherMessageComposer=async function(){
+    if(String(currentAuthUser?.type||"").toUpperCase()!=="TEACHER"||!supabaseClient)return;
+    const panel=document.getElementById("teacher-message-compose-panel");
+    if(!panel)return;
+    document.getElementById("parent-school-messages-modal")?.querySelector(".staff-comm-card")?.classList.remove("thread-open");
+    panel.classList.remove("hidden");
+    document.getElementById("parent-school-message-thread-head")?.classList.add("hidden");
+    document.getElementById("parent-school-message-thread-body")?.classList.add("hidden");
+    document.getElementById("parent-school-message-reply-form")?.classList.add("hidden");
+    const status=document.getElementById("teacher-message-compose-status");
+    if(status)status.textContent="Loading your assigned students…";
+    try{
+      const {data,error}=await supabaseClient.rpc("parent_messages_teacher_targets");
+      if(error)throw error;
+      if(!data?.success)throw new Error("Teacher assignment access is required.");
+      teacherMessageTargets=Array.isArray(data.students)?data.students:[];
+      teacherMessageClasses=[...new Map(teacherMessageTargets.map(s=>[String(s.class_name||"")+"||"+String(s.section||""),{key:String(s.class_name||"")+"||"+String(s.section||""),label:"Class "+s.class_name+" · Section "+s.section}])).values()].sort((a,b)=>a.label.localeCompare(b.label,undefined,{numeric:true}));
+      const classSelect=document.getElementById("teacher-message-class");
+      if(classSelect)classSelect.innerHTML=teacherMessageClasses.map(c=>'<option value="'+esc(c.key)+'">'+esc(c.label)+'</option>').join("");
+      updateTeacherMessageRecipientControls();
+      if(status)status.textContent=teacherMessageTargets.length?teacherMessageTargets.length+" assigned student(s) available.":"No active students are assigned to your teacher account.";
+      const first=document.getElementById("teacher-message-subject");first?.focus();
+    }catch(error){if(status)status.textContent="Could not load assigned students: "+String(error?.message||error);teacherMessageTargets=[];}
+  };
+  window.closeTeacherMessageComposer=function(){
+    document.getElementById("teacher-message-compose-panel")?.classList.add("hidden");
+    document.getElementById("parent-school-message-thread-body")?.classList.remove("hidden");
+    staffCurrentThreadId="";window.refreshParentSchoolMessages();
+  };
+  window.updateTeacherMessageRecipientControls=function(){
+    const mode=document.getElementById("teacher-message-mode")?.value||"individual";
+    const classWrap=document.getElementById("teacher-message-class-wrap");
+    const studentsWrap=document.getElementById("teacher-message-students-wrap");
+    const classKey=document.getElementById("teacher-message-class")?.value||"";
+    const select=document.getElementById("teacher-message-students");
+    const help=document.getElementById("teacher-message-student-help");
+    if(classWrap)classWrap.classList.toggle("hidden",mode!=="class");
+    if(studentsWrap)studentsWrap.classList.toggle("hidden",mode==="class");
+    if(!select)return;
+    const rows=mode==="class"?teacherMessageTargets.filter(s=>(String(s.class_name)+"||"+String(s.section))===classKey):teacherMessageTargets;
+    select.multiple=mode==="multiple";
+    select.size=mode==="multiple"?Math.min(8,Math.max(4,rows.length)):Math.min(6,Math.max(2,rows.length));
+    select.innerHTML=rows.map(s=>'<option value="'+esc(s.student_id)+'">'+esc(s.student_name)+' · '+esc(s.class_name)+'-'+esc(s.section)+'</option>').join("");
+    if(help)help.textContent=mode==="multiple"?"Select one or more students (Ctrl/⌘ or touch multi-select).":"Choose one assigned student.";
+    select.required=mode!=="class";
+  };
+  window.sendTeacherStudentMessage=async function(event){
+    event.preventDefault();
+    if(String(currentAuthUser?.type||"").toUpperCase()!=="TEACHER"||!supabaseClient)return;
+    const mode=document.getElementById("teacher-message-mode")?.value||"individual";
+    const classKey=document.getElementById("teacher-message-class")?.value||"";
+    const selected=[...(document.getElementById("teacher-message-students")?.selectedOptions||[])].map(o=>o.value);
+    const ids=mode==="class"?teacherMessageTargets.filter(s=>(String(s.class_name)+"||"+String(s.section))===classKey).map(s=>s.student_id):selected;
+    const subject=document.getElementById("teacher-message-subject")?.value.trim()||"";
+    const body=document.getElementById("teacher-message-body")?.value.trim()||"";
+    const status=document.getElementById("teacher-message-compose-status");
+    const button=document.getElementById("teacher-message-send-button");
+    if(!ids.length){if(status)status.textContent="Select at least one assigned student.";return;}
+    if(!subject||!body){if(status)status.textContent="Enter both a subject and a message.";return;}
+    if(ids.length>200){if(status)status.textContent="Please send to no more than 200 students at a time.";return;}
+    if(button){button.disabled=true;button.textContent="Sending…";}
+    try{
+      const {data,error}=await supabaseClient.rpc("parent_messages_teacher_send",{p_student_ids:ids,p_subject:subject,p_body:body});
+      if(error)throw error;
+      if(!data?.success)throw new Error(data?.code||"MESSAGE_SEND_FAILED");
+      const count=Number(data.created_count||0);
+      document.getElementById("teacher-message-compose-form")?.reset();
+      if(status)status.textContent="Message sent to "+count+" student(s).";
+      showToast("Message sent to "+count+" student(s).","success");
+      await window.refreshParentSchoolMessages();
+      document.getElementById("teacher-message-compose-panel")?.classList.add("hidden");
+      document.getElementById("parent-school-message-thread-body")?.classList.remove("hidden");
+    }catch(error){if(status)status.textContent="Message could not be sent: "+String(error?.message||error);showToast("Message could not be sent: "+String(error?.message||error),"error");}
+    finally{if(button){button.disabled=false;button.textContent="Send message";}}
+  };
   document.addEventListener("keydown",event=>{if(event.key==="Escape")window.closeParentSchoolMessages();});
 })();
 </script>
