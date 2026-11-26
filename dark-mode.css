@@ -402,3 +402,14 @@ html[data-ashiana-theme="dark"] #student-portal-view #student-dashboard-panel-bo
 @media (min-width: 701px) {
   #teacher-message-new-button-mobile { display: none !important; }
 }
+
+#parent-school-messages-modal #parent-school-message-thread-head {
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  gap: 8px;
+}
+#parent-school-messages-modal #parent-school-message-thread-head > div:first-child {
+  flex: 1 1 auto;
+  min-width: 0;
+}
