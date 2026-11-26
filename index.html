@@ -15549,7 +15549,7 @@ function addMessage(text,type){
     const role=String(currentAuthUser?.type||"").toUpperCase();
     if(!supabaseClient||!currentAuthUser||!['ADMIN','PRINCIPAL','STAFF','TEACHER'].includes(role)){showToast("Sign in with a school staff account to open parent messages.","error");return;}
     const modal=document.getElementById("parent-school-messages-modal");if(!modal)return;
-    modal.classList.add("open");modal.querySelector(".staff-comm-card")?.classList.remove("thread-open");
+    modal.classList.add("open");modal.querySelector(".staff-comm-card")?.classList.remove("thread-open","teacher-compose-open");
     const newMessageButton=document.getElementById("teacher-message-new-button");if(newMessageButton)newMessageButton.classList.toggle("hidden",role!=="TEACHER");
     const mobileNewMessageButton=document.getElementById("teacher-message-new-button-mobile");if(mobileNewMessageButton)mobileNewMessageButton.classList.toggle("hidden",role!=="TEACHER");
     document.getElementById("teacher-message-compose-panel")?.classList.add("hidden");
@@ -15560,7 +15560,7 @@ function addMessage(text,type){
   };
   window.closeParentSchoolMessages=function(){
     document.getElementById("parent-school-messages-modal")?.classList.remove("open");
-    document.getElementById("parent-school-messages-modal")?.querySelector(".staff-comm-card")?.classList.remove("thread-open");
+    document.getElementById("parent-school-messages-modal")?.querySelector(".staff-comm-card")?.classList.remove("thread-open","teacher-compose-open");
     staffCurrentThreadId="";
     document.getElementById("teacher-message-compose-panel")?.classList.add("hidden");
     document.getElementById("parent-school-message-thread-body")?.classList.remove("hidden");
