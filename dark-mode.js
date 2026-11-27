@@ -49,16 +49,17 @@
         button.classList.add("ashiana-theme-inline", "ashiana-theme-chat-inline");
         if (button.parentElement !== destination) destination.appendChild(button);
       } else if (adminActions) {
-        button.classList.add("ashiana-theme-inline", "ashiana-theme-admin-inline");
-        button.classList.remove("ashiana-theme-chat-inline");
-        const logo = adminActions.querySelector(".admin-dashboard-compact-logo");
-        if (button.parentElement !== adminActions) adminActions.insertBefore(button, logo || null);
+        // Keep the compact dashboard header dedicated to navigation and school
+        // identity. Floating controls remain independently positioned so they
+        // cannot consume the title width or overlap the logo.
+        button.classList.remove("ashiana-theme-inline", "ashiana-theme-admin-inline", "ashiana-theme-chat-inline");
+        if (button.parentElement !== document.body) document.body.appendChild(button);
         const assistant = document.querySelector(
           "#ai-assistant-fab, #ashiana-ai-assistant, #ashiana-ai-fab, .ai-assistant-fab, [data-ai-assistant-launcher], button[aria-label*='assistant' i], button[title*='assistant' i]"
         );
         if (assistant && assistant !== button) {
-          assistant.classList.add("ashiana-admin-ai-inline");
-          if (assistant.parentElement !== adminActions) adminActions.insertBefore(assistant, logo || null);
+          assistant.classList.remove("ashiana-admin-ai-inline");
+          if (assistant.parentElement !== document.body) document.body.appendChild(assistant);
         }
       } else if (portal && !portal.classList.contains("hidden") && studentHeader) {
         const adminAssistant = document.querySelector(".ashiana-admin-ai-inline");
