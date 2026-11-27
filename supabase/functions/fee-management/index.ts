@@ -226,6 +226,111 @@ Deno.serve(async (req) => {
     return respond({ submissions: data ?? [] });
   }
 
+  if (action === "admin-dashboard-summary") {
+    // First authorize with the caller's JWT. This RPC checks private.is_admin().
+    const { data: years, error: permissionError } = await userClient.rpc("fee_admin_list_academic_years");
+    if (permissionError || !Array.isArray(years)) {
+      return respond({ error: "Administrator permission required" }, 403);
+    }
+
+    // Read only aggregate dashboard inputs with the service client after admin authorization.
+    const activeYear = years.find((row: { is_active?: boolean }) => row.is_active === true) ?? null;
+    const studentResult = await adminClient.from("student_roster")
+      .select("class_name,section", { count: "exact" })
+      .eq("school_code", "ashiana")
+      .eq("status", "ACTIVE")
+      .limit(5000);
+    if (studentResult.error) {
+      return respond({ error: "Unable to load student overview" }, 500);
+    }
+
+    let accountRows: Array<{ id: string; student_id: string }> = [];
+    if (activeYear?.academic_year_id) {
+      const accountResult = await adminClient.from("student_fee_accounts")
+        .select("id,student_id")
+        .eq("school_code", "ashiana")
+        .eq("academic_year_id", activeYear.academic_year_id)
+        .limit(5000);
+      if (accountResult.error) {
+        return respond({ error: "Unable to load fee accounts" }, 500);
+      }
+      accountRows = accountResult.data ?? [];
+    }
+
+    const students = studentResult.data ?? [];
+    const classCounts = new Map<string, number>();
+    const sections = new Set<string>();
+    students.forEach((row: { class_name?: string | null; section?: string | null }) => {
+      const className = String(row.class_name ?? "Unassigned").trim() || "Unassigned";
+      classCounts.set(className, (classCounts.get(className) ?? 0) + 1);
+      if (row.section) sections.add(className + "|" + row.section);
+    });
+    const classBreakdown = [...classCounts.entries()]
+      .map(([class_name, student_count]) => ({ class_name, student_count }))
+      .sort((a, b) => a.class_name.localeCompare(b.class_name, "en", { numeric: true }));
+
+    const accounts = accountRows;
+    const accountIds = accounts.map((row: { id: string }) => row.id);
+    let billedPaise = 0;
+    let discountPaise = 0;
+    let collectedPaise = 0;
+    let outstandingPaise = 0;
+    let pendingReviews = 0;
+    if (accountIds.length) {
+      const [installmentResult, discountResult, ledgerResult, submissionResult] = await Promise.all([
+        adminClient.from("fee_installments").select("fee_account_id,amount_paise")
+          .in("fee_account_id", accountIds).limit(10000),
+        adminClient.from("fee_discount_requests").select("fee_account_id,amount_paise,status")
+          .in("fee_account_id", accountIds).eq("status", "APPROVED").limit(10000),
+        adminClient.from("fee_ledger_entries").select("fee_account_id,amount_paise")
+          .in("fee_account_id", accountIds).limit(10000),
+        adminClient.from("fee_payment_submissions").select("id,status")
+          .in("fee_account_id", accountIds).in("status", ["PENDING_ADMIN", "PENDING_PRINCIPAL"]).limit(10000),
+      ]);
+      const failed = [installmentResult, discountResult, ledgerResult, submissionResult].find((result) => result.error);
+      if (failed) return respond({ error: "Unable to calculate the current fee summary" }, 500);
+
+      const sumByAccount = (rows: Array<{ fee_account_id: string; amount_paise: number }>) => {
+        const totals = new Map<string, number>();
+        rows.forEach((row) => totals.set(row.fee_account_id,
+          (totals.get(row.fee_account_id) ?? 0) + Number(row.amount_paise || 0)));
+        return totals;
+      };
+      const billed = sumByAccount(installmentResult.data ?? []);
+      const discounts = sumByAccount(discountResult.data ?? []);
+      const collected = sumByAccount(ledgerResult.data ?? []);
+      accounts.forEach((account: { id: string }) => {
+        const accountBilled = billed.get(account.id) ?? 0;
+        const accountDiscount = discounts.get(account.id) ?? 0;
+        const accountCollected = collected.get(account.id) ?? 0;
+        billedPaise += accountBilled;
+        discountPaise += accountDiscount;
+        collectedPaise += accountCollected;
+        outstandingPaise += Math.max(0, accountBilled - accountDiscount - accountCollected);
+      });
+      pendingReviews = submissionResult.data?.length ?? 0;
+    }
+
+    return respond({
+      students: {
+        active_total: studentResult.count ?? students.length,
+        class_count: classCounts.size,
+        section_count: sections.size,
+        class_breakdown: classBreakdown,
+      },
+      fees: {
+        academic_year: activeYear?.label ?? null,
+        account_count: accounts.length,
+        billed_paise: billedPaise,
+        approved_discount_paise: discountPaise,
+        collected_paise: collectedPaise,
+        outstanding_paise: outstandingPaise,
+        pending_reviews: pendingReviews,
+      },
+      generated_at: new Date().toISOString(),
+    });
+  }
+
   if (action === "admin-list-years") {
     const { data, error } = await userClient.rpc("fee_admin_list_academic_years");
     if (error) return respond({ error: error.message }, 403);

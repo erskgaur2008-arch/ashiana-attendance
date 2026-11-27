@@ -1,0 +1,62 @@
+name: Admin Dashboard Phase 3 Validation
+
+on:
+  pull_request:
+    branches: [main]
+    paths:
+      - 'dark-mode.js'
+      - 'dark-mode.css'
+      - 'supabase/functions/fee-management/index.ts'
+      - '.github/workflows/admin-dashboard-phase3-check.yml'
+  workflow_dispatch:
+
+permissions:
+  contents: read
+
+jobs:
+  dashboard-phase3:
+    runs-on: ubuntu-latest
+    timeout-minutes: 8
+    steps:
+      - uses: actions/checkout@v4
+      - uses: denoland/setup-deno@v2
+        with:
+          deno-version: v2.x
+      - name: Validate dashboard JavaScript syntax
+        run: node --check dark-mode.js
+      - name: Install fee-management dependencies
+        run: deno install --entrypoint supabase/functions/fee-management/index.ts
+      - name: Validate fee-management Edge Function types
+        run: deno check --node-modules-dir=auto supabase/functions/fee-management/index.ts
+      - name: Validate Phase 3 security and data boundaries
+        run: |
+          python3 - <<'PY'
+          from pathlib import Path
+          js = Path("dark-mode.js").read_text(encoding="utf-8")
+          edge = Path("supabase/functions/fee-management/index.ts").read_text(encoding="utf-8")
+          css = Path("dark-mode.css").read_text(encoding="utf-8")
+          marker = "Admin dashboard Phase 3: student overview"
+          if marker not in js:
+              raise SystemExit("FAIL: Phase 3 dashboard module is missing")
+          phase3 = js.split(marker, 1)[1]
+          start = edge.find('if (action === "admin-dashboard-summary")')
+          end = edge.find('if (action === "admin-list-years")', start)
+          if start < 0 or end < 0:
+              raise SystemExit("FAIL: Admin summary action is missing or misplaced")
+          action = edge[start:end]
+          checks = {
+              "dashboard verifies an authenticated user": "supa.auth.getUser()" in phase3,
+              "dashboard invokes the protected fee-management action": 'functions.invoke("fee-management"' in phase3 and 'admin-dashboard-summary' in phase3,
+              "Edge Function checks admin permission before service-role reads": "userClient.rpc(\"fee_admin_list_academic_years\")" in action and action.index("permissionError") < action.index("adminClient.from"),
+              "student summary is limited to Ashiana active students": 'eq("school_code", "ashiana")' in action and 'eq("status", "ACTIVE")' in action,
+              "fee summary is scoped to the active academic year": 'eq("academic_year_id", activeYear.academic_year_id)' in action,
+              "outstanding uses billed less approved discounts and ledger entries": "accountBilled - accountDiscount - accountCollected" in action,
+              "pending UPI submissions are not included as collections": "PENDING_ADMIN" in action and "PENDING_PRINCIPAL" in action,
+              "dashboard does not write to school data": not any(token in phase3 for token in (".insert(", ".update(", ".upsert(", ".delete(")),
+              "dashboard has responsive and dark-mode styling": ".ashiana-phase3-panel" in css and 'data-ashiana-theme="dark"' in css and "@media (max-width: 700px)" in css,
+          }
+          for name, ok in checks.items():
+              print(("PASS" if ok else "FAIL") + ": " + name)
+          if not all(checks.values()):
+              raise SystemExit(1)
+          PY
