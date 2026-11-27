@@ -413,3 +413,61 @@ html[data-ashiana-theme="dark"] #student-portal-view #student-dashboard-panel-bo
   flex: 1 1 auto;
   min-width: 0;
 }
+
+
+/* Admin dashboard mobile layout: contain roster width within the viewport.
+   The faculty table remains horizontally scrollable inside its own surface,
+   rather than widening the page or clipping the last columns. */
+@media (max-width: 700px) {
+  html, body {
+    max-width: 100%;
+    overflow-x: hidden;
+  }
+
+  #admin-portal-view,
+  #admin-portal-view .admin-dashboard-content,
+  #admin-portal-view .admin-dashboard-content > * {
+    box-sizing: border-box;
+    min-width: 0;
+    max-width: 100%;
+  }
+
+  #admin-portal-view .admin-dashboard-content table {
+    display: block;
+    width: 100%;
+    max-width: 100%;
+    overflow-x: auto;
+    overflow-y: hidden;
+    -webkit-overflow-scrolling: touch;
+    white-space: nowrap;
+  }
+
+  #admin-portal-view .admin-dashboard-content table th,
+  #admin-portal-view .admin-dashboard-content table td {
+    box-sizing: border-box;
+    white-space: normal;
+    overflow-wrap: anywhere;
+  }
+
+  #admin-portal-view .admin-dashboard-content [class*="overflow-x"] {
+    max-width: 100%;
+    min-width: 0;
+    overflow-x: auto;
+    -webkit-overflow-scrolling: touch;
+  }
+
+  #admin-portal-view .admin-dashboard-content input,
+  #admin-portal-view .admin-dashboard-content select {
+    box-sizing: border-box;
+    min-width: 0;
+    max-width: 100%;
+  }
+
+  #ashiana-theme-toggle {
+    right: max(12px, env(safe-area-inset-right));
+    bottom: max(12px, env(safe-area-inset-bottom));
+    min-height: 42px;
+    padding: 0 11px;
+    font-size: 13px;
+  }
+}
