@@ -237,7 +237,7 @@ Deno.serve(async (req) => {
     const activeYear = years.find((row: { is_active?: boolean }) => row.is_active === true) ?? null;
     const [studentResult, accountResult] = await Promise.all([
       adminClient.from("student_roster")
-        .select("class_name,section")
+        .select("class_name,section", { count: "exact" })
         .eq("school_code", "ashiana")
         .eq("status", "ACTIVE")
         .limit(5000),
@@ -309,7 +309,7 @@ Deno.serve(async (req) => {
 
     return respond({
       students: {
-        active_total: students.length,
+        active_total: studentResult.count ?? students.length,
         class_count: classCounts.size,
         section_count: sections.size,
         class_breakdown: classBreakdown,
