@@ -945,3 +945,180 @@ html[data-ashiana-theme="dark"] #admin-portal-view .ashiana-modern-section-headi
   .ashiana-modern-action-copy strong { font-size:11px; }
   .ashiana-modern-action-copy small { font-size:9px; }
 }
+
+
+/* Desktop Admin dashboard layout correction.
+   Keep the compact menu/title/logo in one short row and use desktop-width
+   spacing without changing mobile rules or dashboard functionality. */
+@media (min-width: 701px) {
+  #admin-portal-view {
+    width: min(100% - 40px, 1480px) !important;
+    max-width: 1480px !important;
+    margin-inline: auto !important;
+    gap: 22px !important;
+  }
+
+  #admin-portal-view > .admin-dashboard-compact-header {
+    box-sizing: border-box !important;
+    display: flex !important;
+    flex-direction: row !important;
+    align-items: center !important;
+    justify-content: space-between !important;
+    flex-wrap: nowrap !important;
+    position: relative !important;
+    width: 100% !important;
+    min-height: 82px !important;
+    height: auto !important;
+    padding: 14px 24px !important;
+    gap: 18px !important;
+    overflow: hidden !important;
+    border-radius: 20px !important;
+  }
+
+  #admin-portal-view > .admin-dashboard-compact-header::before,
+  #admin-portal-view > .admin-dashboard-compact-header::after {
+    pointer-events: none !important;
+  }
+
+  #admin-portal-view .admin-dashboard-compact-brand {
+    display: flex !important;
+    flex: 1 1 auto !important;
+    flex-direction: row !important;
+    align-items: center !important;
+    justify-content: flex-start !important;
+    gap: 14px !important;
+    min-width: 0 !important;
+    position: static !important;
+    inset: auto !important;
+    transform: none !important;
+    margin: 0 !important;
+  }
+
+  #admin-portal-view .admin-dashboard-menu-button {
+    display: inline-flex !important;
+    flex: 0 0 46px !important;
+    align-items: center !important;
+    justify-content: center !important;
+    width: 46px !important;
+    min-width: 46px !important;
+    max-width: 46px !important;
+    height: 46px !important;
+    min-height: 46px !important;
+    margin: 0 !important;
+    position: relative !important;
+    inset: auto !important;
+    transform: none !important;
+  }
+
+  #admin-portal-view .admin-dashboard-compact-brand h1 {
+    display: block !important;
+    flex: 1 1 auto !important;
+    min-width: 0 !important;
+    margin: 0 !important;
+    padding: 0 !important;
+    font-size: 22px !important;
+    line-height: 1.2 !important;
+    text-align: left !important;
+    white-space: nowrap !important;
+    overflow: hidden !important;
+    text-overflow: ellipsis !important;
+  }
+
+  #admin-portal-view .admin-dashboard-compact-actions {
+    display: flex !important;
+    flex: 0 0 auto !important;
+    align-items: center !important;
+    justify-content: flex-end !important;
+    position: static !important;
+    inset: auto !important;
+    transform: none !important;
+    margin: 0 0 0 auto !important;
+  }
+
+  #admin-portal-view .admin-dashboard-compact-logo {
+    display: block !important;
+    flex: 0 0 54px !important;
+    width: 54px !important;
+    min-width: 54px !important;
+    height: 54px !important;
+    margin: 0 !important;
+    position: static !important;
+    inset: auto !important;
+    transform: none !important;
+  }
+
+  #admin-portal-view > .ashiana-modern-welcome {
+    min-height: 160px !important;
+    padding: 28px 32px !important;
+    border-radius: 24px !important;
+  }
+
+  #admin-portal-view > .grid.grid-cols-2 {
+    grid-template-columns: repeat(3, minmax(0, 1fr)) !important;
+    gap: 16px !important;
+  }
+
+  #admin-portal-view > .grid.grid-cols-2 > div {
+    min-width: 0 !important;
+    min-height: 126px !important;
+    padding: 22px 20px !important;
+    border-radius: 20px !important;
+  }
+
+  #admin-portal-view > .ashiana-modern-rate {
+    padding: 22px 26px !important;
+    border-radius: 21px !important;
+  }
+
+  #admin-portal-view > .ashiana-modern-quick-actions {
+    gap: 14px !important;
+  }
+
+  #admin-portal-view .ashiana-modern-action-grid {
+    grid-template-columns: repeat(4, minmax(0, 1fr)) !important;
+    gap: 14px !important;
+  }
+
+  #admin-portal-view .ashiana-modern-action {
+    min-height: 96px !important;
+    padding: 16px !important;
+    gap: 12px !important;
+  }
+
+  #admin-tab-live > div {
+    padding: 26px !important;
+    border-radius: 22px !important;
+  }
+
+  #admin-tab-live .overflow-x-auto {
+    width: 100% !important;
+    overflow-x: auto !important;
+  }
+
+  #admin-tab-live table {
+    width: 100% !important;
+    min-width: 980px !important;
+  }
+
+  #admin-tab-live thead th {
+    padding: 15px 14px !important;
+    font-size: 11px !important;
+  }
+
+  #admin-tab-live tbody td {
+    padding: 15px 14px !important;
+    font-size: 13px !important;
+  }
+}
+
+@media (min-width: 701px) and (max-width: 1024px) {
+  #admin-portal-view {
+    width: min(100% - 28px, 100%) !important;
+  }
+  #admin-portal-view > .grid.grid-cols-2 {
+    grid-template-columns: repeat(2, minmax(0, 1fr)) !important;
+  }
+  #admin-portal-view .ashiana-modern-action-grid {
+    grid-template-columns: repeat(2, minmax(0, 1fr)) !important;
+  }
+}
