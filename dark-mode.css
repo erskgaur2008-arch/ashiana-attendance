@@ -1122,3 +1122,106 @@ html[data-ashiana-theme="dark"] #admin-portal-view .ashiana-modern-section-headi
     grid-template-columns: repeat(2, minmax(0, 1fr)) !important;
   }
 }
+
+
+/* Compact the Admin dashboard top bar on phones.
+   Keep the menu at the left, Dashboard label beside it, and school logo at right. */
+@media (max-width: 700px) {
+  #admin-portal-view > .admin-dashboard-compact-header {
+    box-sizing: border-box !important;
+    display: flex !important;
+    flex-direction: row !important;
+    align-items: center !important;
+    justify-content: space-between !important;
+    flex-wrap: nowrap !important;
+    width: 100% !important;
+    height: 76px !important;
+    min-height: 76px !important;
+    max-height: 76px !important;
+    padding: 10px 14px !important;
+    margin: 0 !important;
+    gap: 12px !important;
+    overflow: hidden !important;
+    border-radius: 18px !important;
+    background: #ffffff !important;
+  }
+
+  #admin-portal-view > .admin-dashboard-compact-header::before,
+  #admin-portal-view > .admin-dashboard-compact-header::after {
+    display: none !important;
+    content: none !important;
+  }
+
+  #admin-portal-view .admin-dashboard-compact-brand {
+    display: flex !important;
+    flex: 1 1 auto !important;
+    flex-direction: row !important;
+    align-items: center !important;
+    justify-content: flex-start !important;
+    min-width: 0 !important;
+    width: auto !important;
+    gap: 10px !important;
+    margin: 0 !important;
+    padding: 0 !important;
+    position: static !important;
+    inset: auto !important;
+    transform: none !important;
+    text-align: left !important;
+  }
+
+  #admin-portal-view .admin-dashboard-menu-button {
+    display: inline-flex !important;
+    flex: 0 0 42px !important;
+    align-items: center !important;
+    justify-content: center !important;
+    width: 42px !important;
+    min-width: 42px !important;
+    max-width: 42px !important;
+    height: 42px !important;
+    min-height: 42px !important;
+    margin: 0 !important;
+    position: static !important;
+    inset: auto !important;
+    transform: none !important;
+  }
+
+  #admin-portal-view .admin-dashboard-compact-brand h1 {
+    display: block !important;
+    flex: 1 1 auto !important;
+    min-width: 0 !important;
+    width: auto !important;
+    margin: 0 !important;
+    padding: 0 !important;
+    font-size: 17px !important;
+    line-height: 1.2 !important;
+    text-align: left !important;
+    white-space: nowrap !important;
+    overflow: hidden !important;
+    text-overflow: ellipsis !important;
+  }
+
+  #admin-portal-view .admin-dashboard-compact-actions {
+    display: flex !important;
+    flex: 0 0 auto !important;
+    align-items: center !important;
+    justify-content: flex-end !important;
+    width: auto !important;
+    margin: 0 0 0 auto !important;
+    padding: 0 !important;
+    position: static !important;
+    inset: auto !important;
+    transform: none !important;
+  }
+
+  #admin-portal-view .admin-dashboard-compact-logo {
+    display: block !important;
+    flex: 0 0 42px !important;
+    width: 42px !important;
+    min-width: 42px !important;
+    height: 42px !important;
+    margin: 0 !important;
+    position: static !important;
+    inset: auto !important;
+    transform: none !important;
+  }
+}
