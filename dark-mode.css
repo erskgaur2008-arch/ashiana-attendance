@@ -1631,3 +1631,50 @@ html[data-ashiana-theme="dark"] #admin-side-menu .ashiana-admin-menu-utility-row
     font-size: 13px !important;
   }
 }
+
+
+/* Compact Admin drawer navigation buttons on phones and desktop.
+   Keep existing click targets/handlers and menu ordering unchanged. */
+#admin-side-menu .admin-side-menu-items .admin-quick-actions > button,
+#admin-side-menu .admin-side-menu-items > button,
+#admin-side-menu .admin-side-menu-items button {
+  box-sizing: border-box !important;
+  min-height: 50px !important;
+  height: 50px !important;
+  padding: 8px 13px !important;
+  border-radius: 12px !important;
+  gap: 9px !important;
+  font-size: 14px !important;
+  line-height: 1.2 !important;
+}
+#admin-side-menu .admin-side-menu-items .admin-quick-actions > button > svg,
+#admin-side-menu .admin-side-menu-items button > svg,
+#admin-side-menu .admin-side-menu-items button > i {
+  flex: 0 0 23px !important;
+  width: 23px !important;
+  height: 23px !important;
+}
+#admin-side-menu .admin-side-menu-items {
+  gap: 10px !important;
+}
+@media (max-width: 700px) {
+  #admin-side-menu .admin-side-menu-items .admin-quick-actions > button,
+  #admin-side-menu .admin-side-menu-items > button,
+  #admin-side-menu .admin-side-menu-items button {
+    min-height: 48px !important;
+    height: 48px !important;
+    padding: 7px 12px !important;
+    font-size: 13px !important;
+    gap: 8px !important;
+  }
+  #admin-side-menu .admin-side-menu-items .admin-quick-actions > button > svg,
+  #admin-side-menu .admin-side-menu-items button > svg,
+  #admin-side-menu .admin-side-menu-items button > i {
+    flex-basis: 21px !important;
+    width: 21px !important;
+    height: 21px !important;
+  }
+  #admin-side-menu .admin-side-menu-items {
+    gap: 8px !important;
+  }
+}
