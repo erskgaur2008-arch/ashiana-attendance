@@ -884,3 +884,64 @@ html[data-ashiana-theme="dark"] #admin-side-menu .admin-side-menu-items .admin-q
     box-shadow: 0 5px 16px rgba(0,65,45,.16) !important;
   }
 }
+
+
+/* Emerald-green modern Admin dashboard inspired by the approved concept. */
+#admin-portal-view > .ashiana-modern-welcome {
+  display:flex; align-items:flex-start; justify-content:space-between; gap:16px;
+  position:relative; overflow:hidden; min-height:142px; padding:24px 25px;
+  border-radius:22px; color:#fff;
+  background:radial-gradient(circle at 90% 10%,rgba(25,211,157,.24),transparent 34%),
+    linear-gradient(128deg,#004b3b 0%,#006b50 58%,#00845f 100%);
+  box-shadow:0 12px 30px rgba(0,79,57,.18);
+}
+#admin-portal-view .ashiana-modern-welcome-copy { min-width:0; position:relative; z-index:1; }
+#admin-portal-view .ashiana-modern-eyebrow { display:block; color:#9af2d4; font-size:10px; font-weight:800; letter-spacing:.16em; margin-bottom:13px; }
+#admin-portal-view .ashiana-modern-welcome h2 { color:#fff; font-size:clamp(21px,3vw,29px); line-height:1.15; font-weight:850; margin:0 0 7px; }
+#admin-portal-view .ashiana-modern-welcome p { color:#d1f5e7; font-size:12px; margin:0; }
+#admin-portal-view .ashiana-modern-live-pill { display:inline-flex; align-items:center; gap:6px; flex:none; padding:6px 10px; border:1px solid rgba(166,255,220,.28); border-radius:99px; color:#baffdf; background:rgba(0,0,0,.12); font-size:9px; font-weight:800; letter-spacing:.06em; }
+#admin-portal-view .ashiana-modern-live-pill i { width:6px; height:6px; border-radius:50%; background:#39e5a5; box-shadow:0 0 0 4px rgba(57,229,165,.13); }
+#admin-portal-view > .grid.grid-cols-2 { gap:12px !important; }
+#admin-portal-view > .grid.grid-cols-2 > div { border:1px solid #e2eee8 !important; box-shadow:0 5px 18px rgba(13,75,52,.055) !important; }
+#admin-portal-view > .ashiana-modern-rate {
+  padding:17px 19px; border-radius:19px; color:#fff;
+  background:linear-gradient(120deg,#004b3b,#006a50);
+  box-shadow:0 8px 22px rgba(0,79,57,.12);
+}
+.ashiana-modern-rate > div:first-child { display:flex; align-items:center; justify-content:space-between; gap:12px; }
+.ashiana-modern-rate-label { color:#d2f5e7; font-size:13px; font-weight:700; }
+.ashiana-modern-rate-value { color:#fff; font-size:23px; font-weight:850; font-variant-numeric:tabular-nums; }
+.ashiana-modern-rate-track { height:7px; overflow:hidden; border-radius:99px; background:rgba(255,255,255,.2); margin:12px 0 8px; }
+.ashiana-modern-rate-track span { display:block; height:100%; border-radius:99px; background:linear-gradient(90deg,#55e5b2,#b5f5d9); transition:width .3s ease; }
+.ashiana-modern-rate small { color:#bce9d7; font-size:10px; }
+#admin-portal-view > .ashiana-modern-quick-actions { display:grid; gap:12px; }
+.ashiana-modern-section-heading { display:flex; justify-content:space-between; align-items:baseline; gap:8px; }
+.ashiana-modern-section-heading h3 { margin:0; color:#143c2e; font-size:16px; font-weight:850; }
+.ashiana-modern-section-heading > span { color:#81958a; font-size:11px; }
+.ashiana-modern-action-grid { display:grid; grid-template-columns:repeat(4,minmax(0,1fr)); gap:10px; }
+.ashiana-modern-action { display:flex; align-items:center; gap:10px; min-width:0; min-height:82px; padding:13px 12px; text-align:left; border:1px solid #e0eee7; border-radius:16px; background:linear-gradient(145deg,#fff,#f6fbf8); color:#163d30; box-shadow:0 3px 12px rgba(16,65,46,.045); cursor:pointer; }
+.ashiana-modern-action:active { transform:scale(.985); }
+.ashiana-modern-action-icon { display:grid; place-items:center; flex:none; width:34px; height:34px; border-radius:11px; color:#00845f; background:#e3f8ee; font-size:20px; font-weight:800; }
+.ashiana-modern-action-copy { display:grid; min-width:0; gap:4px; }
+.ashiana-modern-action-copy strong { color:#153d30; font-size:12px; line-height:1.25; font-weight:800; }
+.ashiana-modern-action-copy small { color:#82938b; font-size:10px; line-height:1.35; }
+.ashiana-modern-action-arrow { margin-left:auto; color:#91a69b; font-size:22px; }
+html[data-ashiana-theme="dark"] #admin-portal-view .ashiana-modern-action { background:linear-gradient(145deg,#142b20,#102019); border-color:#294638; }
+html[data-ashiana-theme="dark"] #admin-portal-view .ashiana-modern-section-heading h3,
+html[data-ashiana-theme="dark"] #admin-portal-view .ashiana-modern-action-copy strong { color:#e4f3eb; }
+html[data-ashiana-theme="dark"] #admin-portal-view .ashiana-modern-action-copy small,
+html[data-ashiana-theme="dark"] #admin-portal-view .ashiana-modern-section-heading > span { color:#9bb4a7; }
+@media (min-width:900px) {
+  #admin-portal-view > .grid.grid-cols-2 { grid-template-columns:repeat(3,minmax(0,1fr)) !important; }
+}
+@media (max-width:700px) {
+  #admin-portal-view > .ashiana-modern-welcome { min-height:132px; padding:20px 17px; border-radius:19px; }
+  #admin-portal-view .ashiana-modern-eyebrow { font-size:9px; letter-spacing:.12em; }
+  #admin-portal-view > .grid.grid-cols-2 { gap:9px !important; }
+  #admin-portal-view > .ashiana-modern-rate { padding:15px 16px; border-radius:17px; }
+  .ashiana-modern-action-grid { grid-template-columns:repeat(2,minmax(0,1fr)); gap:9px; }
+  .ashiana-modern-action { min-height:76px; padding:11px 9px; gap:8px; border-radius:14px; }
+  .ashiana-modern-action-icon { width:30px; height:30px; font-size:18px; }
+  .ashiana-modern-action-copy strong { font-size:11px; }
+  .ashiana-modern-action-copy small { font-size:9px; }
+}
