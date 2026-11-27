@@ -40,17 +40,43 @@
         ? studentPanel.querySelector(".family-chat-thread-head") : null;
       const portal = document.getElementById("student-portal-view");
       const studentHeader = portal?.querySelector(":scope > div > div:first-child > div:first-child");
+      const adminRoot = document.getElementById("admin-portal-view");
+      const adminHeader = adminRoot && !adminRoot.classList.contains("hidden")
+        ? adminRoot.querySelector(":scope > .admin-dashboard-compact-header") : null;
+      const adminActions = adminHeader?.querySelector(".admin-dashboard-compact-actions");
       const destination = staffHead || studentThreadHead || null;
       if (destination) {
         button.classList.add("ashiana-theme-inline", "ashiana-theme-chat-inline");
         if (button.parentElement !== destination) destination.appendChild(button);
+      } else if (adminActions) {
+        button.classList.add("ashiana-theme-inline", "ashiana-theme-admin-inline");
+        button.classList.remove("ashiana-theme-chat-inline");
+        const logo = adminActions.querySelector(".admin-dashboard-compact-logo");
+        if (button.parentElement !== adminActions) adminActions.insertBefore(button, logo || null);
+        const assistant = document.querySelector(
+          "#ai-assistant-fab, #ashiana-ai-assistant, #ashiana-ai-fab, .ai-assistant-fab, [data-ai-assistant-launcher], button[aria-label*='assistant' i], button[title*='assistant' i]"
+        );
+        if (assistant && assistant !== button) {
+          assistant.classList.add("ashiana-admin-ai-inline");
+          if (assistant.parentElement !== adminActions) adminActions.insertBefore(assistant, logo || null);
+        }
       } else if (portal && !portal.classList.contains("hidden") && studentHeader) {
+        const adminAssistant = document.querySelector(".ashiana-admin-ai-inline");
+        if (adminAssistant) {
+          adminAssistant.classList.remove("ashiana-admin-ai-inline");
+          if (adminAssistant.parentElement !== document.body) document.body.appendChild(adminAssistant);
+        }
         studentHeader.classList.add("ashiana-theme-header");
         button.classList.add("ashiana-theme-inline");
-        button.classList.remove("ashiana-theme-chat-inline");
+        button.classList.remove("ashiana-theme-chat-inline", "ashiana-theme-admin-inline");
         if (button.parentElement !== studentHeader) studentHeader.appendChild(button);
       } else {
-        button.classList.remove("ashiana-theme-inline", "ashiana-theme-chat-inline");
+        const adminAssistant = document.querySelector(".ashiana-admin-ai-inline");
+        if (adminAssistant) {
+          adminAssistant.classList.remove("ashiana-admin-ai-inline");
+          if (adminAssistant.parentElement !== document.body) document.body.appendChild(adminAssistant);
+        }
+        button.classList.remove("ashiana-theme-inline", "ashiana-theme-chat-inline", "ashiana-theme-admin-inline");
         if (button.parentElement !== document.body) document.body.appendChild(button);
       }
     };
@@ -59,6 +85,10 @@
     const studentPortal = document.getElementById("student-portal-view");
     if (studentPortal && window.MutationObserver) {
       new MutationObserver(placeToggle).observe(studentPortal, { attributes: true, attributeFilter: ["class"] });
+    }
+    const adminPortal = document.getElementById("admin-portal-view");
+    if (adminPortal && window.MutationObserver) {
+      new MutationObserver(placeToggle).observe(adminPortal, { attributes: true, attributeFilter: ["class"] });
     }
     if (window.MutationObserver) {
       new MutationObserver(placeToggle).observe(document.body, { childList: true, subtree: true });
