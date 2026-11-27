@@ -1225,3 +1225,192 @@ html[data-ashiana-theme="dark"] #admin-portal-view .ashiana-modern-section-headi
     transform: none !important;
   }
 }
+
+
+/* Phase 1 final layout hardening: consistent header, KPI cards and
+   responsive dashboard sizing. This deliberately does not change analytics,
+   fees/student modules, floating controls or theme behavior. */
+#admin-portal-view,
+#admin-portal-view > * {
+  box-sizing: border-box !important;
+  min-width: 0 !important;
+}
+
+#admin-portal-view {
+  width: min(calc(100% - 32px), 1480px) !important;
+  max-width: 1480px !important;
+  margin-inline: auto !important;
+}
+
+#admin-portal-view > .admin-dashboard-compact-header {
+  width: 100% !important;
+  min-width: 0 !important;
+}
+
+#admin-portal-view > .ashiana-modern-welcome {
+  width: 100% !important;
+  min-width: 0 !important;
+  flex-wrap: wrap !important;
+}
+
+#admin-portal-view > .grid.grid-cols-2 {
+  display: grid !important;
+  width: 100% !important;
+  min-width: 0 !important;
+  grid-template-columns: repeat(2, minmax(0, 1fr)) !important;
+  align-items: stretch !important;
+}
+
+#admin-portal-view > .grid.grid-cols-2 > div {
+  box-sizing: border-box !important;
+  width: 100% !important;
+  min-width: 0 !important;
+  min-height: 112px !important;
+  display: flex !important;
+  flex-direction: column !important;
+  justify-content: center !important;
+  overflow: hidden !important;
+}
+
+#admin-portal-view > .grid.grid-cols-2 > div > span:first-child {
+  max-width: 100% !important;
+  line-height: 1.3 !important;
+  overflow-wrap: anywhere !important;
+}
+
+#admin-portal-view > .grid.grid-cols-2 > div > span:nth-child(2) {
+  max-width: 100% !important;
+  font-size: clamp(22px, 2.5vw, 31px) !important;
+  line-height: 1.12 !important;
+  overflow-wrap: anywhere !important;
+}
+
+#admin-portal-view > .grid.grid-cols-2 > div > span:last-child {
+  max-width: 100% !important;
+  line-height: 1.35 !important;
+  overflow-wrap: anywhere !important;
+}
+
+#admin-portal-view > .ashiana-modern-rate,
+#admin-portal-view > .ashiana-modern-quick-actions,
+#admin-tab-live > div {
+  width: 100% !important;
+  min-width: 0 !important;
+}
+
+#admin-tab-live .overflow-x-auto {
+  max-width: 100% !important;
+  overscroll-behavior-x: contain;
+}
+
+@media (min-width: 1025px) {
+  #admin-portal-view {
+    gap: 22px !important;
+  }
+
+  #admin-portal-view > .grid.grid-cols-2 {
+    grid-template-columns: repeat(3, minmax(0, 1fr)) !important;
+    gap: 16px !important;
+  }
+
+  #admin-portal-view > .grid.grid-cols-2 > div {
+    min-height: 126px !important;
+    padding: 22px 20px !important;
+  }
+}
+
+@media (min-width: 701px) and (max-width: 1024px) {
+  #admin-portal-view {
+    width: min(calc(100% - 40px), 100%) !important;
+    gap: 18px !important;
+  }
+
+  #admin-portal-view > .grid.grid-cols-2 {
+    grid-template-columns: repeat(2, minmax(0, 1fr)) !important;
+    gap: 13px !important;
+  }
+
+  #admin-portal-view > .grid.grid-cols-2 > div {
+    min-height: 116px !important;
+    padding: 18px 16px !important;
+  }
+
+  #admin-portal-view .ashiana-modern-action-grid {
+    grid-template-columns: repeat(2, minmax(0, 1fr)) !important;
+  }
+}
+
+@media (max-width: 700px) {
+  #admin-portal-view {
+    width: calc(100% - 24px) !important;
+    gap: 13px !important;
+  }
+
+  #admin-portal-view > .admin-dashboard-compact-header {
+    min-height: 76px !important;
+    height: 76px !important;
+    max-height: 76px !important;
+    padding: 10px 14px !important;
+  }
+
+  #admin-portal-view > .grid.grid-cols-2 {
+    grid-template-columns: repeat(2, minmax(0, 1fr)) !important;
+    gap: 10px !important;
+  }
+
+  #admin-portal-view > .grid.grid-cols-2 > div {
+    min-height: 108px !important;
+    padding: 14px 12px !important;
+    border-radius: 16px !important;
+  }
+
+  #admin-portal-view > .grid.grid-cols-2 > div > span:first-child {
+    font-size: 9px !important;
+    letter-spacing: .075em !important;
+  }
+
+  #admin-portal-view > .grid.grid-cols-2 > div > span:nth-child(2) {
+    font-size: clamp(21px, 6vw, 27px) !important;
+  }
+
+  #admin-portal-view > .grid.grid-cols-2 > div > span:last-child {
+    font-size: 10px !important;
+  }
+
+  #admin-portal-view > .ashiana-modern-welcome {
+    gap: 10px !important;
+    padding: 20px 16px !important;
+  }
+
+  #admin-portal-view .ashiana-modern-welcome h2 {
+    font-size: clamp(21px, 6vw, 27px) !important;
+    overflow-wrap: anywhere !important;
+  }
+
+  #admin-portal-view .ashiana-modern-live-pill {
+    max-width: 100% !important;
+  }
+
+  #admin-tab-live > div {
+    padding: 15px !important;
+  }
+}
+
+@media (max-width: 360px) {
+  #admin-portal-view {
+    width: calc(100% - 20px) !important;
+  }
+
+  #admin-portal-view > .grid.grid-cols-2 {
+    gap: 8px !important;
+  }
+
+  #admin-portal-view > .grid.grid-cols-2 > div {
+    min-height: 102px !important;
+    padding: 11px 9px !important;
+  }
+
+  #admin-portal-view > .grid.grid-cols-2 > div > span:nth-child(2) {
+    font-size: 21px !important;
+  }
+}
