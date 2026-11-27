@@ -780,16 +780,13 @@
     if (!root || root.classList.contains("hidden") || loading) return;
     const panel = ensurePanel(root);
     if (!force && Date.now() - lastLoadedAt < 60000) return;
-    const supa = window.__ashianaMainSupabaseClient ||
-      (typeof window.__ashianaGetMainSupabaseClient === "function" ? await window.__ashianaGetMainSupabaseClient() : null);
-    if (!supa) {
-      panel.querySelector(".ashiana-phase3-class-list").textContent = "Waiting for the authenticated school connection…";
-      return;
-    }
     loading = true;
     const refresh = panel.querySelector(".ashiana-phase3-refresh");
     if (refresh) { refresh.disabled = true; refresh.textContent = "Loading…"; }
     try {
+      const supa = window.__ashianaMainSupabaseClient ||
+        (typeof window.__ashianaGetMainSupabaseClient === "function" ? await window.__ashianaGetMainSupabaseClient() : null);
+      if (!supa) throw new Error("Authenticated school connection is not available.");
       const user = await supa.auth.getUser();
       if (user.error || !user.data?.user) throw new Error("Administrator session is not available.");
       const { data, error } = await supa.functions.invoke("fee-management", {
