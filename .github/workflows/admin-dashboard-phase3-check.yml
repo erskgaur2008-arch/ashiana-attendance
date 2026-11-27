@@ -24,8 +24,10 @@ jobs:
           deno-version: v2.x
       - name: Validate dashboard JavaScript syntax
         run: node --check dark-mode.js
+      - name: Install fee-management dependencies
+        run: deno install --entrypoint supabase/functions/fee-management/index.ts
       - name: Validate fee-management Edge Function types
-        run: deno check supabase/functions/fee-management/index.ts
+        run: deno check --node-modules-dir=auto supabase/functions/fee-management/index.ts
       - name: Validate Phase 3 security and data boundaries
         run: |
           python3 - <<'PY'
