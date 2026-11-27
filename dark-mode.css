@@ -856,3 +856,31 @@ html[data-ashiana-theme="dark"] #admin-side-menu .admin-side-menu-items .admin-q
   html[data-ashiana-theme="dark"] #admin-tab-live tbody td:nth-child(2) { color: #b7d5c5 !important; }
   html[data-ashiana-theme="dark"] #admin-tab-live tbody td:nth-child(n+3)::before { color: #9bb4a7; }
 }
+
+
+/* Final phone spacing: keep floating shortcuts below the roster actions and
+   reserve scroll space so the last faculty card can clear both controls. */
+@media (max-width: 700px) {
+  #admin-portal-view,
+  #admin-tab-live {
+    padding-bottom: 150px !important;
+    scroll-padding-bottom: 150px !important;
+  }
+  #admin-tab-live > div { padding-bottom: 110px !important; }
+  #ashiana-theme-toggle {
+    position: fixed !important; top: auto !important;
+    left: max(12px, env(safe-area-inset-left)) !important; right: auto !important;
+    bottom: calc(76px + env(safe-area-inset-bottom)) !important;
+    z-index: 850 !important; max-width: 116px !important; min-height: 42px !important;
+    padding: 0 11px !important; box-shadow: 0 5px 16px rgba(0,65,45,.12) !important;
+  }
+  #ai-assistant-fab, #ashiana-ai-assistant, #ashiana-ai-fab, .ai-assistant-fab,
+  [data-ai-assistant-launcher], button[aria-label*="assistant" i], button[title*="assistant" i] {
+    position: fixed !important; top: auto !important;
+    right: max(12px, env(safe-area-inset-right)) !important; left: auto !important;
+    bottom: calc(16px + env(safe-area-inset-bottom)) !important;
+    z-index: 850 !important; width: 46px !important; min-width: 46px !important;
+    height: 46px !important; min-height: 46px !important; padding: 0 !important;
+    box-shadow: 0 5px 16px rgba(0,65,45,.16) !important;
+  }
+}
