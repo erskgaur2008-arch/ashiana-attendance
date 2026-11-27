@@ -1504,3 +1504,22 @@ html[data-ashiana-theme="dark"] #admin-portal-view .ashiana-modern-section-headi
     min-height: 34px !important;
   }
 }
+
+
+/* Keep Admin header clear: Dashboard title has room between menu and logo.
+   Park theme and AI shortcuts at opposite lower corners on phones. */
+@media (max-width: 700px) {
+  #ashiana-theme-toggle {
+    left: max(12px, env(safe-area-inset-left)) !important;
+    right: auto !important;
+    bottom: max(18px, calc(env(safe-area-inset-bottom) + 14px)) !important;
+    z-index: 2147483000 !important;
+  }
+  #ai-assistant-fab, #ashiana-ai-assistant, #ashiana-ai-fab, .ai-assistant-fab,
+  [data-ai-assistant-launcher], button[aria-label*="assistant" i], button[title*="assistant" i] {
+    right: max(12px, env(safe-area-inset-right)) !important;
+    left: auto !important;
+    bottom: max(18px, calc(env(safe-area-inset-bottom) + 14px)) !important;
+    z-index: 2147482999 !important;
+  }
+}
