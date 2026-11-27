@@ -235,22 +235,26 @@ Deno.serve(async (req) => {
 
     // Read only aggregate dashboard inputs with the service client after admin authorization.
     const activeYear = years.find((row: { is_active?: boolean }) => row.is_active === true) ?? null;
-    const [studentResult, accountResult] = await Promise.all([
-      adminClient.from("student_roster")
-        .select("class_name,section", { count: "exact" })
+    const studentResult = await adminClient.from("student_roster")
+      .select("class_name,section", { count: "exact" })
+      .eq("school_code", "ashiana")
+      .eq("status", "ACTIVE")
+      .limit(5000);
+    if (studentResult.error) {
+      return respond({ error: "Unable to load student overview" }, 500);
+    }
+
+    let accountRows: Array<{ id: string; student_id: string }> = [];
+    if (activeYear?.academic_year_id) {
+      const accountResult = await adminClient.from("student_fee_accounts")
+        .select("id,student_id")
         .eq("school_code", "ashiana")
-        .eq("status", "ACTIVE")
-        .limit(5000),
-      activeYear?.academic_year_id
-        ? adminClient.from("student_fee_accounts")
-            .select("id,student_id")
-            .eq("school_code", "ashiana")
-            .eq("academic_year_id", activeYear.academic_year_id)
-            .limit(5000)
-        : Promise.resolve({ data: [], error: null }),
-    ]);
-    if (studentResult.error || accountResult.error) {
-      return respond({ error: "Unable to load student or fee overview" }, 500);
+        .eq("academic_year_id", activeYear.academic_year_id)
+        .limit(5000);
+      if (accountResult.error) {
+        return respond({ error: "Unable to load fee accounts" }, 500);
+      }
+      accountRows = accountResult.data ?? [];
     }
 
     const students = studentResult.data ?? [];
@@ -265,7 +269,7 @@ Deno.serve(async (req) => {
       .map(([class_name, student_count]) => ({ class_name, student_count }))
       .sort((a, b) => a.class_name.localeCompare(b.class_name, "en", { numeric: true }));
 
-    const accounts = accountResult.data ?? [];
+    const accounts = accountRows;
     const accountIds = accounts.map((row: { id: string }) => row.id);
     let billedPaise = 0;
     let discountPaise = 0;
