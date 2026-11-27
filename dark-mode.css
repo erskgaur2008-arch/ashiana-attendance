@@ -1523,3 +1523,64 @@ html[data-ashiana-theme="dark"] #admin-portal-view .ashiana-modern-section-headi
     z-index: 2147482999 !important;
   }
 }
+
+
+/* Admin side-menu utilities: keep theme, AI assistant and Sign Out together. */
+#admin-side-menu .ashiana-admin-menu-utility-row {
+  display: flex !important;
+  align-items: center !important;
+  justify-content: stretch !important;
+  gap: 8px !important;
+  width: 100% !important;
+  min-width: 0 !important;
+  margin: 10px 0 4px !important;
+  padding: 8px !important;
+  border: 1px solid rgba(0, 128, 85, .16) !important;
+  border-radius: 14px !important;
+  background: rgba(16, 185, 129, .06) !important;
+  box-sizing: border-box !important;
+}
+#ashiana-theme-toggle.ashiana-theme-admin-menu,
+#admin-side-menu .ashiana-admin-ai-menu {
+  position: static !important;
+  inset: auto !important;
+  transform: none !important;
+  display: inline-flex !important;
+  flex: 0 0 42px !important;
+  align-items: center !important;
+  justify-content: center !important;
+  width: 42px !important;
+  min-width: 42px !important;
+  max-width: 42px !important;
+  height: 42px !important;
+  min-height: 42px !important;
+  margin: 0 !important;
+  padding: 0 !important;
+  border-radius: 12px !important;
+  box-shadow: 0 2px 8px rgba(0,0,0,.10) !important;
+  z-index: auto !important;
+}
+#ashiana-theme-toggle.ashiana-theme-admin-menu .ashiana-theme-label {
+  display: none !important;
+}
+#admin-side-menu .ashiana-admin-menu-signout-inline {
+  flex: 1 1 auto !important;
+  width: auto !important;
+  min-width: 0 !important;
+  min-height: 42px !important;
+  margin: 0 !important;
+  white-space: nowrap !important;
+}
+html[data-ashiana-theme="dark"] #admin-side-menu .ashiana-admin-menu-utility-row {
+  background: rgba(16, 185, 129, .10) !important;
+  border-color: #355b4c !important;
+}
+@media (max-width: 380px) {
+  #admin-side-menu .ashiana-admin-menu-utility-row { gap: 5px !important; padding: 6px !important; }
+  #ashiana-theme-toggle.ashiana-theme-admin-menu,
+  #admin-side-menu .ashiana-admin-ai-menu {
+    flex-basis: 38px !important; width: 38px !important; min-width: 38px !important;
+    max-width: 38px !important; height: 38px !important; min-height: 38px !important;
+  }
+  #admin-side-menu .ashiana-admin-menu-signout-inline { min-height: 38px !important; font-size: 13px !important; }
+}
