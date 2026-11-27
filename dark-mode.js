@@ -47,12 +47,16 @@
       const restoreAdminMenuControls = () => {
         const row = document.querySelector("#admin-side-menu .ashiana-admin-menu-utility-row");
         if (!row) return;
+        const signOutInRow = row.querySelector(".ashiana-admin-menu-signout-inline");
+        const marker = document.querySelector("#admin-side-menu .ashiana-admin-menu-signout-placeholder");
+        if (signOutInRow && marker?.parentNode) marker.parentNode.insertBefore(signOutInRow, marker.nextSibling);
         if (button.parentElement === row) document.body.appendChild(button);
         const assistantInRow = row.querySelector(".ashiana-admin-ai-menu");
         if (assistantInRow) {
           assistantInRow.classList.remove("ashiana-admin-ai-menu");
           document.body.appendChild(assistantInRow);
         }
+        marker?.remove();
         button.classList.remove("ashiana-theme-admin-menu");
         row.remove();
       };
@@ -75,10 +79,14 @@
         if (menu && signOut) {
           let utilityRow = menu.querySelector(":scope .ashiana-admin-menu-utility-row");
           if (!utilityRow) {
+            const marker = document.createElement("span");
+            marker.className = "ashiana-admin-menu-signout-placeholder";
+            marker.hidden = true;
+            signOut.insertAdjacentElement("beforebegin", marker);
             utilityRow = document.createElement("div");
             utilityRow.className = "ashiana-admin-menu-utility-row";
-            utilityRow.setAttribute("aria-label", "Appearance and assistant controls");
-            signOut.insertAdjacentElement("beforebegin", utilityRow);
+            utilityRow.setAttribute("aria-label", "Appearance, assistant and sign out controls");
+            marker.insertAdjacentElement("beforebegin", utilityRow);
           }
           if (button.parentElement !== utilityRow) utilityRow.appendChild(button);
           if (assistant && assistant !== button) {
@@ -86,6 +94,8 @@
             assistant.classList.add("ashiana-admin-ai-menu");
             if (assistant.parentElement !== utilityRow) utilityRow.appendChild(assistant);
           }
+          signOut.classList.add("ashiana-admin-menu-signout-inline");
+          if (signOut.parentElement !== utilityRow) utilityRow.appendChild(signOut);
         } else {
           if (button.parentElement !== document.body) document.body.appendChild(button);
           if (assistant && assistant !== button && assistant.parentElement !== document.body) document.body.appendChild(assistant);
