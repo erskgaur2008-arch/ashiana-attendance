@@ -1859,6 +1859,29 @@
  #parent-school-messages-modal .staff-comm-compose textarea{min-height:42px!important}
 }
 </style>
+<style id="admin-side-menu-styles">
+.admin-side-menu{position:fixed;inset:0 auto 0 0;width:min(88vw,390px);height:100dvh;background:#fff;z-index:10020;transform:translateX(-105%);transition:transform .25s ease;display:flex;flex-direction:column;box-shadow:12px 0 36px rgba(2,44,34,.24);border-radius:0 22px 22px 0;overflow:hidden;visibility:hidden}
+.admin-side-menu.is-open{transform:translateX(0);visibility:visible}
+.admin-menu-backdrop{position:fixed;inset:0;background:rgba(2,20,16,.58);z-index:10010;opacity:0;visibility:hidden;transition:opacity .2s ease}
+.admin-menu-backdrop.is-open{opacity:1;visibility:visible}
+.admin-side-menu-header{position:relative;flex:0 0 auto;text-align:center;padding:24px 18px 20px;color:#fff;background:radial-gradient(ellipse at 90% 0%,rgba(52,211,153,.25),transparent 44%),linear-gradient(135deg,#064e3b,#047857 62%,#059669)}
+.admin-side-menu-close{position:absolute;right:14px;top:14px;width:40px;height:40px;border-radius:50%;border:1px solid rgba(255,255,255,.3);background:rgba(255,255,255,.12);color:#fff;display:grid;place-items:center}
+.admin-side-menu-close svg{width:22px;height:22px}
+.admin-side-menu-logo{width:86px;height:86px;margin:8px auto 10px;background:#fff;border:3px solid rgba(255,255,255,.55);border-radius:50%;padding:5px;display:grid;place-items:center}
+.admin-side-menu-logo img{width:100%;height:100%;object-fit:contain;border-radius:50%}
+.admin-side-menu-header h2{margin:0;font-size:clamp(17px,4.2vw,22px);font-weight:900;line-height:1.2}
+.admin-side-menu-header p{margin:5px 0 0;font-size:13px;color:#d1fae5}
+.admin-side-menu-items{flex:1;overflow-y:auto;overscroll-behavior:contain;padding:8px 14px 24px;background:#fff}
+.admin-side-menu-items .admin-quick-actions{display:flex;flex-direction:column;gap:0}
+.admin-side-menu-items .admin-quick-actions button{width:100%;min-height:58px;justify-content:flex-start;padding:12px 8px;border:0;border-bottom:1px solid #e5e7eb;border-radius:0;background:#fff;color:#172b24;box-shadow:none;font-size:15px;text-align:left}
+.admin-side-menu-items .admin-quick-actions button:hover{transform:none;background:#f0fdf4}
+.admin-side-menu-items .admin-quick-actions button svg{width:24px;height:24px;flex:0 0 24px;margin:0 10px;color:#047857}
+.admin-side-menu-items .admin-quick-actions button span{flex:1}
+.admin-side-menu-items .admin-quick-actions button:after{content:"›";font-size:25px;font-weight:400;color:#475569;margin-left:auto;padding:0 4px}
+body.admin-menu-open{overflow:hidden}
+@media(max-width:640px){.admin-menu-open{display:flex!important}.admin-side-menu{width:min(88vw,390px)}}
+@media(prefers-reduced-motion:reduce){.admin-side-menu,.admin-menu-backdrop{transition:none}}
+</style>
 </head>
 <body class="bg-slate-100 text-slate-800 antialiased min-h-screen min-h-screen-safe flex flex-col selection:bg-emerald-600 selection:text-white">
 
@@ -3553,12 +3576,20 @@ id="admin-portal-view" class="hidden flex-col w-full space-y-4 admin-dashboard-s
         </div>
         <div class="admin-dashboard-actions">
           <div class="admin-live-pill"><span></span><strong>LIVE</strong><small>Cloud Sync</small></div>
+          <button type="button" id="admin-menu-open" class="admin-header-action admin-menu-open" aria-label="Open navigation menu" aria-controls="admin-side-menu" aria-expanded="false"><i data-lucide="menu"></i><span>Menu</span></button>
           <button type="button" onclick="pollLatestPunches(true)" class="admin-header-action" title="Sync now"><i data-lucide="refresh-cw"></i><span>Sync</span></button>
           <button type="button" onclick="handleLogout()" class="admin-header-action admin-logout-action" title="Sign out"><i data-lucide="log-out"></i><span>Sign Out</span></button>
         </div>
       </div>
 
-      <div class="admin-quick-actions">
+      <div id="admin-menu-backdrop" class="admin-menu-backdrop" aria-hidden="true"></div>
+<aside id="admin-side-menu" class="admin-side-menu" aria-label="Administrator navigation" aria-hidden="true">
+<div class="admin-side-menu-header">
+<button type="button" class="admin-side-menu-close" id="admin-side-menu-close" aria-label="Close menu"><i data-lucide="x"></i></button>
+<div class="admin-side-menu-logo"><img src="logo%202.png" alt="Ashiana Public School emblem"></div>
+<h2>ASHIANA PUBLIC SCHOOL</h2><p>Sector 46-Chandigarh</p><p>+91-9872500460</p>
+</div><nav class="admin-side-menu-items" aria-label="Admin menu">
+<div class="admin-quick-actions">
 
         <button type="button" onclick="window.switchAdminTab('students')"><i data-lucide="graduation-cap"></i><span>Students</span></button>
         <button type="button" onclick="window.switchAdminTab('student-portal')" title="Student Portal Management"><i data-lucide="panels-top-left"></i><span>Student Portal</span></button>
@@ -3581,6 +3612,7 @@ id="admin-portal-view" class="hidden flex-col w-full space-y-4 admin-dashboard-s
         <button type="button" id="admin-nav-leave" onclick="window.switchAdminTab('leave')" title="Faculty Leave Applications"><i data-lucide="calendar-check"></i><span>Leaves</span></button>
         <button type="button" id="admin-nav-corrections" onclick="window.switchAdminTab('corrections')" title="Manual Attendance Corrections"><i data-lucide="file-pen"></i><span>Corrections</span></button>
       </div>
+</nav></aside>
 
       <!-- Top KPI Row -->
       <div class="grid grid-cols-2 sm:grid-cols-3 lg:grid-cols-6 gap-2 sm:gap-3">
@@ -17496,6 +17528,25 @@ window.showStudentSchoolUpiQr=async function(accountId,installmentId){
 </style>
 <script src="./event-photo-gallery.js" defer></script>
 <script src="./portal-passkey-lock.js" defer></script>
+
+
+<script id="admin-side-menu-controller">
+(function(){
+ function init(){
+  const menu=document.getElementById('admin-side-menu'),backdrop=document.getElementById('admin-menu-backdrop'),open=document.getElementById('admin-menu-open'),close=document.getElementById('admin-side-menu-close');
+  if(!menu||!backdrop||!open||!close||menu.dataset.bound==='1')return;
+  menu.dataset.bound='1';let historyState=false;
+  function show(){menu.classList.add('is-open');backdrop.classList.add('is-open');menu.setAttribute('aria-hidden','false');backdrop.setAttribute('aria-hidden','false');open.setAttribute('aria-expanded','true');document.body.classList.add('admin-menu-open');if(!historyState){history.pushState({adminSideMenu:true},'','#admin-menu');historyState=true;}close.focus();}
+  function hide(fromPop){menu.classList.remove('is-open');backdrop.classList.remove('is-open');menu.setAttribute('aria-hidden','true');backdrop.setAttribute('aria-hidden','true');open.setAttribute('aria-expanded','false');document.body.classList.remove('admin-menu-open');if(historyState&&!fromPop){historyState=false;if(location.hash==='#admin-menu')history.back();}else historyState=false;open.focus();}
+  open.addEventListener('click',show);close.addEventListener('click',()=>hide(false));backdrop.addEventListener('click',()=>hide(false));
+  menu.addEventListener('click',e=>{if(e.target.closest('.admin-quick-actions button'))setTimeout(()=>hide(false),0);});
+  document.addEventListener('keydown',e=>{if(e.key==='Escape'&&menu.classList.contains('is-open'))hide(false);});
+  window.addEventListener('popstate',()=>{if(menu.classList.contains('is-open'))hide(true);});
+  window.closeAdminSideMenu=()=>hide(false);
+ }
+ if(document.readyState==='loading')document.addEventListener('DOMContentLoaded',init,{once:true});else init();
+})();
+</script>
 
 </body>
 </html>
