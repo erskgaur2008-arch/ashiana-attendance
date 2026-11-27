@@ -44,8 +44,21 @@
       const adminHeader = adminRoot && !adminRoot.classList.contains("hidden")
         ? adminRoot.querySelector(":scope > .admin-dashboard-compact-header") : null;
       const adminActions = adminHeader?.querySelector(".admin-dashboard-compact-actions");
+      const restoreAdminMenuControls = () => {
+        const row = document.querySelector("#admin-side-menu .ashiana-admin-menu-utility-row");
+        if (!row) return;
+        if (button.parentElement === row) document.body.appendChild(button);
+        const assistantInRow = row.querySelector(".ashiana-admin-ai-menu");
+        if (assistantInRow) {
+          assistantInRow.classList.remove("ashiana-admin-ai-menu");
+          document.body.appendChild(assistantInRow);
+        }
+        button.classList.remove("ashiana-theme-admin-menu");
+        row.remove();
+      };
       const destination = staffHead || studentThreadHead || null;
       if (destination) {
+        restoreAdminMenuControls();
         button.classList.add("ashiana-theme-inline", "ashiana-theme-chat-inline");
         if (button.parentElement !== destination) destination.appendChild(button);
       } else if (adminActions) {
@@ -58,7 +71,7 @@
         );
         const menu = document.getElementById("admin-side-menu");
         const signOut = menu && [...menu.querySelectorAll("button,a,[role='button']")]
-          .find((node) => /^(sign\\s*out|log\\s*out)$/i.test((node.innerText || node.textContent || "").replace(/\\s+/g, " ").trim()));
+          .find((node) => /^(sign\s*out|log\s*out)$/i.test((node.innerText || node.textContent || "").replace(/\s+/g, " ").trim()));
         if (menu && signOut) {
           let utilityRow = menu.querySelector(":scope .ashiana-admin-menu-utility-row");
           if (!utilityRow) {
@@ -78,6 +91,7 @@
           if (assistant && assistant !== button && assistant.parentElement !== document.body) document.body.appendChild(assistant);
         }
       } else if (portal && !portal.classList.contains("hidden") && studentHeader) {
+        restoreAdminMenuControls();
         const adminAssistant = document.querySelector(".ashiana-admin-ai-inline");
         if (adminAssistant) {
           adminAssistant.classList.remove("ashiana-admin-ai-inline");
@@ -88,15 +102,13 @@
         button.classList.remove("ashiana-theme-chat-inline", "ashiana-theme-admin-inline");
         if (button.parentElement !== studentHeader) studentHeader.appendChild(button);
       } else {
+        restoreAdminMenuControls();
         const adminAssistant = document.querySelector(".ashiana-admin-ai-inline");
         if (adminAssistant) {
           adminAssistant.classList.remove("ashiana-admin-ai-inline");
           if (adminAssistant.parentElement !== document.body) document.body.appendChild(adminAssistant);
         }
         button.classList.remove("ashiana-theme-inline", "ashiana-theme-chat-inline", "ashiana-theme-admin-inline", "ashiana-theme-admin-menu");
-        button.classList.remove("ashiana-theme-admin-menu");
-        const menuUtilityRow = document.querySelector("#admin-side-menu .ashiana-admin-menu-utility-row");
-        if (menuUtilityRow) menuUtilityRow.remove();
         if (button.parentElement !== document.body) document.body.appendChild(button);
       }
     };
