@@ -1781,3 +1781,6 @@ html[data-ashiana-theme="dark"] .ashiana-phase2-search { color: #e2f7ec; backgro
   .ashiana-phase2-search { flex: 1 1 130px; width: 100%; }
   .ashiana-phase2-open-roster { white-space: nowrap; }
 }
+
+.ashiana-phase2-status.is-leave { color: #6d28d9; background: #ede9fe; }
+html[data-ashiana-theme="dark"] .ashiana-phase2-status.is-leave { color: #ddd6fe; background: #4c1d95; }
