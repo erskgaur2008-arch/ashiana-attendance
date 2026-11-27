@@ -61,15 +61,23 @@
           if (assistant.parentElement !== adminActions) adminActions.insertBefore(assistant, logo || null);
         }
       } else if (portal && !portal.classList.contains("hidden") && studentHeader) {
+        const adminAssistant = document.querySelector(".ashiana-admin-ai-inline");
+        if (adminAssistant) {
+          adminAssistant.classList.remove("ashiana-admin-ai-inline");
+          if (adminAssistant.parentElement !== document.body) document.body.appendChild(adminAssistant);
+        }
         studentHeader.classList.add("ashiana-theme-header");
         button.classList.add("ashiana-theme-inline");
         button.classList.remove("ashiana-theme-chat-inline", "ashiana-theme-admin-inline");
         if (button.parentElement !== studentHeader) studentHeader.appendChild(button);
       } else {
+        const adminAssistant = document.querySelector(".ashiana-admin-ai-inline");
+        if (adminAssistant) {
+          adminAssistant.classList.remove("ashiana-admin-ai-inline");
+          if (adminAssistant.parentElement !== document.body) document.body.appendChild(adminAssistant);
+        }
         button.classList.remove("ashiana-theme-inline", "ashiana-theme-chat-inline", "ashiana-theme-admin-inline");
         if (button.parentElement !== document.body) document.body.appendChild(button);
-        const assistant = document.querySelector(".ashiana-admin-ai-inline");
-        assistant?.classList.remove("ashiana-admin-ai-inline");
       }
     };
     document.body.appendChild(button);
