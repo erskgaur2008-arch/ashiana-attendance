@@ -571,3 +571,220 @@ html[data-ashiana-theme="dark"] #student-portal-view #student-dashboard-panel-bo
     padding-right: 14px !important;
   }
 }
+
+
+/* ============================================================
+   Ashiana Admin Command Centre — visual refresh
+   UI-only: preserve existing IDs, event handlers, data and roles.
+   ============================================================ */
+#admin-portal-view {
+  --admin-ink: #102f26;
+  --admin-muted: #71847c;
+  --admin-green: #087653;
+  --admin-green-dark: #064e3b;
+  --admin-line: #dcebe3;
+  --admin-surface: #ffffff;
+  --admin-soft: #f2faf5;
+  gap: 18px !important;
+  color: var(--admin-ink) !important;
+}
+#admin-portal-view > .admin-dashboard-compact-header {
+  min-height: 76px !important;
+  padding: 12px 18px !important;
+  border: 1px solid rgba(167, 224, 198, .8) !important;
+  border-radius: 22px !important;
+  background:
+    radial-gradient(circle at 92% 10%, rgba(110, 231, 183, .28), transparent 28%),
+    linear-gradient(118deg, #063f31 0%, #087653 58%, #0b966c 100%) !important;
+  box-shadow: 0 12px 30px rgba(6, 78, 59, .16) !important;
+}
+#admin-portal-view .admin-dashboard-compact-brand { gap: 14px !important; }
+#admin-portal-view .admin-dashboard-compact-brand h1 {
+  color: #fff !important;
+  font-size: clamp(21px, 3vw, 27px) !important;
+  font-weight: 850 !important;
+  letter-spacing: -.035em !important;
+}
+#admin-portal-view .admin-dashboard-menu-button {
+  border: 1px solid rgba(209, 250, 229, .45) !important;
+  border-radius: 14px !important;
+  background: rgba(255,255,255,.13) !important;
+  color: #fff !important;
+  box-shadow: 0 4px 12px rgba(0,0,0,.08) !important;
+}
+#admin-portal-view .admin-dashboard-menu-button:hover {
+  background: rgba(255,255,255,.22) !important;
+}
+#admin-portal-view .admin-dashboard-compact-logo {
+  width: 50px !important;
+  height: 50px !important;
+  flex-basis: 50px !important;
+  border: 1px solid rgba(255,255,255,.7) !important;
+  border-radius: 15px !important;
+  box-shadow: 0 5px 14px rgba(0,0,0,.12) !important;
+}
+
+/* Six live KPIs: equal-height cards with a clear hierarchy. */
+#admin-portal-view > .grid.grid-cols-2 {
+  gap: 12px !important;
+}
+#admin-portal-view > .grid.grid-cols-2 > div {
+  position: relative !important;
+  min-width: 0 !important;
+  min-height: 116px !important;
+  padding: 17px 16px 15px !important;
+  overflow: hidden !important;
+  border: 1px solid var(--admin-line) !important;
+  border-top: 0 !important;
+  border-radius: 19px !important;
+  background: linear-gradient(145deg, #fff 0%, #f7fcf9 100%) !important;
+  box-shadow: 0 5px 18px rgba(16, 65, 46, .055) !important;
+  transition: transform .18s ease, box-shadow .18s ease !important;
+}
+#admin-portal-view > .grid.grid-cols-2 > div::before {
+  content: "";
+  position: absolute;
+  inset: 0 auto 0 0;
+  width: 4px;
+  border-radius: 19px 0 0 19px;
+  background: linear-gradient(180deg, #34d399, #087653);
+}
+#admin-portal-view > .grid.grid-cols-2 > div:nth-child(2)::before { background: #10b981; }
+#admin-portal-view > .grid.grid-cols-2 > div:nth-child(3)::before { background: #3b82f6; }
+#admin-portal-view > .grid.grid-cols-2 > div:nth-child(4)::before { background: #ef4444; }
+#admin-portal-view > .grid.grid-cols-2 > div:nth-child(5)::before { background: #8b5cf6; }
+#admin-portal-view > .grid.grid-cols-2 > div:nth-child(6)::before { background: #0f766e; }
+#admin-portal-view > .grid.grid-cols-2 > div > span:first-child {
+  color: #73877d !important;
+  font-size: 10px !important;
+  font-weight: 800 !important;
+  letter-spacing: .105em !important;
+}
+#admin-portal-view > .grid.grid-cols-2 > div > span:nth-child(2) {
+  display: block !important;
+  margin-top: 7px !important;
+  font-size: clamp(25px, 3vw, 31px) !important;
+  line-height: 1.08 !important;
+  font-weight: 850 !important;
+  letter-spacing: -.045em !important;
+}
+#admin-portal-view > .grid.grid-cols-2 > div > span:last-child {
+  margin-top: 7px !important;
+  color: #91a39a !important;
+  font-size: 11px !important;
+}
+
+/* Live roster becomes a distinct, clean dashboard panel. */
+#admin-tab-live > div {
+  padding: 20px !important;
+  border: 1px solid var(--admin-line) !important;
+  border-radius: 22px !important;
+  background: #fff !important;
+  box-shadow: 0 8px 26px rgba(16, 65, 46, .06) !important;
+}
+#admin-tab-live h3 {
+  color: #173c2e !important;
+  font-size: 16px !important;
+  font-weight: 850 !important;
+  letter-spacing: -.02em !important;
+}
+#admin-tab-live p { color: #7a8c83 !important; }
+#admin-tab-live #live-search-input {
+  min-height: 42px !important;
+  width: min(100%, 290px) !important;
+  border: 1px solid #d6e6dd !important;
+  border-radius: 13px !important;
+  background: #f8fcf9 !important;
+  color: #173c2e !important;
+}
+#admin-tab-live button[onclick="exportLiveToCSV()"] {
+  min-height: 42px !important;
+  border-radius: 13px !important;
+}
+#admin-tab-live .overflow-x-auto {
+  max-width: 100% !important;
+  border: 1px solid #e3eee8 !important;
+  border-radius: 15px !important;
+  scrollbar-width: thin;
+  scrollbar-color: #a7cdb9 transparent;
+}
+#admin-tab-live table { min-width: 850px; border-collapse: separate !important; border-spacing: 0 !important; }
+#admin-tab-live thead { background: #edf8f1 !important; }
+#admin-tab-live thead th {
+  padding: 13px 12px !important;
+  color: #557366 !important;
+  font-size: 10px !important;
+  letter-spacing: .07em !important;
+  white-space: nowrap !important;
+}
+#admin-tab-live tbody tr { transition: background .15s ease; }
+#admin-tab-live tbody tr:hover { background: #f4fbf7 !important; }
+#admin-tab-live tbody td { padding: 13px 12px !important; }
+
+/* Keep the established side menu, but give it the same visual language. */
+#admin-side-menu .admin-side-menu-header {
+  background:
+    radial-gradient(circle at 90% 8%, rgba(110,231,183,.24), transparent 30%),
+    linear-gradient(125deg,#063f31,#07845f) !important;
+}
+#admin-side-menu .admin-side-menu-items .admin-quick-actions > button {
+  min-height: 58px !important;
+  border-radius: 15px !important;
+  border-color: #d6e9df !important;
+  background: linear-gradient(145deg,#f1fbf5,#fff) !important;
+  box-shadow: 0 3px 10px rgba(6,78,59,.045) !important;
+}
+#admin-side-menu .admin-side-menu-items .admin-quick-actions > button:active {
+  transform: scale(.985);
+}
+
+/* Dark mode counterpart. */
+html[data-ashiana-theme="dark"] #admin-portal-view > .grid.grid-cols-2 > div,
+html[data-ashiana-theme="dark"] #admin-tab-live > div {
+  background: linear-gradient(145deg,#14251e,#102019) !important;
+  border-color: #294638 !important;
+  box-shadow: 0 8px 24px rgba(0,0,0,.18) !important;
+}
+html[data-ashiana-theme="dark"] #admin-portal-view > .grid.grid-cols-2 > div > span:first-child,
+html[data-ashiana-theme="dark"] #admin-portal-view > .grid.grid-cols-2 > div > span:last-child,
+html[data-ashiana-theme="dark"] #admin-tab-live p { color: #9bb4a7 !important; }
+html[data-ashiana-theme="dark"] #admin-tab-live h3 { color: #e4f3eb !important; }
+html[data-ashiana-theme="dark"] #admin-tab-live .overflow-x-auto { border-color: #294638 !important; }
+html[data-ashiana-theme="dark"] #admin-tab-live thead { background: #1a382b !important; }
+html[data-ashiana-theme="dark"] #admin-tab-live thead th { color: #b7d5c5 !important; }
+html[data-ashiana-theme="dark"] #admin-tab-live tbody tr:hover { background: #183428 !important; }
+html[data-ashiana-theme="dark"] #admin-tab-live #live-search-input {
+  background: #10271d !important; border-color: #355544 !important; color: #e4f3eb !important;
+}
+html[data-ashiana-theme="dark"] #admin-side-menu .admin-side-menu-items .admin-quick-actions > button {
+  background: #142b20 !important; border-color: #31513f !important; color: #e0f1e7 !important;
+}
+
+/* Phone and tablet refinements. */
+@media (max-width: 700px) {
+  #admin-portal-view { gap: 13px !important; }
+  #admin-portal-view > .admin-dashboard-compact-header {
+    min-height: 64px !important; padding: 8px 11px !important; border-radius: 17px !important;
+  }
+  #admin-portal-view .admin-dashboard-compact-logo {
+    width: 43px !important; height: 43px !important; flex-basis: 43px !important;
+  }
+  #admin-portal-view > .grid.grid-cols-2 { gap: 9px !important; }
+  #admin-portal-view > .grid.grid-cols-2 > div {
+    min-height: 105px !important; padding: 14px 12px 12px !important; border-radius: 16px !important;
+  }
+  #admin-portal-view > .grid.grid-cols-2 > div > span:nth-child(2) { font-size: 25px !important; }
+  #admin-tab-live > div { padding: 15px !important; border-radius: 18px !important; }
+  #admin-tab-live > div > div:first-child { gap: 11px !important; }
+  #admin-tab-live > div > div:first-child > div:last-child { width: 100%; }
+  #admin-tab-live #live-search-input { width: 100% !important; min-width: 0 !important; flex: 1 1 auto !important; }
+  #admin-tab-live table { min-width: 850px !important; }
+}
+@media (max-width: 360px) {
+  #admin-portal-view > .grid.grid-cols-2 > div { padding: 12px 9px 11px !important; }
+  #admin-portal-view > .grid.grid-cols-2 > div > span:first-child { font-size: 9px !important; }
+  #admin-portal-view > .grid.grid-cols-2 > div > span:nth-child(2) { font-size: 22px !important; }
+}
+@media (prefers-reduced-motion: reduce) {
+  #admin-portal-view *, #admin-side-menu * { transition: none !important; animation: none !important; }
+}
