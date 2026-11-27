@@ -97,6 +97,7 @@
           signOut.classList.add("ashiana-admin-menu-signout-inline");
           if (signOut.parentElement !== utilityRow) utilityRow.appendChild(signOut);
         } else {
+          button.classList.remove("ashiana-theme-admin-menu");
           if (button.parentElement !== document.body) document.body.appendChild(button);
           if (assistant && assistant !== button && assistant.parentElement !== document.body) document.body.appendChild(assistant);
         }
