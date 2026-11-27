@@ -1584,3 +1584,50 @@ html[data-ashiana-theme="dark"] #admin-side-menu .ashiana-admin-menu-utility-row
   }
   #admin-side-menu .ashiana-admin-menu-signout-inline { min-height: 38px !important; font-size: 13px !important; }
 }
+
+
+/* Admin drawer typography: reduce oversized heading and menu labels. */
+#admin-side-menu .admin-side-menu-header h1,
+#admin-side-menu .admin-side-menu-header h2 {
+  font-size: clamp(26px, 3vw, 32px) !important;
+  line-height: 1.12 !important;
+  letter-spacing: -.02em !important;
+}
+#admin-side-menu .admin-side-menu-header p {
+  font-size: 16px !important;
+  line-height: 1.35 !important;
+}
+#admin-side-menu .admin-side-menu-items .admin-quick-actions > button,
+#admin-side-menu .admin-side-menu-items > button,
+#admin-side-menu .admin-side-menu-items button {
+  font-size: 15px !important;
+  line-height: 1.25 !important;
+}
+@media (max-width: 700px) {
+  #admin-side-menu .admin-side-menu-header h1,
+  #admin-side-menu .admin-side-menu-header h2 {
+    font-size: 27px !important;
+  }
+  #admin-side-menu .admin-side-menu-header p {
+    font-size: 15px !important;
+  }
+  #admin-side-menu .admin-side-menu-items .admin-quick-actions > button,
+  #admin-side-menu .admin-side-menu-items > button,
+  #admin-side-menu .admin-side-menu-items button {
+    font-size: 14px !important;
+  }
+}
+@media (max-width: 380px) {
+  #admin-side-menu .admin-side-menu-header h1,
+  #admin-side-menu .admin-side-menu-header h2 {
+    font-size: 24px !important;
+  }
+  #admin-side-menu .admin-side-menu-header p {
+    font-size: 14px !important;
+  }
+  #admin-side-menu .admin-side-menu-items .admin-quick-actions > button,
+  #admin-side-menu .admin-side-menu-items > button,
+  #admin-side-menu .admin-side-menu-items button {
+    font-size: 13px !important;
+  }
+}
