@@ -643,3 +643,193 @@
   if (document.readyState === "loading") document.addEventListener("DOMContentLoaded", start, { once: true });
   else start();
 })();
+
+
+/* Admin dashboard Phase 3: student overview, fee summary and useful shortcuts.
+   Fee totals are returned by the admin-authorized fee-management Edge Function. */
+(() => {
+  "use strict";
+  const ROOT_ID = "admin-portal-view";
+  let loading = false;
+  let lastLoadedAt = 0;
+  const el = (tag, cls, value) => {
+    const node = document.createElement(tag);
+    if (cls) node.className = cls;
+    if (value !== undefined && value !== null) node.textContent = String(value);
+    return node;
+  };
+  const money = (paise) => new Intl.NumberFormat("en-IN", {
+    style: "currency", currency: "INR", maximumFractionDigits: 0
+  }).format(Number(paise || 0) / 100);
+  const menuTarget = (pattern) => {
+    const menu = document.getElementById("admin-side-menu");
+    if (!menu) return null;
+    return [...menu.querySelectorAll("button,a,[role='button']")].find((node) =>
+      pattern.test((node.innerText || node.textContent || "").replace(/\s+/g, " ").trim()));
+  };
+  const ensurePanel = (root) => {
+    let panel = root.querySelector(":scope > .ashiana-phase3-panel");
+    if (panel) return panel;
+    panel = el("section", "ashiana-phase3-panel");
+    const header = el("div", "ashiana-phase3-header");
+    const heading = el("div");
+    heading.append(el("h3", "", "Students & Fees Overview"));
+    heading.append(el("p", "", "Live summary for the active academic year"));
+    const refresh = el("button", "ashiana-phase3-refresh", "↻ Refresh");
+    refresh.type = "button";
+    refresh.addEventListener("click", () => loadData(true));
+    header.append(heading, refresh);
+    panel.append(header);
+
+    const overview = el("div", "ashiana-phase3-overview");
+    const studentsCard = el("article", "ashiana-phase3-card");
+    const studentsHead = el("div", "ashiana-phase3-card-head");
+    studentsHead.append(el("h4", "", "Student strength"), el("span", "ashiana-phase3-chip", "ACTIVE"));
+    studentsCard.append(studentsHead, el("div", "ashiana-phase3-student-kpis"));
+    const classTitle = el("div", "ashiana-phase3-subheading");
+    classTitle.append(el("strong", "", "Class-wise distribution"));
+    studentsCard.append(classTitle, el("div", "ashiana-phase3-class-list", "Loading student data…"));
+
+    const feesCard = el("article", "ashiana-phase3-card");
+    const feesHead = el("div", "ashiana-phase3-card-head");
+    feesHead.append(el("h4", "", "Fee collection"), el("span", "ashiana-phase3-year", "Loading…"));
+    feesCard.append(feesHead, el("div", "ashiana-phase3-fee-kpis"));
+    feesCard.append(el("p", "ashiana-phase3-fee-note", "Collected amounts reflect ledger entries only. Pending payment submissions are not counted as collections."));
+    overview.append(studentsCard, feesCard);
+    panel.append(overview);
+
+    const actions = el("article", "ashiana-phase3-card ashiana-phase3-actions-card");
+    const actionsHead = el("div", "ashiana-phase3-card-head");
+    actionsHead.append(el("h4", "", "Quick Actions"), el("span", "ashiana-phase3-chip", "ADMIN"));
+    actions.append(actionsHead);
+    const actionGrid = el("div", "ashiana-phase3-action-grid");
+    const shortcuts = [
+      { label: "Open Students", detail: "Student records and admissions", icon: "◎", match: /student management|students/i },
+      { label: "Open Fees", detail: "Fee structures and payment review", icon: "₹", match: /fee management|fees/i },
+      { label: "Attendance Reports", detail: "Daily and monthly attendance", icon: "▤", match: /attendance.*report|report.*attendance/i },
+      { label: "Faculty Management", detail: "Staff records and assignments", icon: "♙", match: /faculty|staff management/i }
+    ];
+    shortcuts.forEach((item) => {
+      const button = el("button", "ashiana-phase3-action");
+      button.type = "button";
+      button.append(el("span", "ashiana-phase3-action-icon", item.icon));
+      const copy = el("span", "ashiana-phase3-action-copy");
+      copy.append(el("strong", "", item.label), el("small", "", item.detail));
+      button.append(copy, el("span", "ashiana-phase3-action-arrow", "›"));
+      button.addEventListener("click", () => {
+        const target = menuTarget(item.match);
+        if (target) target.click();
+        else document.querySelector('[aria-controls="admin-side-menu"],#admin-menu-toggle')?.click();
+      });
+      actionGrid.append(button);
+    });
+    actions.append(actionGrid);
+    panel.append(actions);
+
+    const phase2 = root.querySelector(":scope > .ashiana-phase2-panel");
+    if (phase2) phase2.insertAdjacentElement("afterend", panel);
+    else root.append(panel);
+    return panel;
+  };
+  const metric = (label, value, tone) => {
+    const card = el("div", "ashiana-phase3-metric " + (tone || ""));
+    card.append(el("span", "", label), el("strong", "", value));
+    return card;
+  };
+  const render = (panel, data) => {
+    const students = data.students || {};
+    const fees = data.fees || {};
+    const studentKpis = panel.querySelector(".ashiana-phase3-student-kpis");
+    studentKpis.replaceChildren(
+      metric("Active students", Number(students.active_total || 0).toLocaleString("en-IN"), "green"),
+      metric("Classes", Number(students.class_count || 0), "blue"),
+      metric("Sections", Number(students.section_count || 0), "purple"),
+      metric("Fee accounts", Number(fees.account_count || 0), "amber")
+    );
+    const classList = panel.querySelector(".ashiana-phase3-class-list");
+    classList.replaceChildren();
+    const classes = Array.isArray(students.class_breakdown) ? students.class_breakdown : [];
+    if (!classes.length) {
+      classList.append(el("p", "ashiana-phase3-empty", "No active class records found."));
+    } else {
+      const max = Math.max(1, ...classes.map((row) => Number(row.student_count || 0)));
+      classes.forEach((row) => {
+        const line = el("div", "ashiana-phase3-class-row");
+        line.append(el("span", "ashiana-phase3-class-name", row.class_name));
+        const track = el("span", "ashiana-phase3-class-track");
+        const fill = el("span", "ashiana-phase3-class-fill");
+        fill.style.width = Math.min(100, Number(row.student_count || 0) / max * 100) + "%";
+        track.append(fill);
+        line.append(track, el("strong", "ashiana-phase3-class-count", Number(row.student_count || 0).toLocaleString("en-IN")));
+        classList.append(line);
+      });
+    }
+    panel.querySelector(".ashiana-phase3-year").textContent = fees.academic_year || "No active fee year";
+    const feeKpis = panel.querySelector(".ashiana-phase3-fee-kpis");
+    feeKpis.replaceChildren(
+      metric("Total billed", money(fees.billed_paise), ""),
+      metric("Collected", money(fees.collected_paise), "green"),
+      metric("Outstanding", money(fees.outstanding_paise), "amber"),
+      metric("Pending reviews", Number(fees.pending_reviews || 0).toLocaleString("en-IN"), "blue")
+    );
+    const updated = panel.querySelector(".ashiana-phase3-header p");
+    if (updated) updated.textContent = "Live school records · Updated " + new Date(data.generated_at || Date.now()).toLocaleTimeString("en-IN", { hour: "2-digit", minute: "2-digit" });
+  };
+  const loadData = async (force) => {
+    const root = document.getElementById(ROOT_ID);
+    if (!root || root.classList.contains("hidden") || loading) return;
+    const panel = ensurePanel(root);
+    if (!force && Date.now() - lastLoadedAt < 60000) return;
+    const supa = window.__ashianaMainSupabaseClient ||
+      (typeof window.__ashianaGetMainSupabaseClient === "function" ? await window.__ashianaGetMainSupabaseClient() : null);
+    if (!supa) {
+      panel.querySelector(".ashiana-phase3-class-list").textContent = "Waiting for the authenticated school connection…";
+      return;
+    }
+    loading = true;
+    const refresh = panel.querySelector(".ashiana-phase3-refresh");
+    if (refresh) { refresh.disabled = true; refresh.textContent = "Loading…"; }
+    try {
+      const user = await supa.auth.getUser();
+      if (user.error || !user.data?.user) throw new Error("Administrator session is not available.");
+      const { data, error } = await supa.functions.invoke("fee-management", {
+        body: { action: "admin-dashboard-summary" }
+      });
+      if (error || data?.error) throw error || new Error(data.error);
+      render(panel, data);
+      lastLoadedAt = Date.now();
+    } catch (error) {
+      panel.querySelector(".ashiana-phase3-class-list").textContent = "Student overview is temporarily unavailable.";
+      panel.querySelector(".ashiana-phase3-fee-kpis").replaceChildren(
+        metric("Fee summary", "Unavailable", "amber")
+      );
+      console.warn("[Ashiana Phase 3 dashboard]", error?.message || error);
+    } finally {
+      loading = false;
+      if (refresh) { refresh.disabled = false; refresh.textContent = "↻ Refresh"; }
+    }
+  };
+  let queued = false;
+  const schedule = () => {
+    if (queued) return;
+    queued = true;
+    requestAnimationFrame(() => {
+      queued = false;
+      const root = document.getElementById(ROOT_ID);
+      if (root && !root.classList.contains("hidden")) loadData(false);
+    });
+  };
+  const start = () => {
+    schedule();
+    const root = document.getElementById(ROOT_ID);
+    if (root && window.MutationObserver) {
+      new MutationObserver(schedule).observe(root, { attributes: true, attributeFilter: ["class"] });
+      new MutationObserver(schedule).observe(document.body, { childList: true, subtree: true });
+    }
+    window.addEventListener("focus", () => loadData(false));
+    document.addEventListener("visibilitychange", () => { if (!document.hidden) loadData(false); });
+    window.setInterval(() => loadData(false), 60000);
+  };
+  if (document.readyState === "loading") document.addEventListener("DOMContentLoaded", start, { once: true });
+  else start();
+})();
