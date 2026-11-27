@@ -49,17 +49,33 @@
         button.classList.add("ashiana-theme-inline", "ashiana-theme-chat-inline");
         if (button.parentElement !== destination) destination.appendChild(button);
       } else if (adminActions) {
-        // Keep the compact dashboard header dedicated to navigation and school
-        // identity. Floating controls remain independently positioned so they
-        // cannot consume the title width or overlap the logo.
+        // Keep the dashboard header uncluttered. Put the existing theme and AI
+        // controls together immediately beside the Admin menu's Sign Out action.
         button.classList.remove("ashiana-theme-inline", "ashiana-theme-admin-inline", "ashiana-theme-chat-inline");
-        if (button.parentElement !== document.body) document.body.appendChild(button);
+        button.classList.add("ashiana-theme-admin-menu");
         const assistant = document.querySelector(
           "#ai-assistant-fab, #ashiana-ai-assistant, #ashiana-ai-fab, .ai-assistant-fab, [data-ai-assistant-launcher], button[aria-label*='assistant' i], button[title*='assistant' i]"
         );
-        if (assistant && assistant !== button) {
-          assistant.classList.remove("ashiana-admin-ai-inline");
-          if (assistant.parentElement !== document.body) document.body.appendChild(assistant);
+        const menu = document.getElementById("admin-side-menu");
+        const signOut = menu && [...menu.querySelectorAll("button,a,[role='button']")]
+          .find((node) => /^(sign\\s*out|log\\s*out)$/i.test((node.innerText || node.textContent || "").replace(/\\s+/g, " ").trim()));
+        if (menu && signOut) {
+          let utilityRow = menu.querySelector(":scope .ashiana-admin-menu-utility-row");
+          if (!utilityRow) {
+            utilityRow = document.createElement("div");
+            utilityRow.className = "ashiana-admin-menu-utility-row";
+            utilityRow.setAttribute("aria-label", "Appearance and assistant controls");
+            signOut.insertAdjacentElement("beforebegin", utilityRow);
+          }
+          if (button.parentElement !== utilityRow) utilityRow.appendChild(button);
+          if (assistant && assistant !== button) {
+            assistant.classList.remove("ashiana-admin-ai-inline");
+            assistant.classList.add("ashiana-admin-ai-menu");
+            if (assistant.parentElement !== utilityRow) utilityRow.appendChild(assistant);
+          }
+        } else {
+          if (button.parentElement !== document.body) document.body.appendChild(button);
+          if (assistant && assistant !== button && assistant.parentElement !== document.body) document.body.appendChild(assistant);
         }
       } else if (portal && !portal.classList.contains("hidden") && studentHeader) {
         const adminAssistant = document.querySelector(".ashiana-admin-ai-inline");
@@ -77,7 +93,10 @@
           adminAssistant.classList.remove("ashiana-admin-ai-inline");
           if (adminAssistant.parentElement !== document.body) document.body.appendChild(adminAssistant);
         }
-        button.classList.remove("ashiana-theme-inline", "ashiana-theme-chat-inline", "ashiana-theme-admin-inline");
+        button.classList.remove("ashiana-theme-inline", "ashiana-theme-chat-inline", "ashiana-theme-admin-inline", "ashiana-theme-admin-menu");
+        button.classList.remove("ashiana-theme-admin-menu");
+        const menuUtilityRow = document.querySelector("#admin-side-menu .ashiana-admin-menu-utility-row");
+        if (menuUtilityRow) menuUtilityRow.remove();
         if (button.parentElement !== document.body) document.body.appendChild(button);
       }
     };
