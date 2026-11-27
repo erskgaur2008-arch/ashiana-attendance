@@ -1678,3 +1678,109 @@ html[data-ashiana-theme="dark"] #admin-side-menu .ashiana-admin-menu-utility-row
     gap: 8px !important;
   }
 }
+
+
+/* Admin dashboard Phase 2: attendance analytics, live roster and activity. */
+#admin-portal-view > .ashiana-phase2-panel {
+  display: flex; flex-direction: column; gap: 16px; width: 100%; min-width: 0;
+  color: #123d32;
+}
+.ashiana-phase2-heading,.ashiana-phase2-card-heading {
+  display: flex; align-items: center; justify-content: space-between; gap: 14px;
+}
+.ashiana-phase2-heading h3,.ashiana-phase2-card h4 { margin: 0; color: #064e3b; font-weight: 800; }
+.ashiana-phase2-heading h3 { font-size: clamp(17px,2vw,22px); }
+.ashiana-phase2-heading p,.ashiana-phase2-card-heading p {
+  margin: 4px 0 0; color: #71857d; font-size: 12px;
+}
+.ashiana-phase2-controls,.ashiana-phase2-range,.ashiana-phase2-roster-tools {
+  display: flex; align-items: center; gap: 7px; flex-wrap: wrap;
+}
+.ashiana-phase2-refresh,.ashiana-phase2-open-roster,.ashiana-phase2-range button {
+  border: 1px solid rgba(0,128,85,.18); border-radius: 10px; padding: 8px 11px;
+  color: #047857; background: #ecfdf5; font: 700 12px/1.2 system-ui,sans-serif; cursor: pointer;
+}
+.ashiana-phase2-refresh:disabled { opacity: .6; cursor: wait; }
+.ashiana-phase2-analytics { display: grid; grid-template-columns: minmax(0,1.4fr) minmax(280px,.9fr); gap: 14px; }
+.ashiana-phase2-card {
+  min-width: 0; padding: 18px; border: 1px solid rgba(15,118,90,.12); border-radius: 18px;
+  background: rgba(255,255,255,.88); box-shadow: 0 8px 24px rgba(4,78,59,.055);
+}
+.ashiana-phase2-card h4 { font-size: 15px; }
+.ashiana-phase2-card-heading { margin-bottom: 14px; }
+.ashiana-phase2-range button[aria-pressed="true"] { color: #fff; background: #047857; border-color: #047857; }
+.ashiana-phase2-kpis { display: grid; grid-template-columns: repeat(5,minmax(0,1fr)); gap: 8px; margin-bottom: 16px; }
+.ashiana-phase2-kpi { min-width: 0; padding: 10px; border-radius: 12px; background: #f1f8f5; border-left: 3px solid #94a3b8; }
+.ashiana-phase2-kpi span { display: block; color: #70847b; font-size: 10px; line-height: 1.3; font-weight: 700; }
+.ashiana-phase2-kpi strong { display: block; margin-top: 5px; color: #163b32; font-size: 21px; line-height: 1.1; }
+.ashiana-phase2-kpi.green { border-color: #10b981; } .ashiana-phase2-kpi.blue { border-color: #2563eb; }
+.ashiana-phase2-kpi.purple { border-color: #8b5cf6; } .ashiana-phase2-kpi.amber { border-color: #d97706; }
+.ashiana-phase2-bars { display: grid; grid-template-columns: repeat(7,minmax(0,1fr)); align-items: end; gap: 7px; min-height: 142px; }
+.ashiana-phase2-bar-column { display: flex; flex-direction: column; align-items: center; justify-content: end; gap: 5px; min-width: 0; height: 142px; }
+.ashiana-phase2-bar-column strong { color: #315c4e; font-size: 10px; }
+.ashiana-phase2-bar-track { display: flex; align-items: end; width: min(100%,28px); height: 100px; overflow: hidden; border-radius: 7px; background: #e7f4ee; }
+.ashiana-phase2-bar { display: block; width: 100%; min-height: 0; border-radius: 7px 7px 3px 3px; background: linear-gradient(180deg,#10b981,#047857); transition: height .2s ease; }
+.ashiana-phase2-bar-column small { color: #7b8d85; font-size: 9px; white-space: nowrap; }
+.ashiana-phase2-note { margin: 10px 0 0; color: #80928b; font-size: 10px; line-height: 1.45; }
+.ashiana-phase2-activity-list { display: flex; flex-direction: column; gap: 0; }
+.ashiana-phase2-activity-item { display: grid; grid-template-columns: 9px minmax(0,1fr) auto; align-items: start; gap: 9px; padding: 10px 0; border-bottom: 1px solid #edf2ef; }
+.ashiana-phase2-activity-item:last-child { border-bottom: 0; }
+.ashiana-phase2-activity-dot { width: 8px; height: 8px; margin-top: 5px; border-radius: 50%; background: #10b981; }
+.ashiana-phase2-activity-dot.leave { background: #8b5cf6; } .ashiana-phase2-activity-dot.audit { background: #0ea5e9; }
+.ashiana-phase2-activity-copy { min-width: 0; }
+.ashiana-phase2-activity-copy strong { display: block; color: #24483d; font-size: 11px; line-height: 1.35; text-transform: capitalize; }
+.ashiana-phase2-activity-copy small { display: block; margin-top: 3px; color: #82938c; font-size: 10px; overflow-wrap: anywhere; }
+.ashiana-phase2-activity-item time { color: #84948d; font-size: 9px; white-space: nowrap; }
+.ashiana-phase2-roster-summary { display: flex; gap: 8px; flex-wrap: wrap; margin: -4px 0 12px; }
+.ashiana-phase2-roster-summary span { padding: 5px 8px; border-radius: 20px; color: #087653; background: #ecfdf5; font-size: 10px; font-weight: 700; }
+.ashiana-phase2-search { width: min(220px,100%); min-width: 120px; padding: 9px 11px; border: 1px solid #d8e8df; border-radius: 10px; color: #23483c; background: #f8fcfa; font-size: 12px; }
+.ashiana-phase2-table-wrap { width: 100%; overflow-x: auto; overscroll-behavior-x: contain; }
+.ashiana-phase2-table { width: 100%; min-width: 570px; border-collapse: collapse; text-align: left; }
+.ashiana-phase2-table th { padding: 10px 9px; color: #6d8178; background: #eff8f3; font-size: 9px; text-transform: uppercase; letter-spacing: .06em; white-space: nowrap; }
+.ashiana-phase2-table td { padding: 10px 9px; border-bottom: 1px solid #edf2ef; color: #52675e; font-size: 11px; }
+.ashiana-phase2-table .ashiana-phase2-name { color: #173e32; font-weight: 800; }
+.ashiana-phase2-status { display: inline-block; padding: 4px 7px; border-radius: 20px; font-size: 9px; font-weight: 800; white-space: nowrap; }
+.ashiana-phase2-status.is-working { color: #047857; background: #d1fae5; }
+.ashiana-phase2-status.is-done { color: #1d4ed8; background: #dbeafe; }
+.ashiana-phase2-status.is-muted { color: #64748b; background: #f1f5f9; }
+.ashiana-phase2-empty { padding: 16px 8px; color: #87968f; font-size: 12px; text-align: center; }
+html[data-ashiana-theme="dark"] .ashiana-phase2-card { color: #dcece5; background: #122d25; border-color: #315446; }
+html[data-ashiana-theme="dark"] .ashiana-phase2-heading h3,
+html[data-ashiana-theme="dark"] .ashiana-phase2-card h4,
+html[data-ashiana-theme="dark"] .ashiana-phase2-activity-copy strong,
+html[data-ashiana-theme="dark"] .ashiana-phase2-table .ashiana-phase2-name { color: #d7f5e7; }
+html[data-ashiana-theme="dark"] .ashiana-phase2-heading p,
+html[data-ashiana-theme="dark"] .ashiana-phase2-card-heading p,
+html[data-ashiana-theme="dark"] .ashiana-phase2-note,
+html[data-ashiana-theme="dark"] .ashiana-phase2-activity-copy small,
+html[data-ashiana-theme="dark"] .ashiana-phase2-activity-item time,
+html[data-ashiana-theme="dark"] .ashiana-phase2-table td { color: #a9c1b6; }
+html[data-ashiana-theme="dark"] .ashiana-phase2-kpi { background: #1b3c30; }
+html[data-ashiana-theme="dark"] .ashiana-phase2-kpi strong { color: #e2f7ec; }
+html[data-ashiana-theme="dark"] .ashiana-phase2-kpi span { color: #a9c1b6; }
+html[data-ashiana-theme="dark"] .ashiana-phase2-bar-track { background: #294b3e; }
+html[data-ashiana-theme="dark"] .ashiana-phase2-table th { color: #b6d4c5; background: #1b3c30; }
+html[data-ashiana-theme="dark"] .ashiana-phase2-table td,
+html[data-ashiana-theme="dark"] .ashiana-phase2-activity-item { border-color: #294b3e; }
+html[data-ashiana-theme="dark"] .ashiana-phase2-search { color: #e2f7ec; background: #18372d; border-color: #3b6654; }
+@media (max-width: 900px) {
+  .ashiana-phase2-analytics { grid-template-columns: minmax(0,1fr); }
+  .ashiana-phase2-kpis { grid-template-columns: repeat(3,minmax(0,1fr)); }
+}
+@media (max-width: 700px) {
+  #admin-portal-view > .ashiana-phase2-panel { gap: 11px; }
+  .ashiana-phase2-heading { align-items: flex-start; }
+  .ashiana-phase2-heading h3 { font-size: 17px; }
+  .ashiana-phase2-card { padding: 13px; border-radius: 15px; }
+  .ashiana-phase2-card-heading { align-items: flex-start; flex-wrap: wrap; }
+  .ashiana-phase2-kpis { grid-template-columns: repeat(2,minmax(0,1fr)); gap: 7px; }
+  .ashiana-phase2-kpi strong { font-size: 19px; }
+  .ashiana-phase2-bars { grid-template-columns: repeat(7,minmax(0,1fr)); gap: 4px; }
+  .ashiana-phase2-bar-column small { font-size: 8px; }
+  .ashiana-phase2-roster-tools { width: 100%; }
+  .ashiana-phase2-search { flex: 1 1 130px; width: 100%; }
+  .ashiana-phase2-open-roster { white-space: nowrap; }
+}
+
+.ashiana-phase2-status.is-leave { color: #6d28d9; background: #ede9fe; }
+html[data-ashiana-theme="dark"] .ashiana-phase2-status.is-leave { color: #ddd6fe; background: #4c1d95; }
