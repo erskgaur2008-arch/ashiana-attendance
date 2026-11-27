@@ -413,3 +413,129 @@ html[data-ashiana-theme="dark"] #student-portal-view #student-dashboard-panel-bo
   flex: 1 1 auto;
   min-width: 0;
 }
+
+
+/* Admin dashboard mobile layout: contain roster width within the viewport.
+   The faculty table remains horizontally scrollable inside its own surface,
+   rather than widening the page or clipping the last columns. */
+@media (max-width: 700px) {
+  html, body {
+    max-width: 100%;
+    overflow-x: hidden;
+  }
+
+  #admin-portal-view,
+  #admin-portal-view .admin-dashboard-content,
+  #admin-portal-view .admin-dashboard-content > * {
+    box-sizing: border-box;
+    min-width: 0;
+    max-width: 100%;
+  }
+
+  #admin-portal-view .admin-dashboard-content table {
+    display: block;
+    width: 100%;
+    max-width: 100%;
+    overflow-x: auto;
+    overflow-y: hidden;
+    -webkit-overflow-scrolling: touch;
+    white-space: nowrap;
+  }
+
+  #admin-portal-view .admin-dashboard-content table th,
+  #admin-portal-view .admin-dashboard-content table td {
+    box-sizing: border-box;
+    white-space: normal;
+    overflow-wrap: anywhere;
+  }
+
+  #admin-portal-view .admin-dashboard-content [class*="overflow-x"] {
+    max-width: 100%;
+    min-width: 0;
+    overflow-x: auto;
+    -webkit-overflow-scrolling: touch;
+  }
+
+  #admin-portal-view .admin-dashboard-content input,
+  #admin-portal-view .admin-dashboard-content select {
+    box-sizing: border-box;
+    min-width: 0;
+    max-width: 100%;
+  }
+
+  #ashiana-theme-toggle {
+    right: max(12px, env(safe-area-inset-right));
+    bottom: max(12px, env(safe-area-inset-bottom));
+    min-height: 42px;
+    padding: 0 11px;
+    font-size: 13px;
+  }
+}
+
+
+/* Keep the compact admin menu and school logo on the same header row.
+   Legacy desktop header rules position the brand/actions independently;
+   explicitly reset those rules for the compact header at phone widths. */
+#admin-portal-view .admin-dashboard-compact-header {
+  position: relative !important;
+  display: flex !important;
+  flex-direction: row !important;
+  align-items: center !important;
+  justify-content: space-between !important;
+  flex-wrap: nowrap !important;
+  gap: 10px !important;
+  overflow: visible !important;
+}
+#admin-portal-view .admin-dashboard-compact-brand,
+#admin-portal-view .admin-dashboard-compact-actions {
+  position: static !important;
+  inset: auto !important;
+  transform: none !important;
+  float: none !important;
+  flex: 0 1 auto !important;
+}
+#admin-portal-view .admin-dashboard-compact-brand {
+  display: flex !important;
+  flex-direction: row !important;
+  align-items: center !important;
+  min-width: 0 !important;
+  gap: 10px !important;
+  z-index: 2 !important;
+}
+#admin-portal-view .admin-dashboard-compact-actions {
+  display: flex !important;
+  align-items: center !important;
+  justify-content: flex-end !important;
+  flex: 0 0 auto !important;
+  margin-left: auto !important;
+  z-index: 1 !important;
+}
+#admin-portal-view .admin-dashboard-menu-button {
+  position: relative !important;
+  inset: auto !important;
+  z-index: 3 !important;
+  flex: 0 0 42px !important;
+  width: 42px !important;
+  min-width: 42px !important;
+  max-width: 42px !important;
+  height: 42px !important;
+  margin: 0 !important;
+}
+#admin-portal-view .admin-dashboard-compact-brand h1 {
+  min-width: 0 !important;
+  white-space: nowrap !important;
+  overflow: hidden !important;
+  text-overflow: ellipsis !important;
+}
+#admin-portal-view .admin-dashboard-compact-logo {
+  position: static !important;
+  flex: 0 0 44px !important;
+  width: 44px !important;
+  height: 44px !important;
+  margin: 0 !important;
+}
+@media (max-width: 380px) {
+  #admin-portal-view .admin-dashboard-compact-header { gap: 6px !important; padding-inline: 8px !important; }
+  #admin-portal-view .admin-dashboard-compact-brand { gap: 7px !important; }
+  #admin-portal-view .admin-dashboard-compact-brand h1 { font-size: 18px !important; }
+}
