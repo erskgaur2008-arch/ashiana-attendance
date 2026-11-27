@@ -1414,3 +1414,93 @@ html[data-ashiana-theme="dark"] #admin-portal-view .ashiana-modern-section-headi
     font-size: 21px !important;
   }
 }
+
+
+/* Phase 1 mobile polish: keep theme and assistant actions inside the Admin
+   dashboard header so they never obscure KPI cards or roster content. */
+#admin-portal-view > .admin-dashboard-compact-header {
+  position: relative !important;
+}
+#admin-portal-view .admin-dashboard-compact-actions {
+  display: flex !important;
+  align-items: center !important;
+  justify-content: flex-end !important;
+  gap: 8px !important;
+  flex: 0 0 auto !important;
+  min-width: 0 !important;
+}
+#ashiana-theme-toggle.ashiana-theme-admin-inline {
+  position: static !important;
+  inset: auto !important;
+  transform: none !important;
+  flex: 0 0 40px !important;
+  width: 40px !important;
+  min-width: 40px !important;
+  max-width: 40px !important;
+  height: 40px !important;
+  min-height: 40px !important;
+  margin: 0 !important;
+  padding: 0 !important;
+  gap: 0 !important;
+  box-shadow: 0 2px 8px rgba(0,0,0,.10) !important;
+}
+#ashiana-theme-toggle.ashiana-theme-admin-inline .ashiana-theme-label {
+  display: none !important;
+}
+#admin-portal-view .ashiana-admin-ai-inline {
+  position: static !important;
+  inset: auto !important;
+  transform: none !important;
+  display: inline-flex !important;
+  flex: 0 0 40px !important;
+  align-items: center !important;
+  justify-content: center !important;
+  width: 40px !important;
+  min-width: 40px !important;
+  max-width: 40px !important;
+  height: 40px !important;
+  min-height: 40px !important;
+  margin: 0 !important;
+  padding: 0 !important;
+  border-radius: 50% !important;
+  box-shadow: 0 2px 8px rgba(0,0,0,.12) !important;
+  z-index: 2 !important;
+}
+@media (max-width: 700px) {
+  #admin-portal-view > .admin-dashboard-compact-header {
+    gap: 8px !important;
+    padding-inline: 10px !important;
+  }
+  #admin-portal-view .admin-dashboard-compact-brand {
+    gap: 8px !important;
+  }
+  #admin-portal-view .admin-dashboard-menu-button {
+    flex-basis: 40px !important;
+    width: 40px !important;
+    min-width: 40px !important;
+    max-width: 40px !important;
+    height: 40px !important;
+    min-height: 40px !important;
+  }
+  #admin-portal-view .admin-dashboard-compact-brand h1 {
+    font-size: clamp(15px, 4.4vw, 18px) !important;
+  }
+  #admin-portal-view .admin-dashboard-compact-logo {
+    flex-basis: 38px !important;
+    width: 38px !important;
+    min-width: 38px !important;
+    height: 38px !important;
+  }
+  #admin-portal-view .admin-dashboard-compact-actions {
+    gap: 5px !important;
+  }
+  #ashiana-theme-toggle.ashiana-theme-admin-inline,
+  #admin-portal-view .ashiana-admin-ai-inline {
+    flex-basis: 34px !important;
+    width: 34px !important;
+    min-width: 34px !important;
+    max-width: 34px !important;
+    height: 34px !important;
+    min-height: 34px !important;
+  }
+}
