@@ -466,15 +466,28 @@
       return;
     }
     const chartGrid = el("div", "ashiana-phase2-bars");
-    days.forEach((day) => {
+    const chartDays = rangeDays === 7 ? days : days.reduce((groups, day, index) => {
+      const groupIndex = Math.floor(index / 7);
+      if (!groups[groupIndex]) groups[groupIndex] = { start: day.date, end: day.date, total: 0, count: 0 };
+      groups[groupIndex].end = day.date;
+      groups[groupIndex].total += day.present;
+      groups[groupIndex].count += 1;
+      return groups;
+    }, []).map((group) => ({
+      date: group.start,
+      label: formatDate(group.start) + "–" + formatDate(group.end),
+      present: Math.round(group.total / group.count),
+      percent: activeStaff ? Math.min(100, group.total / group.count / activeStaff * 100) : 0
+    }));
+    chartDays.forEach((day) => {
       const column = el("div", "ashiana-phase2-bar-column");
       const value = el("strong", "", String(day.present));
       const track = el("div", "ashiana-phase2-bar-track");
       const bar = el("span", "ashiana-phase2-bar");
       bar.style.height = Math.max(day.present ? 4 : 0, day.percent) + "%";
       track.append(bar);
-      column.append(value, track, el("small", "", formatDate(day.date)));
-      column.title = day.date + ": " + day.present + " faculty with an IN punch";
+      column.append(value, track, el("small", "", day.label || formatDate(day.date)));
+      column.title = day.date + ": average " + day.present + " faculty with an IN punch per day";
       chartGrid.append(column);
     });
     chart.append(chartGrid);
@@ -494,7 +507,8 @@
       const key = String(staff.id || "");
       const last = latest.get(key);
       const first = firstIn.get(key);
-      return { staff, last, first, status: !last ? "Not marked" : last.type === "IN" ? "Working" : "Checked out" };
+      const onLeave = cached.leaves.some((leave) => leave.status === "APPROVED" && String(leave.staff_id || "") === key && leave.from_date <= today && leave.to_date >= today);
+      return { staff, last, first, status: onLeave ? "On leave" : !last ? "Not marked" : last.type === "IN" ? "Working" : "Checked out" };
     }).filter((row) => !search || [row.staff.name, row.staff.emp_id, row.staff.department].some((value) => String(value || "").toLowerCase().includes(search)))
       .sort((a, b) => {
         const order = { Working: 0, "Not marked": 1, "Checked out": 2 };
