@@ -78,6 +78,10 @@
     if (studentPortal && window.MutationObserver) {
       new MutationObserver(placeToggle).observe(studentPortal, { attributes: true, attributeFilter: ["class"] });
     }
+    const adminPortal = document.getElementById("admin-portal-view");
+    if (adminPortal && window.MutationObserver) {
+      new MutationObserver(placeToggle).observe(adminPortal, { attributes: true, attributeFilter: ["class"] });
+    }
     if (window.MutationObserver) {
       new MutationObserver(placeToggle).observe(document.body, { childList: true, subtree: true });
       const staffModal = document.getElementById("parent-school-messages-modal");
