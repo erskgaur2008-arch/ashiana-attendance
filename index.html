@@ -1918,11 +1918,29 @@ body.admin-menu-open{overflow:hidden;touch-action:none}
 .admin-side-menu-items .admin-quick-actions>button>svg{
  flex:0 0 26px!important;width:26px!important;height:26px!important;margin:0 16px 0 0!important
 }
+/* Compact spacing and typography for narrow phone screens */
+.admin-side-menu-items{padding-top:8px!important}
+.admin-side-menu-items .admin-quick-actions{gap:5px!important}
+.admin-side-menu-items .admin-quick-actions>button{
+ min-height:54px!important;
+ padding:9px 12px!important;
+ font-size:clamp(12px,2.2vw,15px)!important;
+ line-height:1.15!important
+}
+.admin-side-menu-items .admin-quick-actions>button>svg{
+ flex-basis:23px!important;width:23px!important;height:23px!important;margin-right:12px!important
+}
+.admin-side-menu-footer{padding-top:8px!important}
 @media(max-width:380px){
  .admin-side-menu{width:92vw!important}
- .admin-side-menu-items{padding-left:12px!important;padding-right:12px!important}
- .admin-side-menu-items .admin-quick-actions>button{padding-left:12px!important;padding-right:10px!important;font-size:14px!important}
- .admin-side-menu-items .admin-quick-actions>button>svg{margin-right:12px!important}
+ .admin-side-menu-items{padding:7px 10px 16px!important}
+ .admin-side-menu-items .admin-quick-actions{gap:5px!important}
+ .admin-side-menu-items .admin-quick-actions>button{
+  min-height:50px!important;padding:8px 10px!important;font-size:12px!important
+ }
+ .admin-side-menu-items .admin-quick-actions>button>svg{
+  width:21px!important;height:21px!important;flex-basis:21px!important;margin-right:10px!important
+ }
 }
 
 </style>
