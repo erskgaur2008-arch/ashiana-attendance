@@ -352,9 +352,8 @@
       setupDialog(role);
     } catch (error) {
       console.warn("Could not load " + role + " passkey status:", error?.message || error);
-      if (role !== "student") {
-        toast("Passkey setup is currently unavailable. You can continue with your usual sign-in.", "info");
-      }
+      // A failed background status probe is non-blocking. Avoid a floating
+      // toast over the dashboard; normal sign-in remains available.
     }
   }
 
