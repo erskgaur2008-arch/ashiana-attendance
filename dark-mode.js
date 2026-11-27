@@ -511,7 +511,7 @@
       return { staff, last, first, status: onLeave ? "On leave" : !last ? "Not marked" : last.type === "IN" ? "Working" : "Checked out" };
     }).filter((row) => !search || [row.staff.name, row.staff.emp_id, row.staff.department].some((value) => String(value || "").toLowerCase().includes(search)))
       .sort((a, b) => {
-        const order = { Working: 0, "Not marked": 1, "Checked out": 2 };
+        const order = { Working: 0, "On leave": 1, "Not marked": 2, "Checked out": 3 };
         return order[a.status] - order[b.status] || String(a.staff.name).localeCompare(String(b.staff.name));
       }).slice(0, 12);
     const summary = panel.querySelector(".ashiana-phase2-roster-summary");
@@ -539,7 +539,7 @@
       tr.append(el("td", "", first ? formatTime(first.timestamp) : "—"));
       tr.append(el("td", "", last ? formatTime(last.timestamp) : "—"));
       const statusCell = el("td");
-      statusCell.append(el("span", "ashiana-phase2-status " + (status === "Working" ? "is-working" : status === "Checked out" ? "is-done" : "is-muted"), status));
+      statusCell.append(el("span", "ashiana-phase2-status " + (status === "Working" ? "is-working" : status === "Checked out" ? "is-done" : status === "On leave" ? "is-leave" : "is-muted"), status));
       tr.append(statusCell);
       tbody.append(tr);
     });
@@ -592,7 +592,7 @@
       const results = await Promise.all([
         supa.from("staff").select("id,emp_id,name,department,status").eq("status", "ACTIVE").order("name").limit(250),
         supa.from("attendance_punches").select("id,staff_id,staff_name,emp_id,attendance_date,type,timestamp,created_at").gte("attendance_date", from).lte("attendance_date", today).order("created_at", { ascending: false }).limit(3000),
-        supa.from("leave_requests").select("id,staff_name,type,from_date,to_date,status,created_at").order("created_at", { ascending: false }).limit(50),
+        supa.from("leave_requests").select("id,staff_id,staff_name,type,from_date,to_date,status,created_at").order("created_at", { ascending: false }).limit(50),
         supa.from("audit_logs").select("id,timestamp,actor,action,entity").order("timestamp", { ascending: false }).limit(30)
       ]);
       const failed = results.find((result) => result.error);
