@@ -270,3 +270,362 @@
   if (document.readyState === "loading") document.addEventListener("DOMContentLoaded", start, { once: true });
   else start();
 })();
+
+
+/* Admin dashboard Phase 2: live faculty attendance analytics, roster preview
+   and recent activity. Reads existing admin-authorized tables only. */
+(() => {
+  "use strict";
+  const ROOT_ID = "admin-portal-view";
+  const STYLE_ID = "ashiana-phase2-dashboard-styles";
+  let rangeDays = 7;
+  let cached = { staff: [], punches: [], leaves: [], audits: [] };
+  let loading = false;
+  let lastLoadedAt = 0;
+  let observerQueued = false;
+
+  const el = (tag, cls, text) => {
+    const node = document.createElement(tag);
+    if (cls) node.className = cls;
+    if (text !== undefined && text !== null) node.textContent = String(text);
+    return node;
+  };
+  const indiaDate = (date) => {
+    const parts = new Intl.DateTimeFormat("en-CA", {
+      timeZone: "Asia/Kolkata", year: "numeric", month: "2-digit", day: "2-digit"
+    }).formatToParts(date || new Date());
+    const values = {};
+    parts.forEach((part) => { values[part.type] = part.value; });
+    return values.year + "-" + values.month + "-" + values.day;
+  };
+  const shiftDate = (value, amount) => {
+    const parts = value.split("-").map(Number);
+    return new Date(Date.UTC(parts[0], parts[1] - 1, parts[2] + amount)).toISOString().slice(0, 10);
+  };
+  const formatDate = (value) => {
+    if (!value) return "—";
+    const date = new Date(value + "T00:00:00+05:30");
+    return new Intl.DateTimeFormat("en-IN", { day: "2-digit", month: "short" }).format(date);
+  };
+  const formatTime = (value) => {
+    if (!value) return "—";
+    const match = String(value).match(/(?:T|\s)?(\d{1,2}):(\d{2})/);
+    if (!match) return String(value);
+    const hour = Number(match[1]);
+    return String(hour % 12 || 12).padStart(2, "0") + ":" + match[2] + (hour >= 12 ? " PM" : " AM");
+  };
+  const formatAgo = (value) => {
+    const time = new Date(value).getTime();
+    if (!Number.isFinite(time)) return "Recent";
+    const minutes = Math.max(0, Math.floor((Date.now() - time) / 60000));
+    if (minutes < 1) return "Just now";
+    if (minutes < 60) return minutes + " min ago";
+    const hours = Math.floor(minutes / 60);
+    if (hours < 24) return hours + " hr ago";
+    return Math.floor(hours / 24) + " day ago";
+  };
+  const latestByStaff = (punches) => {
+    const map = new Map();
+    punches.forEach((punch) => {
+      const key = String(punch.staff_id || punch.emp_id || punch.staff_name || "");
+      if (!key) return;
+      const current = map.get(key);
+      if (!current || new Date(punch.created_at).getTime() > new Date(current.created_at).getTime()) {
+        map.set(key, punch);
+      }
+    });
+    return map;
+  };
+  const getDashboard = () => document.getElementById(ROOT_ID);
+  const ensurePanel = (root) => {
+    let panel = root.querySelector(":scope > .ashiana-phase2-panel");
+    if (panel) return panel;
+    panel = el("section", "ashiana-phase2-panel");
+    const heading = el("div", "ashiana-phase2-heading");
+    const titleWrap = el("div");
+    titleWrap.append(el("h3", "", "Attendance Analytics & Live Activity"));
+    titleWrap.append(el("p", "", "Live faculty attendance from the school's attendance records"));
+    const controls = el("div", "ashiana-phase2-controls");
+    const refresh = el("button", "ashiana-phase2-refresh", "↻ Refresh");
+    refresh.type = "button";
+    refresh.addEventListener("click", () => loadData(true));
+    controls.append(refresh);
+    heading.append(titleWrap, controls);
+    panel.append(heading);
+    const analytics = el("section", "ashiana-phase2-analytics");
+    const chartCard = el("div", "ashiana-phase2-card ashiana-phase2-chart-card");
+    chartCard.append(el("div", "ashiana-phase2-card-heading"));
+    const chartHead = chartCard.querySelector(".ashiana-phase2-card-heading");
+    chartHead.append(el("h4", "", "Faculty attendance trend"));
+    const ranges = el("div", "ashiana-phase2-range");
+    [7, 30].forEach((days) => {
+      const button = el("button", "", days + " days");
+      button.type = "button";
+      button.dataset.days = String(days);
+      button.setAttribute("aria-pressed", days === rangeDays ? "true" : "false");
+      button.addEventListener("click", () => {
+        rangeDays = days;
+        panel.querySelectorAll(".ashiana-phase2-range button").forEach((item) => {
+          item.setAttribute("aria-pressed", Number(item.dataset.days) === rangeDays ? "true" : "false");
+        });
+        renderAnalytics(panel);
+      });
+      ranges.append(button);
+    });
+    chartHead.append(ranges);
+    chartCard.append(el("div", "ashiana-phase2-kpis"));
+    chartCard.append(el("div", "ashiana-phase2-chart", "Loading attendance trend…"));
+    chartCard.append(el("p", "ashiana-phase2-note", "Counts are based on recorded faculty IN punches; no punch is not automatically treated as an absence."));
+    analytics.append(chartCard);
+    const activityCard = el("div", "ashiana-phase2-card ashiana-phase2-activity-card");
+    activityCard.append(el("div", "ashiana-phase2-card-heading"));
+    activityCard.querySelector(".ashiana-phase2-card-heading").append(el("h4", "", "Recent activity"));
+    activityCard.append(el("div", "ashiana-phase2-activity-list", "Loading recent activity…"));
+    analytics.append(activityCard);
+    panel.append(analytics);
+
+    const rosterCard = el("section", "ashiana-phase2-card ashiana-phase2-roster-card");
+    const rosterHead = el("div", "ashiana-phase2-card-heading");
+    const rosterTitle = el("div");
+    rosterTitle.append(el("h4", "", "Faculty live roster"));
+    rosterTitle.append(el("p", "", "Today's latest punch status"));
+    rosterHead.append(rosterTitle);
+    const rosterTools = el("div", "ashiana-phase2-roster-tools");
+    const search = el("input", "ashiana-phase2-search");
+    search.type = "search";
+    search.placeholder = "Search faculty…";
+    search.setAttribute("aria-label", "Search faculty live roster");
+    search.addEventListener("input", () => renderRoster(panel));
+    const openFull = el("button", "ashiana-phase2-open-roster", "Open full roster ↗");
+    openFull.type = "button";
+    openFull.addEventListener("click", () => {
+      const menu = document.getElementById("admin-side-menu");
+      const target = menu && [...menu.querySelectorAll("button,a,[role='button']")].find((node) =>
+        /live attendance|live faculty/i.test((node.innerText || node.textContent || "").replace(/\s+/g, " ").trim()));
+      if (target) target.click();
+      else {
+        const toggle = document.querySelector('[aria-controls="admin-side-menu"],#admin-menu-toggle');
+        if (toggle) toggle.click();
+      }
+    });
+    rosterTools.append(search, openFull);
+    rosterHead.append(rosterTools);
+    rosterCard.append(rosterHead, el("div", "ashiana-phase2-roster-summary"));
+    const tableWrap = el("div", "ashiana-phase2-table-wrap");
+    const table = el("table", "ashiana-phase2-table");
+    const thead = el("thead");
+    const headerRow = el("tr");
+    ["Faculty member", "Department", "First IN", "Last punch", "Status"].forEach((label) => headerRow.append(el("th", "", label)));
+    thead.append(headerRow);
+    table.append(thead, el("tbody"));
+    tableWrap.append(table);
+    rosterCard.append(tableWrap, el("p", "ashiana-phase2-note", "Roster status reflects the latest recorded punch for today. Work-hour totals remain in the existing Live Attendance report."));
+    panel.append(rosterCard);
+    const quick = root.querySelector(":scope > .ashiana-modern-quick-actions");
+    const rate = root.querySelector(":scope > .ashiana-modern-rate");
+    if (quick) quick.insertAdjacentElement("afterend", panel);
+    else if (rate) rate.insertAdjacentElement("afterend", panel);
+    else root.append(panel);
+    return panel;
+  };
+  const makeKpi = (label, value, tone) => {
+    const card = el("div", "ashiana-phase2-kpi " + (tone || ""));
+    card.append(el("span", "", label), el("strong", "", value));
+    return card;
+  };
+  const renderAnalytics = (panel) => {
+    const today = indiaDate();
+    const from = shiftDate(today, -(rangeDays - 1));
+    const punches = cached.punches.filter((row) => row.attendance_date >= from && row.attendance_date <= today);
+    const todayPunches = punches.filter((row) => row.attendance_date === today);
+    const activeStaff = cached.staff.length;
+    const todayIn = new Set(todayPunches.filter((row) => row.type === "IN").map((row) => row.staff_id || row.emp_id));
+    const latest = latestByStaff(todayPunches);
+    const working = [...latest.values()].filter((row) => row.type === "IN").length;
+    const approved = cached.leaves.filter((row) => row.status === "APPROVED" && row.from_date <= today && row.to_date >= today).length;
+    const pending = cached.leaves.filter((row) => row.status === "PENDING").length;
+    const kpis = panel.querySelector(".ashiana-phase2-kpis");
+    kpis.replaceChildren(
+      makeKpi("Active faculty", activeStaff, ""),
+      makeKpi("Recorded IN today", todayIn.size, "green"),
+      makeKpi("Working now", working, "blue"),
+      makeKpi("On approved leave", approved, "purple"),
+      makeKpi("Pending leave requests", pending, "amber")
+    );
+    const days = [];
+    for (let offset = rangeDays - 1; offset >= 0; offset--) {
+      const date = shiftDate(today, -offset);
+      const present = new Set(punches.filter((row) => row.attendance_date === date && row.type === "IN")
+        .map((row) => row.staff_id || row.emp_id)).size;
+      days.push({ date, present, percent: activeStaff ? Math.min(100, present / activeStaff * 100) : 0 });
+    }
+    const chart = panel.querySelector(".ashiana-phase2-chart");
+    chart.replaceChildren();
+    if (!days.some((day) => day.present > 0)) {
+      chart.append(el("p", "ashiana-phase2-empty", "No faculty IN punches recorded in this period yet."));
+      return;
+    }
+    const chartGrid = el("div", "ashiana-phase2-bars");
+    days.forEach((day) => {
+      const column = el("div", "ashiana-phase2-bar-column");
+      const value = el("strong", "", String(day.present));
+      const track = el("div", "ashiana-phase2-bar-track");
+      const bar = el("span", "ashiana-phase2-bar");
+      bar.style.height = Math.max(day.present ? 4 : 0, day.percent) + "%";
+      track.append(bar);
+      column.append(value, track, el("small", "", formatDate(day.date)));
+      column.title = day.date + ": " + day.present + " faculty with an IN punch";
+      chartGrid.append(column);
+    });
+    chart.append(chartGrid);
+  };
+  const renderRoster = (panel) => {
+    const today = indiaDate();
+    const todays = cached.punches.filter((row) => row.attendance_date === today)
+      .sort((a, b) => new Date(a.created_at) - new Date(b.created_at));
+    const firstIn = new Map();
+    todays.forEach((row) => {
+      const key = String(row.staff_id || row.emp_id || "");
+      if (row.type === "IN" && key && !firstIn.has(key)) firstIn.set(key, row);
+    });
+    const latest = latestByStaff(todays);
+    const search = (panel.querySelector(".ashiana-phase2-search")?.value || "").trim().toLowerCase();
+    const rows = cached.staff.map((staff) => {
+      const key = String(staff.id || "");
+      const last = latest.get(key);
+      const first = firstIn.get(key);
+      return { staff, last, first, status: !last ? "Not marked" : last.type === "IN" ? "Working" : "Checked out" };
+    }).filter((row) => !search || [row.staff.name, row.staff.emp_id, row.staff.department].some((value) => String(value || "").toLowerCase().includes(search)))
+      .sort((a, b) => {
+        const order = { Working: 0, "Not marked": 1, "Checked out": 2 };
+        return order[a.status] - order[b.status] || String(a.staff.name).localeCompare(String(b.staff.name));
+      }).slice(0, 12);
+    const summary = panel.querySelector(".ashiana-phase2-roster-summary");
+    const working = cached.staff.filter((staff) => latest.get(String(staff.id || ""))?.type === "IN").length;
+    const marked = new Set(todays.filter((row) => row.type === "IN").map((row) => row.staff_id)).size;
+    summary.replaceChildren(
+      el("span", "", cached.staff.length + " active faculty"),
+      el("span", "", marked + " with IN today"),
+      el("span", "", working + " currently working")
+    );
+    const tbody = panel.querySelector(".ashiana-phase2-table tbody");
+    tbody.replaceChildren();
+    if (!rows.length) {
+      const tr = el("tr");
+      const td = el("td", "ashiana-phase2-empty", search ? "No faculty match this search." : "No active faculty records found.");
+      td.colSpan = 5;
+      tr.append(td);
+      tbody.append(tr);
+      return;
+    }
+    rows.forEach(({ staff, last, first, status }) => {
+      const tr = el("tr");
+      tr.append(el("td", "ashiana-phase2-name", staff.name || "—"));
+      tr.append(el("td", "", staff.department || "—"));
+      tr.append(el("td", "", first ? formatTime(first.timestamp) : "—"));
+      tr.append(el("td", "", last ? formatTime(last.timestamp) : "—"));
+      const statusCell = el("td");
+      statusCell.append(el("span", "ashiana-phase2-status " + (status === "Working" ? "is-working" : status === "Checked out" ? "is-done" : "is-muted"), status));
+      tr.append(statusCell);
+      tbody.append(tr);
+    });
+  };
+  const renderActivity = (panel) => {
+    const items = [];
+    cached.punches.forEach((row) => {
+      items.push({ at: row.created_at, title: (row.staff_name || "Faculty") + " · PUNCH " + row.type, detail: (row.emp_id || "Staff") + " · " + row.attendance_date, kind: "punch" });
+    });
+    cached.leaves.forEach((row) => {
+      items.push({ at: row.created_at, title: (row.staff_name || "Faculty") + " · Leave " + String(row.status || "submitted").toLowerCase(), detail: (row.type || "Leave") + " · " + row.from_date + " to " + row.to_date, kind: "leave" });
+    });
+    cached.audits.forEach((row) => {
+      items.push({ at: row.timestamp, title: String(row.action || "Activity").replace(/_/g, " "), detail: [row.entity, row.actor].filter(Boolean).join(" · "), kind: "audit" });
+    });
+    items.sort((a, b) => new Date(b.at).getTime() - new Date(a.at).getTime());
+    const list = panel.querySelector(".ashiana-phase2-activity-list");
+    list.replaceChildren();
+    if (!items.length) {
+      list.append(el("p", "ashiana-phase2-empty", "No recent attendance, leave or audit activity is available."));
+      return;
+    }
+    items.slice(0, 8).forEach((item) => {
+      const row = el("div", "ashiana-phase2-activity-item");
+      row.append(el("span", "ashiana-phase2-activity-dot " + item.kind));
+      const copy = el("div", "ashiana-phase2-activity-copy");
+      copy.append(el("strong", "", item.title), el("small", "", item.detail || "—"));
+      row.append(copy, el("time", "", formatAgo(item.at)));
+      list.append(row);
+    });
+  };
+  const loadData = async (force) => {
+    const root = getDashboard();
+    if (!root || root.classList.contains("hidden") || loading) return;
+    const panel = ensurePanel(root);
+    if (!force && Date.now() - lastLoadedAt < 60000 && cached.staff.length) return;
+    if (typeof window.__ashianaGetMainSupabaseClient !== "function" && !window.__ashianaMainSupabaseClient) {
+      panel.querySelector(".ashiana-phase2-chart").textContent = "Waiting for the authenticated school connection…";
+      return;
+    }
+    loading = true;
+    const refresh = panel.querySelector(".ashiana-phase2-refresh");
+    if (refresh) { refresh.disabled = true; refresh.textContent = "Loading…"; }
+    try {
+      const supa = window.__ashianaMainSupabaseClient || await window.__ashianaGetMainSupabaseClient();
+      const userResult = await supa.auth.getUser();
+      if (userResult.error || !userResult.data?.user) throw new Error("Administrator session is not available.");
+      const today = indiaDate();
+      const from = shiftDate(today, -29);
+      const results = await Promise.all([
+        supa.from("staff").select("id,emp_id,name,department,status").eq("status", "ACTIVE").order("name").limit(250),
+        supa.from("attendance_punches").select("id,staff_id,staff_name,emp_id,attendance_date,type,timestamp,created_at").gte("attendance_date", from).lte("attendance_date", today).order("created_at", { ascending: false }).limit(3000),
+        supa.from("leave_requests").select("id,staff_name,type,from_date,to_date,status,created_at").order("created_at", { ascending: false }).limit(50),
+        supa.from("audit_logs").select("id,timestamp,actor,action,entity").order("timestamp", { ascending: false }).limit(30)
+      ]);
+      const failed = results.find((result) => result.error);
+      if (failed) throw failed.error;
+      cached = {
+        staff: results[0].data || [],
+        punches: results[1].data || [],
+        leaves: results[2].data || [],
+        audits: results[3].data || []
+      };
+      lastLoadedAt = Date.now();
+      renderAnalytics(panel);
+      renderRoster(panel);
+      renderActivity(panel);
+      const heading = panel.querySelector(".ashiana-phase2-heading p");
+      if (heading) heading.textContent = "Live school records · Updated " + new Date().toLocaleTimeString("en-IN", { hour: "2-digit", minute: "2-digit" });
+    } catch (error) {
+      const chart = panel.querySelector(".ashiana-phase2-chart");
+      if (chart) chart.textContent = "Attendance analytics could not be loaded. Check the administrator connection and try Refresh.";
+      const activity = panel.querySelector(".ashiana-phase2-activity-list");
+      if (activity) activity.textContent = "Recent activity is temporarily unavailable.";
+      console.warn("[Ashiana Phase 2 dashboard]", error?.message || error);
+    } finally {
+      loading = false;
+      if (refresh) { refresh.disabled = false; refresh.textContent = "↻ Refresh"; }
+    }
+  };
+  const schedule = () => {
+    if (observerQueued) return;
+    observerQueued = true;
+    requestAnimationFrame(() => {
+      observerQueued = false;
+      const root = getDashboard();
+      if (root && !root.classList.contains("hidden")) loadData(false);
+    });
+  };
+  const start = () => {
+    const root = getDashboard();
+    if (root && window.MutationObserver) {
+      new MutationObserver(schedule).observe(root, { attributes: true, attributeFilter: ["class"] });
+      new MutationObserver(schedule).observe(document.body, { childList: true, subtree: true });
+    }
+    schedule();
+    window.addEventListener("focus", () => loadData(false));
+    document.addEventListener("visibilitychange", () => { if (!document.hidden) loadData(false); });
+    window.setInterval(() => loadData(false), 60000);
+  };
+  if (document.readyState === "loading") document.addEventListener("DOMContentLoaded", start, { once: true });
+  else start();
+})();
