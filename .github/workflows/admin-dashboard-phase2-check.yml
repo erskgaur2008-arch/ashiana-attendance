@@ -1,0 +1,49 @@
+name: Admin Dashboard Phase 2 Validation
+
+on:
+  pull_request:
+    branches: [main]
+    paths:
+      - 'dark-mode.js'
+      - 'dark-mode.css'
+      - '.github/workflows/admin-dashboard-phase2-check.yml'
+  workflow_dispatch:
+
+permissions:
+  contents: read
+
+jobs:
+  dashboard-phase2:
+    runs-on: ubuntu-latest
+    timeout-minutes: 5
+    steps:
+      - uses: actions/checkout@v4
+      - name: Validate JavaScript syntax
+        run: node --check dark-mode.js
+      - name: Validate Phase 2 data and safety boundaries
+        run: |
+          python3 - <<'PY'
+          from pathlib import Path
+          source = Path("dark-mode.js").read_text(encoding="utf-8")
+          css = Path("dark-mode.css").read_text(encoding="utf-8")
+          marker = "Admin dashboard Phase 2: live faculty attendance analytics"
+          if marker not in source:
+              raise SystemExit("FAIL: Phase 2 dashboard module is missing")
+          phase2 = source.split(marker, 1)[1]
+          checks = {
+              "uses the shared authenticated Supabase client": "__ashianaGetMainSupabaseClient" in phase2,
+              "verifies the current authenticated user": "supa.auth.getUser()" in phase2,
+              "reads faculty attendance punches": 'from("attendance_punches")' in phase2,
+              "reads active staff directory": 'from("staff")' in phase2,
+              "reads leave requests and audit activity": 'from("leave_requests")' in phase2 and 'from("audit_logs")' in phase2,
+              "does not write to Supabase": not any(token in phase2 for token in (".insert(", ".update(", ".upsert(", ".delete(")),
+              "does not expose service-role credentials": "service_role" not in phase2 and "SUPABASE_SERVICE_ROLE" not in phase2,
+              "includes 7-day and 30-day trend ranges": "[7, 30]" in phase2,
+              "supports manual and periodic refresh": "loadData(true)" in phase2 and "setInterval(() => loadData(false), 60000)" in phase2,
+              "includes responsive and dark-mode styling": ".ashiana-phase2-panel" in css and 'data-ashiana-theme="dark"' in css and "@media (max-width: 700px)" in css,
+          }
+          for name, ok in checks.items():
+              print(("PASS" if ok else "FAIL") + ": " + name)
+          if not all(checks.values()):
+              raise SystemExit(1)
+          PY
