@@ -539,3 +539,35 @@ html[data-ashiana-theme="dark"] #student-portal-view #student-dashboard-panel-bo
   #admin-portal-view .admin-dashboard-compact-brand { gap: 7px !important; }
   #admin-portal-view .admin-dashboard-compact-brand h1 { font-size: 18px !important; }
 }
+
+
+/* Admin side-menu: tighten the icon-to-label spacing on mobile.
+   Keep each menu item left-aligned so labels sit close to their icons. */
+#admin-side-menu .admin-side-menu-items .admin-quick-actions > button,
+#admin-side-menu .admin-side-menu-items > button,
+#admin-side-menu .admin-side-menu-items button {
+  justify-content: flex-start !important;
+  gap: 10px !important;
+  text-align: left !important;
+}
+#admin-side-menu .admin-side-menu-items .admin-quick-actions > button > svg,
+#admin-side-menu .admin-side-menu-items button > svg,
+#admin-side-menu .admin-side-menu-items button > i {
+  flex: 0 0 28px !important;
+  width: 28px !important;
+  height: 28px !important;
+  margin-right: 0 !important;
+}
+#admin-side-menu .admin-side-menu-items button > span,
+#admin-side-menu .admin-side-menu-items button > div {
+  margin-left: 0 !important;
+}
+@media (max-width: 700px) {
+  #admin-side-menu .admin-side-menu-items .admin-quick-actions > button,
+  #admin-side-menu .admin-side-menu-items > button,
+  #admin-side-menu .admin-side-menu-items button {
+    gap: 8px !important;
+    padding-left: 16px !important;
+    padding-right: 14px !important;
+  }
+}
