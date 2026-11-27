@@ -1926,6 +1926,32 @@ body.admin-menu-open{overflow:hidden;touch-action:none}
 }
 
 </style>
+<style id="admin-dashboard-compact-header-styles">
+#admin-portal-view .admin-dashboard-compact-header{
+ box-sizing:border-box!important;display:flex!important;align-items:center!important;justify-content:space-between!important;
+ gap:12px!important;width:100%!important;min-height:68px!important;padding:9px 14px!important;margin:0!important;
+ border:1px solid #d8eee5!important;border-radius:18px!important;background:rgba(255,255,255,.96)!important;
+ color:#064e3b!important;box-shadow:0 5px 18px rgba(2,44,34,.08)!important;overflow:visible!important
+}
+#admin-portal-view .admin-dashboard-compact-header:after{display:none!important;content:none!important}
+#admin-portal-view .admin-dashboard-compact-brand{display:flex!important;align-items:center!important;gap:13px!important;min-width:0!important}
+#admin-portal-view .admin-dashboard-compact-brand h1{display:block!important;margin:0!important;color:#064e3b!important;
+ font-size:clamp(19px,4.8vw,25px)!important;font-weight:850!important;line-height:1.15!important;letter-spacing:-.025em!important}
+#admin-portal-view .admin-dashboard-menu-button{width:44px!important;height:44px!important;flex:0 0 44px!important;
+ display:flex!important;align-items:center!important;justify-content:center!important;border:1px solid #bfe5d6!important;
+ border-radius:13px!important;background:#e9faf3!important;color:#047857!important;padding:0!important}
+#admin-portal-view .admin-dashboard-menu-button svg{width:24px!important;height:24px!important;stroke-width:2.4!important}
+#admin-portal-view .admin-dashboard-compact-actions{display:flex!important;align-items:center!important;gap:0!important}
+#admin-portal-view .admin-dashboard-compact-logo{width:48px!important;height:48px!important;flex:0 0 48px!important;
+ border-radius:12px!important;background:#fff!important;box-shadow:none!important;border:1px solid #e2eee8!important;overflow:hidden!important}
+#admin-portal-view .admin-dashboard-compact-logo img{width:100%!important;height:100%!important;object-fit:contain!important}
+@media(max-width:640px){
+ #admin-portal-view .admin-dashboard-compact-header{min-height:64px!important;padding:8px 12px!important;margin:0!important;border-top:1px solid #d8eee5!important}
+ #admin-portal-view .admin-dashboard-compact-brand h1{font-size:21px!important}
+ #admin-portal-view .admin-dashboard-menu-button{width:42px!important;height:42px!important;flex-basis:42px!important}
+ #admin-portal-view .admin-dashboard-compact-logo{width:44px!important;height:44px!important;flex-basis:44px!important}
+}
+</style>
 </head>
 <body class="bg-slate-100 text-slate-800 antialiased min-h-screen min-h-screen-safe flex flex-col selection:bg-emerald-600 selection:text-white">
 
@@ -3604,25 +3630,19 @@ id="student-dashboard-panel-body" class="space-y-3 text-xs"></div>
   
 id="admin-portal-view" class="hidden flex-col w-full space-y-4 admin-dashboard-shell">
       
-      <!-- Modern Admin Header -->
-      <div class="admin-dashboard-header">
-        <img class="admin-desktop-full-banner" src="assets/ashiana-admin-full-banner-hq.webp" alt="Ashiana Public School banner">
-        <div class="admin-dashboard-brand">
-          <div class="admin-dashboard-logo">
-            <img src="logo%202.png" alt="Ashiana Public School emblem" onerror="this.style.display='none';this.nextElementSibling.classList.remove('hidden');">
+      <!-- Compact Admin Dashboard Header -->
+      <div class="admin-dashboard-header admin-dashboard-compact-header">
+        <div class="admin-dashboard-brand admin-dashboard-compact-brand">
+          <button type="button" id="admin-menu-open" class="admin-dashboard-menu-button" aria-label="Open navigation menu" aria-controls="admin-side-menu" aria-expanded="false">
+            <i data-lucide="menu"></i>
+          </button>
+          <h1>Dashboard</h1>
+        </div>
+        <div class="admin-dashboard-actions admin-dashboard-compact-actions">
+          <div class="admin-dashboard-logo admin-dashboard-compact-logo">
+            <img src="logo%202.png" alt="Ashiana Public School logo" onerror="this.style.display='none';this.nextElementSibling.classList.remove('hidden');">
             <span class="hidden">A</span>
           </div>
-          <div>
-            <h1>ASHIANA PUBLIC SCHOOL</h1>
-            <p>Sector 46-Chandigarh</p>
-            <p class="admin-desktop-school-phone">+91-9872500460</p>
-          </div>
-        </div>
-        <div class="admin-dashboard-actions">
-          <div class="admin-live-pill"><span></span><strong>LIVE</strong><small>Cloud Sync</small></div>
-          <button type="button" id="admin-menu-open" class="admin-header-action admin-menu-open" aria-label="Open navigation menu" aria-controls="admin-side-menu" aria-expanded="false"><i data-lucide="menu"></i><span>Menu</span></button>
-          <button type="button" onclick="pollLatestPunches(true)" class="admin-header-action" title="Sync now"><i data-lucide="refresh-cw"></i><span>Sync</span></button>
-          <button type="button" onclick="handleLogout()" class="admin-header-action admin-logout-action" title="Sign out"><i data-lucide="log-out"></i><span>Sign Out</span></button>
         </div>
       </div>
 
