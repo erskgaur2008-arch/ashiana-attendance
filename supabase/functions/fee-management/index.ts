@@ -270,7 +270,7 @@ Deno.serve(async (req) => {
       "NUR": "NURSERY", "NURSERY": "NURSERY",
     };
     const normalizeClass = (value: unknown) => {
-      const raw = String(value ?? "").trim().toUpperCase().replace(/\\s+/g, " ");
+      const raw = String(value ?? "").trim().toUpperCase().replace(/\s+/g, " ");
       return aliases[raw] ?? raw;
     };
     const classCounts = new Map<string, number>(orderedClasses.map((name) => [name, 0]));
