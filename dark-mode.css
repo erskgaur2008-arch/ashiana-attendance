@@ -1881,3 +1881,120 @@ html[data-ashiana-theme="dark"] .ashiana-phase3-year { color: #c3d8cd; backgroun
   .ashiana-phase3-action-copy strong { font-size: 9px; }
   .ashiana-phase3-action-copy small { font-size: 8px; }
 }
+
+
+/* Admin dashboard Phase 4: dark-mode contrast, keyboard focus and compact mobile layout. */
+#admin-portal-view > .ashiana-phase2-panel,
+#admin-portal-view > .ashiana-phase3-panel {
+  min-width: 0;
+  max-width: 100%;
+  box-sizing: border-box;
+}
+#admin-portal-view > .ashiana-phase2-panel *,
+#admin-portal-view > .ashiana-phase3-panel * {
+  box-sizing: border-box;
+}
+.ashiana-phase2-panel button,
+.ashiana-phase3-panel button,
+.ashiana-phase2-panel input,
+.ashiana-phase3-panel input {
+  max-width: 100%;
+  font: inherit;
+}
+.ashiana-phase2-panel button:focus-visible,
+.ashiana-phase3-panel button:focus-visible,
+.ashiana-phase2-panel input:focus-visible,
+.ashiana-phase3-panel input:focus-visible {
+  outline: 3px solid #0d9488;
+  outline-offset: 2px;
+}
+html[data-ashiana-theme="dark"] .ashiana-phase2-refresh,
+html[data-ashiana-theme="dark"] .ashiana-phase2-open-roster,
+html[data-ashiana-theme="dark"] .ashiana-phase2-range button,
+html[data-ashiana-theme="dark"] .ashiana-phase3-refresh {
+  color: #a7f3d0;
+  background: #183d30;
+  border-color: #3b7059;
+}
+html[data-ashiana-theme="dark"] .ashiana-phase2-range button[aria-pressed="true"] {
+  color: #052e22;
+  background: #6ee7b7;
+  border-color: #6ee7b7;
+}
+html[data-ashiana-theme="dark"] .ashiana-phase2-roster-summary span,
+html[data-ashiana-theme="dark"] .ashiana-phase2-status.is-working {
+  color: #a7f3d0;
+  background: #174b37;
+}
+html[data-ashiana-theme="dark"] .ashiana-phase2-status.is-done {
+  color: #bfdbfe;
+  background: #1e3a5f;
+}
+html[data-ashiana-theme="dark"] .ashiana-phase2-status.is-muted {
+  color: #cbd5e1;
+  background: #334155;
+}
+html[data-ashiana-theme="dark"] .ashiana-phase3-chip {
+  color: #a7f3d0;
+  background: #174b37;
+}
+html[data-ashiana-theme="dark"] .ashiana-phase3-action-arrow {
+  color: #a7c7b8;
+}
+html[data-ashiana-theme="dark"] .ashiana-phase2-refresh:focus-visible,
+html[data-ashiana-theme="dark"] .ashiana-phase2-open-roster:focus-visible,
+html[data-ashiana-theme="dark"] .ashiana-phase2-range button:focus-visible,
+html[data-ashiana-theme="dark"] .ashiana-phase3-refresh:focus-visible,
+html[data-ashiana-theme="dark"] .ashiana-phase3-action:focus-visible {
+  outline-color: #6ee7b7;
+}
+@media (max-width: 480px) {
+  #admin-portal-view > .ashiana-phase2-panel,
+  #admin-portal-view > .ashiana-phase3-panel {
+    gap: 9px;
+  }
+  .ashiana-phase2-heading {
+    gap: 8px;
+  }
+  .ashiana-phase2-heading h3,
+  .ashiana-phase3-header h3 {
+    font-size: 16px;
+    line-height: 1.25;
+  }
+  .ashiana-phase2-card,
+  .ashiana-phase3-card {
+    padding: 11px;
+    border-radius: 13px;
+  }
+  .ashiana-phase2-kpis {
+    grid-template-columns: repeat(2, minmax(0, 1fr));
+  }
+  .ashiana-phase2-table-wrap {
+    max-width: 100%;
+    -webkit-overflow-scrolling: touch;
+  }
+  .ashiana-phase3-class-row {
+    grid-template-columns: minmax(58px, 68px) minmax(24px, 1fr) 26px;
+    gap: 6px;
+  }
+  .ashiana-phase3-class-name,
+  .ashiana-phase3-class-count {
+    font-size: 9px;
+  }
+  .ashiana-phase3-action-grid {
+    grid-template-columns: repeat(2, minmax(0, 1fr));
+  }
+  .ashiana-phase3-action {
+    min-width: 0;
+    overflow-wrap: anywhere;
+  }
+  .ashiana-phase3-action-copy small {
+    overflow-wrap: anywhere;
+  }
+}
+@media (prefers-reduced-motion: reduce) {
+  .ashiana-phase2-bar,
+  .ashiana-phase3-class-fill {
+    transition: none !important;
+  }
+}

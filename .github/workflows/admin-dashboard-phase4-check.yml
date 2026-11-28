@@ -1,0 +1,42 @@
+name: Admin Dashboard Phase 4 Validation
+
+on:
+  pull_request:
+    branches: [main]
+    paths:
+      - 'dark-mode.js'
+      - 'dark-mode.css'
+      - '.github/workflows/admin-dashboard-phase4-check.yml'
+  workflow_dispatch:
+
+permissions:
+  contents: read
+
+jobs:
+  dashboard-phase4:
+    runs-on: ubuntu-latest
+    timeout-minutes: 5
+    steps:
+      - uses: actions/checkout@v4
+      - name: Validate dashboard JavaScript syntax
+        run: node --check dark-mode.js
+      - name: Validate dark-mode and mobile safeguards
+        run: |
+          python3 - <<'PY'
+          from pathlib import Path
+          css = Path("dark-mode.css").read_text(encoding="utf-8")
+          checks = {
+              "Phase 4 styles present": "Admin dashboard Phase 4" in css,
+              "dark-mode button contrast": 'html[data-ashiana-theme="dark"] .ashiana-phase3-refresh' in css,
+              "keyboard focus visible": ":focus-visible" in css,
+              "compact mobile breakpoint": "@media (max-width: 480px)" in css,
+              "small-screen class distribution": ".ashiana-phase3-class-row" in css,
+              "reduced motion support": "prefers-reduced-motion: reduce" in css,
+              "roster table remains scrollable": ".ashiana-phase2-table-wrap" in css,
+          }
+          failed = [name for name, ok in checks.items() if not ok]
+          for name, ok in checks.items():
+              print(("PASS: " if ok else "FAIL: ") + name)
+          if failed:
+              raise SystemExit(1)
+          PY
