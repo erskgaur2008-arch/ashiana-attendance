@@ -258,16 +258,32 @@ Deno.serve(async (req) => {
     }
 
     const students = studentResult.data ?? [];
-    const classCounts = new Map<string, number>();
+    // Always show the school's complete configured class sequence, including
+    // classes with no active students. Normalize legacy roster abbreviations.
+    const orderedClasses = [
+      "PRE-NURSERY", "NURSERY", "LKG", "UKG",
+      "I", "II", "III", "IV", "V", "VI", "VII", "VIII", "IX", "X",
+    ];
+    const aliases: Record<string, string> = {
+      "PRE NUR": "PRE-NURSERY", "PRE-NUR": "PRE-NURSERY",
+      "PRE NURSERY": "PRE-NURSERY", "PRE-NURSERY": "PRE-NURSERY",
+      "NUR": "NURSERY", "NURSERY": "NURSERY",
+    };
+    const normalizeClass = (value: unknown) => {
+      const raw = String(value ?? "").trim().toUpperCase().replace(/\\s+/g, " ");
+      return aliases[raw] ?? raw;
+    };
+    const classCounts = new Map<string, number>(orderedClasses.map((name) => [name, 0]));
     const sections = new Set<string>();
     students.forEach((row: { class_name?: string | null; section?: string | null }) => {
-      const className = String(row.class_name ?? "Unassigned").trim() || "Unassigned";
+      const className = normalizeClass(row.class_name) || "Unassigned";
       classCounts.set(className, (classCounts.get(className) ?? 0) + 1);
       if (row.section) sections.add(className + "|" + row.section);
     });
-    const classBreakdown = [...classCounts.entries()]
-      .map(([class_name, student_count]) => ({ class_name, student_count }))
-      .sort((a, b) => a.class_name.localeCompare(b.class_name, "en", { numeric: true }));
+    const extras = [...classCounts.keys()].filter((name) => !orderedClasses.includes(name))
+      .sort((a, b) => a.localeCompare(b, "en", { numeric: true }));
+    const classBreakdown = [...orderedClasses, ...extras]
+      .map((class_name) => ({ class_name, student_count: classCounts.get(class_name) ?? 0 }));
 
     const accounts = accountRows;
     const accountIds = accounts.map((row: { id: string }) => row.id);
